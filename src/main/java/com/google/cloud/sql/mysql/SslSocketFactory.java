@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.mysql;
 
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -23,6 +24,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.SslCert;
@@ -53,6 +55,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
@@ -73,6 +76,11 @@ class SslSocketFactory {
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
 
+  // Test properties, not for end-user use. May be changed or removed without notice.
+  private static final String CREDENTIAL_FACTORY_PROPERTY = "_CLOUD_SQL_API_CREDENTIAL_FACTORY";
+  private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
+  private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
+
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
 
@@ -81,7 +89,7 @@ class SslSocketFactory {
   private final CertificateFactory certificateFactory;
   private final Clock clock;
   private final KeyPair localKeyPair;
-  private final GoogleCredential credential;
+  private final Credential credential;
   private final Map<String, InstanceSslInfo> cache = new HashMap<>();
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
@@ -93,7 +101,7 @@ class SslSocketFactory {
   SslSocketFactory(
       Clock clock,
       KeyPair localKeyPair,
-      GoogleCredential credential,
+      Credential credential,
       SQLAdmin adminApi,
       int serverProxyPort) {
     try {
@@ -112,7 +120,21 @@ class SslSocketFactory {
     if (sslSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
-      GoogleCredential credential = createCredential();
+      CredentialFactory credentialFactory;
+      if (System.getProperty(CREDENTIAL_FACTORY_PROPERTY) != null) {
+        logTestPropertyWarning(CREDENTIAL_FACTORY_PROPERTY);
+        try {
+          credentialFactory =
+              (CredentialFactory)
+                  Class.forName(System.getProperty(CREDENTIAL_FACTORY_PROPERTY))
+                      .newInstance();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        credentialFactory = new ApplicationDefaultCredentialFactory();
+      }
+      Credential credential = credentialFactory.create();
       SQLAdmin adminApi = createAdminApiClient(credential);
       sslSocketFactory =
           new SslSocketFactory(
@@ -143,6 +165,14 @@ class SslSocketFactory {
       }
       return createAndConfigureSocket(instanceName, CertificateCaching.BYPASS_CACHE);
     }
+  }
+
+  private static void logTestPropertyWarning(String property) {
+    logger.warning(
+        String.format(
+            "%s is a test property and may be changed or removed in a future version without "
+                + "notice.",
+            property));
   }
 
   private SSLSocket createAndConfigureSocket(
@@ -336,8 +366,8 @@ class SslSocketFactory {
       } else if (INSTANCE_NOT_AUTHORIZED_REASON.equals(reason)) {
         // TODO(berezv): check if this works on Compute Engine / App Engine
         String who = "you are";
-        if (credential.getServiceAccountId() != null) {
-          who = "[" + credential.getServiceAccountId() + "] is";
+        if (getCredentialServiceAccount(credential) != null) {
+          who = "[" + getCredentialServiceAccount(credential) + "] is";
         }
         throw
             new RuntimeException(
@@ -404,8 +434,8 @@ class SslSocketFactory {
       String reason = e.getDetails().getErrors().get(0).getReason();
       if (INSTANCE_NOT_AUTHORIZED_REASON.equals(reason)) {
         String who = "you have";
-        if (credential.getServiceAccountId() != null) {
-          who = "[" + credential.getServiceAccountId() + "] has";
+        if (getCredentialServiceAccount(credential) != null) {
+          who = "[" + getCredentialServiceAccount(credential) + "] has";
         }
         throw
             new RuntimeException(
@@ -445,35 +475,57 @@ class SslSocketFactory {
     }
   }
 
-  private static SQLAdmin createAdminApiClient(GoogleCredential credential) {
+  @Nullable
+  private String getCredentialServiceAccount(Credential credential) {
+    return
+        credential instanceof GoogleCredential
+            ? ((GoogleCredential) credential).getServiceAccountId()
+            : null;
+  }
+
+  private static SQLAdmin createAdminApiClient(Credential credential) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-    } catch (Exception e) {
+    } catch (GeneralSecurityException | IOException e) {
       throw new RuntimeException("Unable to initialize HTTP transport", e);
     }
 
+    String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
+    String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
+
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-    return
-        new SQLAdmin.Builder(httpTransport, jsonFactory, credential)
-            .setApplicationName("Cloud SQL Java Socket Factory")
-            .build();
+    SQLAdmin.Builder adminApiBuilder =
+        new Builder(httpTransport, jsonFactory, credential)
+            .setApplicationName("Cloud SQL Java Socket Factory");
+    if (rootUrl != null) {
+      logTestPropertyWarning(API_ROOT_URL_PROPERTY);
+      adminApiBuilder.setRootUrl(rootUrl);
+    }
+    if (servicePath != null) {
+      logTestPropertyWarning(API_SERVICE_PATH_PROPERTY);
+      adminApiBuilder.setServicePath(servicePath);
+    }
+    return adminApiBuilder.build();
   }
 
-  private static GoogleCredential createCredential() {
-    GoogleCredential credential;
-    try {
-      credential = GoogleCredential.getApplicationDefault();
-    } catch (IOException e) {
-      throw
-          new RuntimeException(
-              "Unable to obtain credentials to communicate with the Cloud SQL API", e);
+  private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+    @Override
+    public Credential create() {
+      GoogleCredential credential;
+      try {
+        credential = GoogleCredential.getApplicationDefault();
+      } catch (IOException e) {
+        throw
+            new RuntimeException(
+                "Unable to obtain credentials to communicate with the Cloud SQL API", e);
+      }
+      if (credential.createScopedRequired()) {
+        credential = credential.createScoped(
+            Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
+      }
+      return credential;
     }
-    if (credential.createScopedRequired()) {
-      credential = credential.createScoped(
-          Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
-    }
-    return credential;
   }
 
   private static KeyPair generateRsaKeyPair() {
