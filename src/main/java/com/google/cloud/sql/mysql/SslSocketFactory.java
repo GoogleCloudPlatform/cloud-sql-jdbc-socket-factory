@@ -30,6 +30,7 @@ import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
 
@@ -90,7 +91,7 @@ class SslSocketFactory {
   private final Clock clock;
   private final KeyPair localKeyPair;
   private final Credential credential;
-  private final Map<String, InstanceSslInfo> cache = new HashMap<>();
+  private final Map<String, InstanceLookupResult> cache = new HashMap<>();
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
   // Protection from attempting to renew ephemeral certificate too often in case of handshake
@@ -202,26 +203,37 @@ class SslSocketFactory {
       String instanceConnectionString, CertificateCaching certificateCaching) {
 
     if (certificateCaching.equals(CertificateCaching.USE_CACHE)) {
-      InstanceSslInfo details = cache.get(instanceConnectionString);
-      // Check if the cached certificate is still valid.
-      if (details != null) {
-        GregorianCalendar calendar = new GregorianCalendar();
-        calendar.setTimeInMillis(clock.now());
-        calendar.add(Calendar.MINUTE, 5);
-        try {
-          details.getEphemeralCertificate().checkValidity(calendar.getTime());
-        } catch (CertificateException e) {
-          logger.info(
-              String.format(
-                  "Ephemeral certificate for Cloud SQL instance [%s] is about to expire, "
-                      + "obtaining new one.",
-                  instanceConnectionString));
-          details = null;
-        }
-      }
+      InstanceLookupResult lookupResult = cache.get(instanceConnectionString);
+      if (lookupResult != null) {
+        if (!lookupResult.isSuccessful()
+            && (clock.now() - lookupResult.getLastFailureMillis()) < 60 * 1000) {
+          logger.warning(
+              "Re-throwing cached exception due to attempt to refresh instance information too "
+                  + "soon after error.");
+          throw lookupResult.getException().get();
+        } else if (lookupResult.isSuccessful()) {
+          InstanceSslInfo details = lookupResult.getInstanceSslInfo().get();
+          // Check if the cached certificate is still valid.
+          if (details != null) {
+            GregorianCalendar calendar = new GregorianCalendar();
+            calendar.setTimeInMillis(clock.now());
+            calendar.add(Calendar.MINUTE, 5);
+            try {
+              details.getEphemeralCertificate().checkValidity(calendar.getTime());
+            } catch (CertificateException e) {
+              logger.info(
+                  String.format(
+                      "Ephemeral certificate for Cloud SQL instance [%s] is about to expire, "
+                          + "obtaining new one.",
+                      instanceConnectionString));
+              details = null;
+            }
+          }
 
-      if (details != null) {
-        return details;
+          if (details != null) {
+            return details;
+          }
+        }
       }
     }
 
@@ -244,6 +256,23 @@ class SslSocketFactory {
     String region = instanceConnectionString.substring(beforeRegionIndex + 1, beforeNameIndex);
     String instanceName = instanceConnectionString.substring(beforeNameIndex + 1);
 
+    InstanceLookupResult instanceLookupResult;
+    InstanceSslInfo details;
+    try {
+      details = fetchInstanceSslInfo(instanceConnectionString, projectId, region, instanceName);
+      instanceLookupResult = new InstanceLookupResult(details);
+      cache.put(instanceConnectionString, instanceLookupResult);
+    } catch (RuntimeException e) {
+      instanceLookupResult = new InstanceLookupResult(e);
+      cache.put(instanceConnectionString, instanceLookupResult);
+      throw e;
+    }
+
+    return details;
+  }
+
+  private InstanceSslInfo fetchInstanceSslInfo(
+      String instanceConnectionString, String projectId, String region, String instanceName) {
     logger.info(
         String.format(
             "Obtaining ephemeral certificate for Cloud SQL instance [%s].",
@@ -288,15 +317,12 @@ class SslSocketFactory {
 
     SSLContext sslContext = createSslContext(ephemeralCertificate, instanceCaCertificate);
 
-    InstanceSslInfo details =
+    return
         new InstanceSslInfo(
             instance.getIpAddresses().get(0).getIpAddress(),
             ephemeralCertificate,
             sslContext.getSocketFactory());
 
-    cache.put(instanceConnectionString, details);
-
-    return details;
   }
 
   private SSLContext createSslContext(
@@ -539,6 +565,40 @@ class SslSocketFactory {
     }
     generator.initialize(RSA_KEY_SIZE);
     return generator.generateKeyPair();
+  }
+
+  private class InstanceLookupResult {
+    private final Optional<RuntimeException> exception;
+    private final long lastFailureMillis;
+    private final Optional<InstanceSslInfo> instanceSslInfo;
+
+    public InstanceLookupResult(RuntimeException exception) {
+      this.exception = Optional.of(exception);
+      this.lastFailureMillis = clock.now();
+      this.instanceSslInfo = Optional.absent();
+    }
+
+    public InstanceLookupResult(InstanceSslInfo instanceSslInfo) {
+      this.instanceSslInfo = Optional.of(instanceSslInfo);
+      this.exception = Optional.absent();
+      this.lastFailureMillis = 0;
+    }
+
+    public boolean isSuccessful() {
+      return !exception.isPresent();
+    }
+
+    public Optional<InstanceSslInfo> getInstanceSslInfo() {
+      return instanceSslInfo;
+    }
+
+    public Optional<RuntimeException> getException() {
+      return exception;
+    }
+
+    public long getLastFailureMillis() {
+      return lastFailureMillis;
+    }
   }
 
   private static class InstanceSslInfo {
