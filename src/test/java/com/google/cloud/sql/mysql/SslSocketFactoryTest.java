@@ -328,6 +328,52 @@ public class SslSocketFactoryTest {
   }
 
   @Test
+  public void create_instanceNotFoundErrorCached() throws IOException {
+    ErrorInfo error = new ErrorInfo();
+    error.setReason(SslSocketFactory.INSTANCE_NOT_AUTHORIZED_REASON);
+    GoogleJsonError details = new GoogleJsonError();
+    details.setErrors(ImmutableList.of(error));
+    when(adminApiInstancesGet.execute())
+        .thenThrow(
+            new GoogleJsonResponseException(
+                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()),
+                details));
+
+    SslSocketFactory sslSocketFactory =
+        new SslSocketFactory(mockClock, clientKeyPair, credential, adminApi, 3307);
+    try {
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      fail();
+    } catch (RuntimeException e) {
+      assertThat(e.getMessage()).contains("not authorized");
+    }
+
+    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+
+    // Exception should be cached.
+    when(mockClock.now()).thenReturn(59 * 1000L);
+    try {
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      fail();
+    } catch (RuntimeException e) {
+      assertThat(e.getMessage()).contains("not authorized");
+    }
+    // Verify no additional interactions with API.
+    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+
+    // Enough time has passed that cached exception should be ignored.
+    when(mockClock.now()).thenReturn(61 * 1000L);
+    try {
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      fail();
+    } catch (RuntimeException e) {
+      assertThat(e.getMessage()).contains("not authorized");
+    }
+    // Verify that the API was called one more time.
+    verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
+  }
+
+  @Test
   public void create_notAuthorizedToCreateEphemeralCertificate() throws IOException {
     ErrorInfo error = new ErrorInfo();
     error.setReason(SslSocketFactory.INSTANCE_NOT_AUTHORIZED_REASON);
