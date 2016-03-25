@@ -355,7 +355,7 @@ class SslSocketFactory {
       String reason = e.getDetails().getErrors().get(0).getReason();
       if (ADMIN_API_NOT_ENABLED_REASON.equals(reason)) {
         String apiLink =
-            "https://console.developers.google.com/apis/api/sqladmin/overview?project=" + projectId;
+            "https://console.cloud.google.com/apis/api/sqladmin/overview?project=" + projectId;
         throw
             new RuntimeException(
                 String.format(
