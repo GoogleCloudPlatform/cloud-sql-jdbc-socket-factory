@@ -45,13 +45,11 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.MockitoAnnotations;
 
 import sun.security.x509.AlgorithmId;
 import sun.security.x509.CertificateAlgorithmId;
@@ -103,8 +101,6 @@ public class SslSocketFactoryTest {
   private static final String REGION = "baz";
   private static final String INSTANCE_CONNECTION_STRING = "foo:baz:bar";
 
-  @Rule public MockitoRule mocks = MockitoJUnit.rule();
-
   @Mock private GoogleCredential credential;
   @Mock private SQLAdmin adminApi;
   @Mock private SQLAdmin.Instances adminApiInstances;
@@ -117,6 +113,8 @@ public class SslSocketFactoryTest {
 
   @Before
   public void setup() throws IOException, GeneralSecurityException {
+    MockitoAnnotations.initMocks(this);
+
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
         new PKCS8EncodedKeySpec(DatatypeConverter.parseBase64Binary(TestKeys.CLIENT_PRIVATE_KEY));
