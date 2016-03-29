@@ -1,4 +1,5 @@
-
+[![Build
+Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-mysql-socket-factory)
 ## Cloud SQL MySQL Socket Factory
 
 The Cloud SQL MySQL Socket Factory is a socket factory for the MySQL JDBC driver 
