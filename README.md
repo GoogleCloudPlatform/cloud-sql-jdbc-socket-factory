@@ -42,3 +42,10 @@ For example, if the instance connection name is `foo:bar:baz`, the JDBC URL
 would be 
 `jdbc:mysql://google/mydb?cloudSqlInstance=foo:bar:baz&socketFactory=com.google.cloud.sql.mysql.SocketFactory`
 
+## Credentials
+
+The library needs to obtain credentials in order to retrieve SSL certificates that are used to connect to the instance.
+[Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials) are used for this purpose:
+On Google Compute Engine and Google App Engine, the VM/application service account is used.
+For local development, application default credentials written by gcloud are used, if present. 
+You must run `gcloud auth application-default login` once for the credentials to become available to the library.
