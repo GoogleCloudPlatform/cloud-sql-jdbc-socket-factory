@@ -29,13 +29,13 @@ import java.util.logging.Logger;
  *
  * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
  */
-public class SocketFactory implements com.mysql.jdbc.SocketFactory {
+public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
   private Socket socket;
 
   @Override
-  public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
+  public Socket connect(String hostname, int portNumber, Properties props, int loginTimeout) throws IOException {
     String instanceName = props.getProperty("cloudSqlInstance");
     checkArgument(
         instanceName != null,
