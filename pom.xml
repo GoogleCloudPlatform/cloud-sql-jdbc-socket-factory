@@ -5,7 +5,7 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.2</version>
 
     <name>Cloud SQL MySQL Socket Factory</name>
     <description>
@@ -38,7 +38,7 @@
         <connection>scm:git:https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git</developerConnection>
         <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git</url>
-        <tag>HEAD</tag>
+        <tag>1.0.2</tag>
     </scm>
 
     <developers>
