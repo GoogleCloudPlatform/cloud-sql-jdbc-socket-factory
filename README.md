@@ -29,6 +29,9 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 compile 'com.google.cloud.sql:mysql-socket-factory:1.0.1'
 ```
 
+*Note*: If you wish to use the 6.x (development) version of the MySQL driver, use the artifact id
+'mysql-socket-factory-connector-j-6'.
+
 ## Using
 
 When specifying the JDBC connection URL, add two additional parameters:
