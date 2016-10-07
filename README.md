@@ -9,7 +9,7 @@ manually.
 
 ## Obtaining
 
-The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.1%7Cjar).
+The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.2%7Cjar).
 
 Add a dependency using your favorite build tool. Maven and Gradle examples are shown below.
 
@@ -19,14 +19,14 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory:1.0.1'
+compile 'com.google.cloud.sql:mysql-socket-factory:1.0.2'
 ```
 
 *Note*: If you wish to use the 6.x (development) version of the MySQL driver, use the artifact id
