@@ -45,6 +45,8 @@ For example, if the instance connection name is `foo:bar:baz`, the JDBC URL
 would be 
 `jdbc:mysql://google/mydb?cloudSqlInstance=foo:bar:baz&socketFactory=com.google.cloud.sql.mysql.SocketFactory`
 
+A tool is available in `examples/getting-started` that can help you generate the right JDBC URL.
+
 ## Credentials
 
 The library needs to obtain credentials in order to retrieve SSL certificates that are used to connect to the instance.
