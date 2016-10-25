@@ -16,11 +16,16 @@ import com.google.common.collect.ImmutableSet;
 import java.io.Console;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GettingStarted {
   private static final ImmutableSet<String> SYSTEM_DATABASES =
@@ -156,63 +161,47 @@ public class GettingStarted {
   }
 
   private Optional<String> askForInstance(List<DatabaseInstance> instances) {
-    Console console = System.console();
-
-    for (int i = 0; i < instances.size(); i++) {
-      DatabaseInstance databaseInstance = instances.get(i);
-      System.out.println(String.format("%d: %s (%s)", i + 1, databaseInstance.getName(),
-          databaseInstance.getConnectionName()));
+    Optional<Integer> instanceChoice =
+        chooseFromList(
+            "Please enter the number of the instance you want to use [1]: ",
+            instances.stream()
+                .map(inst -> String.format("%s (%s)", inst.getName(), inst.getConnectionName()))
+                .collect(Collectors.toList()));
+    if (!instanceChoice.isPresent()) {
+      return Optional.empty();
     }
 
-    String instanceConnectionName = "";
-    while (instanceConnectionName.isEmpty()) {
-      System.out.print("Please enter the number of the instance you want to use [1]: ");
-      String line = console.readLine();
-      if (line == null) {
-        return Optional.empty();
-      }
-
-      if (line.trim().isEmpty()) {
-        instanceConnectionName = instances.get(0).getConnectionName();
-      } else {
-        int choice;
-        try {
-          choice = Integer.parseInt(line);
-        } catch (NumberFormatException e) {
-          System.out.println("Invalid choice.");
-          continue;
-        }
-
-        if (choice < 1 || choice > instances.size()) {
-          System.out.println("Invalid choice.");
-          continue;
-        }
-
-        instanceConnectionName = instances.get(choice - 1).getConnectionName();
-      }
-    }
-    return Optional.of(instanceConnectionName);
+    return Optional.of(instances.get(instanceChoice.get()).getConnectionName());
   }
 
   private Optional<String> askForDatabase(List<String> databases) {
-    Console console = System.console();
-
-    for (int i = 0; i < databases.size(); i++) {
-      System.out.println(String.format("%d: %s", i + 1, databases.get(i)));
+    Optional<Integer> databaseIndex =
+        chooseFromList("Please enter the number of the database you want to use [1]: ", databases);
+    if (!databaseIndex.isPresent()) {
+      return Optional.empty();
     }
 
-    String database = "";
-    while (database.isEmpty()) {
-      System.out.print("Please enter the number of the database you want to use [1]: ");
+    return Optional.of(databases.get(databaseIndex.get()));
+  }
+
+  private Optional<Integer> chooseFromList(String prompt, List<String> options) {
+    Console console = System.console();
+
+    for (int i = 0; i < options.size(); i++) {
+      System.out.println(String.format("%d: %s", i + 1, options.get(i)));
+    }
+
+    int choice;
+    for (;;) {
+      System.out.print(prompt);
       String line = console.readLine();
       if (line == null) {
         return Optional.empty();
       }
 
       if (line.trim().isEmpty()) {
-        database = databases.get(0);
+        return Optional.of(0);
       } else {
-        int choice;
         try {
           choice = Integer.parseInt(line);
         } catch (NumberFormatException e) {
@@ -220,16 +209,14 @@ public class GettingStarted {
           continue;
         }
 
-        if (choice < 1 || choice > databases.size()) {
+        if (choice < 1 || choice > options.size()) {
           System.out.println("Invalid choice.");
           continue;
         }
 
-        database = databases.get(choice - 1);
+        return Optional.of(choice - 1);
       }
     }
-
-    return Optional.of(database);
   }
 
   private Optional<List<DatabaseInstance>> askForProject(SQLAdmin adminApiClient)
