@@ -38,13 +38,15 @@ public class ListTables {
       System.exit(1);
     }
 
+    //[START doc-example]
     String jdbcUrl = String.format(
         "jdbc:mysql://google/%s?cloudSqlInstance=%s&"
             + "socketFactory=com.google.cloud.sql.mysql.SocketFactory",
         databaseName,
         instanceConnectionName);
-
+ 
     Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+   //[END doc-example]
 
     try (Statement statement = connection.createStatement()) {
       ResultSet resultSet = statement.executeQuery("SHOW TABLES");
