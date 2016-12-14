@@ -9,12 +9,14 @@ manually.
 
 ## Obtaining
 
-The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.2%7Cjar).
+The library is available in Maven Central.
+
+| MySQL Connector/J Version | Artifact |
+|---------------------------|----------|
+| MySQL Connector/J 5.x     | [com.google.cloud.sql:mysql-socket-factory](https://mvnrepository.com/artifact/com.google.cloud.sql/mysql-socket-factory/1.0.2) |
+| MySQL Connector/J 6.x (development) | [com.google.cloud.sql:mysql-socket-factory-connector-j-6](https://mvnrepository.com/artifact/com.google.cloud.sql/mysql-socket-factory-connector-j-6/1.0.2) |
 
 Add a dependency using your favorite build tool. Maven and Gradle examples are shown below.
-
-**Note**: If you wish to use MySQL Connector/J 6.x (development) driver, use the artifact id
-`mysql-socket-factory-connector-j-6`.
 
 ### Maven
 
@@ -43,7 +45,7 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 compile 'com.google.cloud.sql:mysql-socket-factory:1.0.2'
 ```
 
-#### With MySQL Connector/J 6.x
+#### With MySQL Connector/J 6.x (development)
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-6:1.0.2'
 ```
