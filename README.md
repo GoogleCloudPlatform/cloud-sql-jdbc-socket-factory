@@ -13,11 +13,12 @@ The library is [available in Maven Central](http://search.maven.org/#artifactdet
 
 Add a dependency using your favorite build tool. Maven and Gradle examples are shown below.
 
-**Note**: If you wish to use the 6.x (development) version of the MySQL driver, use the artifact id
-'mysql-socket-factory-connector-j-6'.
+**Note**: If you wish to use MySQL Connector/J 6.x (development) driver, use the artifact id
+`mysql-socket-factory-connector-j-6`.
 
 ### Maven
 
+#### With MySQL Connector/J 5.x
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
@@ -26,33 +27,49 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 </dependency>
 ```
 
+#### With MySQL Connector/J 6.x (development)
+```maven-pom
+<dependency>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>mysql-socket-factory-connector-j-6</artifactId>
+    <version>1.0.2</version>
+</dependency>
+```
+
 ### Gradle
 
+#### With MySQL Connector/J 5.x
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory:1.0.2'
 ```
 
-## Using
+#### With MySQL Connector/J 6.x
+```gradle
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-6:1.0.2'
+```
+
+## Using the Socket Factory & Configuring JDBC Connection URL
 
 When specifying the JDBC connection URL, add two additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| cloudSqlInstance | The instance connection name (which is found on the instance details page in Google Developers Console)  |
+| cloudSqlInstance | The instance ID (which is found on the instance details page in Google Cloud Console)  |
 | socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
 
-For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
-would be 
-`jdbc:mysql://google/mydb?cloudSqlInstance=foo:bar:baz&socketFactory=com.google.cloud.sql.mysql.SocketFactory`
+For example, if the Cloud SQL instance ID is `foo:bar:baz`, then the JDBC Connection URL is:
+`jdbc:mysql://google/mydb?cloudSqlInstance=foo:bar:baz&socketFactory=com.google.cloud.sql.mysql.SocketFactory`'
 
-A tool is available in `examples/getting-started` that can help you generate the right JDBC URL.
+**Note** The database you wish to use (e.g., `mydb` in the above example) must be created manually. See [Creating a database documentation](https://cloud.google.com/sql/docs/create-manage-mysql-databases#creating_a_database).
+
+A tool is available in `examples/getting-started` that can help you generate the right JDBC Connection URL.
 
 ## Credentials
 
 The library needs to obtain credentials in order to retrieve SSL certificates that are used to connect to the instance.
 [Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials) are used for this purpose.
 
-On Google Compute Engine and Google App Engine, the VM/application service account is used.
+On Google Compute Engine and Google App Engine, the default VM/application service account is used.
 
 For local development, application default credentials written by gcloud are used, if present. 
 You must run `gcloud auth application-default login` once for the credentials to become available to the library.
