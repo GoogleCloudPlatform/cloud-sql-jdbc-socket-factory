@@ -71,7 +71,7 @@ import javax.xml.bind.DatatypeConverter;
  *
  * <p>The implementation is separate from {@link SocketFactory} to make this code easier to test.
  */
-class SslSocketFactory {
+public class SslSocketFactory {
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
@@ -117,7 +117,7 @@ class SslSocketFactory {
     this.serverProxyPort = serverProxyPort;
   }
 
-  static synchronized SslSocketFactory getInstance() {
+  public static synchronized SslSocketFactory getInstance() {
     if (sslSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
@@ -145,7 +145,7 @@ class SslSocketFactory {
   }
 
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  Socket create(String instanceName) throws IOException {
+  public Socket create(String instanceName) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException e) {
