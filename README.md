@@ -1,22 +1,25 @@
 [![Build
 Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-mysql-socket-factory)
-## Cloud SQL MySQL Socket Factory
+## Cloud SQL Socket Factory for JDBC drivers
 
-The Cloud SQL MySQL Socket Factory is a socket factory for the MySQL JDBC driver 
+The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers 
 that allows a user with the appropriate permissions to connect to a Cloud SQL 
 database without having to deal with IP whitelisting or SSL certificates 
 manually. 
 
-## Obtaining
+## Instructions
 
 The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.2%7Cjar).
 
 Add a dependency using your favorite build tool. Maven and Gradle examples are shown below.
 
+
+### MySQL
+
 **Note**: If you wish to use the 6.x (development) version of the MySQL driver, use the artifact id
 'mysql-socket-factory-connector-j-6'.
 
-### Maven
+#### Adding dependency (Maven)
 
 ```maven-pom
 <dependency>
@@ -26,26 +29,57 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 </dependency>
 ```
 
-### Gradle
+#### Adding dependency (Gradle)
 
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory:1.0.2'
 ```
 
-## Using
+#### Using
 
 When specifying the JDBC connection URL, add two additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| cloudSqlInstance | The instance connection name (which is found on the instance details page in Google Developers Console)  |
 | socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
+| cloudSqlInstance | The instance connection name (which is found on the instance details page in Google Developers Console)  |
 
 For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
 would be 
-`jdbc:mysql://google/mydb?cloudSqlInstance=foo:bar:baz&socketFactory=com.google.cloud.sql.mysql.SocketFactory`
+`jdbc:mysql://google/mydb?socketFactory=com.google.cloud.sql.mysql.SocketFactory&cloudSqlInstance=foo:bar:baz`
 
 A tool is available in `examples/getting-started` that can help you generate the right JDBC URL.
+
+### Postgres
+
+#### Adding dependency (Maven)
+
+```maven-pom
+<dependency>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>postgres-socket-factory</artifactId>
+    <version>1.0.3</version>
+</dependency>
+```
+
+#### Adding dependency (Gradle)
+
+```gradle
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.3'
+```
+
+#### Using
+
+When specifying the JDBC connection URL, add two additional parameters:
+
+| Property         | Value         |
+| ---------------- | ------------- |
+| socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
+| socketFactoryArg | The instance connection name (which is found on the instance details page in Google Developers Console)  |
+
+For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
+would be 
+`jdbc:postgresql://google/mydb?socketFactory=com.google.cloud.sql.postgres.SocketFactory&socketFactoryArg=foo:bar:baz`
 
 ## Credentials
 
