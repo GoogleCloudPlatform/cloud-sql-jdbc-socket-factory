@@ -48,7 +48,7 @@ For example, if the instance connection name is `foo:bar:baz`, the JDBC URL
 would be 
 `jdbc:mysql://google/mydb?socketFactory=com.google.cloud.sql.mysql.SocketFactory&cloudSqlInstance=foo:bar:baz`
 
-A tool is available in `examples/getting-started` that can help you generate the right JDBC URL.
+A tool is available in `examples/getting-started` that can help generate the JDBC URL and verify that connectivity can be established.
 
 ### Postgres
 
@@ -80,6 +80,8 @@ When specifying the JDBC connection URL, add two additional parameters:
 For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
 would be 
 `jdbc:postgresql://google/mydb?socketFactory=com.google.cloud.sql.postgres.SocketFactory&socketFactoryArg=foo:bar:baz`
+
+A tool is available in `examples/getting-started` that can help generate the JDBC URL and verify that connectivity can be established.
 
 ## Credentials
 

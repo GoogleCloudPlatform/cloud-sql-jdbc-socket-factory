@@ -12,7 +12,6 @@ import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.InstancesListResponse;
 import com.google.common.collect.ImmutableSet;
-
 import java.io.Console;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -26,10 +25,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.postgresql.util.PSQLException;
 
 public class GettingStarted {
   private static final ImmutableSet<String> SYSTEM_DATABASES =
-      ImmutableSet.of("mysql", "information_schema", "performance_schema");
+      ImmutableSet.of(
+          // MySQL.
+          "mysql", "information_schema", "performance_schema",
+          // Postgres.
+          "cloudsqladmin", "postgres");
 
   @Parameter(names = "-v", description = "Verbose logging.")
   private boolean verbose = false;
@@ -64,23 +68,24 @@ public class GettingStarted {
       return;
     }
 
-    Optional<String> optionalInstanceConnectionName = askForInstance(instances.get());
-    if (!optionalInstanceConnectionName.isPresent()) {
-      return;
-    }
-    String instanceConnectionName = optionalInstanceConnectionName.get();
-    Optional<MysqlCredentials> optionalMysqlCredentials =
-        askForMysqlCredentials(instanceConnectionName);
-    if (!optionalMysqlCredentials.isPresent()) {
+    Optional<DatabaseInstance> optionalInstance = askForInstance(instances.get());
+    if (!optionalInstance.isPresent()) {
       return;
     }
 
-    Connection connection = optionalMysqlCredentials.get().getConnection();
-    List<String> databases = listDatabases(connection);
+    String instanceConnectionName = optionalInstance.get().getConnectionName();
+    Optional<DatabaseCredentials> optionalDatabaseCredentials =
+        askForDatabaseCredentials(optionalInstance.get());
+    if (!optionalDatabaseCredentials.isPresent()) {
+      return;
+    }
+
+    Connection connection = optionalDatabaseCredentials.get().getConnection();
+    List<String> databases = listDatabases(optionalInstance.get(), connection);
     connection.close();
     if (databases.isEmpty()) {
       printConnectionDetails(
-          instanceConnectionName, Optional.empty(), optionalMysqlCredentials.get());
+          optionalInstance.get(), Optional.empty(), optionalDatabaseCredentials.get());
       return;
     }
 
@@ -89,12 +94,26 @@ public class GettingStarted {
       return;
     }
 
-    printConnectionDetails(instanceConnectionName, database, optionalMysqlCredentials.get());
+    printConnectionDetails(optionalInstance.get(), database, optionalDatabaseCredentials.get());
   }
 
-  private List<String> listDatabases(Connection connection) throws SQLException {
+  private List<String> listDatabases(
+      DatabaseInstance databaseInstance, Connection connection) throws SQLException {
+    String listDatabasesQuery;
+    switch (getDatabaseType(databaseInstance)) {
+      case MYSQL:
+        listDatabasesQuery = "SHOW DATABASES";
+        break;
+      case POSTGRES:
+        listDatabasesQuery =
+            "SELECT datname AS database FROM pg_database WHERE datistemplate = false";
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+
     Statement statement = connection.createStatement();
-    ResultSet resultSet = statement.executeQuery("SHOW DATABASES");
+    ResultSet resultSet = statement.executeQuery(listDatabasesQuery);
     List<String> databases = new ArrayList<>();
     while (resultSet.next()) {
       String database = resultSet.getString("database");
@@ -108,14 +127,33 @@ public class GettingStarted {
     return databases;
   }
 
-  private Optional<MysqlCredentials> askForMysqlCredentials(String instanceConnectionName)
+  private Optional<DatabaseCredentials> askForDatabaseCredentials(DatabaseInstance databaseInstance)
       throws SQLException {
+
+    String defaultUser;
+    String displayDatabaseType;
+    String defaultDatabase;
+    switch (getDatabaseType(databaseInstance)) {
+      case MYSQL:
+        defaultUser = "root";
+        displayDatabaseType = "MySQL";
+        defaultDatabase = "mysql";
+        break;
+      case POSTGRES:
+        defaultUser = "postgres";
+        displayDatabaseType = "Postgres";
+        defaultDatabase = "postgres";
+        break;
+      default:
+        return Optional.empty();
+    }
+
     Console console = System.console();
     String user;
-    String lastUser = "root";
+    String lastUser = defaultUser;
     for (; ; ) {
       char[] password;
-      System.out.printf("Please enter MySQL username [%s]: ", lastUser);
+      System.out.printf("Please enter %s username [%s]: ", displayDatabaseType, lastUser);
       user = console.readLine();
       if (user == null) {
         return Optional.empty();
@@ -127,7 +165,7 @@ public class GettingStarted {
         lastUser = user;
       }
 
-      System.out.print("Please enter MySQL password: ");
+      System.out.printf("Please enter %s password: ", displayDatabaseType);
       password = console.readPassword();
       if (password == null) {
         return Optional.empty();
@@ -135,15 +173,21 @@ public class GettingStarted {
 
       try {
         return Optional.of(
-            new MysqlCredentials(
+            new DatabaseCredentials(
                 user,
                 password,
                 DriverManager.getConnection(
-                    constructJdbcUrl(instanceConnectionName, "mysql"),
+                    constructJdbcUrl(databaseInstance, defaultDatabase),
                     user,
                     new String(password))));
       } catch (SQLException e) {
         if (e.getErrorCode() == 1045) {
+          System.out.println("Invalid username/password. Please try again.");
+          continue;
+        }
+        // Too bad Postgres doesn't set the error code...
+        if (e instanceof PSQLException
+            && e.getMessage().contains("password authentication failed")) {
           System.out.println("Invalid username/password. Please try again.");
           continue;
         }
@@ -152,26 +196,43 @@ public class GettingStarted {
     }
   }
 
-  private static String constructJdbcUrl(String instanceConnectionName, String database) {
-    return String.format(
-        "jdbc:mysql://google/%s?cloudSqlInstance=%s&"
-            + "socketFactory=com.google.cloud.sql.mysql.SocketFactory",
-        database,
-        instanceConnectionName);
+  private static String constructJdbcUrl(DatabaseInstance databaseInstance, String database) {
+    switch (getDatabaseType(databaseInstance)) {
+      case MYSQL:
+        return String.format(
+            "jdbc:mysql://google/%s?socketFactory=com.google.cloud.sql.mysql.SocketFactory" +
+                "&cloudSqlInstance=%s",
+            database,
+            databaseInstance.getConnectionName());
+      case POSTGRES:
+        return String.format(
+            "jdbc:postgresql://google/%s?socketFactory=com.google.cloud.sql.postgres.SocketFactory" +
+                "&socketFactoryArg=%s",
+            database,
+            databaseInstance.getConnectionName());
+      default:
+        throw new IllegalStateException();
+    }
   }
 
-  private Optional<String> askForInstance(List<DatabaseInstance> instances) {
+  private Optional<DatabaseInstance> askForInstance(List<DatabaseInstance> instances) {
     Optional<Integer> instanceChoice =
         chooseFromList(
             "Please enter the number of the instance you want to use [1]: ",
             instances.stream()
-                .map(inst -> String.format("%s (%s)", inst.getName(), inst.getConnectionName()))
+                .map(
+                    inst ->
+                        String.format(
+                            "%s [%s] (%s)",
+                            inst.getName(),
+                            inst.getDatabaseVersion(),
+                            inst.getConnectionName()))
                 .collect(Collectors.toList()));
     if (!instanceChoice.isPresent()) {
       return Optional.empty();
     }
 
-    return Optional.of(instances.get(instanceChoice.get()).getConnectionName());
+    return Optional.of(instances.get(instanceChoice.get()));
   }
 
   private Optional<String> askForDatabase(List<String> databases) {
@@ -254,18 +315,20 @@ public class GettingStarted {
   }
 
   private void printConnectionDetails(
-      String instanceConnectionName, Optional<String> database, MysqlCredentials mysqlCredentials) {
+      DatabaseInstance databaseInstance,
+      Optional<String> database,
+      DatabaseCredentials databaseCredentials) {
     String databaseName = database.orElse("<database_name>");
 
     System.out.println("\n\n");
     System.out.printf(
         "Use the following JDBC URL%s:\n\n    %s\n",
         !database.isPresent() ? " after creating a database" : "",
-        constructJdbcUrl(instanceConnectionName, databaseName));
+        constructJdbcUrl(databaseInstance, databaseName));
     System.out.println();
-    System.out.println("    Username: " + mysqlCredentials.getUsername());
+    System.out.println("    Username: " + databaseCredentials.getUsername());
     System.out.println(
-        "    Password: " + (mysqlCredentials.getPassword().length > 0 ? "<yes>" : "<empty>"));
+        "    Password: " + (databaseCredentials.getPassword().length > 0 ? "<yes>" : "<empty>"));
     System.out.println("\n\n");
   }
 
@@ -282,12 +345,12 @@ public class GettingStarted {
         .build();
   }
 
-  private static final class MysqlCredentials {
+  private static final class DatabaseCredentials {
     private final String username;
     private final char[] password;
     private final Connection connection;
 
-    public MysqlCredentials(String username, char[] password, Connection connection) {
+    public DatabaseCredentials(String username, char[] password, Connection connection) {
       this.username = username;
       this.password = password;
       this.connection = connection;
@@ -304,6 +367,23 @@ public class GettingStarted {
     public Connection getConnection() {
       return connection;
     }
+  }
+
+  private static DatabaseType getDatabaseType(DatabaseInstance databaseInstance) {
+    if (databaseInstance.getDatabaseVersion().startsWith("MYSQL_")) {
+      return DatabaseType.MYSQL;
+    } else if (databaseInstance.getDatabaseVersion().startsWith("POSTGRES_")) {
+      return DatabaseType.POSTGRES;
+    } else {
+      System.err.println("Unsupported database type: " + databaseInstance.getDatabaseVersion());
+      System.exit(-1);
+      return null;
+    }
+  }
+
+  private enum DatabaseType {
+    MYSQL,
+    POSTGRES
   }
 
   public static void main(String[] args) throws IOException, SQLException {
