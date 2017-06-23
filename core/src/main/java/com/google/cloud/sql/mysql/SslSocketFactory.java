@@ -69,7 +69,10 @@ import javax.xml.bind.DatatypeConverter;
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
  * secure connecting to a Cloud SQL instance.
  *
- * <p>The implementation is separate from {@link SocketFactory} to make this code easier to test.
+ * <p>This class should not be used directly, but only through the JDBC driver specific
+ * {@code SocketFactory} implementations.
+ *
+ * <p>The API of this class is subject to change without notice.
  */
 public class SslSocketFactory {
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
