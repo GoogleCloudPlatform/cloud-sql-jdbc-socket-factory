@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql.mysql;
+package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -38,7 +38,7 @@ import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
-import com.google.cloud.sql.mysql.SslSocketFactory.Clock;
+import com.google.cloud.sql.core.SslSocketFactory.Clock;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;

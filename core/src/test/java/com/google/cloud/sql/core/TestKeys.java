@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql.mysql;
+package com.google.cloud.sql.core;
 
 class TestKeys {
   static final String SIGNING_CA_PRIVATE_KEY =

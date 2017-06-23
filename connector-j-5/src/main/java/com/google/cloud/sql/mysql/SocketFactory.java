@@ -18,6 +18,7 @@ package com.google.cloud.sql.mysql;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.cloud.sql.core.SslSocketFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Properties;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql.mysql;
+package com.google.cloud.sql.core;
 
 import com.google.api.client.auth.oauth2.Credential;
 
