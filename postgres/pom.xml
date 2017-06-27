@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>com.google.cloud.sql</groupId>
-        <artifactId>mysql-socket-factory-parent</artifactId>
+        <artifactId>jdbc-socket-factory-parent</artifactId>
         <version>1.0.4-SNAPSHOT</version>
     </parent>
     <artifactId>postgres-socket-factory</artifactId>
@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
-            <artifactId>mysql-socket-factory-core</artifactId>
+            <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.4-SNAPSHOT</version>
         </dependency>
     </dependencies>

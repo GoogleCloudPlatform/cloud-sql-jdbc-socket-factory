@@ -3,15 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.google.cloud.sql</groupId>
-    <artifactId>mysql-socket-factory-parent</artifactId>
+    <artifactId>jdbc-socket-factory-parent</artifactId>
     <packaging>pom</packaging>
     <version>1.0.4-SNAPSHOT</version>
 
-    <name>Cloud SQL MySQL Socket Factory</name>
+    <name>Cloud SQL JDBC Socket Factory</name>
     <description>
-        Socket factory for the MySQL JDBC driver that allows a user with the appropriate permissions
-        to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
-        certificates manually
+        Socket factories for MySQL/Postgres JDBC drivers that allows a user with the appropriate
+        permissions to connect to a Cloud SQL database without having to deal with IP whitelisting
+        or SSL certificates manually
     </description>
     <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory</url>
 

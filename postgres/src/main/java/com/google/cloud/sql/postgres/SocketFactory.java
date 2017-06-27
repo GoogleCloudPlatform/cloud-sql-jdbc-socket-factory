@@ -18,7 +18,7 @@ package com.google.cloud.sql.postgres;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.cloud.sql.mysql.SslSocketFactory;
+import com.google.cloud.sql.core.SslSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
