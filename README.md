@@ -1,5 +1,5 @@
 [![Build
-Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-mysql-socket-factory)
+Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
 ## Cloud SQL Socket Factory for JDBC drivers
 
 The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers 
