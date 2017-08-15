@@ -29,6 +29,7 @@ import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
+import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -81,7 +82,6 @@ public class SslSocketFactory {
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
 
   // Test properties, not for end-user use. May be changed or removed without notice.
-  private static final String CREDENTIAL_FACTORY_PROPERTY = "_CLOUD_SQL_API_CREDENTIAL_FACTORY";
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
 
@@ -125,12 +125,11 @@ public class SslSocketFactory {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory;
-      if (System.getProperty(CREDENTIAL_FACTORY_PROPERTY) != null) {
-        logTestPropertyWarning(CREDENTIAL_FACTORY_PROPERTY);
+      if (System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY) != null) {
         try {
           credentialFactory =
               (CredentialFactory)
-                  Class.forName(System.getProperty(CREDENTIAL_FACTORY_PROPERTY))
+                  Class.forName(System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY))
                       .newInstance();
         } catch (Exception e) {
           throw new RuntimeException(e);
