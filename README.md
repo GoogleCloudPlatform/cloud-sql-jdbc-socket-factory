@@ -9,7 +9,7 @@ manually.
 
 ## Instructions
 
-The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.3%7Cjar).
+The library is [available in Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.4%7Cjar).
 
 Add a dependency using your favorite build tool. Maven and Gradle examples are shown below.
 
@@ -25,14 +25,14 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory:1.0.3'
+compile 'com.google.cloud.sql:mysql-socket-factory:1.0.4'
 ```
 
 #### Using
@@ -58,14 +58,14 @@ A tool is available in `examples/getting-started` that can help generate the JDB
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.0.3'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.4'
 ```
 
 #### Using
