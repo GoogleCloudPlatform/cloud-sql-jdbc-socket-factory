@@ -469,7 +469,9 @@ public class SslSocketFactory {
             new RuntimeException(
                 String.format(
                     "Unable to obtain ephemeral certificate for Cloud SQL Instance [%s]. "
-                        + "Make sure %s Editor or Owner role on the project.",
+                        + "Ensure %s the sql.instances.connect permission "
+                        + "(included in Cloud SQL Client role, or primitive Editor or Owner "
+                        + "roles).",
                     instanceConnectionString,
                     who));
       } else {
