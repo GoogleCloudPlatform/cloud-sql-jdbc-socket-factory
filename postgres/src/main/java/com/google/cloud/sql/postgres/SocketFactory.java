@@ -19,10 +19,13 @@ package com.google.cloud.sql.postgres;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.cloud.sql.core.SslSocketFactory;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.logging.Logger;
+import org.newsclub.net.unix.AFUNIXSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 /**
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
@@ -32,6 +35,9 @@ import java.util.logging.Logger;
  */
 public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
+  private static final String GaeRuntime = "GAE_RUNTIME";
+  private static final String CloudSqlPrefix = "/cloudsql/";
+  private static final String PostgreSqlSufix = "/.s.PGSQL.5432";
 
   private final String instanceName;
 
@@ -47,7 +53,15 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
-    return SslSocketFactory.getInstance().create(instanceName);
+    String runtime = System.getenv(GaeRuntime);
+
+    if (runtime == null || runtime.isEmpty()) {  // we aren't on Standard (not set local)
+      return SslSocketFactory.getInstance().create(instanceName);
+    }
+    logger.info("GAE Unix Sockets");
+    AFUNIXSocket socket = AFUNIXSocket.newInstance();
+    socket.connect(new AFUNIXSocketAddress(new File(CloudSqlPrefix + instanceName + PostgreSqlSufix)));
+    return socket;
   }
 
   @Override
