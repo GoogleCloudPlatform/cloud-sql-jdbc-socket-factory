@@ -102,20 +102,15 @@ public class PostgreSqlServlet extends HttpServlet {
 
   @Override
   public void init() throws ServletException {
+    String url = System.getProperty("postgresql");
+    log("connecting to: " + url);
     try {
-      String url = System.getProperty("postgresql");
-      log("connecting to: " + url);
-      try {
-        Class.forName("org.postgresql.Driver");
-        conn = DriverManager.getConnection(url);
-      } catch (ClassNotFoundException e) {
-        throw new ServletException("Error loading JDBC Driver", e);
-      } catch (SQLException e) {
-        throw new ServletException("Unable to connect to PostGre", e);
-      }
-
-    } finally {
-      // Nothing really to do here.
+      Class.forName("org.postgresql.Driver");
+      conn = DriverManager.getConnection(url);
+    } catch (ClassNotFoundException e) {
+      throw new ServletException("Error loading JDBC Driver", e);
+    } catch (SQLException e) {
+      throw new ServletException("Unable to connect to PostGre", e);
     }
   }
 }
