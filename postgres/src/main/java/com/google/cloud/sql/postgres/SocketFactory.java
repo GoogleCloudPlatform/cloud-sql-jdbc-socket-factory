@@ -36,7 +36,6 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
-  private static final String GaeRuntime = "GAE_RUNTIME";
   private static final String CloudSqlPrefix = "/cloudsql/";
   private static final String PostgreSqlSufix = "/.s.PGSQL.5432";
 
@@ -54,15 +53,17 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
-    String runtime = System.getenv(GaeRuntime);
 
-    if (runtime == null || runtime.isEmpty()) {  // we aren't on Standard (not set local)
+    // This env var is used to determine if we are running on GAE standard or not
+    String runtime = System.getenv("GAE_RUNTIME");
+
+    if (runtime == null || runtime.isEmpty()) {  // If not on GAE standard, use standard SSL
       return SslSocketFactory.getInstance().create(instanceName);
     }
     logger.info("GAE Unix Sockets");
-    UnixSocketAddress path = new UnixSocketAddress(
+    UnixSocketAddress socketAddress = new UnixSocketAddress(
         new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
-    UnixSocket socket = UnixSocketChannel.open(path).socket();
+    UnixSocket socket = UnixSocketChannel.open(socketAddress).socket();
     return socket;
   }
 
