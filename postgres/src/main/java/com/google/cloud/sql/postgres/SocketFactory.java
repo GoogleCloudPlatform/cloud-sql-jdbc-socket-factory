@@ -24,8 +24,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.logging.Logger;
-import org.newsclub.net.unix.AFUNIXSocket;
-import org.newsclub.net.unix.AFUNIXSocketAddress;
+import jnr.unixsocket.UnixSocket;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
@@ -59,8 +60,9 @@ public class SocketFactory extends javax.net.SocketFactory {
       return SslSocketFactory.getInstance().create(instanceName);
     }
     logger.info("GAE Unix Sockets");
-    AFUNIXSocket socket = AFUNIXSocket.newInstance();
-    socket.connect(new AFUNIXSocketAddress(new File(CloudSqlPrefix + instanceName + PostgreSqlSufix)));
+    UnixSocketAddress path = new UnixSocketAddress(
+        new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
+    UnixSocket socket = UnixSocketChannel.open(path).socket();
     return socket;
   }
 
