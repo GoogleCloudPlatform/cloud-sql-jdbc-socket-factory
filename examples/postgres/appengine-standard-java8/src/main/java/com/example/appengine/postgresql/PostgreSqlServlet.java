@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Google Inc.
+ * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class PostgreSqlServlet extends HttpServlet {
     PrintWriter out = resp.getWriter();
     resp.setContentType("text/plain");
 
-    // store only the first two octets of a users ip address
+    // store only the first two octets of a user's ip address
     String userIp = req.getRemoteAddr();
     InetAddress address = InetAddress.getByName(userIp);
     if (address instanceof Inet6Address) {

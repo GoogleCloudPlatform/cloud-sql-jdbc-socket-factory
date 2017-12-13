@@ -54,10 +54,10 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket() throws IOException {
     logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
 
-    // This env var is used to determine if we are running on GAE standard or not
+    // This env will be set by GAE OR set manually if using Cloud SQL Proxy
     String runtime = System.getenv("GAE_RUNTIME");
 
-    if (runtime == null || runtime.isEmpty()) {  // If not on GAE standard, use standard SSL
+    if (runtime == null || runtime.isEmpty()) {  // Use standard SSL (direct connection)
       return SslSocketFactory.getInstance().create(instanceName);
     }
     logger.info("GAE Unix Sockets");
