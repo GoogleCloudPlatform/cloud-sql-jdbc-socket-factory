@@ -53,6 +53,7 @@
         <module>connector-j-5</module>
         <module>connector-j-6</module>
         <module>postgres</module>
+        <module>examples/postgres/appengine-standard-java8</module>
     </modules>
 
     <build>
