@@ -20,7 +20,6 @@ import com.google.common.base.Stopwatch;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -50,11 +49,11 @@ public class PostgreSqlServlet extends HttpServlet {
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
       ServletException {
 
-    final String createTableSql = "CREATE TABLE IF NOT EXISTS visits ( visit_id SERIAL NOT NULL, "
-        + "user_ip VARCHAR(46) NOT NULL, ts timestamp NOT NULL, "
+    final String createTableSql = "CREATE TABLE IF NOT EXISTS visits ( "
+        + "visit_id SERIAL NOT NULL, ts timestamp NOT NULL, "
         + "PRIMARY KEY (visit_id) );";
-    final String createVisitSql = "INSERT INTO visits (user_ip, ts) VALUES (?, ?);";
-    final String selectSql = "SELECT user_ip, ts FROM visits ORDER BY ts DESC "
+    final String createVisitSql = "INSERT INTO visits (ts) VALUES (?);";
+    final String selectSql = "SELECT ts FROM visits ORDER BY ts DESC "
         + "LIMIT 10;";
 
     String path = req.getRequestURI();
@@ -65,28 +64,21 @@ public class PostgreSqlServlet extends HttpServlet {
     PrintWriter out = resp.getWriter();
     resp.setContentType("text/plain");
 
-    String userIp = req.getRemoteAddr();
-    byte[] address = InetAddress.getByName(userIp).getAddress();
-    // Only keep the first two octets of the IP
-    String addressFormat = address.length == 4 ? "%s.%s.*.*" : "%s:%s:*:*:*:*:*:*";
-    userIp = String.format(addressFormat, address[0], address[1]);
 
     Stopwatch stopwatch = Stopwatch.createStarted();
     try (PreparedStatement statementCreateVisit = conn.prepareStatement(createVisitSql)) {
       conn.createStatement().executeUpdate(createTableSql);
-      statementCreateVisit.setString(1, userIp);
-      statementCreateVisit.setTimestamp(2, new Timestamp(new Date().getTime()));
+      statementCreateVisit.setTimestamp(1, new Timestamp(new Date().getTime()));
       statementCreateVisit.executeUpdate();
 
       try (ResultSet rs = conn.prepareStatement(selectSql).executeQuery()) {
         stopwatch.stop();
         out.print("Last 10 visits:\n");
         while (rs.next()) {
-          String savedIp = rs.getString("user_ip");
           String timeStamp = rs.getString("ts");
-          out.println("Time: " + timeStamp + " Addr: " + savedIp);
+          out.println("Visited at time: " + timeStamp);
         }
-        out.println("Elapsed: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        out.println("Query time (ms):" + stopwatch.elapsed(TimeUnit.MILLISECONDS));
       }
     } catch (SQLException e) {
       throw new ServletException("SQL error", e);
