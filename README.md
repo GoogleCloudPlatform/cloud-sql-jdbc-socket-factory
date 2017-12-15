@@ -50,7 +50,7 @@ would be
 
 A tool is available in `examples/getting-started` that can help generate the JDBC URL and verify that connectivity can be established.
 
-### Postgres
+### PostgreSQL
 
 #### Adding dependency (Maven)
 

@@ -19,10 +19,14 @@ package com.google.cloud.sql.postgres;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.cloud.sql.core.SslSocketFactory;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.logging.Logger;
+import jnr.unixsocket.UnixSocket;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
@@ -32,6 +36,8 @@ import java.util.logging.Logger;
  */
 public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
+  private static final String CloudSqlPrefix = "/cloudsql/";
+  private static final String PostgreSqlSufix = "/.s.PGSQL.5432";
 
   private final String instanceName;
 
@@ -47,7 +53,18 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
-    return SslSocketFactory.getInstance().create(instanceName);
+
+    // This env will be set by GAE OR set manually if using Cloud SQL Proxy
+    String runtime = System.getenv("GAE_RUNTIME");
+
+    if (runtime == null || runtime.isEmpty()) {  // Use standard SSL (direct connection)
+      return SslSocketFactory.getInstance().create(instanceName);
+    }
+    logger.info("GAE Unix Sockets");
+    UnixSocketAddress socketAddress = new UnixSocketAddress(
+        new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
+    UnixSocket socket = UnixSocketChannel.open(socketAddress).socket();
+    return socket;
   }
 
   @Override

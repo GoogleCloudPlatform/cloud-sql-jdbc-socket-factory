@@ -9,6 +9,7 @@
     </parent>
     <artifactId>postgres-socket-factory</artifactId>
     <packaging>jar</packaging>
+    <version>1.0.5-SNAPSHOT</version>
 
     <name>Cloud SQL Postgres Socket Factory</name>
     <description>
@@ -22,6 +23,11 @@
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.5-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-unixsocket</artifactId>
+            <version>9.4.8.v20171121</version>
         </dependency>
     </dependencies>
 
