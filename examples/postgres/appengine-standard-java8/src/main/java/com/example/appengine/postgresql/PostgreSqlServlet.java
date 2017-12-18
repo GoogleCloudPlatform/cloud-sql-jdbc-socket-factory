@@ -64,7 +64,6 @@ public class PostgreSqlServlet extends HttpServlet {
     PrintWriter out = resp.getWriter();
     resp.setContentType("text/plain");
 
-
     Stopwatch stopwatch = Stopwatch.createStarted();
     try (PreparedStatement statementCreateVisit = conn.prepareStatement(createVisitSql)) {
       conn.createStatement().executeUpdate(createTableSql);
@@ -78,11 +77,11 @@ public class PostgreSqlServlet extends HttpServlet {
           String timeStamp = rs.getString("ts");
           out.println("Visited at time: " + timeStamp);
         }
-        out.println("Query time (ms):" + stopwatch.elapsed(TimeUnit.MILLISECONDS));
       }
     } catch (SQLException e) {
       throw new ServletException("SQL error", e);
     }
+    out.println("Query time (ms):" + stopwatch.elapsed(TimeUnit.MILLISECONDS));
   }
 
   @Override
@@ -90,12 +89,9 @@ public class PostgreSqlServlet extends HttpServlet {
     String url = System.getProperty("postgresql");
     log("connecting to: " + url);
     try {
-      Class.forName("org.postgresql.Driver");
       conn = DriverManager.getConnection(url);
-    } catch (ClassNotFoundException e) {
-      throw new ServletException("Error loading JDBC Driver", e);
     } catch (SQLException e) {
-      throw new ServletException("Unable to connect to PostGre", e);
+      throw new ServletException("Unable to connect to PostgreSQL", e);
     }
   }
 }

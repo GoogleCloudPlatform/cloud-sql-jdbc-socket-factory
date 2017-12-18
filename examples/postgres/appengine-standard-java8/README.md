@@ -38,13 +38,13 @@ before attempting the next section.
 
 ### Connect directly 
 ```bash
-$ mvn clean appengine:run -DINSTANCE_CONNECTION_NAME=<YOUR_INSTANCE_CONNECTION_NAME> -Duser=root -Dpassword=myPassowrd -Ddatabase=myDatabase
+mvn clean appengine:run -DINSTANCE_CONNECTION_NAME=<YOUR_INSTANCE_CONNECTION_NAME> -Duser=root -Dpassword=myPassowrd -Ddatabase=myDatabase
 ```
 
 ## Deploying
 
 ```bash
-$ mvn clean appengine:deploy -DINSTANCE_CONNECTION_NAME=<YOUR_INSTANCE_CONNECTION_NAME> -Duser=root -Dpassword=myPassword -Ddatabase=myDatabase
+mvn clean appengine:deploy -DINSTANCE_CONNECTION_NAME=<YOUR_INSTANCE_CONNECTION_NAME> -Duser=root -Dpassword=myPassword -Ddatabase=myDatabase
 ```
 
 
