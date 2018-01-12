@@ -5,11 +5,13 @@
     <parent>
         <groupId>com.google.cloud.sql</groupId>
         <artifactId>jdbc-socket-factory-parent</artifactId>
-        <version>1.0.5-SNAPSHOT</version>
+        <version>1.0.5</version>
+        <relativePath>..</relativePath>
     </parent>
+
     <artifactId>postgres-socket-factory</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.5</version>
 
     <name>Cloud SQL Postgres Socket Factory</name>
     <description>
@@ -22,7 +24,7 @@
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
-            <version>1.0.5-SNAPSHOT</version>
+            <version>1.0.5</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
