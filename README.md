@@ -2,10 +2,10 @@
 Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
 ## Cloud SQL Socket Factory for JDBC drivers
 
-The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers 
-that allows a user with the appropriate permissions to connect to a Cloud SQL 
-database without having to deal with IP whitelisting or SSL certificates 
-manually. 
+The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers
+that allows a user with the appropriate permissions to connect to a Cloud SQL
+database without having to deal with IP whitelisting or SSL certificates
+manually.
 
 ## Instructions
 
@@ -25,14 +25,14 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory:1.0.4'
+compile 'com.google.cloud.sql:mysql-socket-factory:1.0.5'
 ```
 
 #### Using
@@ -44,8 +44,8 @@ When specifying the JDBC connection URL, add two additional parameters:
 | socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
 | cloudSqlInstance | The instance connection name (which is found on the instance details page in Google Developers Console)  |
 
-For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
-would be 
+For example, if the instance connection name is `foo:bar:baz`, the JDBC URL
+would be
 `jdbc:mysql://google/mydb?socketFactory=com.google.cloud.sql.mysql.SocketFactory&cloudSqlInstance=foo:bar:baz`
 
 A tool is available in `examples/getting-started` that can help generate the JDBC URL and verify that connectivity can be established.
@@ -58,14 +58,14 @@ A tool is available in `examples/getting-started` that can help generate the JDB
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.0.4'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.5'
 ```
 
 #### Using
@@ -77,8 +77,8 @@ When specifying the JDBC connection URL, add two additional parameters:
 | socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
 | socketFactoryArg | The instance connection name (which is found on the instance details page in Google Developers Console)  |
 
-For example, if the instance connection name is `foo:bar:baz`, the JDBC URL 
-would be 
+For example, if the instance connection name is `foo:bar:baz`, the JDBC URL
+would be
 `jdbc:postgresql://google/mydb?socketFactory=com.google.cloud.sql.postgres.SocketFactory&socketFactoryArg=foo:bar:baz`
 
 A tool is available in `examples/getting-started` that can help generate the JDBC URL and verify that connectivity can be established.
@@ -90,5 +90,5 @@ The library needs to obtain credentials in order to retrieve SSL certificates th
 
 On Google Compute Engine and Google App Engine, the VM/application service account is used.
 
-For local development, application default credentials written by gcloud are used, if present. 
+For local development, application default credentials written by gcloud are used, if present.
 You must run `gcloud auth application-default login` once for the credentials to become available to the library.
