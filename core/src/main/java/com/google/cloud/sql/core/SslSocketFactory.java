@@ -85,6 +85,8 @@ public class SslSocketFactory {
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
 
+  /** Name of system property that can specify an alternative proxy port. */
+  String SERVER_PROXY_PORT_PROPERTY = "cloudSql.socketFactory.serverProxyPort";
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
 
@@ -139,9 +141,13 @@ public class SslSocketFactory {
       }
       Credential credential = credentialFactory.create();
       SQLAdmin adminApi = createAdminApiClient(credential);
+      int proxyPort = DEFAULT_SERVER_PROXY_PORT;  
+      if (System.getProperty(SERVER_PROXY_PORT_PROPERTY) != null) {
+          proxyPort = System.getProperty(SERVER_PROXY_PORT_PROPERTY);
+      }
       sslSocketFactory =
           new SslSocketFactory(
-              new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
+              new Clock(), keyPair, credential, adminApi, proxyPort);
     }
     return sslSocketFactory;
   }
