@@ -16,13 +16,16 @@
 
 package com.google.cloud.sql.mysql;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.cloud.sql.core.SslSocketFactory;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Properties;
 import java.util.logging.Logger;
-
-import static com.google.common.base.Preconditions.checkArgument;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
@@ -32,6 +35,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
+  private static final String CloudSqlPrefix = "/cloudsql/";
 
   private Socket socket;
 
@@ -45,7 +49,17 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
     logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
 
-    this.socket = SslSocketFactory.getInstance().create(instanceName);
+    // This env will be set by GAE OR set manually if using Cloud SQL Proxy
+    String runtime = System.getenv("GAE_RUNTIME");
+
+    if (runtime == null || runtime.isEmpty()) {  // Use standard SSL (direct connection)
+      this.socket = SslSocketFactory.getInstance().create(instanceName);
+    } else { // Use Unix Socket
+      logger.info("Using GAE Unix Sockets");
+      UnixSocketAddress socketAddress = new UnixSocketAddress(
+          new File(CloudSqlPrefix + instanceName));
+      this.socket = UnixSocketChannel.open(socketAddress).socket();
+    }
     return this.socket;
   }
 

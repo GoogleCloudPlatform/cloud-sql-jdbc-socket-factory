@@ -21,12 +21,17 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.38</version>
+            <version>5.1.45</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.6-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-unixsocket</artifactId>
+            <version>9.4.8.v20171121</version>
         </dependency>
     </dependencies>
 
