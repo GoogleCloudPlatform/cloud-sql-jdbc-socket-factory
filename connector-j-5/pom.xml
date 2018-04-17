@@ -22,6 +22,7 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.45</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
@@ -29,10 +30,9 @@
             <version>1.0.6-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-unixsocket</artifactId>
-            <version>9.4.8.v20171121</version>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-unixsocket</artifactId>
+            <version>0.18</version>
         </dependency>
     </dependencies>
-
 </project>
