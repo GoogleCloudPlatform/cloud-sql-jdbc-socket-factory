@@ -35,6 +35,14 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
 
+import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -56,15 +64,6 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-
-import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 /**
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
@@ -526,7 +525,7 @@ public class SslSocketFactory {
 
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
-        new Builder(httpTransport, jsonFactory, credential)
+        new Builder(httpTransport, jsonFactory, new UsageMetricsHttpRequestInterceptor(credential))
             .setApplicationName("Cloud SQL Java Socket Factory");
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
