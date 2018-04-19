@@ -27,16 +27,19 @@ public class UsageMetricsHttpRequestInterceptor implements HttpRequestInitialize
 
 	private Credential credential;
 
-	public UsageMetricsHttpRequestInterceptor(Credential credential) {
+	private String userToken;
+
+	public UsageMetricsHttpRequestInterceptor(Credential credential,
+											  String userToken) {
 		this.credential = credential;
+		this.userToken = userToken;
 	}
 
 	@Override
 	public void initialize(HttpRequest request) throws IOException {
 		HttpHeaders headers = request.getHeaders();
 		String userAgent = headers.getUserAgent();
-		String springToken = "spring-cloud-gcp-sql-mysql\\0.0.1.BUILD-SNAPSHOT";
-		userAgent = userAgent != null ? springToken + userAgent : springToken;
+		userAgent = userAgent != null ? userToken + userAgent : userToken;
 		headers.setUserAgent(userAgent);
 		request.setHeaders(headers);
 

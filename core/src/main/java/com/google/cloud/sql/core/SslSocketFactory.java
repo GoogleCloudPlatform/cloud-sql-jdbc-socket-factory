@@ -20,6 +20,7 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -76,6 +77,8 @@ import java.util.logging.Logger;
  */
 public class SslSocketFactory {
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
+
+  public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
@@ -136,8 +139,15 @@ public class SslSocketFactory {
       } else {
         credentialFactory = new ApplicationDefaultCredentialFactory();
       }
+
+      String userToken = System.getProperty(USER_TOKEN_PROPERTY_NAME);
       Credential credential = credentialFactory.create();
-      SQLAdmin adminApi = createAdminApiClient(credential);
+
+      HttpRequestInitializer requestInitializer = userToken == null
+              ? credential
+              : new UsageMetricsHttpRequestInterceptor(credential, userToken);
+
+      SQLAdmin adminApi = createAdminApiClient(requestInitializer);
       sslSocketFactory =
           new SslSocketFactory(
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
@@ -512,7 +522,7 @@ public class SslSocketFactory {
             : null;
   }
 
-  private static SQLAdmin createAdminApiClient(Credential credential) {
+  private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -525,7 +535,7 @@ public class SslSocketFactory {
 
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
-        new Builder(httpTransport, jsonFactory, new UsageMetricsHttpRequestInterceptor(credential))
+        new Builder(httpTransport, jsonFactory, requestInitializer)
             .setApplicationName("Cloud SQL Java Socket Factory");
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
