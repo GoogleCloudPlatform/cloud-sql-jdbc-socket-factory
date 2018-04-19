@@ -25,8 +25,15 @@ import java.io.IOException;
 
 public class UsageMetricsHttpRequestInterceptor implements HttpRequestInitializer {
 
+	/**
+	 * Credentials to authenticate and authorize the call.
+	 */
 	private Credential credential;
 
+	/**
+	 * Token added to the beginning of the User-Agent string. For example,
+	 * {@code spring-cloud-gcp-sql-mysql/1.0.0}.
+	 */
 	private String userToken;
 
 	public UsageMetricsHttpRequestInterceptor(Credential credential,
