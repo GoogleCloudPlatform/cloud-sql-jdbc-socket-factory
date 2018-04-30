@@ -25,14 +25,14 @@ Add a dependency using your favorite build tool. Maven and Gradle examples are s
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory:1.0.5'
+compile 'com.google.cloud.sql:mysql-socket-factory:1.0.7'
 ```
 
 #### Using
@@ -58,14 +58,14 @@ A tool is available in `examples/getting-started` that can help generate the JDB
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
 #### Adding dependency (Gradle)
 
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.0.5'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.7'
 ```
 
 #### Using
