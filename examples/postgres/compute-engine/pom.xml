@@ -4,7 +4,7 @@
 
     <groupId>com.google.cloud.sql.example</groupId>
     <artifactId>postgres-socket-factory-compute-engine</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <build>
         <plugins>
             <plugin>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>postgres-socket-factory</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </dependency>
 
         <dependency>
