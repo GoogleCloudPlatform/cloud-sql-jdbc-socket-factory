@@ -40,8 +40,8 @@ public class ListTables {
 
     //[START doc-example]
     String jdbcUrl = String.format(
-        "jdbc:mysql://google/%s?cloudSqlInstance=%s&"
-            + "socketFactory=com.google.cloud.sql.mysql.SocketFactory",
+        "jdbc:mysql://google/%s?cloudSqlInstance=%s"
+            + "&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false",
         databaseName,
         instanceConnectionName);
  
