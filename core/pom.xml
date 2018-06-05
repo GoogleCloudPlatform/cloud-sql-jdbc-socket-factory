@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-sqladmin</artifactId>
-            <version>v1beta4-rev25-1.22.0</version>
+            <version>v1beta4-rev56-1.23.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
