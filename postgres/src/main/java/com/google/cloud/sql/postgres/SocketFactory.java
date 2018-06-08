@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -41,8 +43,10 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private static final String INSTANCE_PROPERTY_KEY = "cloudSqlInstance";
+  private static final String IP_TYPES_KEY = "cloudsqlIpTypes";
 
   private final String instanceName;
+  private final List<String> ipTypes;
 
 
   public SocketFactory(Properties info) {
@@ -51,11 +55,13 @@ public class SocketFactory extends javax.net.SocketFactory {
         this.instanceName != null,
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or "
             + "the connection Properties with value in form \"project:region:instance\"");
+
+      this.ipTypes = listIpTypes(info.getProperty(IP_TYPES_KEY, "PUBLIC"));
   }
 
   @Deprecated
   public SocketFactory(String instanceName) {
-    // Deprecated constructor for converting 'SocketFactoryArg' to ' 'CloudSqlInstance'
+    // Deprecated constructor for converting 'SocketFactoryArg' to 'CloudSqlInstance'
     this(createDefaultProperties(instanceName));
   }
 
@@ -86,7 +92,20 @@ public class SocketFactory extends javax.net.SocketFactory {
     // Default to SSL Socket
     logger.info(String.format(
         "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
-    return SslSocketFactory.getInstance().create(instanceName);
+    return SslSocketFactory.getInstance().create(instanceName, ipTypes);
+  }
+
+  private List<String> listIpTypes(String cloudSqlIpTypes) {
+    String[] rawTypes = cloudSqlIpTypes.split(",");
+    ArrayList<String> result = new ArrayList<>(rawTypes.length);
+    for (int i = 0; i < rawTypes.length; i++) {
+      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
+        result.add(i, "PRIMARY");
+      } else {
+        result.add(i, rawTypes[i].trim().toUpperCase());
+      }
+    }
+    return result;
   }
 
   @Override
