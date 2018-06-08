@@ -91,6 +91,7 @@ public class SslSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
 
   private static SslSocketFactory sslSocketFactory;
+  private static String applicationName = "Cloud SQL Java Socket Factory";
 
   private final CertificateFactory certificateFactory;
   private final Clock clock;
@@ -141,13 +142,13 @@ public class SslSocketFactory {
       }
 
       String userToken = System.getProperty(USER_TOKEN_PROPERTY_NAME);
+      if (userToken != null) {
+        applicationName = userToken;
+      }
+
       Credential credential = credentialFactory.create();
 
-      HttpRequestInitializer requestInitializer = userToken == null
-              ? credential
-              : new UsageMetricsHttpRequestInterceptor(credential, userToken);
-
-      SQLAdmin adminApi = createAdminApiClient(requestInitializer);
+      SQLAdmin adminApi = createAdminApiClient(credential);
       sslSocketFactory =
           new SslSocketFactory(
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
@@ -536,7 +537,7 @@ public class SslSocketFactory {
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName("Cloud SQL Java Socket Factory");
+            .setApplicationName(applicationName);
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
