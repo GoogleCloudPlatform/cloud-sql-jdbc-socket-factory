@@ -4,7 +4,7 @@
 
     <groupId>com.google.cloud.sql.example</groupId>
     <artifactId>mysql-socket-factory-getting-started</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
     <build>
         <plugins>
             <plugin>
@@ -37,19 +37,19 @@
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-sqladmin</artifactId>
-            <version>v1beta4-rev30-1.22.0</version>
+            <version>v1beta4-rev56-1.23.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>mysql-socket-factory</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.9</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>postgres-socket-factory</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.9</version>
         </dependency>
 
         <dependency>
