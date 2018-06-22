@@ -63,6 +63,9 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     return this.socket;
   }
 
+  // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
+  // to implement these as no-ops.
+
   @Override
   public Socket beforeHandshake() {
     return socket;

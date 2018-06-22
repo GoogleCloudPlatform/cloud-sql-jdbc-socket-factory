@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@ package com.google.cloud.sql.mysql;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.cloud.sql.core.SslSocketFactory;
+import com.mysql.cj.protocol.ServerSession;
+import com.mysql.cj.protocol.SocketConnection;
+
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -33,7 +37,7 @@ import jnr.unixsocket.UnixSocketChannel;
  *
  * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
  */
-public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
+public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
   private static final String CloudSqlPrefix = "/cloudsql/";
 
@@ -67,12 +71,13 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
   // to implement these as no-ops.
 
   @Override
-  public Socket beforeHandshake() {
+  public void beforeHandshake() {}
+
+  @Override
+  public Socket performTlsHandshake(SocketConnection socketConnection, ServerSession serverSession) {
     return socket;
   }
 
   @Override
-  public Socket afterHandshake() {
-    return socket;
-  }
+  public void afterHandshake() {}
 }
