@@ -22,7 +22,6 @@ import com.google.cloud.sql.core.SslSocketFactory;
 import com.mysql.cj.protocol.ServerSession;
 import com.mysql.cj.protocol.SocketConnection;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -51,21 +50,29 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
             "cloudSqlInstance property not set. Please specify this property in the JDBC URL or "
                     + "the connection Properties with value in form \"project:region:instance\"");
 
-    logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
+    // gaeEnv="standard" indicates standard instances
+    // runEnv="Production" indicates production instances
+    String gaeEnv = System.getenv("GAE_ENV");
+    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
+    // Custom env variable for forcing unix socket
+    Boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
-    // This env will be set by GAE OR set manually if using Cloud SQL Proxy
-    String runtime = System.getenv("GAE_RUNTIME");
-
-    if (runtime == null || runtime.isEmpty()) {  // Use standard SSL (direct connection)
-      this.socket = SslSocketFactory.getInstance().create(instanceName);
-    } else { // Use Unix Socket
-      logger.info("Using GAE Unix Sockets");
+    // If running on GAE Standard, connect with unix socket
+    if (forceUnixSocket || "standard".equals(gaeEnv) && "Production".equals(runEnv)) {
+      logger.info(String.format(
+          "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
       UnixSocketAddress socketAddress = new UnixSocketAddress(
           new File(CloudSqlPrefix + instanceName));
       this.socket = UnixSocketChannel.open(socketAddress).socket();
+    } else {
+      // Default to SSL Socket
+      logger.info(String.format(
+          "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
+      this.socket = SslSocketFactory.getInstance().create(instanceName);
     }
     return this.socket;
   }
+
 
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
   // to implement these as no-ops.
