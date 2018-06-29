@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.google.cloud.sql</groupId>
         <artifactId>jdbc-socket-factory-parent</artifactId>
-        <version>1.0.10-SNAPSHOT</version>
+        <version>1.0.10</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -23,7 +23,7 @@
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
-            <version>1.0.10-SNAPSHOT</version>
+            <version>1.0.10</version>
         </dependency>
         <dependency>
             <groupId>com.github.jnr</groupId>
