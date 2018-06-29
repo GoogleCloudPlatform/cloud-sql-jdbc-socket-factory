@@ -52,19 +52,25 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    logger.info(String.format("Connecting to Cloud SQL instance [%s].", instanceName));
+    // gaeEnv="standard" indicates standard instances
+    // runEnv="Production" indicates production instances
+    String gaeEnv = System.getenv("GAE_ENV");
+    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
+    // Custom env variable for forcing unix socket
+    Boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
-    // This env will be set by GAE OR set manually if using Cloud SQL Proxy
-    String runtime = System.getenv("GAE_RUNTIME");
-
-    if (runtime == null || runtime.isEmpty()) {  // Use standard SSL (direct connection)
-      return SslSocketFactory.getInstance().create(instanceName);
+    // If running on GAE Standard, connect with unix socket
+    if (forceUnixSocket || "standard".equals(gaeEnv) && "Production".equals(runEnv)) {
+      logger.info(String.format(
+          "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
+      UnixSocketAddress socketAddress = new UnixSocketAddress(
+          new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
+      return UnixSocketChannel.open(socketAddress).socket();
     }
-    logger.info("GAE Unix Sockets");
-    UnixSocketAddress socketAddress = new UnixSocketAddress(
-        new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
-    UnixSocket socket = UnixSocketChannel.open(socketAddress).socket();
-    return socket;
+    // Default to SSL Socket
+    logger.info(String.format(
+        "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
+    return SslSocketFactory.getInstance().create(instanceName);
   }
 
   @Override
