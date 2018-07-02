@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.google.cloud.sql</groupId>
         <artifactId>jdbc-socket-factory-parent</artifactId>
-        <version>1.0.10</version>
+        <version>1.0.11-SNAPSHOT</version>
     </parent>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
     <packaging>jar</packaging>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
-            <version>1.0.10</version>
+            <version>1.0.11-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
