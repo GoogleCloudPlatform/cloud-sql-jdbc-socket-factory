@@ -112,10 +112,21 @@ The full JDBC url should look like this:
 jdbc:postgresql://google/<DATABASE_NAME>?useSSL=false&socketFactoryArg=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
-## Connecting via Unix Sockets
+## Additional Information
+
+### Connect with IntelliJ
+ 
+In order to [connect IntelliJ](https://jetbrains.com/help/idea/connecting-to-a-database.html#mysql) 
+to your Cloud SQL instance, you will need to add this library as a jar with dependencies in
+"Additional Files" section on the driver settings page. Prebuilt fat jars can be found on the 
+[Releases](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/releases) page for 
+this purpose. 
+ 
+### Connection via Unix Sockets
 
 The library will automatically detect when it is running on GAE Standard, and will connect via the 
  provided unix socket for reduced latency.
 
-To force the library to connect to a unix socket (created by the Cloud SQL proxy) when running 
-outside of GAE-Standard, set the environment variable `CLOUD_SQL_FORCE_UNIX_SOCKET` to any value.
+To force the library to connect to a unix socket (typically created by the Cloud SQL proxy) when 
+running outside of the GAE-Standard environment, set the environment variable 
+`CLOUD_SQL_FORCE_UNIX_SOCKET` to any value.
