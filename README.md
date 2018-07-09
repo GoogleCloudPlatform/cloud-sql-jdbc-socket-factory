@@ -84,7 +84,7 @@ When specifying the JDBC connection URL, add the additional parameters:
 | Property         | Value         |
 | ---------------- | ------------- |
 | socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
-| socketFactoryArg | The instance connection name (found on the instance details) |
+| cloudSqlInstance | The instance connection name (found on the instance details) |
 | useSSL           | False |
 | user             | MySQL username |
 | password         | MySQL user's password |
