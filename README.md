@@ -61,7 +61,7 @@ Include the following in the project's `pom.xml`:
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
-    <artifactId>mysql-socket-factory</artifactId>
+    <artifactId>postgres-socket-factory</artifactId>
     <version>1.0.10</version>
 </dependency>
 ```
@@ -69,7 +69,7 @@ Include the following in the project's `pom.xml`:
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory:1.0.10'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.10'
 ```
 
 
@@ -96,7 +96,7 @@ jdbc:mysql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&
 
 ##### Postgres
 
-Base JDBC url: `jdbc:mysql://google/<DATABASE_NAME>`
+Base JDBC url: `jdbc:postgres://google/<DATABASE_NAME>`
 
 When specifying the JDBC connection URL, add the additional parameters:
 
