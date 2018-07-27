@@ -33,8 +33,8 @@ gcloud auth application-default login
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j8:1.0.10 |
-| mysql-connector-java:6.x   | mysql-socket-factory-connector-j6:1.0.10 |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.10 |
+| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.10 |
 | mysql-connector-java:5.1.x | mysql-socket-factory:1.0.10              |
 
 
@@ -43,7 +43,7 @@ Include the following in the project's `pom.xml`:
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
-    <artifactId>mysql-socket-factory-connector-j8</artifactId>
+    <artifactId>mysql-socket-factory-connector-j-8</artifactId>
     <version>1.0.10</version>
 </dependency>
 ```
@@ -51,7 +51,7 @@ Include the following in the project's `pom.xml`:
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j8:1.0.10'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.10'
 ```
 
 #### PostgreSQL
