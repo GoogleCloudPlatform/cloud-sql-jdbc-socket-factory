@@ -4,7 +4,6 @@ import com.google.cloud.sql.core.BaseGrpcSocketFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Properties;
-import java.util.logging.Logger;
 
 public class GrpcSocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
@@ -15,7 +14,7 @@ public class GrpcSocketFactory implements com.mysql.cj.api.io.SocketFactory {
   @Override
   public Socket connect(String host, int portNumber, Properties props, int loginTimeout)
       throws IOException {
-    return socket = new BaseGrpcSocketFactory().connect(host, portNumber, props);
+    return socket = new BaseGrpcSocketFactory().connect(props);
   }
 
   @Override

@@ -41,7 +41,7 @@ import mygrpc.Mygrpc.ServerMessage;
 public class BaseGrpcSocketFactory {
 
 
-  public Socket connect(String hostname, int port, Properties props)
+  public Socket connect(Properties props)
       throws IOException {
     String instanceName = props.getProperty("cloudSqlInstance");
     checkArgument(
@@ -53,8 +53,8 @@ public class BaseGrpcSocketFactory {
     PrivateKey pk = inst.localKeyPair.getPrivate();
     InstanceSslInfo info = inst.getInstanceSslInfo(instanceName, CertificateCaching.USE_CACHE);
 
-    hostname = info.getInstanceIpAddress();
-    port = 3308;
+    String hostname = info.getInstanceIpAddress();
+    int port = 3308;
 
     X509Certificate cert = info.getEphemeralCertificate();
     SslContextBuilder builder = GrpcSslContexts.forClient()

@@ -16,7 +16,7 @@ public class GrpcSocketFactory implements com.mysql.cj.protocol.SocketFactory {
   @Override
   public Socket connect(String host, int portNumber, Properties props, int loginTimeout)
       throws IOException {
-    return socket = new BaseGrpcSocketFactory().connect(host, portNumber, props);
+    return socket = new BaseGrpcSocketFactory().connect(props);
   }
 
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine

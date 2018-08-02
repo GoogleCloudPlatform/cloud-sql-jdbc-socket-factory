@@ -16,7 +16,7 @@ public class GrpcSocketFactory implements com.mysql.jdbc.SocketFactory {
   @Override
   public Socket connect(String host, int portNumber, Properties props)
       throws IOException {
-    return socket = new BaseGrpcSocketFactory().connect(host, portNumber, props);
+    return socket = new BaseGrpcSocketFactory().connect(props);
   }
 
   @Override
