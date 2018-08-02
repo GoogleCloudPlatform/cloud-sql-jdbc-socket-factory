@@ -1,0 +1,21 @@
+syntax = "proto3";
+package mygrpc;
+
+// The goal of the SQLProxy service is to create an encrypted tunnel
+// for a database and its authenticated client to securely communicate.
+service MyGrpc {
+  // Streams data between a database and its client
+  rpc Connection(stream ClientMessage) returns (stream ServerMessage) {}
+}
+
+// ClientSQLMessage represents a message from a database client to a database
+message ClientMessage {
+  // The binary representation of a message from a client to the database
+  bytes data = 1;
+}
+
+// DatabaseMessage represents a message from the database to a client
+message ServerMessage {
+  // The binary representation of a message from the database to a client
+  bytes data = 1;
+}

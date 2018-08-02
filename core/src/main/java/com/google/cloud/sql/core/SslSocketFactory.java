@@ -76,6 +76,7 @@ import java.util.logging.Logger;
  * <p>The API of this class is subject to change without notice.
  */
 public class SslSocketFactory {
+
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
 
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
@@ -94,7 +95,7 @@ public class SslSocketFactory {
 
   private final CertificateFactory certificateFactory;
   private final Clock clock;
-  private final KeyPair localKeyPair;
+  final KeyPair localKeyPair;
   private final Credential credential;
   private final Map<String, InstanceLookupResult> cache = new HashMap<>();
   private final SQLAdmin adminApi;
@@ -306,8 +307,9 @@ public class SslSocketFactory {
     X509Certificate ephemeralCertificate =
         obtainEphemeralCertificate(adminApi, instanceConnectionString, projectId, instanceName);
 
-    Certificate instanceCaCertificate;
+    // Certificate instanceCaCertificate;
     try {
+
       instanceCaCertificate =
           certificateFactory.generateCertificate(
               new ByteArrayInputStream(
@@ -330,6 +332,7 @@ public class SslSocketFactory {
             sslContext.getSocketFactory());
 
   }
+  Certificate instanceCaCertificate;
 
   private SSLContext createSslContext(
       Certificate ephemeralCertificate, Certificate instanceCaCertificate) {
@@ -361,6 +364,7 @@ public class SslSocketFactory {
       keyManagerFactory.init(authKeyStore, new char[0]);
       TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
       tmf.init(trustKeyStore);
+      trustFactory = tmf;
       sslContext.init(
           keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
       return sslContext;
@@ -368,6 +372,8 @@ public class SslSocketFactory {
       throw new RuntimeException("There was a problem initializing the SSL context", e);
     }
   }
+
+  TrustManagerFactory trustFactory;
 
   private DatabaseInstance obtainInstanceMetadata(
       SQLAdmin adminApi, String instanceConnectionString, String projectId, String instanceName) {
@@ -529,12 +535,13 @@ public class SslSocketFactory {
     String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
     String userToken = System.getProperty(USER_TOKEN_PROPERTY_NAME);
 
+
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
             .setApplicationName(userToken != null
-                    ? userToken
-                    : "Cloud SQL Java Socket Factory");
+                ? userToken
+                : "Cloud SQL Java Socket Factory");
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -547,6 +554,7 @@ public class SslSocketFactory {
   }
 
   private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+
     @Override
     public Credential create() {
       GoogleCredential credential;
@@ -579,6 +587,7 @@ public class SslSocketFactory {
   }
 
   private class InstanceLookupResult {
+
     private final Optional<RuntimeException> exception;
     private final long lastFailureMillis;
     private final Optional<InstanceSslInfo> instanceSslInfo;
@@ -612,7 +621,8 @@ public class SslSocketFactory {
     }
   }
 
-  private static class InstanceSslInfo {
+  static class InstanceSslInfo {
+
     private final String instanceIpAddress;
     private final X509Certificate ephemeralCertificate;
     private final SSLSocketFactory sslSocketFactory;
@@ -646,6 +656,7 @@ public class SslSocketFactory {
   }
 
   static class Clock {
+
     long now() {
       return System.currentTimeMillis();
     }
