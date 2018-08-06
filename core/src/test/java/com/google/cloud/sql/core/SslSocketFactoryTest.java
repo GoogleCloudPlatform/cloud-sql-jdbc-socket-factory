@@ -81,6 +81,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -90,7 +91,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 // TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
@@ -117,11 +117,11 @@ public class SslSocketFactoryTest {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(DatatypeConverter.parseBase64Binary(TestKeys.CLIENT_PRIVATE_KEY));
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
     X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(DatatypeConverter.parseBase64Binary(TestKeys.CLIENT_PUBLIC_KEY));
+        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = new KeyPair(publicKey, privateKey);
@@ -416,7 +416,7 @@ public class SslSocketFactoryTest {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(DatatypeConverter.parseBase64Binary(
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(
             TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
@@ -426,12 +426,16 @@ public class SslSocketFactoryTest {
     StringBuilder sb = new StringBuilder();
     sb.append("-----BEGIN CERTIFICATE-----\n");
     sb.append(
-        DatatypeConverter.printBase64Binary(cert.getEncoded())
+            Base64.getEncoder().encodeToString(cert.getEncoded())
             .replaceAll("(.{64})", "$1\n"));
     sb.append("\n");
     sb.append("-----END CERTIFICATE-----\n");
 
     return sb.toString();
+  }
+
+  private static byte[] decodeBase64StripWhitespace(String b64) {
+    return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
   }
 
   private static class FakeSslServer {
@@ -449,7 +453,7 @@ public class SslSocketFactoryTest {
             authKeyStore.load(null, null);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PKCS8EncodedKeySpec keySpec =
-                new PKCS8EncodedKeySpec(DatatypeConverter.parseBase64Binary(
+                new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(
                     TestKeys.SERVER_CERT_PRIVATE_KEY));
             PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
             PrivateKeyEntry serverCert =

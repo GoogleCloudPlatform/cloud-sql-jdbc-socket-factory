@@ -43,7 +43,6 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -59,6 +58,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
@@ -442,7 +442,7 @@ public class SslSocketFactory {
     StringBuilder publicKeyPemBuilder = new StringBuilder();
     publicKeyPemBuilder.append("-----BEGIN RSA PUBLIC KEY-----\n");
     publicKeyPemBuilder.append(
-        DatatypeConverter.printBase64Binary(localKeyPair.getPublic().getEncoded())
+        Base64.getEncoder().encodeToString(localKeyPair.getPublic().getEncoded())
             .replaceAll("(.{64})", "$1\n"));
     publicKeyPemBuilder.append("\n");
     publicKeyPemBuilder.append("-----END RSA PUBLIC KEY-----\n");
