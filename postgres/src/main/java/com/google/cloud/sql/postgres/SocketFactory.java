@@ -36,7 +36,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
-  
+
   private static final String CLOUD_SQL_PREFIX = "/cloudsql/";
   private static final String POSTGRES_SUFIX = "/.s.PGSQL.5432";
 

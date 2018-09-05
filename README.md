@@ -84,7 +84,7 @@ When specifying the JDBC connection URL, add the additional parameters:
 | Property         | Value         |
 | ---------------- | ------------- |
 | socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
-| cloudSqlInstance | The instance connection name (found on the instance details) |
+| cloudSqlInstance | The instance connection name (found on the instance details page) |
 | useSSL           | False |
 | user             | MySQL username |
 | password         | MySQL user's password |
@@ -103,13 +103,13 @@ When specifying the JDBC connection URL, add the additional parameters:
 | Property         | Value         |
 | ---------------- | ------------- |
 | socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
-| socketFactoryArg | The instance connection name (which is found on the instance details page in Google Developers Console)  |
+| cloudSqlInstance | The instance connection name (found on the instance details page) |
 | user             | Postgres username |
 | password         | Postgres user's password |
 
 The full JDBC url should look like this:
 ```
-jdbc:postgresql://google/<DATABASE_NAME>?useSSL=false&socketFactoryArg=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
 ## Additional Information
