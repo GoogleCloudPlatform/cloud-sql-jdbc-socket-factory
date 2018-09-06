@@ -38,14 +38,14 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
   private static final String CLOUD_SQL_PREFIX = "/cloudsql/";
-  private static final String POSTGRES_SUFIX = "/.s.PGSQL.5432";
+  private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private static final String INSTANCE_PROPERTY_KEY = "cloudSqlInstance";
 
   private final String instanceName;
 
 
-  public SocketFactory(Properties info){
+  public SocketFactory(Properties info) {
     this.instanceName = info.getProperty(INSTANCE_PROPERTY_KEY);
     checkArgument(
         this.instanceName != null,
@@ -60,7 +60,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
 
-  private static Properties createDefaultProperties(String instanceName){
+  private static Properties createDefaultProperties(String instanceName) {
     Properties info = new Properties();
     info.setProperty(INSTANCE_PROPERTY_KEY, instanceName);
     return info;
@@ -80,7 +80,7 @@ public class SocketFactory extends javax.net.SocketFactory {
       logger.info(String.format(
           "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
       UnixSocketAddress socketAddress = new UnixSocketAddress(
-          new File(CLOUD_SQL_PREFIX + instanceName + POSTGRES_SUFIX));
+          new File(CLOUD_SQL_PREFIX + instanceName + POSTGRES_SUFFIX));
       return UnixSocketChannel.open(socketAddress).socket();
     }
     // Default to SSL Socket
