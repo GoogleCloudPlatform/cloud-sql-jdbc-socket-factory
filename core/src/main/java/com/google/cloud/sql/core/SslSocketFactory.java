@@ -192,7 +192,7 @@ public class SslSocketFactory {
       CertificateCaching certificateCaching)
       throws IOException {
     InstanceSslInfo instanceSslInfo = getInstanceSslInfo(instanceName, certificateCaching);
-    String ipAddress = getPreferredIp(ipTypes, instanceSslInfo);
+    String ipAddress = getPreferredIp(instanceName, ipTypes, instanceSslInfo);
 
     logger.info(
         String.format(
@@ -228,7 +228,8 @@ public class SslSocketFactory {
   }
 
   @Nullable
-  private String getPreferredIp(List<String> ipTypes, InstanceSslInfo instanceSslInfo) {
+  private String getPreferredIp(
+      String instanceName, List<String> ipTypes, InstanceSslInfo instanceSslInfo) {
     String ipAddress = null;
     for (String ipType : ipTypes) {
       ipAddress = instanceSslInfo.getInstanceIpAddress(ipType);
@@ -243,7 +244,7 @@ public class SslSocketFactory {
         if (sb.length() > 0) {
           sb.append(", ");
         }
-        sb.append(type.toUpperCase());
+        sb.append(type);
       }
       throw new RuntimeException(
           String.format(
@@ -375,7 +376,7 @@ public class SslSocketFactory {
     InstanceSslInfo info = new InstanceSslInfo(ephemeralCertificate, sslContext.getSocketFactory());
 
     for (IpMapping ip : instance.getIpAddresses()) {
-      info.setInstanceIpAddress(ip.getType(), ip.getIpAddress());
+      info.putInstanceIpAddress(ip.getType(), ip.getIpAddress());
     }
 
     return info;
@@ -674,7 +675,7 @@ public class SslSocketFactory {
       this.sslSocketFactory = sslSocketFactory;
     }
 
-    public void setInstanceIpAddress(String type, String ipAddress) {
+    public void putInstanceIpAddress(String type, String ipAddress) {
       instanceIpAddresses.put(type == null ? "" : type.toUpperCase(), ipAddress);
     }
 

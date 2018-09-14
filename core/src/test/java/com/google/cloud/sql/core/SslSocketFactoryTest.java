@@ -191,6 +191,10 @@ public class SslSocketFactoryTest {
     }
   }
 
+  /**
+   * Start an SSL server on the private IP, and verifies that specifying a preference for private IP
+   * results in a connection to the private IP.
+   */
   @Test
   public void create_successfulPrivateConnection()
       throws IOException, GeneralSecurityException, InterruptedException {
