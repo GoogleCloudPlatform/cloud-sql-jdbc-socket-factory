@@ -65,6 +65,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -81,6 +82,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,6 +102,8 @@ public class SslSocketFactoryTest {
   private static final String INSTANCE_NAME = "bar";
   private static final String REGION = "baz";
   private static final String INSTANCE_CONNECTION_STRING = "foo:baz:bar";
+  private static final String PUBLIC_IP = "127.0.0.1";
+  private static final String PRIVATE_IP = "127.0.1.1";
 
   @Mock private GoogleCredential credential;
   @Mock private SQLAdmin adminApi;
@@ -138,7 +142,10 @@ public class SslSocketFactoryTest {
         .thenReturn(
             new DatabaseInstance()
                 .setBackendType("SECOND_GEN")
-                .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress("127.0.0.1")))
+                .setIpAddresses(
+                    ImmutableList.of(
+                        new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                        new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                 .setRegion(REGION));
     when(adminApiSslCertsCreateEphemeral.execute())
@@ -150,14 +157,14 @@ public class SslSocketFactoryTest {
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create("foo");
+      sslSocketFactory.create("foo", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
     }
 
     try {
-      sslSocketFactory.create("foo:bar");
+      sslSocketFactory.create("foo:bar", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
@@ -170,18 +177,45 @@ public class SslSocketFactoryTest {
         .thenReturn(
             new DatabaseInstance()
                 .setBackendType("SECOND_GEN")
-                .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress("127.0.0.1")))
+                .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP)))
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                 .setRegion("beer"));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create("foo:bar:baz");
+      sslSocketFactory.create("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Incorrect region value");
     }
+  }
+
+  /**
+   * Start an SSL server on the private IP, and verifies that specifying a preference for private IP
+   * results in a connection to the private IP.
+   */
+  @Test
+  public void create_successfulPrivateConnection()
+      throws IOException, GeneralSecurityException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start(PRIVATE_IP);
+
+    SslSocketFactory sslSocketFactory =
+        new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
+    Socket socket =
+        sslSocketFactory.create(
+            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
+
+    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+    verify(adminApiSslCerts)
+        .createEphemeral(
+            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
+
+    BufferedReader bufferedReader =
+        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
+    String line = bufferedReader.readLine();
+    assertThat(line).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
@@ -192,7 +226,9 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+    Socket socket =
+        sslSocketFactory.create(
+            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
@@ -222,7 +258,9 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket = sslSocketFactory.create("foo:baz:bar");
+    Socket socket =
+        sslSocketFactory.create(
+            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -243,14 +281,16 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create("foo:baz:bar");
+    sslSocketFactory.create(
+        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
         .createEphemeral(
             eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
 
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+    sslSocketFactory.create(
+        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verifyNoMoreInteractions(adminApiInstances);
     verifyNoMoreInteractions(adminApiSslCerts);
@@ -268,10 +308,12 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+    sslSocketFactory.create(
+        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     // Second time, we should renew the certificate since it's about to expire.
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+    sslSocketFactory.create(
+        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -294,7 +336,8 @@ public class SslSocketFactoryTest {
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -317,7 +360,8 @@ public class SslSocketFactoryTest {
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -340,7 +384,8 @@ public class SslSocketFactoryTest {
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(mockClock, clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -351,7 +396,8 @@ public class SslSocketFactoryTest {
     // Exception should be cached.
     when(mockClock.now()).thenReturn(59 * 1000L);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -362,7 +408,8 @@ public class SslSocketFactoryTest {
     // Enough time has passed that cached exception should be ignored.
     when(mockClock.now()).thenReturn(61 * 1000L);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -386,7 +433,8 @@ public class SslSocketFactoryTest {
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING);
+      sslSocketFactory.create(
+          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -440,6 +488,10 @@ public class SslSocketFactoryTest {
 
   private static class FakeSslServer {
     int start() throws InterruptedException {
+      return start(PUBLIC_IP);
+    }
+
+    int start(final String ip) throws InterruptedException {
       final CountDownLatch countDownLatch = new CountDownLatch(1);
       final AtomicInteger pickedPort = new AtomicInteger();
 
@@ -459,10 +511,11 @@ public class SslSocketFactoryTest {
             PrivateKeyEntry serverCert =
                 new PrivateKeyEntry(
                     privateKey,
-                    new Certificate[]{
-                        certFactory.generateCertificate(
-                            new ByteArrayInputStream(
-                                TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))});
+                    new Certificate[] {
+                      certFactory.generateCertificate(
+                          new ByteArrayInputStream(
+                              TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))
+                    });
             authKeyStore.setEntry("serverCert", serverCert, new PasswordProtection(new char[0]));
             KeyManagerFactory keyManagerFactory =
                 KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -482,18 +535,17 @@ public class SslSocketFactoryTest {
 
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(
-                keyManagerFactory.getKeyManagers(),
-                tmf.getTrustManagers(),
-                new SecureRandom());
+                keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
             SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-            SSLServerSocket sslServerSocket=
-                (SSLServerSocket) sslServerSocketFactory.createServerSocket(0);
+            SSLServerSocket sslServerSocket =
+                (SSLServerSocket)
+                    sslServerSocketFactory.createServerSocket(0, 5, InetAddress.getByName(ip));
             sslServerSocket.setNeedClientAuth(true);
 
             pickedPort.set(sslServerSocket.getLocalPort());
             countDownLatch.countDown();
 
-            for (;;) {
+            for (; ; ) {
               SSLSocket socket = (SSLSocket) sslServerSocket.accept();
               try {
                 socket.startHandshake();

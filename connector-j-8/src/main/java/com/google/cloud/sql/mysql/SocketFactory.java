@@ -25,6 +25,7 @@ import com.mysql.cj.protocol.SocketConnection;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import jnr.unixsocket.UnixSocketAddress;
@@ -68,7 +69,10 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
       // Default to SSL Socket
       logger.info(String.format(
           "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
-      this.socket = SslSocketFactory.getInstance().create(instanceName);
+      List<String> ipTypes =
+          SslSocketFactory.listIpTypes(
+              props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
+      this.socket = SslSocketFactory.getInstance().create(instanceName, ipTypes);
     }
     return this.socket;
   }
