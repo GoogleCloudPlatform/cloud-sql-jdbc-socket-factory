@@ -239,17 +239,10 @@ public class SslSocketFactory {
     }
 
     if (ipAddress == null) {
-      StringBuilder sb = new StringBuilder();
-      for (String type : ipTypes) {
-        if (sb.length() > 0) {
-          sb.append(", ");
-        }
-        sb.append(type);
-      }
       throw new RuntimeException(
           String.format(
               "Cloud SQL instance [%s] does not have any IP addresses matching preference: [ %s ]",
-              instanceName, sb));
+              instanceName, String.join(", ", ipTypes)));
     }
 
     return ipAddress;

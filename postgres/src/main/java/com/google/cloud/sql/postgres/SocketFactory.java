@@ -42,7 +42,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private static final String INSTANCE_PROPERTY_KEY = "cloudSqlInstance";
-  private static final String IP_TYPES_KEY = "cloudsqlIpTypes";
+  private static final String IP_TYPES_KEY = "ipTypes";
 
   private final String instanceName;
   private final List<String> ipTypes;

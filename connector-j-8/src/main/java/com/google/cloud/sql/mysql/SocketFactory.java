@@ -71,7 +71,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
           "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
       List<String> ipTypes =
           SslSocketFactory.listIpTypes(
-              props.getProperty("cloudsqlIpTypes", SslSocketFactory.DEFAULT_IP_TYPES));
+              props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
       this.socket = SslSocketFactory.getInstance().create(instanceName, ipTypes);
     }
     return this.socket;
