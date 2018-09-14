@@ -41,7 +41,7 @@ public class ListTables {
     //[START doc-example]
     String jdbcUrl = String.format(
         "jdbc:postgresql://google/%s?socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-            + "&socketFactoryArg=%s",
+            + "&cloudSqlInstance=%s",
         databaseName,
         instanceConnectionName);
  

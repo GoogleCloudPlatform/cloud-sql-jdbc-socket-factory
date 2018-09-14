@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Properties;
 import java.util.logging.Logger;
-import jnr.unixsocket.UnixSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
 
@@ -36,18 +36,34 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
-  private static final String CloudSqlPrefix = "/cloudsql/";
-  private static final String PostgreSqlSufix = "/.s.PGSQL.5432";
+
+  private static final String CLOUD_SQL_PREFIX = "/cloudsql/";
+  private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
+
+  private static final String INSTANCE_PROPERTY_KEY = "cloudSqlInstance";
 
   private final String instanceName;
 
-  public SocketFactory(String instanceName) {
+
+  public SocketFactory(Properties info) {
+    this.instanceName = info.getProperty(INSTANCE_PROPERTY_KEY);
     checkArgument(
-        instanceName != null,
-        "socketFactoryArg property not set. Please specify this property in the JDBC "
-            + "URL or the connection Properties with the instance connection name in "
-            + "form \"project:region:instance\"");
-    this.instanceName = instanceName;
+        this.instanceName != null,
+        "cloudSqlInstance property not set. Please specify this property in the JDBC URL or "
+            + "the connection Properties with value in form \"project:region:instance\"");
+  }
+
+  @Deprecated
+  public SocketFactory(String instanceName) {
+    // Deprecated constructor for converting 'SocketFactoryArg' to ' 'CloudSqlInstance'
+    this(createDefaultProperties(instanceName));
+  }
+
+
+  private static Properties createDefaultProperties(String instanceName) {
+    Properties info = new Properties();
+    info.setProperty(INSTANCE_PROPERTY_KEY, instanceName);
+    return info;
   }
 
   @Override
@@ -64,7 +80,7 @@ public class SocketFactory extends javax.net.SocketFactory {
       logger.info(String.format(
           "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
       UnixSocketAddress socketAddress = new UnixSocketAddress(
-          new File(CloudSqlPrefix + instanceName + PostgreSqlSufix));
+          new File(CLOUD_SQL_PREFIX + instanceName + POSTGRES_SUFFIX));
       return UnixSocketChannel.open(socketAddress).socket();
     }
     // Default to SSL Socket
