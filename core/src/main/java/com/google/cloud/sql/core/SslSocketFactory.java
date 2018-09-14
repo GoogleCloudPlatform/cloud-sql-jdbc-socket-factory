@@ -28,6 +28,7 @@ import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
+import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.cloud.sql.CredentialFactory;
@@ -58,11 +59,13 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -78,6 +81,7 @@ import java.util.logging.Logger;
 public class SslSocketFactory {
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
 
+  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
@@ -151,9 +155,9 @@ public class SslSocketFactory {
   }
 
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  public Socket create(String instanceName) throws IOException {
+  public Socket create(String instanceName, List<String> ipTypes) throws IOException {
     try {
-      return createAndConfigureSocket(instanceName, CertificateCaching.USE_CACHE);
+      return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException e) {
       logger.warning(
           String.format(
@@ -170,7 +174,7 @@ public class SslSocketFactory {
                 instanceName));
         forcedRenewRateLimiter.acquire();
       }
-      return createAndConfigureSocket(instanceName, CertificateCaching.BYPASS_CACHE);
+      return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.BYPASS_CACHE);
     }
   }
 
@@ -183,9 +187,13 @@ public class SslSocketFactory {
   }
 
   private SSLSocket createAndConfigureSocket(
-      String instanceName, CertificateCaching certificateCaching) throws IOException {
+      String instanceName,
+      List<String> ipTypes,
+      CertificateCaching certificateCaching)
+      throws IOException {
     InstanceSslInfo instanceSslInfo = getInstanceSslInfo(instanceName, certificateCaching);
-    String ipAddress = instanceSslInfo.getInstanceIpAddress();
+    String ipAddress = getPreferredIp(instanceName, ipTypes, instanceSslInfo);
+
     logger.info(
         String.format(
             "Connecting to Cloud SQL instance [%s] on IP [%s].", instanceName, ipAddress));
@@ -201,6 +209,43 @@ public class SslSocketFactory {
 
     sslSocket.startHandshake();
     return sslSocket;
+  }
+
+  /**
+   * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
+   */
+  public static List<String> listIpTypes(String cloudSqlIpTypes) {
+    String[] rawTypes = cloudSqlIpTypes.split(",");
+    ArrayList<String> result = new ArrayList<>(rawTypes.length);
+    for (int i = 0; i < rawTypes.length; i++) {
+      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
+        result.add(i, "PRIMARY");
+      } else {
+        result.add(i, rawTypes[i].trim().toUpperCase());
+      }
+    }
+    return result;
+  }
+
+  @Nullable
+  private String getPreferredIp(
+      String instanceName, List<String> ipTypes, InstanceSslInfo instanceSslInfo) {
+    String ipAddress = null;
+    for (String ipType : ipTypes) {
+      ipAddress = instanceSslInfo.getInstanceIpAddress(ipType);
+      if (ipAddress != null) {
+        break;
+      }
+    }
+
+    if (ipAddress == null) {
+      throw new RuntimeException(
+          String.format(
+              "Cloud SQL instance [%s] does not have any IP addresses matching preference: [ %s ]",
+              instanceName, String.join(", ", ipTypes)));
+    }
+
+    return ipAddress;
   }
 
   // TODO(berezv): synchronize per instance, instead of globally
@@ -287,11 +332,9 @@ public class SslSocketFactory {
     DatabaseInstance instance =
         obtainInstanceMetadata(adminApi, instanceConnectionString, projectId, instanceName);
     if (instance.getIpAddresses().isEmpty()) {
-      throw
-          new RuntimeException(
-              String.format(
-                  "Cloud SQL instance [%s] does not have any external IP addresses",
-                  instanceConnectionString));
+      throw new RuntimeException(
+          String.format(
+              "Cloud SQL instance [%s] does not have any IP addresses", instanceConnectionString));
     }
     if (!instance.getRegion().equals(region)) {
       throw
@@ -323,12 +366,13 @@ public class SslSocketFactory {
 
     SSLContext sslContext = createSslContext(ephemeralCertificate, instanceCaCertificate);
 
-    return
-        new InstanceSslInfo(
-            instance.getIpAddresses().get(0).getIpAddress(),
-            ephemeralCertificate,
-            sslContext.getSocketFactory());
+    InstanceSslInfo info = new InstanceSslInfo(ephemeralCertificate, sslContext.getSocketFactory());
 
+    for (IpMapping ip : instance.getIpAddresses()) {
+      info.putInstanceIpAddress(ip.getType(), ip.getIpAddress());
+    }
+
+    return info;
   }
 
   private SSLContext createSslContext(
@@ -613,21 +657,23 @@ public class SslSocketFactory {
   }
 
   private static class InstanceSslInfo {
-    private final String instanceIpAddress;
+    private final HashMap<String, String> instanceIpAddresses = new HashMap<>();
     private final X509Certificate ephemeralCertificate;
     private final SSLSocketFactory sslSocketFactory;
 
     InstanceSslInfo(
-        String instanceIpAddress,
         X509Certificate ephemeralCertificate,
         SSLSocketFactory sslSocketFactory) {
-      this.instanceIpAddress = instanceIpAddress;
       this.ephemeralCertificate = ephemeralCertificate;
       this.sslSocketFactory = sslSocketFactory;
     }
 
-    public String getInstanceIpAddress() {
-      return instanceIpAddress;
+    public void putInstanceIpAddress(String type, String ipAddress) {
+      instanceIpAddresses.put(type == null ? "" : type.toUpperCase(), ipAddress);
+    }
+
+    public String getInstanceIpAddress(String type) {
+      return instanceIpAddresses.get(type.toUpperCase());
     }
 
     public X509Certificate getEphemeralCertificate() {
