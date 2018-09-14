@@ -59,6 +59,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
@@ -80,6 +81,7 @@ import java.util.logging.Logger;
 public class SslSocketFactory {
   private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
 
+  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
@@ -153,7 +155,7 @@ public class SslSocketFactory {
   }
 
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-    public Socket create(String instanceName, List<String> ipTypes) throws IOException {
+  public Socket create(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException e) {
@@ -220,6 +222,22 @@ public class SslSocketFactory {
 
     sslSocket.startHandshake();
     return sslSocket;
+  }
+
+  /**
+   * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
+   */
+  public static List<String> listIpTypes(String cloudSqlIpTypes) {
+    String[] rawTypes = cloudSqlIpTypes.split(",");
+    ArrayList<String> result = new ArrayList<>(rawTypes.length);
+    for (int i = 0; i < rawTypes.length; i++) {
+      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
+        result.add(i, "PRIMARY");
+      } else {
+        result.add(i, rawTypes[i].trim().toUpperCase());
+      }
+    }
+    return result;
   }
 
   @Nullable

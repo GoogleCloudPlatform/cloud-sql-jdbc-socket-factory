@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Properties;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import jnr.unixsocket.UnixSocketAddress;
@@ -56,7 +55,9 @@ public class SocketFactory extends javax.net.SocketFactory {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or "
             + "the connection Properties with value in form \"project:region:instance\"");
 
-      this.ipTypes = listIpTypes(info.getProperty(IP_TYPES_KEY, "PUBLIC"));
+    this.ipTypes =
+        SslSocketFactory.listIpTypes(
+            info.getProperty(IP_TYPES_KEY, SslSocketFactory.DEFAULT_IP_TYPES));
   }
 
   @Deprecated
@@ -93,19 +94,6 @@ public class SocketFactory extends javax.net.SocketFactory {
     logger.info(String.format(
         "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
     return SslSocketFactory.getInstance().create(instanceName, ipTypes);
-  }
-
-  private List<String> listIpTypes(String cloudSqlIpTypes) {
-    String[] rawTypes = cloudSqlIpTypes.split(",");
-    ArrayList<String> result = new ArrayList<>(rawTypes.length);
-    for (int i = 0; i < rawTypes.length; i++) {
-      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
-        result.add(i, "PRIMARY");
-      } else {
-        result.add(i, rawTypes[i].trim().toUpperCase());
-      }
-    }
-    return result;
   }
 
   @Override

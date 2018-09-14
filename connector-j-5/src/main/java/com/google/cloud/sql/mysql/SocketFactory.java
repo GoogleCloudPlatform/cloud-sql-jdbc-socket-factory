@@ -22,7 +22,6 @@ import com.google.cloud.sql.core.SslSocketFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -68,23 +67,11 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
       logger.info(String.format(
           "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
       List<String> ipTypes =
-          listIpTypes(props.getProperty("cloudSqlIpTypes", "PUBLIC"));
+          SslSocketFactory.listIpTypes(
+              props.getProperty("cloudsqlIpTypes", SslSocketFactory.DEFAULT_IP_TYPES));
       this.socket = SslSocketFactory.getInstance().create(instanceName, ipTypes);
     }
     return this.socket;
-  }
-
-  private List<String> listIpTypes(String cloudSqlIpTypes) {
-    String[] rawTypes = cloudSqlIpTypes.split(",");
-    ArrayList<String> result = new ArrayList<>(rawTypes.length);
-    for (int i = 0; i < rawTypes.length; i++) {
-      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
-        result.add(i, "PRIMARY");
-      } else {
-        result.add(i, rawTypes[i].trim().toUpperCase());
-      }
-    }
-    return result;
   }
 
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
