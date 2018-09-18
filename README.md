@@ -33,9 +33,9 @@ gcloud auth application-default login
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.10 |
-| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.10 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.10              |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.11 |
+| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.11 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.11              |
 
 
 ##### Maven
@@ -44,14 +44,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
 </dependency>
 ```
 
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.10'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.11'
 ```
 
 #### PostgreSQL
@@ -62,14 +62,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
 </dependency>
 ```
 
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.0.10'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.11'
 ```
 
 
@@ -113,6 +113,13 @@ jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_N
 ```
 
 ## Additional Information
+
+### Specifying IP Type
+ 
+The `ipTypes` argument can be used to specify a comma delimited list of preferred IP types for
+connecting to a Cloud SQL instance. The arguement `ipTypes=PRIVATE` will force the 
+SocketFactory to connect with an instance's associated private IP. Default value is 
+`PUBLIC,PRIVATE`.
 
 ### Connect with IntelliJ
  
