@@ -114,6 +114,13 @@ jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_N
 
 ## Additional Information
 
+### Specifying IP Type
+ 
+The `ipTypes` argument can be used to specify a comma delimited list of preferred IP types for
+connecting to a Cloud SQL instance. The arguement `ipTypes=PRIVATE` will force the 
+SocketFactory to connect with an instance's associated private IP. Default value is 
+`PUBLIC,PRIVATE`.
+
 ### Connect with IntelliJ
  
 In order to [connect IntelliJ](https://jetbrains.com/help/idea/connecting-to-a-database.html#mysql) 
