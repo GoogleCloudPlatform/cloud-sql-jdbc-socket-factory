@@ -123,20 +123,7 @@ SocketFactory to connect with an instance's associated private IP. Default value
 
 ### Firewall configuration
 
-Cloud SQL instance listens on port 3307 for incoming Cloud SQL proxy connections. This may require whitelisting on the side of the connecting application. If the connection is blocked by a firewall, create a rule to allow egress traffic from your application on TCP port 3307.
-
-Typical symptoms of a firewall misconfiguration are as follows:
-
-```
-INFO  [main] c.z.h.HikariDataSource: HikariPool-1 - Starting...
-INFO  [main] c.g.c.s.m.SocketFactory: Connecting to Cloud SQL instance [xxxx.yyyy.zzzz].
-INFO  [main] c.g.c.s.c.SslSocketFactory: First Cloud SQL connection, generating RSA key pair.
-INFO  [main] c.g.c.s.c.SslSocketFactory: Obtaining ephemeral certificate for Cloud SQL instance [xxxx.yyyy.zzzz].
-INFO  [main] c.g.c.s.c.SslSocketFactory: Connecting to Cloud SQL instance [xxxx.yyyy.zzzz] on IP [aaa.bbb.ccc.ddd].
-ERROR [main] c.z.h.p.HikariPool: HikariPool-1 - Exception during pool initialization.
-com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
-The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
-```
+The Cloud SQL proxy establishes connections to Cloud SQL instances using port 3307. Applications that are protected by a firewall may need to be configured to allow outgoing connections on TCP port 3307. A connection blocked by a firewall typically results in an error stating connection failure (e.g. `com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure`).
 
 ### Connect with IntelliJ
  
