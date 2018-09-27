@@ -117,9 +117,13 @@ jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_N
 ### Specifying IP Type
  
 The `ipTypes` argument can be used to specify a comma delimited list of preferred IP types for
-connecting to a Cloud SQL instance. The arguement `ipTypes=PRIVATE` will force the 
+connecting to a Cloud SQL instance. The argument `ipTypes=PRIVATE` will force the 
 SocketFactory to connect with an instance's associated private IP. Default value is 
 `PUBLIC,PRIVATE`.
+
+### Firewall configuration
+
+The Cloud SQL proxy establishes connections to Cloud SQL instances using port 3307. Applications that are protected by a firewall may need to be configured to allow outgoing connections on TCP port 3307. A connection blocked by a firewall typically results in an error stating connection failure (e.g. `com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure`).
 
 ### Connect with IntelliJ
  
