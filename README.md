@@ -29,21 +29,19 @@ gcloud auth application-default login
 
 #### MySQL
 
-**Note**: Use the correct version to match your JDBC driver:
+`mysql-socket-factory` supports `mysql-connector-java` 5.1.x and 8.x. Users of 6.x can try to use
+`mysql-socket-factory-connector-j-6` but it is not supported and it is recommended to migrate to a
+GA version of the connector.
 
-| JDBC Driver Version        | Cloud SQL Socket Factory Version         |
-| -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.11 |
-| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.11 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.11              |
-
+Note: Some users may be using `mysql-socket-factory-connector-j-8` for use with 8.x. This artifact
+is also deprecated and it is recommended to use the vanilla `mysql-socket-factory`.
 
 ##### Maven
 Include the following in the project's `pom.xml`:
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
-    <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+    <artifactId>mysql-socket-factory</artifactId>
     <version>1.0.11</version>
 </dependency>
 ```
@@ -51,7 +49,7 @@ Include the following in the project's `pom.xml`:
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.11'
+compile 'com.google.cloud.sql:mysql-socket-factory:1.0.11'
 ```
 
 #### PostgreSQL
