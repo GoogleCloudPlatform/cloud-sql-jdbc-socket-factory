@@ -19,9 +19,11 @@ package com.google.cloud.sql.mysql;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.cloud.sql.core.SslSocketFactory;
+import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.protocol.ServerSession;
 import com.mysql.cj.protocol.SocketConnection;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -44,7 +46,14 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   private Socket socket;
 
   @Override
-  public Socket connect(String host, int portNumber, Properties props, int loginTimeout) throws IOException {
+  public <T extends Closeable> T connect(String host, int portNumber, PropertySet props, int loginTimeout)
+      throws IOException {
+    return connect(host, portNumber, props.exposeAsProperties(), loginTimeout);
+  }
+
+  // This is the API before mysql-connector-java 8.0.13
+  public <T extends Closeable> T connect(String host, int portNumber, Properties props, int loginTimeout)
+      throws IOException {
     String instanceName = props.getProperty("cloudSqlInstance");
     checkArgument(
             instanceName != null,
@@ -74,7 +83,9 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
               props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
       this.socket = SslSocketFactory.getInstance().create(instanceName, ipTypes);
     }
-    return this.socket;
+    @SuppressWarnings("unchecked")
+    T castSocket = (T) this.socket;
+    return castSocket;
   }
 
 
