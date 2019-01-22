@@ -49,7 +49,7 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
                     + "the connection Properties with value in form \"project:region:instance\"");
 
     // Custom env variable for forcing unix socket
-    Boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
+    boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
     // If running on GAE Standard, connect with unix socket
     if (forceUnixSocket || runningOnGaeStandard()) {
@@ -82,8 +82,8 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
     return socket;
   }
 
-
-  // Returns True if running in a Google App Engine Standard runtime, otherwise False.
+  // TODO(kurtisvg) move this check into a shared class
+  // Returns @{code true} if running in a Google App Engine Standard runtime.
   private boolean runningOnGaeStandard(){
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");

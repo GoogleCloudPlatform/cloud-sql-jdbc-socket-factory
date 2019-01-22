@@ -72,7 +72,6 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
   // to implement these as no-ops.
-
   @Override
   public Socket beforeHandshake() {
     return socket;
@@ -83,7 +82,8 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     return socket;
   }
 
-  // Returns True if running in a Google App Engine Standard runtime, otherwise False.
+  // TODO(kurtisvg) move this check into a shared class
+  // Returns @{code true} if running in a Google App Engine Standard runtime.
   private boolean runningOnGaeStandard(){
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
