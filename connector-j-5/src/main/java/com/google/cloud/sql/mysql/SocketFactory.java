@@ -35,6 +35,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
  */
 public class SocketFactory implements com.mysql.jdbc.SocketFactory {
+
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
   private static final String CloudSqlPrefix = "/cloudsql/";
 
@@ -84,7 +85,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   // TODO(kurtisvg) move this check into a shared class
   // Returns @{code true} if running in a Google App Engine Standard runtime.
-  private boolean runningOnGaeStandard(){
+  private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
     // runEnv="Production" requires to rule out Java 8 emulated environments
@@ -92,6 +93,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     // gaeRuntime="java11" in Java 11 environments (no emulated environments)
     String gaeRuntime = System.getenv("GAE_RUNTIME");
 
-    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
+    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11"
+        .equals(gaeRuntime));
   }
 }

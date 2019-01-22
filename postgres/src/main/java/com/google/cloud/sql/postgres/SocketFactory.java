@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Properties;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Logger;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -36,6 +36,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
  */
 public class SocketFactory extends javax.net.SocketFactory {
+
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
   private static final String CLOUD_SQL_PREFIX = "/cloudsql/";
@@ -46,7 +47,6 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private final String instanceName;
   private final List<String> ipTypes;
-
 
   public SocketFactory(Properties info) {
     this.instanceName = info.getProperty(INSTANCE_PROPERTY_KEY);
@@ -65,7 +65,6 @@ public class SocketFactory extends javax.net.SocketFactory {
     // Deprecated constructor for converting 'SocketFactoryArg' to 'CloudSqlInstance'
     this(createDefaultProperties(instanceName));
   }
-
 
   private static Properties createDefaultProperties(String instanceName) {
     Properties info = new Properties();
@@ -116,7 +115,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   // TODO(kurtisvg) move this check into a shared class
   // Returns @{code true} if running in a Google App Engine Standard runtime.
-  private boolean runningOnGaeStandard(){
+  private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
     // runEnv="Production" requires to rule out Java 8 emulated environments
@@ -124,6 +123,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     // gaeRuntime="java11" in Java 11 environments (no emulated environments)
     String gaeRuntime = System.getenv("GAE_RUNTIME");
 
-    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
+    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11"
+        .equals(gaeRuntime));
   }
 }
