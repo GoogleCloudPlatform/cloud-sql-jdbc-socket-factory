@@ -102,7 +102,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   public void afterHandshake() {
   }
 
-  /** Returns @{code true} if running in a Google App Engine Standard runtime. */
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances

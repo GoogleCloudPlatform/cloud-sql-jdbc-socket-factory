@@ -113,7 +113,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     throw new UnsupportedOperationException();
   }
 
-  /** Returns @{code true} if running in a Google App Engine Standard runtime. */
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
