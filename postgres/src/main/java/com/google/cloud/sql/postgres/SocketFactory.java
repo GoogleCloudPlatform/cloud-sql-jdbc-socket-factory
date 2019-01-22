@@ -79,15 +79,15 @@ public class SocketFactory extends javax.net.SocketFactory {
 
     // If running on GAE Standard, connect with unix socket
     if (forceUnixSocket || runningOnGaeStandard()) {
-      logger.info(String.format(
-          "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
-      UnixSocketAddress socketAddress = new UnixSocketAddress(
-          new File(CLOUD_SQL_PREFIX + instanceName + POSTGRES_SUFFIX));
+      logger.info(
+          String.format("Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
+      UnixSocketAddress socketAddress =
+          new UnixSocketAddress(new File(CLOUD_SQL_PREFIX + instanceName + POSTGRES_SUFFIX));
       return UnixSocketChannel.open(socketAddress).socket();
     }
     // Default to SSL Socket
-    logger.info(String.format(
-        "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
+    logger.info(
+        String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
     return SslSocketFactory.getInstance().create(instanceName, ipTypes);
   }
 
@@ -113,10 +113,8 @@ public class SocketFactory extends javax.net.SocketFactory {
     throw new UnsupportedOperationException();
   }
 
+  /** Returns @{code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
-  /**
-   *   Returns @{code true} if running in a Google App Engine Standard runtime.
-   */
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
@@ -125,7 +123,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     // gaeRuntime="java11" in Java 11 environments (no emulated environments)
     String gaeRuntime = System.getenv("GAE_RUNTIME");
 
-    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11"
-        .equals(gaeRuntime));
+    return "standard".equals(gaeEnv)
+        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 }

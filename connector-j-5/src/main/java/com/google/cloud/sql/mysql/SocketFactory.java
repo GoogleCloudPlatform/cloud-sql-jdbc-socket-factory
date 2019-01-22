@@ -54,15 +54,15 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
     // If running on GAE Standard, connect with unix socket
     if (forceUnixSocket || runningOnGaeStandard()) {
-      logger.info(String.format(
-          "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
-      UnixSocketAddress socketAddress = new UnixSocketAddress(
-          new File(CloudSqlPrefix + instanceName));
+      logger.info(
+          String.format("Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
+      UnixSocketAddress socketAddress =
+          new UnixSocketAddress(new File(CloudSqlPrefix + instanceName));
       this.socket = UnixSocketChannel.open(socketAddress).socket();
     } else {
       // Default to SSL Socket
-      logger.info(String.format(
-          "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
+      logger.info(
+          String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
       List<String> ipTypes =
           SslSocketFactory.listIpTypes(
               props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
@@ -71,7 +71,8 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     return this.socket;
   }
 
-  // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
+  // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready.
+  // It is fine
   // to implement these as no-ops.
   @Override
   public Socket beforeHandshake() {
@@ -83,10 +84,8 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     return socket;
   }
 
+  /** Returns @{code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
-  /**
-   *   Returns @{code true} if running in a Google App Engine Standard runtime.
-   */
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
@@ -95,7 +94,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     // gaeRuntime="java11" in Java 11 environments (no emulated environments)
     String gaeRuntime = System.getenv("GAE_RUNTIME");
 
-    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11"
-        .equals(gaeRuntime));
+    return "standard".equals(gaeEnv)
+        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 }

@@ -102,10 +102,8 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   public void afterHandshake() {
   }
 
+  /** Returns @{code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
-  /**
-   *   Returns @{code true} if running in a Google App Engine Standard runtime.
-   */
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
@@ -114,7 +112,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
     // gaeRuntime="java11" in Java 11 environments (no emulated environments)
     String gaeRuntime = System.getenv("GAE_RUNTIME");
 
-    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11"
-        .equals(gaeRuntime));
+    return "standard".equals(gaeEnv)
+        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 }
