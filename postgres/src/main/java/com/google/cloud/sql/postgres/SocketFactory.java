@@ -75,15 +75,11 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    // gaeEnv="standard" indicates standard instances
-    // runEnv="Production" indicates production instances
-    String gaeEnv = System.getenv("GAE_ENV");
-    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
     // Custom env variable for forcing unix socket
-    Boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
+    boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
     // If running on GAE Standard, connect with unix socket
-    if (forceUnixSocket || "standard".equals(gaeEnv) && "Production".equals(runEnv)) {
+    if (forceUnixSocket || runningOnGaeStandard()) {
       logger.info(String.format(
           "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
       UnixSocketAddress socketAddress = new UnixSocketAddress(
@@ -116,5 +112,17 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort)
       throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  // Returns @{code true} if running in a Google App Engine Standard runtime.
+  private boolean runningOnGaeStandard(){
+    // gaeEnv="standard" indicates standard instances
+    String gaeEnv = System.getenv("GAE_ENV");
+    // runEnv="Production" requires to rule out Java 8 emulated environments
+    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
+    // gaeRuntime="java11" in Java 11 environments (no emulated environments)
+    String gaeRuntime = System.getenv("GAE_RUNTIME");
+
+    return "standard".equals(gaeEnv) && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 }
