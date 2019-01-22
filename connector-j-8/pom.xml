@@ -18,20 +18,17 @@
     </description>
 
     <dependencies>
-
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.13</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.12-SNAPSHOT</version>
         </dependency>
-
     </dependencies>
 
 </project>

@@ -20,13 +20,11 @@
     </description>
 
     <dependencies>
-
         <dependency>
             <groupId>com.google.cloud.sql</groupId>
             <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.12-SNAPSHOT</version>
         </dependency>
-
     </dependencies>
 
 </project>
