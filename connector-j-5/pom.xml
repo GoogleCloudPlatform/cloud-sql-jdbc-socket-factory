@@ -29,10 +29,5 @@
             <artifactId>jdbc-socket-factory-core</artifactId>
             <version>1.0.12-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.jnr</groupId>
-            <artifactId>jnr-unixsocket</artifactId>
-            <version>0.18</version>
-        </dependency>
     </dependencies>
 </project>
