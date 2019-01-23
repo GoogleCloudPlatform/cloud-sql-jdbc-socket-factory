@@ -1,6 +1,6 @@
+## Cloud SQL Socket Factory for JDBC drivers
 [![Build
 Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
-## Cloud SQL Socket Factory for JDBC drivers
 
 The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers that allows a user 
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
@@ -8,10 +8,11 @@ whitelisting or SSL certificates manually.
 
 ## Instructions
 
-This library is available 
+### Examples
 
-[Maven Central](http://search.maven.org/#artifactdetails%7Ccom.google.cloud.sql%7Cmysql-socket-factory%7C1.0.4%7Cjar).
-
+For an examples of a simple application using Cloud SQL Socket Factory, please take a look at the 
+projects found 
+[here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
 
 ### Authentication
 
@@ -29,7 +30,8 @@ gcloud auth application-default login
 
 #### MySQL
 
-**Note**: Use the correct version to match your JDBC driver:
+**Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
+are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
@@ -48,7 +50,7 @@ Include the following in the project's `pom.xml`:
 </dependency>
 ```
 
-#### Gradle
+##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.12'
@@ -114,7 +116,7 @@ jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_N
 
 ## Additional Information
 
-### Specifying IP Type
+### Specifying IP Types
  
 The `ipTypes` argument can be used to specify a comma delimited list of preferred IP types for
 connecting to a Cloud SQL instance. The argument `ipTypes=PRIVATE` will force the 
@@ -123,7 +125,10 @@ SocketFactory to connect with an instance's associated private IP. Default value
 
 ### Firewall configuration
 
-The Cloud SQL proxy establishes connections to Cloud SQL instances using port 3307. Applications that are protected by a firewall may need to be configured to allow outgoing connections on TCP port 3307. A connection blocked by a firewall typically results in an error stating connection failure (e.g. `com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure`).
+The Cloud SQL proxy establishes connections to Cloud SQL instances using port 3307. Applications 
+that are protected by a firewall may need to be configured to allow outgoing connections on TCP port
+3307. A connection blocked by a firewall typically results in an error stating connection failure 
+(e.g. `com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure`).
 
 ### Connect with IntelliJ
  
