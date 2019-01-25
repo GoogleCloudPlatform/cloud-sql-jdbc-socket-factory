@@ -46,16 +46,17 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   private Socket socket;
 
   @Override
-  public <T extends Closeable> T connect(String host, int portNumber, PropertySet props,
-      int loginTimeout)
-      throws IOException {
+  public <T extends Closeable> T connect(
+      String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
     return connect(host, portNumber, props.exposeAsProperties(), loginTimeout);
   }
 
-  // This is the API before mysql-connector-java 8.0.13
-  public <T extends Closeable> T connect(String host, int portNumber, Properties props,
-      int loginTimeout)
-      throws IOException {
+  // TODO(kurtisvg): add more details to this javadoc.
+  /**
+   *  Implements the pre mysql-connector-java 8.0.13 API.
+   */
+  public <T extends Closeable> T connect(
+      String host, int portNumber, Properties props, int loginTimeout) throws IOException {
     String instanceName = props.getProperty("cloudSqlInstance");
     checkArgument(
         instanceName != null,
@@ -67,15 +68,15 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
     // If running on GAE Standard, connect with unix socket
     if (forceUnixSocket || runningOnGaeStandard()) {
-      logger.info(String.format(
-          "Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
-      UnixSocketAddress socketAddress = new UnixSocketAddress(
-          new File(CloudSqlPrefix + instanceName));
+      logger.info(
+          String.format("Connecting to Cloud SQL instance [%s] via unix socket.", instanceName));
+      UnixSocketAddress socketAddress =
+          new UnixSocketAddress(new File(CloudSqlPrefix + instanceName));
       this.socket = UnixSocketChannel.open(socketAddress).socket();
     } else {
       // Default to SSL Socket
-      logger.info(String.format(
-          "Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
+      logger.info(
+          String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
       List<String> ipTypes =
           SslSocketFactory.listIpTypes(
               props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
@@ -86,23 +87,23 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
     return castSocket;
   }
 
-  // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready. It is fine
-  // to implement these as no-ops.
+  // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready.
+  // It is fine to implement these as no-ops.
   @Override
-  public void beforeHandshake() {
-  }
+  public void beforeHandshake() {}
 
   @Override
-  public Socket performTlsHandshake(SocketConnection socketConnection,
-      ServerSession serverSession) {
+  public Socket performTlsHandshake(
+      SocketConnection socketConnection, ServerSession serverSession) {
     return socket;
   }
 
   @Override
-  public void afterHandshake() {
-  }
+  public void afterHandshake() {}
 
-  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
+  /**
+   *  Returns {@code true} if running in a Google App Engine Standard runtime.
+   */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances

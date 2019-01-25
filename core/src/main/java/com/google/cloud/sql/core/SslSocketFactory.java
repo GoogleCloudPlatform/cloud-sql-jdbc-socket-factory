@@ -37,13 +37,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
 
-import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -68,13 +61,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
  * secure connecting to a Cloud SQL instance.
  *
- * <p>This class should not be used directly, but only through the JDBC driver specific
- * {@code SocketFactory} implementations.
+ * <p>This class should not be used directly, but only through the JDBC driver specific {@code
+ * SocketFactory} implementations.
  *
  * <p>The API of this class is subject to change without notice.
  */
@@ -116,8 +116,8 @@ public class SslSocketFactory {
       int serverProxyPort) {
     try {
       this.certificateFactory = CertificateFactory.getInstance("X.509");
-    } catch (CertificateException e) {
-      throw new RuntimeException("X509 implementation not available", e);
+    } catch (CertificateException err) {
+      throw new RuntimeException("X509 implementation not available", err);
     }
     this.clock = clock;
     this.localKeyPair = localKeyPair;
@@ -126,6 +126,11 @@ public class SslSocketFactory {
     this.serverProxyPort = serverProxyPort;
   }
 
+  /**
+   * Returns the SslSocketFactory singleton, which can be used to create SslSockets to Cloud SQL.
+   *
+   * @return the SslSocketFactory singleton.
+   */
   public static synchronized SslSocketFactory getInstance() {
     if (sslSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
@@ -137,8 +142,8 @@ public class SslSocketFactory {
               (CredentialFactory)
                   Class.forName(System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY))
                       .newInstance();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+        } catch (Exception err) {
+          throw new RuntimeException(err);
         }
       } else {
         credentialFactory = new ApplicationDefaultCredentialFactory();
@@ -154,17 +159,23 @@ public class SslSocketFactory {
     return sslSocketFactory;
   }
 
+  /**
+   * Creates a secure socket representing a connection to a Cloud SQL instance.
+   * @param instanceName Name of the Cloud SQL instance.
+   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @return the newly created Socket.
+   * @throws IOException if error occurs during socket creation.
+   */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   public Socket create(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
-    } catch (SSLHandshakeException e) {
+    } catch (SSLHandshakeException err) {
       logger.warning(
           String.format(
               "SSL handshake failed for Cloud SQL instance [%s], "
                   + "retrying with new certificate.\n%s",
-              instanceName,
-              Throwables.getStackTraceAsString(e)));
+              instanceName, Throwables.getStackTraceAsString(err)));
 
       if (!forcedRenewRateLimiter.tryAcquire()) {
         logger.warning(
@@ -187,9 +198,7 @@ public class SslSocketFactory {
   }
 
   private SSLSocket createAndConfigureSocket(
-      String instanceName,
-      List<String> ipTypes,
-      CertificateCaching certificateCaching)
+      String instanceName, List<String> ipTypes, CertificateCaching certificateCaching)
       throws IOException {
     InstanceSslInfo instanceSslInfo = getInstanceSslInfo(instanceName, certificateCaching);
     String ipAddress = getPreferredIp(instanceName, ipTypes, instanceSslInfo);
@@ -198,8 +207,7 @@ public class SslSocketFactory {
         String.format(
             "Connecting to Cloud SQL instance [%s] on IP [%s].", instanceName, ipAddress));
     SSLSocket sslSocket =
-        (SSLSocket)
-            instanceSslInfo.getSslSocketFactory().createSocket(ipAddress, serverProxyPort);
+        (SSLSocket) instanceSslInfo.getSslSocketFactory().createSocket(ipAddress, serverProxyPort);
 
     // TODO(berezv): Support all socket related options listed here:
     // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
@@ -271,7 +279,7 @@ public class SslSocketFactory {
             calendar.add(Calendar.MINUTE, 5);
             try {
               details.getEphemeralCertificate().checkValidity(calendar.getTime());
-            } catch (CertificateException e) {
+            } catch (CertificateException err) {
               logger.info(
                   String.format(
                       "Ephemeral certificate for Cloud SQL instance [%s] is about to expire, "
@@ -313,10 +321,10 @@ public class SslSocketFactory {
       details = fetchInstanceSslInfo(instanceConnectionString, projectId, region, instanceName);
       instanceLookupResult = new InstanceLookupResult(details);
       cache.put(instanceConnectionString, instanceLookupResult);
-    } catch (RuntimeException e) {
-      instanceLookupResult = new InstanceLookupResult(e);
+    } catch (RuntimeException err) {
+      instanceLookupResult = new InstanceLookupResult(err);
       cache.put(instanceConnectionString, instanceLookupResult);
-      throw e;
+      throw err;
     }
 
     return details;
@@ -337,13 +345,10 @@ public class SslSocketFactory {
               "Cloud SQL instance [%s] does not have any IP addresses", instanceConnectionString));
     }
     if (!instance.getRegion().equals(region)) {
-      throw
-          new IllegalArgumentException(
-              String.format(
-                  "Incorrect region value [%s] for Cloud SQL instance [%s], should be [%s]",
-                  region,
-                  instanceConnectionString,
-                  instance.getRegion()));
+      throw new IllegalArgumentException(
+          String.format(
+              "Incorrect region value [%s] for Cloud SQL instance [%s], should be [%s]",
+              region, instanceConnectionString, instance.getRegion()));
     }
 
     X509Certificate ephemeralCertificate =
@@ -355,13 +360,11 @@ public class SslSocketFactory {
           certificateFactory.generateCertificate(
               new ByteArrayInputStream(
                   instance.getServerCaCert().getCert().getBytes(StandardCharsets.UTF_8)));
-    } catch (CertificateException e) {
-      throw
-          new RuntimeException(
-              String.format(
-                  "Unable to parse certificate for Cloud SQL instance [%s]",
-                  instanceConnectionString),
-              e);
+    } catch (CertificateException err) {
+      throw new RuntimeException(
+          String.format(
+              "Unable to parse certificate for Cloud SQL instance [%s]", instanceConnectionString),
+          err);
     }
 
     SSLContext sslContext = createSslContext(ephemeralCertificate, instanceCaCertificate);
@@ -383,10 +386,10 @@ public class SslSocketFactory {
       authKeyStore.load(null, null);
       KeyStore.PrivateKeyEntry pk =
           new KeyStore.PrivateKeyEntry(
-              localKeyPair.getPrivate(), new Certificate[]{ephemeralCertificate});
+              localKeyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
       authKeyStore.setEntry("ephemeral", pk, new PasswordProtection(new char[0]));
-    } catch (GeneralSecurityException | IOException e) {
-      throw new RuntimeException("There was a problem initializing the auth key store", e);
+    } catch (GeneralSecurityException | IOException err) {
+      throw new RuntimeException("There was a problem initializing the auth key store", err);
     }
 
     KeyStore trustKeyStore;
@@ -394,8 +397,8 @@ public class SslSocketFactory {
       trustKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustKeyStore.load(null, null);
       trustKeyStore.setCertificateEntry("instance", instanceCaCertificate);
-    } catch (GeneralSecurityException | IOException e) {
-      throw new RuntimeException("There was a problem initializing the trust key store", e);
+    } catch (GeneralSecurityException | IOException err) {
+      throw new RuntimeException("There was a problem initializing the trust key store", err);
     }
 
     try {
@@ -408,8 +411,8 @@ public class SslSocketFactory {
       sslContext.init(
           keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
       return sslContext;
-    } catch (GeneralSecurityException e) {
-      throw new RuntimeException("There was a problem initializing the SSL context", e);
+    } catch (GeneralSecurityException err) {
+      throw new RuntimeException("There was a problem initializing the SSL context", err);
     }
   }
 
@@ -418,63 +421,54 @@ public class SslSocketFactory {
     DatabaseInstance instance;
     try {
       instance = adminApi.instances().get(projectId, instanceName).execute();
-    } catch (GoogleJsonResponseException e) {
-      if (e.getDetails() == null || e.getDetails().getErrors().isEmpty()) {
-        throw
-            new RuntimeException(
-                String.format(
-                    "Unable to retrieve information about Cloud SQL instance [%s]",
-                    instanceConnectionString),
-                e);
+    } catch (GoogleJsonResponseException err) {
+      if (err.getDetails() == null || err.getDetails().getErrors().isEmpty()) {
+        throw new RuntimeException(
+            String.format(
+                "Unable to retrieve information about Cloud SQL instance [%s]",
+                instanceConnectionString),
+            err);
       }
 
-      String reason = e.getDetails().getErrors().get(0).getReason();
+      String reason = err.getDetails().getErrors().get(0).getReason();
       if (ADMIN_API_NOT_ENABLED_REASON.equals(reason)) {
         String apiLink =
             "https://console.cloud.google.com/apis/api/sqladmin/overview?project=" + projectId;
-        throw
-            new RuntimeException(
-                String.format(
-                    "The Google Cloud SQL API is not enabled for project [%s]. Please "
-                        + "use the Google Developers Console to enable it: %s",
-                    projectId,
-                    apiLink));
+        throw new RuntimeException(
+            String.format(
+                "The Google Cloud SQL API is not enabled for project [%s]. Please "
+                    + "use the Google Developers Console to enable it: %s",
+                projectId, apiLink));
       } else if (INSTANCE_NOT_AUTHORIZED_REASON.equals(reason)) {
         // TODO(berezv): check if this works on Compute Engine / App Engine
         String who = "you are";
         if (getCredentialServiceAccount(credential) != null) {
           who = "[" + getCredentialServiceAccount(credential) + "] is";
         }
-        throw
-            new RuntimeException(
-                String.format(
-                    "Cloud SQL Instance [%s] does not exist or %s not authorized to "
-                        + "access it. Please check the instance and project names to make "
-                        + "sure they are correct.",
-                    instanceConnectionString,
-                    who));
+        throw new RuntimeException(
+            String.format(
+                "Cloud SQL Instance [%s] does not exist or %s not authorized to "
+                    + "access it. Please check the instance and project names to make "
+                    + "sure they are correct.",
+                instanceConnectionString, who));
       } else {
-        throw
-            new RuntimeException(
-                String.format(
-                    "Unable to retrieve information about Cloud SQL instance [%s]",
-                    instanceConnectionString),
-                e);
+        throw new RuntimeException(
+            String.format(
+                "Unable to retrieve information about Cloud SQL instance [%s]",
+                instanceConnectionString),
+            err);
       }
-    } catch (IOException e) {
-      throw
-          new RuntimeException(
-              String.format(
-                  "Unable to retrieve information about Cloud SQL instance [%s]",
-                  instanceConnectionString),
-              e);
+    } catch (IOException err) {
+      throw new RuntimeException(
+          String.format(
+              "Unable to retrieve information about Cloud SQL instance [%s]",
+              instanceConnectionString),
+          err);
     }
 
     if (!instance.getBackendType().equals("SECOND_GEN")) {
-      throw
-          new IllegalArgumentException(
-              "This client only supports connections to Second Generation Cloud SQL "
-                  + "instances");
+      throw new IllegalArgumentException(
+          "This client only supports connections to Second Generation Cloud SQL " + "instances");
     }
 
     return instance;
@@ -486,7 +480,8 @@ public class SslSocketFactory {
     StringBuilder publicKeyPemBuilder = new StringBuilder();
     publicKeyPemBuilder.append("-----BEGIN RSA PUBLIC KEY-----\n");
     publicKeyPemBuilder.append(
-        Base64.getEncoder().encodeToString(localKeyPair.getPublic().getEncoded())
+        Base64.getEncoder()
+            .encodeToString(localKeyPair.getPublic().getEncoded())
             .replaceAll("(.{64})", "$1\n"));
     publicKeyPemBuilder.append("\n");
     publicKeyPemBuilder.append("-----END RSA PUBLIC KEY-----\n");
@@ -497,76 +492,69 @@ public class SslSocketFactory {
     SslCert response;
     try {
       response = adminApi.sslCerts().createEphemeral(projectId, instanceName, req).execute();
-    } catch (GoogleJsonResponseException e) {
-      if (e.getDetails() == null || e.getDetails().getErrors().isEmpty()) {
-        throw
-            new RuntimeException(
-                String.format(
-                    "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
-                    instanceConnectionString),
-                e);
+    } catch (GoogleJsonResponseException err) {
+      if (err.getDetails() == null || err.getDetails().getErrors().isEmpty()) {
+        throw new RuntimeException(
+            String.format(
+                "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
+                instanceConnectionString),
+            err);
       }
 
-      String reason = e.getDetails().getErrors().get(0).getReason();
+      String reason = err.getDetails().getErrors().get(0).getReason();
       if (INSTANCE_NOT_AUTHORIZED_REASON.equals(reason)) {
         String who = "you have";
         if (getCredentialServiceAccount(credential) != null) {
           who = "[" + getCredentialServiceAccount(credential) + "] has";
         }
-        throw
-            new RuntimeException(
-                String.format(
-                    "Unable to obtain ephemeral certificate for Cloud SQL Instance [%s]. "
-                        + "Ensure %s the sql.instances.connect permission "
-                        + "(included in Cloud SQL Client role, or primitive Editor or Owner "
-                        + "roles).",
-                    instanceConnectionString,
-                    who));
+        throw new RuntimeException(
+            String.format(
+                "Unable to obtain ephemeral certificate for Cloud SQL Instance [%s]. "
+                    + "Ensure %s the sql.instances.connect permission "
+                    + "(included in Cloud SQL Client role, or primitive Editor or Owner "
+                    + "roles).",
+                instanceConnectionString, who));
       } else {
-        throw
-            new RuntimeException(
-                String.format(
-                    "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
-                    instanceConnectionString),
-                e);
+        throw new RuntimeException(
+            String.format(
+                "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
+                instanceConnectionString),
+            err);
       }
-    } catch (IOException e) {
-      throw
-          new RuntimeException(
-              String.format(
-                  "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
-                  instanceConnectionString),
-              e);
+    } catch (IOException err) {
+      throw new RuntimeException(
+          String.format(
+              "Unable to obtain ephemeral certificate for Cloud SQL instance [%s]",
+              instanceConnectionString),
+          err);
     }
 
     try {
-      return
-          (X509Certificate) certificateFactory.generateCertificate(
+      return (X509Certificate)
+          certificateFactory.generateCertificate(
               new ByteArrayInputStream(response.getCert().getBytes(StandardCharsets.UTF_8)));
-    } catch (CertificateException e) {
-      throw
-          new RuntimeException(
-              String.format(
-                  "Unable to parse ephemeral certificate for Cloud SQL instance [%s]",
-                  instanceConnectionString),
-              e);
+    } catch (CertificateException err) {
+      throw new RuntimeException(
+          String.format(
+              "Unable to parse ephemeral certificate for Cloud SQL instance [%s]",
+              instanceConnectionString),
+          err);
     }
   }
 
   @Nullable
   private String getCredentialServiceAccount(Credential credential) {
-    return
-        credential instanceof GoogleCredential
-            ? ((GoogleCredential) credential).getServiceAccountId()
-            : null;
+    return credential instanceof GoogleCredential
+        ? ((GoogleCredential) credential).getServiceAccountId()
+        : null;
   }
 
   private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-    } catch (GeneralSecurityException | IOException e) {
-      throw new RuntimeException("Unable to initialize HTTP transport", e);
+    } catch (GeneralSecurityException | IOException err) {
+      throw new RuntimeException("Unable to initialize HTTP transport", err);
     }
 
     String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
@@ -576,9 +564,7 @@ public class SslSocketFactory {
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(userToken != null
-                    ? userToken
-                    : "Cloud SQL Java Socket Factory");
+            .setApplicationName(userToken != null ? userToken : "Cloud SQL Java Socket Factory");
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -596,14 +582,13 @@ public class SslSocketFactory {
       GoogleCredential credential;
       try {
         credential = GoogleCredential.getApplicationDefault();
-      } catch (IOException e) {
-        throw
-            new RuntimeException(
-                "Unable to obtain credentials to communicate with the Cloud SQL API", e);
+      } catch (IOException err) {
+        throw new RuntimeException(
+            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
       }
       if (credential.createScopedRequired()) {
-        credential = credential.createScoped(
-            Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
+        credential =
+            credential.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
       }
       return credential;
     }
@@ -613,7 +598,7 @@ public class SslSocketFactory {
     KeyPairGenerator generator;
     try {
       generator = KeyPairGenerator.getInstance("RSA");
-    } catch (NoSuchAlgorithmException e) {
+    } catch (NoSuchAlgorithmException err) {
       throw new RuntimeException(
           "Unable to initialize Cloud SQL socket factory because no RSA implementation is "
               + "available.");
@@ -661,9 +646,7 @@ public class SslSocketFactory {
     private final X509Certificate ephemeralCertificate;
     private final SSLSocketFactory sslSocketFactory;
 
-    InstanceSslInfo(
-        X509Certificate ephemeralCertificate,
-        SSLSocketFactory sslSocketFactory) {
+    InstanceSslInfo(X509Certificate ephemeralCertificate, SSLSocketFactory sslSocketFactory) {
       this.ephemeralCertificate = ephemeralCertificate;
       this.sslSocketFactory = sslSocketFactory;
     }
