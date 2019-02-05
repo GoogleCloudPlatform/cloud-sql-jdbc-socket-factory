@@ -48,6 +48,8 @@ public class SocketFactory extends javax.net.SocketFactory {
   private final String instanceName;
   private final List<String> ipTypes;
 
+  // TODO(kurtisvg): add more details to this javadoc.
+  /** Implements the SocketFactory constructor for the postgres connector. */
   public SocketFactory(Properties info) {
     this.instanceName = info.getProperty(INSTANCE_PROPERTY_KEY);
     checkArgument(

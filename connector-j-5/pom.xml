@@ -1,33 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.google.cloud.sql</groupId>
-        <artifactId>jdbc-socket-factory-parent</artifactId>
-        <version>1.0.13-SNAPSHOT</version>
-    </parent>
-    <artifactId>mysql-socket-factory</artifactId>
-    <packaging>jar</packaging>
+  <parent>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>jdbc-socket-factory-parent</artifactId>
+    <version>1.0.13-SNAPSHOT</version>
+  </parent>
+  <artifactId>mysql-socket-factory</artifactId>
+  <packaging>jar</packaging>
 
-    <name>Cloud SQL MySQL Socket Factory (for Connector/J 5.x)</name>
-    <description>
-        Socket factory for the MySQL JDBC driver (version 5.x) that allows a user with the appropriate permissions
-        to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
-        certificates manually
-    </description>
+  <name>Cloud SQL MySQL Socket Factory (for Connector/J 5.x)</name>
+  <description>
+    Socket factory for the MySQL JDBC driver (version 5.x) that allows a user with the appropriate
+    permissions
+    to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
+    certificates manually
+  </description>
 
-    <dependencies>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.46</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.cloud.sql</groupId>
-            <artifactId>jdbc-socket-factory-core</artifactId>
-            <version>1.0.13-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.46</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>1.0.13-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 </project>

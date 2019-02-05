@@ -1,30 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.google.cloud.sql</groupId>
-        <artifactId>jdbc-socket-factory-parent</artifactId>
-        <version>1.0.13-SNAPSHOT</version>
-        <relativePath>..</relativePath>
-    </parent>
+  <parent>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>jdbc-socket-factory-parent</artifactId>
+    <version>1.0.13-SNAPSHOT</version>
+    <relativePath>..</relativePath>
+  </parent>
 
-    <artifactId>postgres-socket-factory</artifactId>
-    <packaging>jar</packaging>
+  <artifactId>postgres-socket-factory</artifactId>
+  <packaging>jar</packaging>
 
-    <name>Cloud SQL Postgres Socket Factory</name>
-    <description>
-        Socket factory for the Postgres JDBC driver that allows a user with the appropriate
-        permissions to connect to a Cloud SQL database without having to deal with IP whitelisting
-        or SSL certificates manually
-    </description>
+  <name>Cloud SQL Postgres Socket Factory</name>
+  <description>
+    Socket factory for the Postgres JDBC driver that allows a user with the appropriate
+    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting
+    or SSL certificates manually
+  </description>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.google.cloud.sql</groupId>
-            <artifactId>jdbc-socket-factory-core</artifactId>
-            <version>1.0.13-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>1.0.13-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 
 </project>

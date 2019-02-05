@@ -40,27 +40,6 @@ import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.cloud.sql.core.SslSocketFactory.Clock;
 import com.google.common.collect.ImmutableList;
-
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -86,13 +65,30 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import sun.security.x509.AlgorithmId;
+import sun.security.x509.CertificateAlgorithmId;
+import sun.security.x509.CertificateSerialNumber;
+import sun.security.x509.CertificateValidity;
+import sun.security.x509.CertificateVersion;
+import sun.security.x509.CertificateX509Key;
+import sun.security.x509.X500Name;
+import sun.security.x509.X509CertImpl;
+import sun.security.x509.X509CertInfo;
 
 // TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
@@ -135,8 +131,8 @@ public class SslSocketFactoryTest {
 
     when(adminApi.sslCerts()).thenReturn(adminApiSslCerts);
     when(adminApiSslCerts.createEphemeral(
-        anyString(), anyString(), isA(SslCertsCreateEphemeralRequest.class)))
-            .thenReturn(adminApiSslCertsCreateEphemeral);
+            anyString(), anyString(), isA(SslCertsCreateEphemeralRequest.class)))
+        .thenReturn(adminApiSslCertsCreateEphemeral);
 
     when(adminApiInstancesGet.execute())
         .thenReturn(
@@ -203,9 +199,7 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket =
-        sslSocketFactory.create(
-            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
+    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
@@ -226,9 +220,7 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket =
-        sslSocketFactory.create(
-            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
@@ -258,9 +250,7 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket =
-        sslSocketFactory.create(
-            INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -281,16 +271,14 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create(
-        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
         .createEphemeral(
             eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
 
-    sslSocketFactory.create(
-        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verifyNoMoreInteractions(adminApiInstances);
     verifyNoMoreInteractions(adminApiSslCerts);
@@ -308,12 +296,10 @@ public class SslSocketFactoryTest {
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create(
-        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     // Second time, we should renew the certificate since it's about to expire.
-    sslSocketFactory.create(
-        INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -330,14 +316,12 @@ public class SslSocketFactoryTest {
     when(adminApiInstancesGet.execute())
         .thenThrow(
             new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()),
-                details));
+                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -354,14 +338,12 @@ public class SslSocketFactoryTest {
     when(adminApiInstancesGet.execute())
         .thenThrow(
             new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()),
-                details));
+                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -378,14 +360,12 @@ public class SslSocketFactoryTest {
     when(adminApiInstancesGet.execute())
         .thenThrow(
             new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()),
-                details));
+                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(mockClock, clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -396,8 +376,7 @@ public class SslSocketFactoryTest {
     // Exception should be cached.
     when(mockClock.now()).thenReturn(59 * 1000L);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -408,8 +387,7 @@ public class SslSocketFactoryTest {
     // Enough time has passed that cached exception should be ignored.
     when(mockClock.now()).thenReturn(61 * 1000L);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -427,14 +405,12 @@ public class SslSocketFactoryTest {
     when(adminApiSslCertsCreateEphemeral.execute())
         .thenThrow(
             new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()),
-                details));
+                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(
-          INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -454,8 +430,7 @@ public class SslSocketFactoryTest {
     info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
     info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(1));
     info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(AlgorithmId.get("SHA1withRSA")));
-    info.set(
-        X509CertInfo.SUBJECT, new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"));
+    info.set(X509CertInfo.SUBJECT, new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"));
     info.set(X509CertInfo.KEY, new CertificateX509Key(clientKeyPair.getPublic()));
     info.set(X509CertInfo.VALIDITY, interval);
     info.set(
@@ -464,8 +439,7 @@ public class SslSocketFactoryTest {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(
-            TestKeys.SIGNING_CA_PRIVATE_KEY));
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
     X509CertImpl cert = new X509CertImpl(info);
@@ -473,9 +447,7 @@ public class SslSocketFactoryTest {
 
     StringBuilder sb = new StringBuilder();
     sb.append("-----BEGIN CERTIFICATE-----\n");
-    sb.append(
-            Base64.getEncoder().encodeToString(cert.getEncoded())
-            .replaceAll("(.{64})", "$1\n"));
+    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
     sb.append("\n");
     sb.append("-----END CERTIFICATE-----\n");
 
@@ -505,8 +477,8 @@ public class SslSocketFactoryTest {
             authKeyStore.load(null, null);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PKCS8EncodedKeySpec keySpec =
-                new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(
-                    TestKeys.SERVER_CERT_PRIVATE_KEY));
+                new PKCS8EncodedKeySpec(
+                    decodeBase64StripWhitespace(TestKeys.SERVER_CERT_PRIVATE_KEY));
             PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
             PrivateKeyEntry serverCert =
                 new PrivateKeyEntry(
@@ -566,5 +538,4 @@ public class SslSocketFactoryTest {
       return pickedPort.get();
     }
   }
-
 }
