@@ -37,7 +37,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:git:https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
+    <connection>
+      scm:git:https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
     </connection>
     <developerConnection>
       scm:git:ssh://git@github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
