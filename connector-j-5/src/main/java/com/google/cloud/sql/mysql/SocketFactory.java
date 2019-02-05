@@ -28,7 +28,6 @@ import java.util.logging.Logger;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
 
-
 /**
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
  * ephemeral certificates.
@@ -85,9 +84,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
     return socket;
   }
 
-  /**
-   *  Returns {@code true} if running in a Google App Engine Standard runtime.
-   */
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances

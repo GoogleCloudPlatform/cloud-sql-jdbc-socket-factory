@@ -135,6 +135,7 @@
                     <logViolationsToConsole>true</logViolationsToConsole>
                     <violationSeverity>warning</violationSeverity>
                     <failOnViolation>true</failOnViolation>
+                    <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
                 </configuration>
                 <executions>
                     <execution>

@@ -52,9 +52,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   }
 
   // TODO(kurtisvg): add more details to this javadoc.
-  /**
-   *  Implements the pre mysql-connector-java 8.0.13 API.
-   */
+  /** Implements the pre mysql-connector-java 8.0.13 API. */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
     String instanceName = props.getProperty("cloudSqlInstance");
@@ -101,9 +99,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   @Override
   public void afterHandshake() {}
 
-  /**
-   *  Returns {@code true} if running in a Google App Engine Standard runtime.
-   */
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances

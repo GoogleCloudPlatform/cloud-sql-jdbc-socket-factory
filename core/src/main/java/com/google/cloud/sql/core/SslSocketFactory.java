@@ -36,7 +36,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -161,6 +160,7 @@ public class SslSocketFactory {
 
   /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
+   *
    * @param instanceName Name of the Cloud SQL instance.
    * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
    * @return the newly created Socket.

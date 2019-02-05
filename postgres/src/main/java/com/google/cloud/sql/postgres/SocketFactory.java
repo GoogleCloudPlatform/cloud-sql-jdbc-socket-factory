@@ -49,9 +49,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private final List<String> ipTypes;
 
   // TODO(kurtisvg): add more details to this javadoc.
-  /**
-   *  Implements the SocketFactory constructor for the postgres connector. 
-   */
+  /** Implements the SocketFactory constructor for the postgres connector. */
   public SocketFactory(Properties info) {
     this.instanceName = info.getProperty(INSTANCE_PROPERTY_KEY);
     checkArgument(
@@ -117,9 +115,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   *  Returns {@code true} if running in a Google App Engine Standard runtime.
-   */
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
   // TODO(kurtisvg) move this check into a shared class
   private boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
