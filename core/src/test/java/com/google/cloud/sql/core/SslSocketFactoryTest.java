@@ -61,8 +61,11 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
@@ -71,8 +74,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -145,7 +146,7 @@ public class SslSocketFactoryTest {
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                 .setRegion(REGION));
     when(adminApiSslCertsCreateEphemeral.execute())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.standardSeconds(0))));
+        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
   }
 
   @Test
@@ -246,7 +247,7 @@ public class SslSocketFactoryTest {
 
     // Certificate already expired.
     when(adminApiSslCertsCreateEphemeral.execute())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.standardMinutes(65))));
+        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
@@ -292,7 +293,7 @@ public class SslSocketFactoryTest {
 
     // Certificate only valid for 4 more minutes.
     when(adminApiSslCertsCreateEphemeral.execute())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.standardMinutes(56))));
+        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(56))));
 
     SslSocketFactory sslSocketFactory =
         new SslSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
@@ -420,11 +421,12 @@ public class SslSocketFactoryTest {
 
   private String createEphemeralCert(Duration shiftIntoPast)
       throws GeneralSecurityException, IOException {
-    Duration validFor = Duration.standardHours(1);
-    DateTime notBefore = DateTime.now().minus(shiftIntoPast);
-    DateTime notAfter = notBefore.plus(validFor);
+    Duration validFor = Duration.ofHours(1);
+    ZonedDateTime notBefore = ZonedDateTime.now().minus(shiftIntoPast);
+    ZonedDateTime notAfter = notBefore.plus(validFor);
 
-    CertificateValidity interval = new CertificateValidity(notBefore.toDate(), notAfter.toDate());
+    CertificateValidity interval =
+        new CertificateValidity(Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()));
 
     X509CertInfo info = new X509CertInfo();
     info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));

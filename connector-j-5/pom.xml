@@ -15,16 +15,15 @@
   <name>Cloud SQL MySQL Socket Factory (for Connector/J 5.x)</name>
   <description>
     Socket factory for the MySQL JDBC driver (version 5.x) that allows a user with the appropriate
-    permissions
-    to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
-    certificates manually
+    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting or
+    SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>5.1.46</version>
+      <version>5.1.47</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -33,4 +32,5 @@
       <version>1.0.13-SNAPSHOT</version>
     </dependency>
   </dependencies>
+
 </project>

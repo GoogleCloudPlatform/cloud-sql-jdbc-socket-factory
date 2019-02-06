@@ -16,15 +16,14 @@
   <description>
     Socket factory for the MySQL JDBC driver (version 8.x) that allows a user with the appropriate
     permissions to connect to a Cloud SQL database without having to deal with IP whitelisting or
-    SSL
-    certificates manually
+    SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.13</version>
+      <version>8.0.14</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
