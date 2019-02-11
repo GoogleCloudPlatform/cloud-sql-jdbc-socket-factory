@@ -83,11 +83,14 @@ import jnr.unixsocket.UnixSocketChannel;
  * <p>The API of this class is subject to change without notice.
  */
 public class CoreSocketFactory {
+  public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+  public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
+  public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
+
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
-  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
-  public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
-  private static final String unixSocketFilePrefix = "/cloudsql/";
+  private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
+  private static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
@@ -174,9 +177,9 @@ public class CoreSocketFactory {
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public Socket connect(Properties props) throws IOException {
+  public Socket connect(Properties props, String socketPathFormat) throws IOException {
     // Gather parameters
-    final String csqlInstanceName = props.getProperty("cloudSqlInstance");
+    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     final boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
@@ -192,7 +195,7 @@ public class CoreSocketFactory {
           String.format(
               "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
       UnixSocketAddress socketAddress =
-          new UnixSocketAddress(new File(unixSocketFilePrefix + csqlInstanceName));
+          new UnixSocketAddress(new File(String.format(socketPathFormat, csqlInstanceName)));
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
