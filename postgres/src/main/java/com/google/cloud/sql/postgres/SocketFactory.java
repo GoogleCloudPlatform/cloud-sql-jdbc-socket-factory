@@ -90,7 +90,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     // Default to SSL Socket
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
-    return CoreSocketFactory.getInstance().create(instanceName, ipTypes);
+    return CoreSocketFactory.getInstance().createSslSocket(instanceName, ipTypes);
   }
 
   @Override

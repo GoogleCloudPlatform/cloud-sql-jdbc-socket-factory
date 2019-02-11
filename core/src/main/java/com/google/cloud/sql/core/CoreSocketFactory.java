@@ -126,7 +126,8 @@ public class CoreSocketFactory {
   }
 
   /**
-   * Returns the CoreSocketFactory singleton, which can be used to create SslSockets to Cloud SQL.
+   * Returns the CoreSocketFactory singleton, which can be used to createSslSocket SslSockets to
+   * Cloud SQL.
    *
    * @return the CoreSocketFactory singleton.
    */
@@ -167,7 +168,7 @@ public class CoreSocketFactory {
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  public Socket create(String instanceName, List<String> ipTypes) throws IOException {
+  public Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException err) {

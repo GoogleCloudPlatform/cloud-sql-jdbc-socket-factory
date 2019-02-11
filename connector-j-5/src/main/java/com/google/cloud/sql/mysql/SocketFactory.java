@@ -66,7 +66,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
       List<String> ipTypes =
           CoreSocketFactory.listIpTypes(
               props.getProperty("ipTypes", CoreSocketFactory.DEFAULT_IP_TYPES));
-      this.socket = CoreSocketFactory.getInstance().create(instanceName, ipTypes);
+      this.socket = CoreSocketFactory.getInstance().createSslSocket(instanceName, ipTypes);
     }
     return this.socket;
   }

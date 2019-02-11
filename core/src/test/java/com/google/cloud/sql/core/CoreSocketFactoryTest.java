@@ -154,14 +154,14 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create("foo", Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket("foo", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
     }
 
     try {
-      sslSocketFactory.create("foo:bar", Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket("foo:bar", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
@@ -181,7 +181,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create("foo:bar:baz", Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).startsWith("Incorrect region value");
@@ -200,7 +200,8 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
+    Socket socket =
+        sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
@@ -221,7 +222,8 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    Socket socket =
+        sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
@@ -251,7 +253,8 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    Socket socket = sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    Socket socket =
+        sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -272,14 +275,14 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts)
         .createEphemeral(
             eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
 
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verifyNoMoreInteractions(adminApiInstances);
     verifyNoMoreInteractions(adminApiSslCerts);
@@ -297,10 +300,10 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     // Second time, we should renew the certificate since it's about to expire.
-    sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
     verify(adminApiSslCerts, times(2))
@@ -322,7 +325,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -344,7 +347,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -366,7 +369,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(mockClock, clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -377,7 +380,7 @@ public class CoreSocketFactoryTest {
     // Exception should be cached.
     when(mockClock.now()).thenReturn(59 * 1000L);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -388,7 +391,7 @@ public class CoreSocketFactoryTest {
     // Enough time has passed that cached exception should be ignored.
     when(mockClock.now()).thenReturn(61 * 1000L);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       assertThat(e.getMessage()).contains("not authorized");
@@ -411,7 +414,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory sslSocketFactory =
         new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
     try {
-      sslSocketFactory.create(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      sslSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
