@@ -34,9 +34,11 @@ import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +61,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
@@ -67,6 +70,8 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
@@ -82,6 +87,7 @@ public class CoreSocketFactory {
 
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+  private static final String unixSocketFilePrefix = "/cloudsql/";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
@@ -157,6 +163,55 @@ public class CoreSocketFactory {
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
     }
     return sslSocketFactory;
+  }
+
+  /**
+   * Creates a socket representing a connection to a Cloud SQL instance.
+   *
+   * <p>Depending on the environment, it may return either a SSL Socket or a Unix Socket.
+   *
+   * @param props Properties used to configure the connection.
+   * @return the newly created Socket.
+   * @throws IOException if error occurs during socket creation.
+   */
+  public Socket connect(Properties props) throws IOException {
+    // Gather parameters
+    final String csqlInstanceName = props.getProperty("cloudSqlInstance");
+    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
+    final boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
+
+    // Validate parameters
+    Preconditions.checkArgument(
+        csqlInstanceName != null,
+        "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
+            + "connection Properties with value in form \"project:region:instance\"");
+
+    // GAE Standard runtimes provide a connection path at "/cloudsql/<CONNECTION_NAME>"
+    if (forceUnixSocket || runningOnGaeStandard()) {
+      logger.info(
+          String.format(
+              "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
+      UnixSocketAddress socketAddress =
+          new UnixSocketAddress(new File(unixSocketFilePrefix + csqlInstanceName));
+      return UnixSocketChannel.open(socketAddress).socket();
+    }
+
+    logger.info(
+        String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
+    return CoreSocketFactory.getInstance().createSslSocket(csqlInstanceName, ipTypes);
+  }
+
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
+  private boolean runningOnGaeStandard() {
+    // gaeEnv="standard" indicates standard instances
+    String gaeEnv = System.getenv("GAE_ENV");
+    // runEnv="Production" requires to rule out Java 8 emulated environments
+    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
+    // gaeRuntime="java11" in Java 11 environments (no emulated environments)
+    String gaeRuntime = System.getenv("GAE_RUNTIME");
+
+    return "standard".equals(gaeEnv)
+        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 
   /**
