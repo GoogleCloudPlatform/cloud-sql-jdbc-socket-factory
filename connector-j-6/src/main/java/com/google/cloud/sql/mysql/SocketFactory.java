@@ -18,7 +18,7 @@ package com.google.cloud.sql.mysql;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.cloud.sql.core.SslSocketFactory;
+import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -32,7 +32,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
  * ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
  */
 public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
@@ -65,9 +65,9 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
       logger.info(
           String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
       List<String> ipTypes =
-          SslSocketFactory.listIpTypes(
-              props.getProperty("ipTypes", SslSocketFactory.DEFAULT_IP_TYPES));
-      this.socket = SslSocketFactory.getInstance().create(instanceName, ipTypes);
+          CoreSocketFactory.listIpTypes(
+              props.getProperty("ipTypes", CoreSocketFactory.DEFAULT_IP_TYPES));
+      this.socket = CoreSocketFactory.getInstance().create(instanceName, ipTypes);
     }
     return this.socket;
   }

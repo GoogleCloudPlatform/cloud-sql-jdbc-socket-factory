@@ -77,8 +77,8 @@ import javax.net.ssl.TrustManagerFactory;
  *
  * <p>The API of this class is subject to change without notice.
  */
-public class SslSocketFactory {
-  private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
+public class CoreSocketFactory {
+  private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
@@ -93,7 +93,7 @@ public class SslSocketFactory {
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
 
-  private static SslSocketFactory sslSocketFactory;
+  private static CoreSocketFactory sslSocketFactory;
 
   private final CertificateFactory certificateFactory;
   private final Clock clock;
@@ -107,7 +107,7 @@ public class SslSocketFactory {
   private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
   @VisibleForTesting
-  SslSocketFactory(
+  CoreSocketFactory(
       Clock clock,
       KeyPair localKeyPair,
       Credential credential,
@@ -126,11 +126,11 @@ public class SslSocketFactory {
   }
 
   /**
-   * Returns the SslSocketFactory singleton, which can be used to create SslSockets to Cloud SQL.
+   * Returns the CoreSocketFactory singleton, which can be used to create SslSockets to Cloud SQL.
    *
-   * @return the SslSocketFactory singleton.
+   * @return the CoreSocketFactory singleton.
    */
-  public static synchronized SslSocketFactory getInstance() {
+  public static synchronized CoreSocketFactory getInstance() {
     if (sslSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
@@ -152,7 +152,7 @@ public class SslSocketFactory {
 
       SQLAdmin adminApi = createAdminApiClient(credential);
       sslSocketFactory =
-          new SslSocketFactory(
+          new CoreSocketFactory(
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
     }
     return sslSocketFactory;

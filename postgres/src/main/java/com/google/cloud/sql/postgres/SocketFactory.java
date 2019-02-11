@@ -18,7 +18,7 @@ package com.google.cloud.sql.postgres;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.cloud.sql.core.SslSocketFactory;
+import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -33,7 +33,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
  * using ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link SslSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
  */
 public class SocketFactory extends javax.net.SocketFactory {
 
@@ -58,8 +58,8 @@ public class SocketFactory extends javax.net.SocketFactory {
             + "the connection Properties with value in form \"project:region:instance\"");
 
     this.ipTypes =
-        SslSocketFactory.listIpTypes(
-            info.getProperty(IP_TYPES_KEY, SslSocketFactory.DEFAULT_IP_TYPES));
+        CoreSocketFactory.listIpTypes(
+            info.getProperty(IP_TYPES_KEY, CoreSocketFactory.DEFAULT_IP_TYPES));
   }
 
   @Deprecated
@@ -90,7 +90,7 @@ public class SocketFactory extends javax.net.SocketFactory {
     // Default to SSL Socket
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via ssl socket.", instanceName));
-    return SslSocketFactory.getInstance().create(instanceName, ipTypes);
+    return CoreSocketFactory.getInstance().create(instanceName, ipTypes);
   }
 
   @Override
