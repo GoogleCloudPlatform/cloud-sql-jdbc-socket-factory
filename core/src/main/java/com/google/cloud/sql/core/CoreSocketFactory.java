@@ -82,7 +82,7 @@ import jnr.unixsocket.UnixSocketChannel;
  *
  * <p>The API of this class is subject to change without notice.
  */
-public class CoreSocketFactory {
+public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
   public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
   public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
@@ -102,7 +102,7 @@ public class CoreSocketFactory {
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
 
-  private static CoreSocketFactory sslSocketFactory;
+  private static CoreSocketFactory coreSocketFactory;
 
   private final CertificateFactory certificateFactory;
   private final Clock clock;
@@ -136,12 +136,9 @@ public class CoreSocketFactory {
 
   /**
    * Returns the {@link CoreSocketFactory} singleton.
-   * Cloud SQL.
-   *
-   * @return the CoreSocketFactory singleton.
    */
   public static synchronized CoreSocketFactory getInstance() {
-    if (sslSocketFactory == null) {
+    if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory;
@@ -161,11 +158,11 @@ public class CoreSocketFactory {
       Credential credential = credentialFactory.create();
 
       SQLAdmin adminApi = createAdminApiClient(credential);
-      sslSocketFactory =
+      coreSocketFactory =
           new CoreSocketFactory(
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
     }
-    return sslSocketFactory;
+    return coreSocketFactory;
   }
 
   /**
@@ -226,7 +223,7 @@ public class CoreSocketFactory {
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  public Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
+  protected Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException err) {
@@ -281,7 +278,7 @@ public class CoreSocketFactory {
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
-  public static List<String> listIpTypes(String cloudSqlIpTypes) {
+  private static List<String> listIpTypes(String cloudSqlIpTypes) {
     String[] rawTypes = cloudSqlIpTypes.split(",");
     ArrayList<String> result = new ArrayList<>(rawTypes.length);
     for (int i = 0; i < rawTypes.length; i++) {
