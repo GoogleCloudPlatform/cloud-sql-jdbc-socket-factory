@@ -135,7 +135,7 @@ public class CoreSocketFactory {
   }
 
   /**
-   * Returns the CoreSocketFactory singleton, which can be used to createSslSocket SslSockets to
+   * Returns the {@link CoreSocketFactory} singleton.
    * Cloud SQL.
    *
    * @return the CoreSocketFactory singleton.
@@ -201,7 +201,7 @@ public class CoreSocketFactory {
 
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    return CoreSocketFactory.getInstance().createSslSocket(csqlInstanceName, ipTypes);
+    return getInstance().createSslSocket(csqlInstanceName, ipTypes);
   }
 
   /** Returns {@code true} if running in a Google App Engine Standard runtime. */
