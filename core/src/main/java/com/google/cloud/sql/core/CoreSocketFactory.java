@@ -134,9 +134,7 @@ public final class CoreSocketFactory {
     this.serverProxyPort = serverProxyPort;
   }
 
-  /**
-   * Returns the {@link CoreSocketFactory} singleton.
-   */
+  /** Returns the {@link CoreSocketFactory} singleton. */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
@@ -223,7 +221,8 @@ public final class CoreSocketFactory {
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  protected Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
+  @VisibleForTesting
+  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException err) {
