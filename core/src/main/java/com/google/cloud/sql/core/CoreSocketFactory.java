@@ -34,9 +34,11 @@ import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +61,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
@@ -67,6 +70,8 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
@@ -77,11 +82,15 @@ import javax.net.ssl.TrustManagerFactory;
  *
  * <p>The API of this class is subject to change without notice.
  */
-public class SslSocketFactory {
-  private static final Logger logger = Logger.getLogger(SslSocketFactory.class.getName());
+public final class CoreSocketFactory {
+  public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+  public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
+  public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
 
-  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
-  public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+  private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
+
+  private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
+  private static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
@@ -93,7 +102,7 @@ public class SslSocketFactory {
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
 
-  private static SslSocketFactory sslSocketFactory;
+  private static CoreSocketFactory coreSocketFactory;
 
   private final CertificateFactory certificateFactory;
   private final Clock clock;
@@ -107,7 +116,7 @@ public class SslSocketFactory {
   private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
   @VisibleForTesting
-  SslSocketFactory(
+  CoreSocketFactory(
       Clock clock,
       KeyPair localKeyPair,
       Credential credential,
@@ -125,13 +134,9 @@ public class SslSocketFactory {
     this.serverProxyPort = serverProxyPort;
   }
 
-  /**
-   * Returns the SslSocketFactory singleton, which can be used to create SslSockets to Cloud SQL.
-   *
-   * @return the SslSocketFactory singleton.
-   */
-  public static synchronized SslSocketFactory getInstance() {
-    if (sslSocketFactory == null) {
+  /** Returns the {@link CoreSocketFactory} singleton. */
+  public static synchronized CoreSocketFactory getInstance() {
+    if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
       KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory;
@@ -151,11 +156,60 @@ public class SslSocketFactory {
       Credential credential = credentialFactory.create();
 
       SQLAdmin adminApi = createAdminApiClient(credential);
-      sslSocketFactory =
-          new SslSocketFactory(
+      coreSocketFactory =
+          new CoreSocketFactory(
               new Clock(), keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
     }
-    return sslSocketFactory;
+    return coreSocketFactory;
+  }
+
+  /**
+   * Creates a socket representing a connection to a Cloud SQL instance.
+   *
+   * <p>Depending on the environment, it may return either a SSL Socket or a Unix Socket.
+   *
+   * @param props Properties used to configure the connection.
+   * @return the newly created Socket.
+   * @throws IOException if error occurs during socket creation.
+   */
+  public Socket connect(Properties props, String socketPathFormat) throws IOException {
+    // Gather parameters
+    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
+    final boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
+
+    // Validate parameters
+    Preconditions.checkArgument(
+        csqlInstanceName != null,
+        "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
+            + "connection Properties with value in form \"project:region:instance\"");
+
+    // GAE Standard runtimes provide a connection path at "/cloudsql/<CONNECTION_NAME>"
+    if (forceUnixSocket || runningOnGaeStandard()) {
+      logger.info(
+          String.format(
+              "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
+      UnixSocketAddress socketAddress =
+          new UnixSocketAddress(new File(String.format(socketPathFormat, csqlInstanceName)));
+      return UnixSocketChannel.open(socketAddress).socket();
+    }
+
+    logger.info(
+        String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
+    return getInstance().createSslSocket(csqlInstanceName, ipTypes);
+  }
+
+  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
+  private boolean runningOnGaeStandard() {
+    // gaeEnv="standard" indicates standard instances
+    String gaeEnv = System.getenv("GAE_ENV");
+    // runEnv="Production" requires to rule out Java 8 emulated environments
+    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
+    // gaeRuntime="java11" in Java 11 environments (no emulated environments)
+    String gaeRuntime = System.getenv("GAE_RUNTIME");
+
+    return "standard".equals(gaeEnv)
+        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
   }
 
   /**
@@ -167,7 +221,8 @@ public class SslSocketFactory {
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  public Socket create(String instanceName, List<String> ipTypes) throws IOException {
+  @VisibleForTesting
+  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     try {
       return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
     } catch (SSLHandshakeException err) {
@@ -222,7 +277,7 @@ public class SslSocketFactory {
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
-  public static List<String> listIpTypes(String cloudSqlIpTypes) {
+  private static List<String> listIpTypes(String cloudSqlIpTypes) {
     String[] rawTypes = cloudSqlIpTypes.split(",");
     ArrayList<String> result = new ArrayList<>(rawTypes.length);
     for (int i = 0; i < rawTypes.length; i++) {
