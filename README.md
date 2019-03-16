@@ -10,7 +10,7 @@ whitelisting or SSL certificates manually.
 
 ### Examples
 
-For examples of the SocketFactory being used in the context of an application, check out the sample 
+For examples of this library being used in the context of an application, check out the sample 
 applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
 
