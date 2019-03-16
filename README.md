@@ -10,8 +10,8 @@ whitelisting or SSL certificates manually.
 
 ### Examples
 
-For an examples of a simple application using Cloud SQL Socket Factory, please take a look at the 
-projects found 
+For examples of this library being used in the context of an application, check out the sample 
+applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
 
 ### Authentication
