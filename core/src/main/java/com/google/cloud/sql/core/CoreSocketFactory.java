@@ -87,10 +87,17 @@ public final class CoreSocketFactory {
   public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
   public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
 
+  /**
+   * Property used to set the application name for the underlying SQLAdmin client.
+   *
+   * @deprecated Use {@link #setApplicationName(String)} to set the application name
+   *     programmatically.
+   */
+  @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
   private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
-  private static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
   static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
@@ -614,12 +621,11 @@ public final class CoreSocketFactory {
 
     String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
-    String userToken = System.getProperty(USER_TOKEN_PROPERTY_NAME);
 
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(userToken != null ? userToken : "Cloud SQL Java Socket Factory");
+            .setApplicationName(getApplicationName());
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -721,6 +727,27 @@ public final class CoreSocketFactory {
     public SSLSocketFactory getSslSocketFactory() {
       return sslSocketFactory;
     }
+  }
+
+  /**
+   * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
+   *
+   * @throws IllegalStateException if the SQLAdmin client has already been initialized
+   */
+  public static void setApplicationName(String applicationName) {
+    if (coreSocketFactory != null) {
+      throw new IllegalStateException(
+          "Unable to set ApplicationName - SQLAdmin client already initialized.");
+    }
+    System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
+  }
+
+  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
+  public static String getApplicationName() {
+    if (coreSocketFactory != null) {
+      return coreSocketFactory.adminApi.getApplicationName();
+    }
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "Cloud SQL Java Socket Factory");
   }
 
   @VisibleForTesting
