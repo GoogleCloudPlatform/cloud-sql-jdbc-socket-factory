@@ -90,7 +90,8 @@ public final class CoreSocketFactory {
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
    *
-   * @deprecated Use {@link #setApplicationName(String)} to set the application name programmatically.
+   * @deprecated Use {@link #setApplicationName(String)} to set the application name
+   *     programmatically.
    */
   @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
