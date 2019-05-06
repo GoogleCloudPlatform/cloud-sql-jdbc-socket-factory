@@ -88,9 +88,9 @@ public final class CoreSocketFactory {
   public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
 
   /**
-   * Property used to set the ApplicationName for the underlying SQLAdmin client.
+   * Property used to set the application name for the underlying SQLAdmin client.
    *
-   * @deprecated Replaced by {@link #getApplicationName} and {@link #setApplicationName}.
+   * @deprecated Use {@link #setApplicationName(String)} to set the application name programmatically.
    */
   @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
@@ -731,7 +731,7 @@ public final class CoreSocketFactory {
   /**
    * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
    *
-   * @throws IllegalStateException if the SQLAdmin client has already been initialized.
+   * @throws IllegalStateException if the SQLAdmin client has already been initialized
    */
   public static void setApplicationName(String applicationName) {
     if (coreSocketFactory != null) {
