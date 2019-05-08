@@ -9,13 +9,21 @@ import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStore.PrivateKeyEntry;
+import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 
 /** CloudSqlInstance is used for retrieving and referencing info related to a Cloud SQL instance. */
 class CloudSqlInstance {
@@ -28,6 +36,7 @@ class CloudSqlInstance {
   private final KeyPair keyPair;
   private Certificate instanceCaCertificate;
   private Certificate ephemeralCertificate;
+  private SSLContext sslContext;
 
   CloudSqlInstance(String connectionName, SQLAdmin apiClient, KeyPair keyPair) {
     String[] connFields = connectionName.split(":");
@@ -43,6 +52,7 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
     this.updateInstanceMetadata(apiClient);
     this.updateEphemeralCertificate(apiClient);
+    this.updateSslContext();
   }
 
   /**
@@ -151,6 +161,43 @@ class CloudSqlInstance {
             ex);
       }
     }
+  }
+
+  /** updateSslContext creates a new SslContext that will be used for future connections. */
+  private void updateSslContext() {
+    try {
+      KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      authKeyStore.load(null, null);
+      KeyStore.PrivateKeyEntry privateKey =
+          new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
+      authKeyStore.setEntry("ephemeral", privateKey, null);
+      KeyManagerFactory kmf =
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      kmf.init(authKeyStore, null);
+
+      KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trustedKeyStore.load(null, null);
+      trustedKeyStore.setCertificateEntry("instance", instanceCaCertificate);
+      TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
+      tmf.init(trustedKeyStore);
+
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+      sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+
+      synchronized (this) {
+        this.sslContext = sslContext;
+      }
+    } catch (GeneralSecurityException | IOException ex) {
+      throw new RuntimeException(
+          String.format(
+              "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName),
+          ex);
+    }
+  }
+
+  /** createSslSocket creates a new unconnected SSLSocket using the instance's SSLContext. */
+  synchronized SSLSocket createSslSocket() throws IOException {
+    return (SSLSocket) this.sslContext.getSocketFactory().createSocket();
   }
 
   // createApiExceptions checks for common api errors and adds additional context.
