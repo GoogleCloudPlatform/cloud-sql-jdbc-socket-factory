@@ -179,7 +179,7 @@ public final class CoreSocketFactory {
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public Socket connect(Properties props, String socketPathFormat) throws IOException {
+  public static Socket connect(Properties props, String socketPathFormat) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
@@ -207,7 +207,7 @@ public final class CoreSocketFactory {
   }
 
   /** Returns {@code true} if running in a Google App Engine Standard runtime. */
-  private boolean runningOnGaeStandard() {
+  private static boolean runningOnGaeStandard() {
     // gaeEnv="standard" indicates standard instances
     String gaeEnv = System.getenv("GAE_ENV");
     // runEnv="Production" requires to rule out Java 8 emulated environments
