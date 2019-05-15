@@ -21,6 +21,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -97,13 +98,33 @@ class CloudSqlInstance {
    * Returns an unconnected {@Link SSLSocket} using the SSLContext associated with the instance. May
    * block until an SSLContext is successfully available.
    */
-  synchronized SSLSocket createSslSocket() throws IOException {
+  SSLSocket createSslSocket() throws IOException {
     try {
       return (SSLSocket) this.currentSslContext.get().getSocketFactory().createSocket();
     } catch (InterruptedException | ExecutionException ex) {
       // TODO(kvg): Clean error handling up
       throw new RuntimeException(ex);
     }
+  }
+
+  /** Returns a string for the first IP address that matches the given prefferedTypes. */
+  String getPrefferedIp(List<String> prefferedTypes)
+      throws ExecutionException, InterruptedException {
+    String prefferedIp = null;
+    Map<String, String> ipAddrs = this.currentMetadata.get().getIpAddrs();
+    for (String ipType : prefferedTypes) {
+      prefferedIp = ipAddrs.get(ipType);
+      if (prefferedIp != null) {
+        break;
+      }
+    }
+    if (prefferedIp == null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "[%s] Cloud SQL instance  does not have any IP addresses matching preference: [ %s ]",
+              connectionName, String.join(", ", prefferedTypes)));
+    }
+    return prefferedIp;
   }
 
   /**
@@ -155,6 +176,7 @@ class CloudSqlInstance {
    * @param updateCertificate Future representing the completion of an updated Certificate used to
    *     crete the SSLContext.
    */
+  // TODO(kvg): Rate limiting for this
   private ListenableFuture<SSLContext> scheduleSslContextUpdate(
       ListenableFuture<Metadata> updatedMetadata,
       ListenableFuture<Certificate> updateCertificate,
