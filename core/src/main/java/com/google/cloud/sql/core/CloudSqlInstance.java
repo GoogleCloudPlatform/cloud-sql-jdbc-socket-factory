@@ -53,18 +53,19 @@ class CloudSqlInstance {
   private ListenableFuture<Certificate> nextEphemeralCert;
 
   private final Object sslContextGuard = new Object();
-  private ListenableFuture<SSLContext> currentSSLContext;
-  private ListenableFuture<SSLContext> nextSSLContext;
+  private ListenableFuture<SSLContext> currentSslContext;
+  private ListenableFuture<SSLContext> nextSslContext;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName Instance connection name; in the format
-   *     "<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>"
+   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance.
    * @param executor Executor used to schedule asynchronous tasks.
    * @param keyPair Public/Private key pair used to authenticate connections.
    */
+  // TODO(kvg): ListeningScheduledExecutorService is currently Beta
   CloudSqlInstance(
       String connectionName,
       SQLAdmin apiClient,
@@ -88,7 +89,7 @@ class CloudSqlInstance {
     // Kick off initial async jobs
     this.currentMetadata = this.scheduleMetadataUpdate();
     this.currentEphemeralCert = this.scheduleEphemeralCertificateUpdate();
-    this.scheduleSSLContextUpdate(
+    this.scheduleSslContextUpdate(
         this.currentMetadata, this.currentEphemeralCert, 0, TimeUnit.MINUTES);
   }
 
@@ -98,7 +99,7 @@ class CloudSqlInstance {
    */
   synchronized SSLSocket createSslSocket() throws IOException {
     try {
-      return (SSLSocket) this.currentSSLContext.get().getSocketFactory().createSocket();
+      return (SSLSocket) this.currentSslContext.get().getSocketFactory().createSocket();
     } catch (InterruptedException | ExecutionException ex) {
       // TODO(kvg): Clean error handling up
       throw new RuntimeException(ex);
@@ -109,20 +110,20 @@ class CloudSqlInstance {
    * Invalidates the current {@link SSLContext} and schedules a new one to be created. This will
    * cause other methods on this object to block until the SSLContext is available.
    */
-  void immediateSSLContextUpdate() {
+  void immediateSslContextUpdate() {
     synchronized (sslContextGuard) {
-      if (nextSSLContext != null) { // if a new SSLContext has already been scheduled
-        if (!nextSSLContext.cancel(false)) {
+      if (nextSslContext != null) { // if a new SSLContext has already been scheduled
+        if (!nextSslContext.cancel(false)) {
           // If future is already running, an update is already imminent. Replace current with the
           // next result so that future operations block until it completes.
-          this.currentSSLContext = this.nextSSLContext;
+          this.currentSslContext = this.nextSslContext;
           return;
         }
-        nextSSLContext = null;
+        nextSslContext = null;
       }
       // Schedule a new update immediately, and replace with current to block future operations
       // until it has completed.
-      this.currentSSLContext = this.scheduleSSLContextUpdate(0, TimeUnit.MINUTES);
+      this.currentSslContext = this.scheduleSslContextUpdate(0, TimeUnit.MINUTES);
     }
   }
 
@@ -131,16 +132,16 @@ class CloudSqlInstance {
    * the completion of the SSLContext will be returned. If a new SSLContext has already been
    * scheduled to be created, the existing Future will be returned.
    */
-  private ListenableFuture<SSLContext> scheduleSSLContextUpdate(long delay, TimeUnit timeUnit) {
+  private ListenableFuture<SSLContext> scheduleSslContextUpdate(long delay, TimeUnit timeUnit) {
     synchronized (sslContextGuard) {
-      if (this.nextSSLContext == null) { // If no update is scheduled
+      if (this.nextSslContext == null) { // If no update is scheduled
         ListenableFuture<Metadata> updatedMetadata = this.scheduleMetadataUpdate();
         ListenableFuture<Certificate> updatedEphemeralCertificate =
             this.scheduleEphemeralCertificateUpdate();
-        return this.scheduleSSLContextUpdate(
+        return this.scheduleSslContextUpdate(
             updatedMetadata, updatedEphemeralCertificate, delay, timeUnit);
       }
-      return this.nextSSLContext;
+      return this.nextSslContext;
     }
   }
 
@@ -154,14 +155,14 @@ class CloudSqlInstance {
    * @param updateCertificate Future representing the completion of an updated Certificate used to
    *     crete the SSLContext.
    */
-  private ListenableFuture<SSLContext> scheduleSSLContextUpdate(
+  private ListenableFuture<SSLContext> scheduleSslContextUpdate(
       ListenableFuture<Metadata> updatedMetadata,
       ListenableFuture<Certificate> updateCertificate,
       long delay,
       TimeUnit timeUnit) {
     synchronized (sslContextGuard) {
-      if (this.nextSSLContext == null) { // If no update is scheduled
-        this.nextSSLContext =
+      if (this.nextSslContext == null) { // If no update is scheduled
+        this.nextSslContext =
             executor.schedule(
                 () -> {
                   // Block until the requirements are ready
@@ -175,19 +176,19 @@ class CloudSqlInstance {
                     throw new RuntimeException(ex.getCause());
                   }
                   SSLContext newContext =
-                      this.createSSLContext(instanceMetadata, ephemeralCertificate);
+                      this.createSslContext(instanceMetadata, ephemeralCertificate);
                   synchronized (sslContextGuard) {
                     // Move this future as the current, and then schedule a replacement before it
                     // expires.
-                    this.currentSSLContext = this.nextSSLContext;
-                    this.nextSSLContext = this.scheduleSSLContextUpdate(55, TimeUnit.MINUTES);
+                    this.currentSslContext = this.nextSslContext;
+                    this.nextSslContext = this.scheduleSslContextUpdate(55, TimeUnit.MINUTES);
                   }
-                  return this.createSSLContext(instanceMetadata, ephemeralCertificate);
+                  return this.createSslContext(instanceMetadata, ephemeralCertificate);
                 },
                 delay,
                 timeUnit);
       }
-      return this.nextSSLContext;
+      return this.nextSslContext;
     }
   }
 
@@ -195,7 +196,7 @@ class CloudSqlInstance {
    * Returns a new SSLContext based on the provided parameters. This SSLContext will be used to
    * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
    */
-  private SSLContext createSSLContext(Metadata metadata, Certificate ephemeralCertificate) {
+  private SSLContext createSslContext(Metadata metadata, Certificate ephemeralCertificate) {
     SSLContext sslContext;
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
