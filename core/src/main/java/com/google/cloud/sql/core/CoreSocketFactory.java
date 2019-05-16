@@ -35,11 +35,13 @@ import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -62,11 +64,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -116,6 +120,8 @@ public final class CoreSocketFactory {
   private final KeyPair localKeyPair;
   private final Credential credential;
   private final Map<String, InstanceLookupResult> cache = new HashMap<>();
+  private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
+  private final ListeningScheduledExecutorService executor;
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
   // Protection from attempting to renew ephemeral certificate too often in case of handshake
@@ -139,6 +145,10 @@ public final class CoreSocketFactory {
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
+    this.executor =
+        MoreExecutors.listeningDecorator(
+            MoreExecutors.getExitingScheduledExecutorService(
+                (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2)));
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
@@ -230,25 +240,29 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
-    try {
-      return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.USE_CACHE);
-    } catch (SSLHandshakeException err) {
-      logger.warning(
-          String.format(
-              "SSL handshake failed for Cloud SQL instance [%s], "
-                  + "retrying with new certificate.\n%s",
-              instanceName, Throwables.getStackTraceAsString(err)));
+    CloudSqlInstance instance =
+        instances.computeIfAbsent(
+            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
 
-      if (!forcedRenewRateLimiter.tryAcquire()) {
-        logger.warning(
-            String.format(
-                "Renewing too often, rate limiting certificate renewal for Cloud SQL "
-                    + "instance [%s].",
-                instanceName));
-        forcedRenewRateLimiter.acquire();
-      }
-      return createAndConfigureSocket(instanceName, ipTypes, CertificateCaching.BYPASS_CACHE);
+    SSLSocket socket = instance.createSslSocket();
+
+    // TODO(kvg): Support all socket related options listed here:
+    // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
+    socket.setKeepAlive(true);
+    socket.setTcpNoDelay(true);
+
+    String instanceIp;
+    try {
+      instanceIp = instance.getPrefferedIp(ipTypes);
+    } catch (Exception ex) {
+      // TODO(kvg): Clean up error handling
+      throw new RuntimeException(ex);
     }
+
+    socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
+    socket.startHandshake();
+
+    return socket;
   }
 
   private static void logTestPropertyWarning(String property) {
