@@ -88,10 +88,16 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     // Kick off initial async jobs
-    this.currentMetadata = this.scheduleMetadataUpdate();
-    this.currentEphemeralCert = this.scheduleEphemeralCertificateUpdate();
-    this.scheduleSslContextUpdate(
-        this.currentMetadata, this.currentEphemeralCert, 0, TimeUnit.MINUTES);
+    synchronized (metadataGuard) {
+      this.currentMetadata = this.scheduleMetadataUpdate();
+      synchronized (ephemeralCertGuard) {
+        this.currentEphemeralCert = this.scheduleEphemeralCertificateUpdate();
+        synchronized (sslContextGuard) {
+          this.currentSslContext =
+              this.scheduleSslContextUpdate(this.currentMetadata, this.currentEphemeralCert);
+        }
+      }
+    }
   }
 
   /**
@@ -107,43 +113,45 @@ class CloudSqlInstance {
     }
   }
 
-  /** Returns a string for the first IP address that matches the given prefferedTypes. */
-  String getPrefferedIp(List<String> prefferedTypes)
+  /** Returns a String that represents first IP address that matches the given preferredTypes. */
+  String getPreferredIp(List<String> preferredTypes)
       throws ExecutionException, InterruptedException {
-    String prefferedIp = null;
+    String preferredIp = null;
     Map<String, String> ipAddrs = this.currentMetadata.get().getIpAddrs();
-    for (String ipType : prefferedTypes) {
-      prefferedIp = ipAddrs.get(ipType);
-      if (prefferedIp != null) {
+    for (String ipType : preferredTypes) {
+      preferredIp = ipAddrs.get(ipType);
+      if (preferredIp != null) {
         break;
       }
     }
-    if (prefferedIp == null) {
+    if (preferredIp == null) {
       throw new IllegalArgumentException(
           String.format(
               "[%s] Cloud SQL instance  does not have any IP addresses matching preference: [ %s ]",
-              connectionName, String.join(", ", prefferedTypes)));
+              connectionName, String.join(", ", preferredTypes)));
     }
-    return prefferedIp;
+    return preferredIp;
   }
 
   /**
    * Invalidates the current {@link SSLContext} and schedules a new one to be created. This will
    * cause other methods on this object to block until the SSLContext is available.
    */
+  // TODO(kvg): Rate limiting for this
   void immediateSslContextUpdate() {
     synchronized (sslContextGuard) {
-      if (nextSslContext != null) { // if a new SSLContext has already been scheduled
+      if (nextSslContext != null) { // If a new SSLContext has already been scheduled
+        // Attempt to cancel the scheduled task
         if (!nextSslContext.cancel(false)) {
-          // If future is already running, an update is already imminent. Replace current with the
+          // If the task is already running, an update is already imminent. Replace current with the
           // next result so that future operations block until it completes.
           this.currentSslContext = this.nextSslContext;
           return;
         }
         nextSslContext = null;
       }
-      // Schedule a new update immediately, and replace with current to block future operations
-      // until it has completed.
+      // Schedule a new update immediately, and replace with current to block future operations that
+      // rely on the SSLContext.
       this.currentSslContext = this.scheduleSslContextUpdate(0, TimeUnit.MINUTES);
     }
   }
@@ -151,16 +159,23 @@ class CloudSqlInstance {
   /**
    * Schedules {@link this.scheduleSSLContextUpdate} to run asynchronously. A future representing
    * the completion of the SSLContext will be returned. If a new SSLContext has already been
-   * scheduled to be created, the existing Future will be returned.
+   * scheduled to be created, the existing {@link ListenableFuture} will be returned instead.
    */
-  private ListenableFuture<SSLContext> scheduleSslContextUpdate(long delay, TimeUnit timeUnit) {
+  private ListenableFuture<SSLContext> scheduleSslContextUpdate(
+      ListenableFuture<Metadata> futureMetadata, ListenableFuture<Certificate> futureCertificate) {
     synchronized (sslContextGuard) {
-      if (this.nextSslContext == null) { // If no update is scheduled
-        ListenableFuture<Metadata> updatedMetadata = this.scheduleMetadataUpdate();
-        ListenableFuture<Certificate> updatedEphemeralCertificate =
-            this.scheduleEphemeralCertificateUpdate();
-        return this.scheduleSslContextUpdate(
-            updatedMetadata, updatedEphemeralCertificate, delay, timeUnit);
+      if (this.nextSslContext == null) { // If no metadata update is already scheduled
+        ListenableFuture<SSLContext> future =
+            executor.submit(() -> this.performSSlContextUpdate(futureMetadata, futureCertificate));
+        // Once the "next" future is complete, replace "current" and schedule replacement
+        future.addListener(
+            () -> {
+              synchronized (sslContextGuard) {
+                this.currentSslContext = this.nextSslContext;
+                this.nextSslContext = this.scheduleSslContextUpdate(55, TimeUnit.MINUTES);
+              }
+            },
+            executor);
       }
       return this.nextSslContext;
     }
@@ -170,48 +185,52 @@ class CloudSqlInstance {
    * Schedules {@link this.scheduleSSLContextUpdate} to run asynchronously. A future representing
    * the completion of the SSLContext will be returned. If a new SSLContext has already been
    * scheduled to be created, the existing {@link ListenableFuture} will be returned instead.
-   *
-   * @param updatedMetadata Future representing the completion of updated Metadata used to create
-   *     the SSLContext.
-   * @param updateCertificate Future representing the completion of an updated Certificate used to
-   *     crete the SSLContext.
    */
-  // TODO(kvg): Rate limiting for this
-  private ListenableFuture<SSLContext> scheduleSslContextUpdate(
-      ListenableFuture<Metadata> updatedMetadata,
-      ListenableFuture<Certificate> updateCertificate,
-      long delay,
-      TimeUnit timeUnit) {
+  private ListenableFuture<SSLContext> scheduleSslContextUpdate(long delay, TimeUnit timeUnit) {
     synchronized (sslContextGuard) {
-      if (this.nextSslContext == null) { // If no update is scheduled
-        this.nextSslContext =
-            executor.schedule(
-                () -> {
-                  // Block until the requirements are ready
-                  Metadata instanceMetadata;
-                  Certificate ephemeralCertificate;
-                  try {
-                    instanceMetadata = updatedMetadata.get();
-                    ephemeralCertificate = updateCertificate.get();
-                  } catch (Exception ex) {
-                    // TODO(kvg): Clean up exception handling
-                    throw new RuntimeException(ex.getCause());
-                  }
-                  SSLContext newContext =
-                      this.createSslContext(instanceMetadata, ephemeralCertificate);
-                  synchronized (sslContextGuard) {
-                    // Move this future as the current, and then schedule a replacement before it
-                    // expires.
-                    this.currentSslContext = this.nextSslContext;
-                    this.nextSslContext = this.scheduleSslContextUpdate(55, TimeUnit.MINUTES);
-                  }
-                  return this.createSslContext(instanceMetadata, ephemeralCertificate);
-                },
-                delay,
-                timeUnit);
+      if (this.nextSslContext == null) { // If no metadata update is already scheduled
+        ListenableFuture<SSLContext> future =
+            executor.schedule(() -> this.performSSlContextUpdate(), delay, timeUnit);
+        // Once the "next" future is complete, replace "current" and schedule replacement
+        future.addListener(
+            () -> {
+              synchronized (sslContextGuard) {
+                this.currentSslContext = this.nextSslContext;
+                this.nextSslContext = this.scheduleSslContextUpdate(55, TimeUnit.MINUTES);
+              }
+            },
+            executor);
       }
       return this.nextSslContext;
     }
+  }
+
+  /**
+   * Creates a new {@link SSLContext} that can provide authenticated connections to the instance.
+   */
+  private SSLContext performSSlContextUpdate() {
+    ListenableFuture<Metadata> futureMetadata = this.scheduleMetadataUpdate();
+    ListenableFuture<Certificate> futureCertificate = this.scheduleEphemeralCertificateUpdate();
+    return this.performSSlContextUpdate(futureMetadata, futureCertificate);
+  }
+
+  /**
+   * Schedules updates for both the instance's metadata and the ephemeral certificate, and uses the
+   * results to create a new {@link SSLContext} used to create connections to the server.
+   */
+  private SSLContext performSSlContextUpdate(
+      ListenableFuture<Metadata> futureMetadata, ListenableFuture<Certificate> futureCertificate) {
+    // Block until the requirements are ready
+    Metadata instanceMetadata;
+    Certificate ephemeralCertificate;
+    try {
+      instanceMetadata = futureMetadata.get();
+      ephemeralCertificate = futureCertificate.get();
+    } catch (Exception ex) {
+      // TODO(kvg): Clean up exception handling
+      throw new RuntimeException(ex.getCause());
+    }
+    return this.createSslContext(instanceMetadata, ephemeralCertificate);
   }
 
   /**
@@ -256,23 +275,23 @@ class CloudSqlInstance {
    */
   private ListenableFuture<Metadata> scheduleMetadataUpdate() {
     synchronized (metadataGuard) {
-      if (this.nextMetadata == null) {
-        this.nextMetadata =
-            executor.submit(
-                () -> {
-                  Metadata metadata = this.fetchMetadata();
-                  synchronized (nextMetadata) {
-                    this.currentMetadata = this.nextMetadata;
-                    this.nextMetadata = null;
-                  }
-                  return metadata;
-                });
+      if (this.nextMetadata == null) { // If no metadata update is already scheduled
+        ListenableFuture<Metadata> future = executor.submit(this::fetchMetadata);
+        // Once the "next" future is complete, replace "current" and free up "next"
+        future.addListener(
+            () -> {
+              synchronized (metadataGuard) {
+                this.currentMetadata = this.nextMetadata;
+                this.nextMetadata = null;
+              }
+            },
+            executor);
+        this.nextMetadata = future;
       }
       return this.nextMetadata;
     }
   }
 
-  /** Uses the Cloud SQL Admin API to create a {@link Metadata} object for a Cloud SQL instance. */
   private Metadata fetchMetadata() {
     DatabaseInstance instanceMetadata;
     try {
@@ -338,17 +357,18 @@ class CloudSqlInstance {
    */
   private ListenableFuture<Certificate> scheduleEphemeralCertificateUpdate() {
     synchronized (ephemeralCertGuard) {
-      if (this.nextEphemeralCert == null) {
-        this.nextEphemeralCert =
-            executor.submit(
-                () -> {
-                  Certificate nextCertificate = this.fetchEphemeralCertificate();
-                  synchronized (ephemeralCertGuard) {
-                    this.currentEphemeralCert = this.nextEphemeralCert;
-                    this.nextEphemeralCert = null;
-                  }
-                  return nextCertificate;
-                });
+      if (this.nextEphemeralCert == null) { // If no certificate update is already scheduled
+        ListenableFuture<Certificate> future = executor.submit(this::fetchEphemeralCertificate);
+        // Once the "next" future is complete, replace "current" and free up "next"
+        future.addListener(
+            () -> {
+              synchronized (ephemeralCertGuard) {
+                this.currentEphemeralCert = this.nextEphemeralCert;
+                this.nextEphemeralCert = null;
+              }
+            },
+            executor);
+        this.nextEphemeralCert = future;
       }
       return this.nextEphemeralCert;
     }
