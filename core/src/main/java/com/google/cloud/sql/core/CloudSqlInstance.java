@@ -8,6 +8,7 @@ import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.RateLimiter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -56,6 +57,7 @@ class CloudSqlInstance {
   private final Object sslContextGuard = new Object();
   private ListenableFuture<SSLContext> currentSslContext;
   private ListenableFuture<SSLContext> nextSslContext;
+  private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -136,9 +138,15 @@ class CloudSqlInstance {
   /**
    * Invalidates the current {@link SSLContext} and schedules a new one to be created. This will
    * cause other methods on this object to block until the SSLContext is available.
+   *
+   * <p>This method is rate limited, and may fail if called too often.
+   *
+   * @return Returns true if successful scheduled, else false.
    */
-  // TODO(kvg): Rate limiting for this
-  void immediateSslContextUpdate() {
+  boolean immediateSslContextUpdate() {
+    if (!forcedRenewRateLimiter.tryAcquire()) {
+      return false; // Forced refreshing too often
+    }
     synchronized (sslContextGuard) {
       if (nextSslContext != null) { // If a new SSLContext has already been scheduled
         // Attempt to cancel the scheduled task
@@ -146,13 +154,14 @@ class CloudSqlInstance {
           // If the task is already running, an update is already imminent. Replace current with the
           // next result so that future operations block until it completes.
           this.currentSslContext = this.nextSslContext;
-          return;
+          return true;
         }
         nextSslContext = null;
       }
       // Schedule a new update immediately, and replace with current to block future operations that
       // rely on the SSLContext.
       this.currentSslContext = this.scheduleSslContextUpdate(0, TimeUnit.MINUTES);
+      return true;
     }
   }
 
