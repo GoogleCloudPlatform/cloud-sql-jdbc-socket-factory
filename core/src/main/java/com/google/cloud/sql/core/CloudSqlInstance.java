@@ -9,6 +9,7 @@ import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.SettableFuture;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +25,10 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -427,6 +430,26 @@ class CloudSqlInstance {
           ex);
     }
     return ephemeralCertificate;
+  }
+
+  private <T> ListenableFuture<T> whenComplete(Callable<T> task, ListenableFuture<?>... futures) {
+    SettableFuture<T> taskFuture = SettableFuture.create();
+
+    // Create a countDown for all Futures to complete.
+    AtomicInteger countDown = new AtomicInteger(futures.length);
+
+    // Trigger the task when all futures are complete.
+    Runnable runOutput =
+        () -> {
+          if (countDown.decrementAndGet() == 0) {
+            taskFuture.setFuture(executor.submit(task));
+          }
+        };
+    for (ListenableFuture<?> future : futures) {
+      future.addListener(runOutput, executor);
+    }
+
+    return taskFuture;
   }
 
   /**
