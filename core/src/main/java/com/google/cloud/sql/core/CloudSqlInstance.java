@@ -1,6 +1,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.util.Throwables;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
@@ -11,6 +12,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +66,6 @@ class CloudSqlInstance {
    * @param executor Executor used to schedule asynchronous tasks.
    * @param keyPair Public/Private key pair used to authenticate connections.
    */
-  // TODO(kvg): ListeningScheduledExecutorService is currently Beta
   CloudSqlInstance(
       String connectionName,
       SQLAdmin apiClient,
@@ -92,24 +93,30 @@ class CloudSqlInstance {
   }
 
   /**
-   * Returns an unconnected {@Link SSLSocket} using the SSLContext associated with the instance. May
-   * block until an SSLContext is successfully available.
+   * Returns the most current data related to the instance from {@link this.performRefresh}. May
+   * block if no valid data is currently available.
    */
-  SSLSocket createSslSocket() throws IOException {
+  private InstanceData getInstanceData() {
     try {
-      return (SSLSocket)
-          this.currentInstanceData.get().getSslContext().getSocketFactory().createSocket();
-    } catch (InterruptedException | ExecutionException ex) {
-      // TODO(kvg): Clean error handling up
-      throw new RuntimeException(ex);
+      return Uninterruptibles.getUninterruptibly(this.currentInstanceData);
+    } catch (ExecutionException ex) {
+      Throwables.propagateIfPossible(ex);
+      throw Throwables.propagate(ex);
     }
   }
 
+  /**
+   * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
+   * block until an SSLContext is successfully available.
+   */
+  SSLSocket createSslSocket() throws IOException {
+    return (SSLSocket) this.getInstanceData().getSslContext().getSocketFactory().createSocket();
+  }
+
   /** Returns a String that represents first IP address that matches the given preferredTypes. */
-  String getPreferredIp(List<String> preferredTypes)
-      throws ExecutionException, InterruptedException {
+  String getPreferredIp(List<String> preferredTypes) {
     String preferredIp = null;
-    Map<String, String> ipAddrs = this.currentInstanceData.get().getIpAddrs();
+    Map<String, String> ipAddrs = this.getInstanceData().getIpAddrs();
     for (String ipType : preferredTypes) {
       preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
@@ -119,7 +126,7 @@ class CloudSqlInstance {
     if (preferredIp == null) {
       throw new IllegalArgumentException(
           String.format(
-              "[%s] Cloud SQL instance  does not have any IP addresses matching preference: [ %s ]",
+              "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
               connectionName, String.join(", ", preferredTypes)));
     }
     return preferredIp;
@@ -138,7 +145,7 @@ class CloudSqlInstance {
     synchronized (instanceDataGuard) { // If a new SSLContext has already been scheduled
       // Attempt to cancel the scheduled task
       if (nextInstanceData != null) {
-        if (nextInstanceData.cancel(false)) {
+        if (!nextInstanceData.cancel(false)) {
           // If the task is already running, an update is already imminent. Replace current with the
           // next result so that future operations block until it completes.
           this.currentInstanceData = this.nextInstanceData;
@@ -197,11 +204,12 @@ class CloudSqlInstance {
             sslContextFuture);
 
     try {
-      // TODO(kvg): Is there a better way to avoid nesting futures?
-      return refreshFuture.get();
-    } catch (InterruptedException | ExecutionException ex) {
-      // TODO(kvg): Clean error handling up
-      throw new RuntimeException(ex);
+      // TODO(kvg): Wait to hear back on scheduleAsync
+      return Uninterruptibles.getUninterruptibly(refreshFuture);
+    } catch (ExecutionException ex) {
+      Throwable cause = ex.getCause();
+      Throwables.propagateIfPossible(cause);
+      throw Throwables.propagate(ex);
     }
   }
 
@@ -231,7 +239,7 @@ class CloudSqlInstance {
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
     } catch (GeneralSecurityException | IOException ex) {
-      // TODO(kvg): Clean up exception handling
+      // TODO(kvg): Verify this should be unchecked
       throw new RuntimeException(
           String.format(
               "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName),
@@ -373,6 +381,7 @@ class CloudSqlInstance {
    * @param fallbackDesc Generic description uses as a fall back if no additional information can be
    *     provided to the user.
    */
+  // TODO(kvg) Throw checked exceptions for recoverable states?
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
     GoogleJsonResponseException gjrEx =
