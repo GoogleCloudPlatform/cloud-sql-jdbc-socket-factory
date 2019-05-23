@@ -6,6 +6,7 @@ import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.RateLimiter;
@@ -181,13 +182,19 @@ class CloudSqlInstance {
 
     ListenableFuture<SSLContext> sslContextFuture =
         whenComplete(
-            () -> createSslContext(metadataFuture.get(), ephemeralCertificateFuture.get()),
+            () ->
+                createSslContext(
+                    Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
             metadataFuture,
             ephemeralCertificateFuture);
 
     ListenableFuture<InstanceData> refreshFuture =
         whenComplete(
-            () -> new InstanceData(metadataFuture.get(), sslContextFuture.get()), sslContextFuture);
+            () ->
+                new InstanceData(
+                    Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
+            metadataFuture,
+            sslContextFuture);
 
     try {
       // TODO(kvg): Is there a better way to avoid nesting futures?
