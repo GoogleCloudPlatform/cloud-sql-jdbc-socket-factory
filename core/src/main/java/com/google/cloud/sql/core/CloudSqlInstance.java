@@ -163,10 +163,12 @@ class CloudSqlInstance {
             () -> {
               synchronized (instanceDataGuard) {
                 this.currentInstanceData = this.nextInstanceData;
-                this.nextInstanceData = this.scheduleRefresh(55, TimeUnit.MINUTES);
+                this.nextInstanceData = null;
+                this.scheduleRefresh(55, TimeUnit.MINUTES);
               }
             },
             executor);
+        this.nextInstanceData = future;
       }
       return this.nextInstanceData;
     }
