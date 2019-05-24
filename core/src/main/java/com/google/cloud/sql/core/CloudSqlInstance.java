@@ -93,8 +93,8 @@ class CloudSqlInstance {
   }
 
   /**
-   * Returns the most current data related to the instance from {@link this.performRefresh}. May
-   * block if no valid data is currently available.
+   * Returns the current data related to the instance from {@link this.performRefresh}. May block if
+   * no valid data is currently available.
    */
   private InstanceData getInstanceData() {
     try {
@@ -107,13 +107,21 @@ class CloudSqlInstance {
 
   /**
    * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
-   * block until an SSLContext is successfully available.
+   * block until required instance data is available.
    */
   SSLSocket createSslSocket() throws IOException {
     return (SSLSocket) this.getInstanceData().getSslContext().getSocketFactory().createSocket();
   }
 
-  /** Returns a String that represents first IP address that matches the given preferredTypes. */
+  /**
+   * Gets the first IP Address for the instance that matches preference.
+   *
+   * @param preferredTypes Preferred types of IP to return. Currently supports "PUBLIC" or
+   *     "PRIVATE".
+   * @return A String representing the IP address of the intance.
+   * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
+   *     preferences.
+   */
   String getPreferredIp(List<String> preferredTypes) {
     String preferredIp = null;
     Map<String, String> ipAddrs = this.getInstanceData().getIpAddrs();
@@ -133,10 +141,11 @@ class CloudSqlInstance {
   }
 
   /**
-   * Attempts to force a new refresh of the instance data. This will cause other methods on the
-   * object to block until the SSLContext is available.
+   * Attempts to force a new refresh of the instance data. May fail if called too frequently or if a
+   * new refresh is already in progress. If successful, other methods may block until refresh has
+   * been completed.
    *
-   * @return Returns true if successfully scheduled, else false.
+   * @return Returns true if successfully scheduled.
    */
   boolean forceRefresh() {
     if (!forcedRenewRateLimiter.tryAcquire()) {
@@ -160,7 +169,11 @@ class CloudSqlInstance {
     }
   }
 
-  /** Schedules a background task to update the data related to the instance. */
+  /**
+   * Schedules a background task to run {@link this.performRefresh} and returns a future
+   * representing it's completion. If a refresh is already scheduled, returns a future to the
+   * existing task.
+   */
   private ListenableFuture<InstanceData> scheduleRefresh(long delay, TimeUnit timeUnit) {
     synchronized (instanceDataGuard) {
       if (this.nextInstanceData == null) { // If no refresh is already scheduled
@@ -182,6 +195,11 @@ class CloudSqlInstance {
     }
   }
 
+  /**
+   * Performs an update for the instances internal state using the Cloud SQL Admin API. This
+   * refreshes information about the Cloud SQL instance, as well as the SSLContext used to
+   * authenticate connections.
+   */
   private InstanceData performRefresh() {
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
@@ -214,7 +232,7 @@ class CloudSqlInstance {
   }
 
   /**
-   * Returns a new SSLContext based on the provided parameters. This SSLContext will be used to
+   * Creates a new SSLContext based on the provided parameters. This SSLContext will be used to
    * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
    */
   private SSLContext createSslContext(Metadata metadata, Certificate ephemeralCertificate) {
@@ -248,6 +266,7 @@ class CloudSqlInstance {
     return sslContext;
   }
 
+  /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
   private Metadata fetchMetadata() {
     DatabaseInstance instanceMetadata;
     try {
@@ -308,7 +327,7 @@ class CloudSqlInstance {
 
   /**
    * Uses the Cloud SQL Admin API to create an ephemeral SSL certificate that is authenticated to
-   * connect to a Cloud SQL instance, and is good for one hour.
+   * connect the Cloud SQL instance for 60 minutes.
    */
   private Certificate fetchEphemeralCertificate() {
     // Format the public key into a PEM encoded Certificate.
@@ -417,6 +436,7 @@ class CloudSqlInstance {
     return new RuntimeException(fallbackDesc, ex);
   }
 
+  /** Represents the results of {@link this.performRefresh}. */
   private class InstanceData {
     private Metadata metadata;
     private SSLContext sslContext;
@@ -435,6 +455,7 @@ class CloudSqlInstance {
     }
   }
 
+  /** Represents the results of {@link this.fetchMetadata}. */
   private class Metadata {
     private Map<String, String> ipAddrs;
     private Certificate instanceCaCertificate;

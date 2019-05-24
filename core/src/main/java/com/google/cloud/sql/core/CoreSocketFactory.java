@@ -210,23 +210,23 @@ public final class CoreSocketFactory {
         instances.computeIfAbsent(
             instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
 
-    SSLSocket socket = instance.createSslSocket();
-
-    // TODO(kvg): Support all socket related options listed here:
-    // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
-    socket.setKeepAlive(true);
-    socket.setTcpNoDelay(true);
-
-    String instanceIp;
+    SSLSocket socket;
     try {
-      instanceIp = instance.getPreferredIp(ipTypes);
-    } catch (Exception ex) {
-      // TODO(kvg): Clean up error handling
-      throw new RuntimeException(ex);
-    }
+      socket = instance.createSslSocket();
 
-    socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-    socket.startHandshake();
+      // TODO(kvg): Support all socket related options listed here:
+      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
+      socket.setKeepAlive(true);
+      socket.setTcpNoDelay(true);
+
+      String instanceIp = instance.getPreferredIp(ipTypes);
+
+      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
+      socket.startHandshake();
+    } catch (Exception ex) {
+      instance.forceRefresh();
+      throw new RuntimeException("Unable to connect to Cloud SQL instance.", ex);
+    }
 
     return socket;
   }
