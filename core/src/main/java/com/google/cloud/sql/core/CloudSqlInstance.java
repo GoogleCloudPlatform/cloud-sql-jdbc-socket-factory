@@ -54,7 +54,7 @@ class CloudSqlInstance {
 
   private final Object instanceDataGuard = new Object();
   private ListenableFuture<InstanceData> currentInstanceData;
-  private ListenableFuture<InstanceData> nextInstanceData;
+  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
   private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
   /**
@@ -88,7 +88,7 @@ class CloudSqlInstance {
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.currentInstanceData = this.scheduleRefresh(0, TimeUnit.SECONDS);
+      this.currentInstanceData = this.performRefresh();
     }
   }
 
@@ -157,14 +157,20 @@ class CloudSqlInstance {
         if (!nextInstanceData.cancel(false)) {
           // If the task is already running, an update is already imminent. Replace current with the
           // next result so that future operations block until it completes.
-          this.currentInstanceData = this.nextInstanceData;
+          try {
+            this.currentInstanceData = Uninterruptibles.getUninterruptibly(this.nextInstanceData);
+          } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause();
+            Throwables.propagateIfPossible(cause);
+            throw Throwables.propagate(cause);
+          }
           return true;
         }
         this.nextInstanceData = null;
       }
       // Schedule a new update immediately, and replace with current to block future operations that
-      // rely on the SSLContext.
-      this.currentInstanceData = this.scheduleRefresh(0, TimeUnit.SECONDS);
+      // rely on the SSLContext
+      this.currentInstanceData = this.performRefresh();
       return true;
     }
   }
@@ -174,22 +180,32 @@ class CloudSqlInstance {
    * representing it's completion. If a refresh is already scheduled, returns a future to the
    * existing task.
    */
-  private ListenableFuture<InstanceData> scheduleRefresh(long delay, TimeUnit timeUnit) {
+  private ListenableFuture<ListenableFuture<InstanceData>> scheduleRefresh(
+      long delay, TimeUnit timeUnit) {
     synchronized (instanceDataGuard) {
       if (this.nextInstanceData == null) { // If no refresh is already scheduled
-        ListenableFuture<InstanceData> future =
+        ListenableFuture<ListenableFuture<InstanceData>> scheduledRefresh =
             executor.schedule(this::performRefresh, delay, timeUnit);
-        // Once the "next" future is complete, replace "current" and schedule replacement
-        future.addListener(
+        // Once the next refresh has been scheduled, add a listener to the result.
+        scheduledRefresh.addListener(
             () -> {
+              ListenableFuture<InstanceData> refresh;
+              try {
+                refresh = Futures.getDone(scheduledRefresh);
+              } catch (ExecutionException ex) {
+                Throwable cause = ex.getCause();
+                Throwables.propagateIfPossible(cause);
+                throw Throwables.propagate(cause);
+              }
+              // Once the next refresh is complete, replace currentInstanceData and schedule next;
               synchronized (instanceDataGuard) {
-                this.currentInstanceData = this.nextInstanceData;
+                this.currentInstanceData = refresh;
                 this.nextInstanceData = null;
                 this.scheduleRefresh(55, TimeUnit.MINUTES);
               }
             },
             executor);
-        this.nextInstanceData = future;
+        this.nextInstanceData = scheduledRefresh;
       }
       return this.nextInstanceData;
     }
@@ -200,7 +216,7 @@ class CloudSqlInstance {
    * refreshes information about the Cloud SQL instance, as well as the SSLContext used to
    * authenticate connections.
    */
-  private InstanceData performRefresh() {
+  private ListenableFuture<InstanceData> performRefresh() {
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
         executor.submit(this::fetchEphemeralCertificate);
@@ -221,14 +237,7 @@ class CloudSqlInstance {
             metadataFuture,
             sslContextFuture);
 
-    try {
-      // TODO(kvg): Wait to hear back on scheduleAsync
-      return Uninterruptibles.getUninterruptibly(refreshFuture);
-    } catch (ExecutionException ex) {
-      Throwable cause = ex.getCause();
-      Throwables.propagateIfPossible(cause);
-      throw Throwables.propagate(ex);
-    }
+    return refreshFuture;
   }
 
   /**
