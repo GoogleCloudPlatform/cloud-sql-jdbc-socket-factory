@@ -88,7 +88,21 @@ class CloudSqlInstance {
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.currentInstanceData = this.performRefresh();
+      this.scheduleRefresh(0, TimeUnit.MINUTES);
+      this.blockInstanceDataOnNext();
+    }
+  }
+
+  // Update currentInstanceData to block until the final result of the nextInstanceData.
+  private void blockInstanceDataOnNext() {
+    synchronized (instanceDataGuard) {
+      SettableFuture blockingCurrent = new SettableFuture<>();
+      nextInstanceData.addListener(
+          () -> {
+            ListenableFuture<InstanceData> scheduledRefresh = extractNestedFuture(nextInstanceData);
+            blockingCurrent.setFuture(scheduledRefresh);
+          },
+          executor);
     }
   }
 
@@ -151,26 +165,15 @@ class CloudSqlInstance {
     if (!forcedRenewRateLimiter.tryAcquire()) {
       return false; // Forced refreshing too often
     }
-    synchronized (instanceDataGuard) { // If a new SSLContext has already been scheduled
-      // Attempt to cancel the scheduled task
-      if (nextInstanceData != null) {
-        if (!nextInstanceData.cancel(false)) {
-          // If the task is already running, an update is already imminent. Replace current with the
-          // next result so that future operations block until it completes.
-          try {
-            this.currentInstanceData = Uninterruptibles.getUninterruptibly(this.nextInstanceData);
-          } catch (ExecutionException ex) {
-            Throwable cause = ex.getCause();
-            Throwables.propagateIfPossible(cause);
-            throw Throwables.propagate(cause);
-          }
-          return true;
-        }
-        this.nextInstanceData = null;
+    synchronized (instanceDataGuard) {
+      // If a scheduled Refresh already exists, cancel if if not immediately imminent
+      if (nextInstanceData == null || nextInstanceData.cancel(false)) {
+        // If canceled successfully, schedule a replacement immediately
+        nextInstanceData = null;
+        this.scheduleRefresh(0, TimeUnit.MINUTES);
       }
-      // Schedule a new update immediately, and replace with current to block future operations that
-      // rely on the SSLContext
-      this.currentInstanceData = this.performRefresh();
+      // Force currentInstanceData to block until the next refresh is complete
+      this.blockInstanceDataOnNext();
       return true;
     }
   }
