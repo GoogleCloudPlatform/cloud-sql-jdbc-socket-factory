@@ -114,8 +114,9 @@ class CloudSqlInstance {
     try {
       return Uninterruptibles.getUninterruptibly(this.currentInstanceData);
     } catch (ExecutionException ex) {
-      Throwables.propagateIfPossible(ex);
-      throw Throwables.propagate(ex);
+      Throwable cause = ex.getCause();
+      Throwables.propagateIfPossible(cause);
+      throw Throwables.propagate(cause);
     }
   }
 
