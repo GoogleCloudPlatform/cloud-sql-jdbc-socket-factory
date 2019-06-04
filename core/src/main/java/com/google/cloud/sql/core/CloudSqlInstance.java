@@ -189,20 +189,17 @@ class CloudSqlInstance {
         // Once the next refresh has been scheduled, add a listener to the result.
         scheduledRefresh.addListener(
             () -> {
-              ListenableFuture<InstanceData> refresh;
-              try {
-                refresh = Futures.getDone(scheduledRefresh);
-              } catch (ExecutionException ex) {
-                Throwable cause = ex.getCause();
-                Throwables.propagateIfPossible(cause);
-                throw Throwables.propagate(cause);
-              }
-              // Once the next refresh is complete, replace currentInstanceData and schedule next;
-              synchronized (instanceDataGuard) {
-                this.currentInstanceData = refresh;
-                this.nextInstanceData = null;
-                this.scheduleRefresh(55, TimeUnit.MINUTES);
-              }
+              ListenableFuture<InstanceData> refresh = extractNestedFuture(scheduledRefresh);
+              refresh.addListener(
+                  () -> {
+                    // Once complete, replace current and schedule another before the cert expires.
+                    synchronized (instanceDataGuard) {
+                      this.currentInstanceData = refresh;
+                      this.nextInstanceData = null;
+                      this.scheduleRefresh(55, TimeUnit.MINUTES);
+                    }
+                  },
+                  executor);
             },
             executor);
         this.nextInstanceData = scheduledRefresh;
@@ -399,6 +396,16 @@ class CloudSqlInstance {
     }
 
     return taskFuture;
+  }
+
+  // Returns the inner future from a nested future, or else the exception it encountered.
+  private <T> ListenableFuture<T> extractNestedFuture(
+      ListenableFuture<ListenableFuture<T>> future) {
+    try {
+      return Futures.getDone(future);
+    } catch (ExecutionException ex) {
+      return Futures.immediateFailedFuture(ex.getCause());
+    }
   }
 
   /**
