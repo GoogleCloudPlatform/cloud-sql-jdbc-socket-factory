@@ -87,25 +87,8 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     // Kick off initial async jobs
-    synchronized (instanceDataGuard) {
-      scheduleRefresh(0, TimeUnit.MINUTES);
-      blockInstanceDataOnNext();
-    }
-  }
-
-  // Update currentInstanceData to block until the final result of the nextInstanceData.
-  private void blockInstanceDataOnNext() {
-    synchronized (instanceDataGuard) {
-      SettableFuture blockingCurrent = new SettableFuture<>();
-      nextInstanceData.addListener(
-          () -> {
-            ListenableFuture<InstanceData> scheduledRefresh = extractNestedFuture(nextInstanceData);
-            // TODO(kvg); Unchecked call?
-            blockingCurrent.setFuture(scheduledRefresh);
-          },
-          executor);
-      currentInstanceData = blockingCurrent;
-    }
+    // TODO(kvg): Discuss rate limiting
+    this.forceRefresh();
   }
 
   /**
@@ -175,7 +158,16 @@ class CloudSqlInstance {
         scheduleRefresh(0, TimeUnit.MINUTES);
       }
       // Force currentInstanceData to block until the next refresh is complete
-      blockInstanceDataOnNext();
+      SettableFuture blockingCurrent = new SettableFuture<>();
+      nextInstanceData.addListener(
+          () -> {
+            ListenableFuture<InstanceData> scheduledRefresh = extractNestedFuture(nextInstanceData);
+            // TODO(kvg); Unchecked call?
+            blockingCurrent.setFuture(scheduledRefresh);
+          },
+          executor);
+      currentInstanceData = blockingCurrent;
+      ;
       return true;
     }
   }
