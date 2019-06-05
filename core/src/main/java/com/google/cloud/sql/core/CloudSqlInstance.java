@@ -60,11 +60,10 @@ class CloudSqlInstance {
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName Instance connection name; in the format
-   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance.
-   * @param executor Executor used to schedule asynchronous tasks.
-   * @param keyPair Public/Private key pair used to authenticate connections.
+   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
+   * @param executor executor used to schedule asynchronous tasks
+   * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
@@ -129,11 +128,12 @@ class CloudSqlInstance {
   }
 
   /**
-   * Gets the first IP Address for the instance that matches preference.
+   * Returns the first IP address for the instance, in order of the preference supplied by
+   * preferredTypes.
    *
-   * @param preferredTypes Preferred types of IP to return. Currently supports "PUBLIC" or
-   *     "PRIVATE".
-   * @return A String representing the IP address of the intance.
+   * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
+   *     "Private".
+   * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
@@ -160,7 +160,8 @@ class CloudSqlInstance {
    * new refresh is already in progress. If successful, other methods may block until refresh has
    * been completed.
    *
-   * @return Returns true if successfully scheduled.
+   * @return {@code true} if successfully scheduled, or {@code false} if it is called too
+   *     frequently.
    */
   boolean forceRefresh() {
     if (!forcedRenewRateLimiter.tryAcquire()) {
@@ -180,9 +181,10 @@ class CloudSqlInstance {
   }
 
   /**
-   * Schedules a background task to run {@link this.performRefresh} and returns a future
-   * representing it's completion. If a refresh is already scheduled, returns a future to the
-   * existing task.
+   * Schedules an asynchronous refresh of instance data unless one is already in progress.
+   *
+   * @return a future that completes when the scheduled refresh begins, and returns the actual
+   *     refresh operation
    */
   private ListenableFuture<ListenableFuture<InstanceData>> scheduleRefresh(
       long delay, TimeUnit timeUnit) {
@@ -213,7 +215,7 @@ class CloudSqlInstance {
   }
 
   /**
-   * Performs an update for the instances internal state using the Cloud SQL Admin API. This
+   * Performs an update for the instance's internal state using the Cloud SQL Admin API. This
    * refreshes information about the Cloud SQL instance, as well as the SSLContext used to
    * authenticate connections.
    */
@@ -337,7 +339,7 @@ class CloudSqlInstance {
 
   /**
    * Uses the Cloud SQL Admin API to create an ephemeral SSL certificate that is authenticated to
-   * connect the Cloud SQL instance for 60 minutes.
+   * connect the Cloud SQL instance for up to 60 minutes.
    */
   private Certificate fetchEphemeralCertificate() {
     // Format the public key into a PEM encoded Certificate.
@@ -416,9 +418,9 @@ class CloudSqlInstance {
    * Checks for common errors that can occur when interacting with the Cloud SQL Admin API, and adds
    * additional context to help the user troubleshoot them.
    *
-   * @param ex The exception thrown by the Admin API request.
-   * @param fallbackDesc Generic description uses as a fall back if no additional information can be
-   *     provided to the user.
+   * @param ex exception thrown by the Admin API request
+   * @param fallbackDesc generic description used as a fallback if no additional information can be
+   *     provided to the user
    */
   // TODO(kvg) Throw checked exceptions for recoverable states?
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
@@ -456,7 +458,7 @@ class CloudSqlInstance {
     return new RuntimeException(fallbackDesc, ex);
   }
 
-  /** Represents the results of {@link this.performRefresh}. */
+  /** Represents the results of {@link #performRefresh()}. */
   private class InstanceData {
     private Metadata metadata;
     private SSLContext sslContext;
@@ -475,10 +477,10 @@ class CloudSqlInstance {
     }
   }
 
-  /** Represents the results of {@link this.fetchMetadata}. */
+  /** Represents the results of @link #this.fetchMetadata(). */
   private class Metadata {
-    private Map<String, String> ipAddrs;
-    private Certificate instanceCaCertificate;
+    private final Map<String, String> ipAddrs;
+    private final Certificate instanceCaCertificate;
 
     Metadata(Map<String, String> ipAddrs, Certificate instanceCaCertificate) {
       this.ipAddrs = ipAddrs;
