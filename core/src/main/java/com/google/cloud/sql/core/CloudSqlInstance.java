@@ -1,12 +1,13 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.util.Throwables;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
+import com.google.common.base.Throwables;
+import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -24,7 +25,6 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +55,7 @@ class CloudSqlInstance {
   private final Object instanceDataGuard = new Object();
   private ListenableFuture<InstanceData> currentInstanceData;
   private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
+  // Limit forced refreshes to 1 every minute.
   private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
   /**
@@ -87,8 +88,8 @@ class CloudSqlInstance {
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.scheduleRefresh(0, TimeUnit.MINUTES);
-      this.blockInstanceDataOnNext();
+      scheduleRefresh(0, TimeUnit.MINUTES);
+      blockInstanceDataOnNext();
     }
   }
 
@@ -99,23 +100,25 @@ class CloudSqlInstance {
       nextInstanceData.addListener(
           () -> {
             ListenableFuture<InstanceData> scheduledRefresh = extractNestedFuture(nextInstanceData);
+            // TODO(kvg); Unchecked call?
             blockingCurrent.setFuture(scheduledRefresh);
           },
           executor);
+      currentInstanceData = blockingCurrent;
     }
   }
 
   /**
-   * Returns the current data related to the instance from {@link this.performRefresh}. May block if
+   * Returns the current data related to the instance from {@link #performRefresh()}. May block if
    * no valid data is currently available.
    */
   private InstanceData getInstanceData() {
     try {
-      return Uninterruptibles.getUninterruptibly(this.currentInstanceData);
+      return Uninterruptibles.getUninterruptibly(currentInstanceData);
     } catch (ExecutionException ex) {
       Throwable cause = ex.getCause();
-      Throwables.propagateIfPossible(cause);
-      throw Throwables.propagate(cause);
+      Throwables.throwIfUnchecked(cause);
+      throw new RuntimeException(cause);
     }
   }
 
@@ -124,7 +127,7 @@ class CloudSqlInstance {
    * block until required instance data is available.
    */
   SSLSocket createSslSocket() throws IOException {
-    return (SSLSocket) this.getInstanceData().getSslContext().getSocketFactory().createSocket();
+    return (SSLSocket) getInstanceData().getSslContext().getSocketFactory().createSocket();
   }
 
   /**
@@ -139,20 +142,17 @@ class CloudSqlInstance {
    */
   String getPreferredIp(List<String> preferredTypes) {
     String preferredIp = null;
-    Map<String, String> ipAddrs = this.getInstanceData().getIpAddrs();
+    Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
     for (String ipType : preferredTypes) {
       preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
-        break;
+        return preferredIp;
       }
     }
-    if (preferredIp == null) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
-              connectionName, String.join(", ", preferredTypes)));
-    }
-    return preferredIp;
+    throw new IllegalArgumentException(
+        String.format(
+            "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
+            connectionName, String.join(", ", preferredTypes)));
   }
 
   /**
@@ -172,10 +172,10 @@ class CloudSqlInstance {
       if (nextInstanceData == null || nextInstanceData.cancel(false)) {
         // If canceled successfully, schedule a replacement immediately
         nextInstanceData = null;
-        this.scheduleRefresh(0, TimeUnit.MINUTES);
+        scheduleRefresh(0, TimeUnit.MINUTES);
       }
       // Force currentInstanceData to block until the next refresh is complete
-      this.blockInstanceDataOnNext();
+      blockInstanceDataOnNext();
       return true;
     }
   }
@@ -189,7 +189,7 @@ class CloudSqlInstance {
   private ListenableFuture<ListenableFuture<InstanceData>> scheduleRefresh(
       long delay, TimeUnit timeUnit) {
     synchronized (instanceDataGuard) {
-      if (this.nextInstanceData == null) { // If no refresh is already scheduled
+      if (nextInstanceData == null) { // If no refresh is already scheduled
         ListenableFuture<ListenableFuture<InstanceData>> scheduledRefresh =
             executor.schedule(this::performRefresh, delay, timeUnit);
         // Once the next refresh has been scheduled, add a listener to the result.
@@ -200,17 +200,17 @@ class CloudSqlInstance {
                   () -> {
                     // Once complete, replace current and schedule another before the cert expires.
                     synchronized (instanceDataGuard) {
-                      this.currentInstanceData = refresh;
-                      this.nextInstanceData = null;
-                      this.scheduleRefresh(55, TimeUnit.MINUTES);
+                      currentInstanceData = refresh;
+                      nextInstanceData = null;
+                      scheduleRefresh(55, TimeUnit.MINUTES);
                     }
                   },
                   executor);
             },
             executor);
-        this.nextInstanceData = scheduledRefresh;
+        nextInstanceData = scheduledRefresh;
       }
-      return this.nextInstanceData;
+      return nextInstanceData;
     }
   }
 
@@ -248,7 +248,6 @@ class CloudSqlInstance {
    * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
    */
   private SSLContext createSslContext(Metadata metadata, Certificate ephemeralCertificate) {
-    SSLContext sslContext;
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
@@ -265,9 +264,10 @@ class CloudSqlInstance {
       TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
       tmf.init(trustedKeyStore);
 
-      sslContext = SSLContext.getInstance("TLSv1.2");
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
+      return sslContext;
     } catch (GeneralSecurityException | IOException ex) {
       // TODO(kvg): Verify this should be unchecked
       throw new RuntimeException(
@@ -275,7 +275,6 @@ class CloudSqlInstance {
               "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName),
           ex);
     }
-    return sslContext;
   }
 
   /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
@@ -305,27 +304,25 @@ class CloudSqlInstance {
               connectionName));
     }
 
-    // Update the IP addresses and types need to connect with the instance.
-    Map<String, String> ipAddrs = new HashMap<>();
-    for (IpMapping addr : instanceMetadata.getIpAddresses()) {
-      ipAddrs.put(addr.getType(), addr.getIpAddress());
-    }
-    if (ipAddrs.isEmpty()) {
+    // Verify the instance has at least one IP type assigned that can be used to connect.
+    if (instanceMetadata.getIpAddresses().isEmpty()) {
       throw new IllegalStateException(
           String.format(
               "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
                   + "IP address.",
               connectionName));
     }
+    // Update the IP addresses and types need to connect with the instance.
+    Map<String, String> ipAddrs = new HashMap<>();
+    for (IpMapping addr : instanceMetadata.getIpAddresses()) {
+      ipAddrs.put(addr.getType(), addr.getIpAddress());
+    }
 
     // Update the Server CA certificate used to create the SSL connection with the instance.
-    Certificate instanceCaCertificate;
     try {
-      byte[] certBytes =
-          instanceMetadata.getServerCaCert().getCert().getBytes(StandardCharsets.UTF_8);
-      instanceCaCertificate =
-          CertificateFactory.getInstance("X.509")
-              .generateCertificate(new ByteArrayInputStream(certBytes));
+      Certificate instanceCaCertificate =
+          createCertificate(instanceMetadata.getServerCaCert().getCert());
+      return new Metadata(ipAddrs, instanceCaCertificate);
     } catch (CertificateException ex) {
       throw new RuntimeException(
           String.format(
@@ -333,8 +330,6 @@ class CloudSqlInstance {
               connectionName),
           ex);
     }
-
-    return new Metadata(ipAddrs, instanceCaCertificate);
   }
 
   /**
@@ -342,19 +337,10 @@ class CloudSqlInstance {
    * connect the Cloud SQL instance for up to 60 minutes.
    */
   private Certificate fetchEphemeralCertificate() {
-    // Format the public key into a PEM encoded Certificate.
-    StringBuilder publicKeyPemBuilder = new StringBuilder();
-    publicKeyPemBuilder.append("-----BEGIN RSA PUBLIC KEY-----\n");
-    publicKeyPemBuilder.append(
-        Base64.getEncoder()
-            .encodeToString(keyPair.getPublic().getEncoded())
-            .replaceAll("(.{64})", "$1\n"));
-    publicKeyPemBuilder.append("\n");
-    publicKeyPemBuilder.append("-----END RSA PUBLIC KEY-----\n");
 
     // Use the SQL Admin API to create a new ephemeral certificate.
     SslCertsCreateEphemeralRequest request =
-        new SslCertsCreateEphemeralRequest().setPublicKey(publicKeyPemBuilder.toString());
+        new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert());
     SslCert response;
     try {
       response = apiClient.sslCerts().createEphemeral(projectId, instanceId, request).execute();
@@ -369,10 +355,7 @@ class CloudSqlInstance {
     // Parse the certificate from the response.
     Certificate ephemeralCertificate;
     try {
-      byte[] certBytes = response.getCert().getBytes(StandardCharsets.UTF_8);
-      ephemeralCertificate =
-          CertificateFactory.getInstance("X.509")
-              .generateCertificate(new ByteArrayInputStream(certBytes));
+      ephemeralCertificate = createCertificate(response.getCert());
     } catch (CertificateException ex) {
       throw new RuntimeException(
           String.format(
@@ -383,6 +366,19 @@ class CloudSqlInstance {
     return ephemeralCertificate;
   }
 
+  /**
+   * Generates public key certificate for which the instance has the matching private key.
+   *
+   * @return PEM encoded public key certificate
+   */
+  private String generatePublicKeyCert() {
+    // Format the public key into a PEM encoded Certificate.
+    return "-----BEGIN RSA PUBLIC KEY-----\n"
+        + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
+        + "\n"
+        + "-----END RSA PUBLIC KEY-----\n";
+  }
+
   // Schedules task to be executed once the provided futures are complete.
   private <T> ListenableFuture<T> whenComplete(Callable<T> task, ListenableFuture<?>... futures) {
     SettableFuture<T> taskFuture = SettableFuture.create();
@@ -391,27 +387,34 @@ class CloudSqlInstance {
     AtomicInteger countDown = new AtomicInteger(futures.length);
 
     // Trigger the task when all futures are complete.
-    Runnable runOutput =
+    Runnable runWhenInputsAreComplete =
         () -> {
           if (countDown.decrementAndGet() == 0) {
             taskFuture.setFuture(executor.submit(task));
           }
         };
     for (ListenableFuture<?> future : futures) {
-      future.addListener(runOutput, executor);
+      future.addListener(runWhenInputsAreComplete, executor);
     }
 
     return taskFuture;
   }
 
   // Returns the inner future from a nested future, or else the exception it encountered.
-  private <T> ListenableFuture<T> extractNestedFuture(
+  private static <T> ListenableFuture<T> extractNestedFuture(
       ListenableFuture<ListenableFuture<T>> future) {
     try {
       return Futures.getDone(future);
     } catch (ExecutionException ex) {
       return Futures.immediateFailedFuture(ex.getCause());
     }
+  }
+
+  // Creates a Certificate object from a provided string.
+  private static Certificate createCertificate(String cert) throws CertificateException {
+    byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
+    ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
+    return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
   }
 
   /**
@@ -443,7 +446,8 @@ class CloudSqlInstance {
           String.format(
               "[%s] The Google Cloud SQL Admin API is not enabled for the project \"%s\". Please "
                   + "use the Google Developers Console to enable it: %s",
-              connectionName, projectId, apiLink));
+              connectionName, projectId, apiLink),
+          ex);
     } else if ("notAuthorized".equals(reason)) {
       // This error occurs if the instance doesn't exist or the account isn't authorized
       // TODO(kvg): Add credential account name to error string.
@@ -452,16 +456,17 @@ class CloudSqlInstance {
               "[%s] The Cloud SQL Instance does not exist or your account is not authorized to "
                   + "access it. Please verify the instance connection name and check the IAM "
                   + "permissions for project \"%s\" ",
-              connectionName, projectId));
+              connectionName, projectId),
+          ex);
     }
     // Fallback to the generic description
     return new RuntimeException(fallbackDesc, ex);
   }
 
   /** Represents the results of {@link #performRefresh()}. */
-  private class InstanceData {
-    private Metadata metadata;
-    private SSLContext sslContext;
+  private static class InstanceData {
+    private final Metadata metadata;
+    private final SSLContext sslContext;
 
     InstanceData(Metadata metadata, SSLContext sslContext) {
       this.metadata = metadata;
@@ -477,8 +482,8 @@ class CloudSqlInstance {
     }
   }
 
-  /** Represents the results of @link #this.fetchMetadata(). */
-  private class Metadata {
+  /** Represents the results of @link #fetchMetadata(). */
+  private static class Metadata {
     private final Map<String, String> ipAddrs;
     private final Certificate instanceCaCertificate;
 
