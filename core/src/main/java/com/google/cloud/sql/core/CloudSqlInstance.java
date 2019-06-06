@@ -182,25 +182,8 @@ class CloudSqlInstance {
       long delay, TimeUnit timeUnit) {
     synchronized (instanceDataGuard) {
       if (nextInstanceData == null) { // If no refresh is already scheduled
-        ListenableFuture<ListenableFuture<InstanceData>> scheduledRefresh =
-            executor.schedule(this::performRefresh, delay, timeUnit);
         // Once the next refresh has been scheduled, add a listener to the result.
-        scheduledRefresh.addListener(
-            () -> {
-              ListenableFuture<InstanceData> refresh = extractNestedFuture(scheduledRefresh);
-              refresh.addListener(
-                  () -> {
-                    // Once complete, replace current and schedule another before the cert expires.
-                    synchronized (instanceDataGuard) {
-                      currentInstanceData = refresh;
-                      nextInstanceData = null;
-                      scheduleRefresh(55, TimeUnit.MINUTES);
-                    }
-                  },
-                  executor);
-            },
-            executor);
-        nextInstanceData = scheduledRefresh;
+        nextInstanceData = executor.schedule(this::performRefresh, delay, timeUnit);
       }
       return nextInstanceData;
     }
@@ -231,6 +214,17 @@ class CloudSqlInstance {
                     Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
             metadataFuture,
             sslContextFuture);
+
+    refreshFuture.addListener(
+        () -> {
+          // Once complete, replace current and schedule another before the cert expires.
+          synchronized (instanceDataGuard) {
+            currentInstanceData = refreshFuture;
+            nextInstanceData = null;
+            scheduleRefresh(55, TimeUnit.MINUTES);
+          }
+        },
+        executor);
 
     return refreshFuture;
   }
