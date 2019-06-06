@@ -141,63 +141,38 @@ class CloudSqlInstance {
 
   /**
    * Attempts to force a new refresh of the instance data. May fail if called too frequently or if a
-   * new refresh is already in progress. If successful, other methods may block until refresh has
+   * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
    *
-   * @return {@code true} if successfully scheduled, or {@code false} if it is called too
-   *     frequently.
+   * @return {@code true} if successfully scheduled, or {@code false} otherwise.
    */
   boolean forceRefresh() {
     if (!forcedRenewRateLimiter.tryAcquire()) {
-      return false; // Forced refreshing too often
+      return false;
     }
     synchronized (instanceDataGuard) {
-      // If a scheduled Refresh already exists, cancel if if not immediately imminent
-      if (nextInstanceData == null || nextInstanceData.cancel(false)) {
-        // If canceled successfully, schedule a replacement immediately
-        nextInstanceData = null;
-        scheduleRefresh(0, TimeUnit.MINUTES);
+      // If a scheduled refresh exists and can't be canceled, fail the operation
+      if (nextInstanceData != null && !nextInstanceData.cancel(false)) {
+        return false;
       }
-      // Force currentInstanceData to block until the next refresh is complete
-      SettableFuture blockingCurrent = new SettableFuture<>();
-      nextInstanceData.addListener(
-          () -> {
-            ListenableFuture<InstanceData> scheduledRefresh = extractNestedFuture(nextInstanceData);
-            // TODO(kvg); Unchecked call?
-            blockingCurrent.setFuture(scheduledRefresh);
-          },
-          executor);
-      currentInstanceData = blockingCurrent;
+      // Otherwise, immediately perform the next refresh using currentInstanceData, to let any
+      // methods that rely on it block until it is complete
+      currentInstanceData = performRefresh();
       return true;
     }
   }
 
   /**
-   * Schedules an asynchronous refresh of instance data unless one is already in progress.
-   *
-   * @return a future that completes when the scheduled refresh begins, and returns the actual
-   *     refresh operation
-   */
-  private ListenableFuture<ListenableFuture<InstanceData>> scheduleRefresh(
-      long delay, TimeUnit timeUnit) {
-    synchronized (instanceDataGuard) {
-      if (nextInstanceData == null) { // If no refresh is already scheduled
-        nextInstanceData = executor.schedule(this::performRefresh, delay, timeUnit);
-      }
-      return nextInstanceData;
-    }
-  }
-
-  /**
-   * Performs an update for the instance's internal state using the Cloud SQL Admin API. This
-   * refreshes information about the Cloud SQL instance, as well as the SSLContext used to
-   * authenticate connections.
+   * Triggers an update of internal information obtained from the Cloud SQL Admin API. Replaces the
+   * value of currentInstanceData and schedules the next refresh shortly before the information
+   * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
+    // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
         executor.submit(this::fetchEphemeralCertificate);
-
+    // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SSLContext> sslContextFuture =
         whenComplete(
             () ->
@@ -205,7 +180,7 @@ class CloudSqlInstance {
                     Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
             metadataFuture,
             ephemeralCertificateFuture);
-
+    // Once both the SSLContext and Metadata are complete, return the results
     ListenableFuture<InstanceData> refreshFuture =
         whenComplete(
             () ->
@@ -213,18 +188,16 @@ class CloudSqlInstance {
                     Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
             metadataFuture,
             sslContextFuture);
-
     refreshFuture.addListener(
         () -> {
-          // Once complete, replace current and schedule another before the cert expires.
           synchronized (instanceDataGuard) {
+            // update currentInstanceData with the most recent results
             currentInstanceData = refreshFuture;
-            nextInstanceData = null;
-            scheduleRefresh(55, TimeUnit.MINUTES);
+            // schedule a replacement before the SSLContext expires
+            nextInstanceData = executor.schedule(this::performRefresh, 55, TimeUnit.MINUTES);
           }
         },
         executor);
-
     return refreshFuture;
   }
 
