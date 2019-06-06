@@ -53,8 +53,8 @@ class CloudSqlInstance {
   private final KeyPair keyPair;
 
   private final Object instanceDataGuard = new Object();
-  private ListenableFuture<InstanceData> currentInstanceData;
-  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
+  private volatile ListenableFuture<InstanceData> currentInstanceData;
+  private volatile ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
   // Limit forced refreshes to 1 every minute.
   private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
@@ -87,8 +87,9 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     // Kick off initial async jobs
-    // TODO(kvg): Discuss rate limiting
-    this.forceRefresh();
+    synchronized (instanceDataGuard) {
+      this.currentInstanceData = this.performRefresh();
+    }
   }
 
   /**
@@ -97,6 +98,7 @@ class CloudSqlInstance {
    */
   private InstanceData getInstanceData() {
     try {
+      // TODO(kvg): Let exceptions up to here before adding context
       return Uninterruptibles.getUninterruptibly(currentInstanceData);
     } catch (ExecutionException ex) {
       Throwable cause = ex.getCause();
@@ -124,10 +126,9 @@ class CloudSqlInstance {
    *     preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
-    String preferredIp = null;
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
     for (String ipType : preferredTypes) {
-      preferredIp = ipAddrs.get(ipType);
+      String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
         return preferredIp;
       }
@@ -167,7 +168,6 @@ class CloudSqlInstance {
           },
           executor);
       currentInstanceData = blockingCurrent;
-      ;
       return true;
     }
   }
@@ -182,7 +182,6 @@ class CloudSqlInstance {
       long delay, TimeUnit timeUnit) {
     synchronized (instanceDataGuard) {
       if (nextInstanceData == null) { // If no refresh is already scheduled
-        // Once the next refresh has been scheduled, add a listener to the result.
         nextInstanceData = executor.schedule(this::performRefresh, delay, timeUnit);
       }
       return nextInstanceData;
@@ -255,7 +254,6 @@ class CloudSqlInstance {
 
       return sslContext;
     } catch (GeneralSecurityException | IOException ex) {
-      // TODO(kvg): Verify this should be unchecked
       throw new RuntimeException(
           String.format(
               "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName),
@@ -411,7 +409,6 @@ class CloudSqlInstance {
    * @param fallbackDesc generic description used as a fallback if no additional information can be
    *     provided to the user
    */
-  // TODO(kvg) Throw checked exceptions for recoverable states?
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
     GoogleJsonResponseException gjrEx =
