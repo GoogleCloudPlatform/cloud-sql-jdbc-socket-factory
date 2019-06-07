@@ -8,6 +8,7 @@ import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -33,10 +34,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /**
  * This class manages information on and creates connections to a Cloud SQL instance using the Cloud
@@ -44,6 +48,8 @@ import javax.net.ssl.TrustManagerFactory;
  * asynchronously, and this class should be considered threadsafe.
  */
 class CloudSqlInstance {
+  private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
+
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
 
@@ -177,7 +183,7 @@ class CloudSqlInstance {
         executor.submit(this::fetchEphemeralCertificate);
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SSLContext> sslContextFuture =
-        whenAllComplete(
+        whenAllSucceed(
             () ->
                 createSslContext(
                     Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
@@ -185,7 +191,7 @@ class CloudSqlInstance {
             ephemeralCertificateFuture);
     // Once both the SSLContext and Metadata are complete, return the results
     ListenableFuture<InstanceData> refreshFuture =
-        whenAllComplete(
+        whenAllSucceed(
             () ->
                 new InstanceData(
                     Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
@@ -340,22 +346,33 @@ class CloudSqlInstance {
   }
 
   // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenAllComplete(
-      Callable<T> task, ListenableFuture<?>... futures) {
+  private <T> ListenableFuture<T> whenAllSucceed(Callable<T> task, ListenableFuture<?>... futures) {
     SettableFuture<T> taskFuture = SettableFuture.create();
 
     // Create a countDown for all Futures to complete.
     AtomicInteger countDown = new AtomicInteger(futures.length);
 
     // Trigger the task when all futures are complete.
-    Runnable runWhenInputsAreComplete =
-        () -> {
-          if (countDown.decrementAndGet() == 0) {
-            taskFuture.setFuture(executor.submit(task));
+    FutureCallback<Object> runWhenInputAreComplete =
+        new FutureCallback<Object>() {
+          @Override
+          public void onSuccess(@NullableDecl Object o) {
+            if (countDown.decrementAndGet() == 0) {
+              taskFuture.setFuture(executor.submit(task));
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            if (!taskFuture.setException(throwable)) {
+              String msg =
+                  "Got more than one input Future Failure. Logging failures after the first";
+              logger.log(Level.SEVERE, msg, throwable);
+            }
           }
         };
     for (ListenableFuture<?> future : futures) {
-      future.addListener(runWhenInputsAreComplete, executor);
+      Futures.addCallback(future, runWhenInputAreComplete, executor);
     }
 
     return taskFuture;

@@ -182,7 +182,8 @@ public class CoreSocketFactoryTest {
       coreSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).startsWith("Incorrect region value");
+      assertThat(e.getMessage())
+          .contains("The region specified for the Cloud SQL instance is incorrect");
     }
   }
 
