@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -103,8 +104,8 @@ class CloudSqlInstance {
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.nextInstanceData = Futures.immediateFuture(performRefresh());
-      this.currentInstanceData = blockOnNestedFuture(nextInstanceData);
+      this.currentInstanceData = performRefresh();
+      this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
   }
 
@@ -113,15 +114,17 @@ class CloudSqlInstance {
    * no valid data is currently available.
    */
   private InstanceData getInstanceData() {
+    ListenableFuture<InstanceData> instanceData;
     synchronized (instanceDataGuard) {
-      try {
-        // TODO(kvg): Let exceptions up to here before adding context
-        return Uninterruptibles.getUninterruptibly(currentInstanceData);
-      } catch (ExecutionException ex) {
-        Throwable cause = ex.getCause();
-        Throwables.throwIfUnchecked(cause);
-        throw new RuntimeException(cause);
-      }
+      instanceData = currentInstanceData;
+    }
+    try {
+      // TODO(kvg): Let exceptions up to here before adding context
+      return Uninterruptibles.getUninterruptibly(instanceData);
+    } catch (ExecutionException ex) {
+      Throwable cause = ex.getCause();
+      Throwables.throwIfUnchecked(cause);
+      throw new RuntimeException(cause);
     }
   }
 
@@ -171,10 +174,12 @@ class CloudSqlInstance {
     synchronized (instanceDataGuard) {
       // If a scheduled refresh doesn't exist or hasn't started, perform one immediately
       if (nextInstanceData == null || nextInstanceData.cancel(false)) {
-        nextInstanceData = Futures.immediateFuture(performRefresh());
+        currentInstanceData = performRefresh();
+        nextInstanceData = Futures.immediateFuture(currentInstanceData);
+      } else {
+        // Otherwise it's already running, so just block on the results
+        currentInstanceData = blockOnNestedFuture(nextInstanceData, executor);
       }
-      // Update current to block on nextInstanceData
-      currentInstanceData = blockOnNestedFuture(nextInstanceData);
       return true;
     }
   }
@@ -195,6 +200,7 @@ class CloudSqlInstance {
             () ->
                 createSslContext(
                     Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
+            executor,
             metadataFuture,
             ephemeralCertificateFuture);
     // Once both the SSLContext and Metadata are complete, return the results
@@ -203,6 +209,7 @@ class CloudSqlInstance {
             () ->
                 new InstanceData(
                     Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
+            executor,
             metadataFuture,
             sslContextFuture);
     refreshFuture.addListener(
@@ -354,7 +361,10 @@ class CloudSqlInstance {
   }
 
   // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenAllSucceed(Callable<T> task, ListenableFuture<?>... futures) {
+  private static <T> ListenableFuture<T> whenAllSucceed(
+      Callable<T> task,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<?>... futures) {
     SettableFuture<T> taskFuture = SettableFuture.create();
 
     // Create a countDown for all Futures to complete.
@@ -373,8 +383,7 @@ class CloudSqlInstance {
           @Override
           public void onFailure(Throwable throwable) {
             if (!taskFuture.setException(throwable)) {
-              String msg =
-                  "Got more than one input Future Failure. Logging failures after the first";
+              String msg = "Got more than one input failure. Logging failures after the first";
               logger.log(Level.SEVERE, msg, throwable);
             }
           }
@@ -387,8 +396,8 @@ class CloudSqlInstance {
   }
 
   /** Returns a future that blocks until the result of a nested future is complete. */
-  private <T> ListenableFuture<T> blockOnNestedFuture(
-      ListenableFuture<ListenableFuture<T>> nestedFuture) {
+  private static <T> ListenableFuture<T> blockOnNestedFuture(
+      ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
     SettableFuture<T> blockedFuture = SettableFuture.create();
     // Once the nested future is complete, update the blocked future to match
     Futures.addCallback(
