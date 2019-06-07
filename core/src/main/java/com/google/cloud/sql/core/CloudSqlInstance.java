@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -74,8 +75,10 @@ class CloudSqlInstance {
     String[] connFields = connectionName.split(":");
     if (connFields.length != 3) {
       throw new IllegalArgumentException(
-          "[%s] Cloud SQL connection name is invalid, expected string in the form of "
-              + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".");
+          String.format(
+              "[%s] Cloud SQL connection name is invalid, expected string in the form of "
+                  + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
+              connectionName));
     }
     this.connectionName = connectionName;
     this.projectId = connFields[0];
@@ -174,7 +177,7 @@ class CloudSqlInstance {
         executor.submit(this::fetchEphemeralCertificate);
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SSLContext> sslContextFuture =
-        whenComplete(
+        whenAllComplete(
             () ->
                 createSslContext(
                     Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
@@ -182,7 +185,7 @@ class CloudSqlInstance {
             ephemeralCertificateFuture);
     // Once both the SSLContext and Metadata are complete, return the results
     ListenableFuture<InstanceData> refreshFuture =
-        whenComplete(
+        whenAllComplete(
             () ->
                 new InstanceData(
                     Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
@@ -211,10 +214,10 @@ class CloudSqlInstance {
       authKeyStore.load(null, null);
       KeyStore.PrivateKeyEntry privateKey =
           new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
-      authKeyStore.setEntry("ephemeral", privateKey, null);
+      authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
       KeyManagerFactory kmf =
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      kmf.init(authKeyStore, null);
+      kmf.init(authKeyStore, new char[0]);
 
       KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustedKeyStore.load(null, null);
@@ -337,7 +340,8 @@ class CloudSqlInstance {
   }
 
   // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenComplete(Callable<T> task, ListenableFuture<?>... futures) {
+  private <T> ListenableFuture<T> whenAllComplete(
+      Callable<T> task, ListenableFuture<?>... futures) {
     SettableFuture<T> taskFuture = SettableFuture.create();
 
     // Create a countDown for all Futures to complete.
@@ -355,16 +359,6 @@ class CloudSqlInstance {
     }
 
     return taskFuture;
-  }
-
-  // Returns the inner future from a nested future, or else the exception it encountered.
-  private static <T> ListenableFuture<T> extractNestedFuture(
-      ListenableFuture<ListenableFuture<T>> future) {
-    try {
-      return Futures.getDone(future);
-    } catch (ExecutionException ex) {
-      return Futures.immediateFailedFuture(ex.getCause());
-    }
   }
 
   // Creates a Certificate object from a provided string.

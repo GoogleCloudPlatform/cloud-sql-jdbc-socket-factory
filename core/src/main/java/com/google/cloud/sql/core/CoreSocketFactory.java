@@ -225,8 +225,9 @@ public final class CoreSocketFactory {
 
       return socket;
     } catch (Exception ex) {
+      // TODO(kvg): Let user know about the rate limit
       instance.forceRefresh();
-      throw new RuntimeException("Unable to connect to Cloud SQL instance.", ex);
+      throw ex;
     }
   }
 
