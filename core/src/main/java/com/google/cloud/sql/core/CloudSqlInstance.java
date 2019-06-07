@@ -172,8 +172,8 @@ class CloudSqlInstance {
       return false;
     }
     synchronized (instanceDataGuard) {
-      // If a scheduled refresh doesn't exist or hasn't started, perform one immediately
-      if (nextInstanceData == null || nextInstanceData.cancel(false)) {
+      // If a scheduled refresh hasn't started, perform one immediately
+      if (nextInstanceData.cancel(false)) {
         currentInstanceData = performRefresh();
         nextInstanceData = Futures.immediateFuture(currentInstanceData);
       } else {
