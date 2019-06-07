@@ -239,56 +239,56 @@ class CloudSqlInstance {
 
   /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
   private Metadata fetchMetadata() {
-    DatabaseInstance instanceMetadata;
     try {
-      instanceMetadata = apiClient.instances().get(projectId, instanceId).execute();
+      DatabaseInstance instanceMetadata =
+          apiClient.instances().get(projectId, instanceId).execute();
+
+      // Validate the instance will support the authenticated connection.
+      if (!instanceMetadata.getRegion().equals(regionId)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "[%s] The region specified for the Cloud SQL instance is"
+                    + " incorrect. Please verify the instance connection name.",
+                connectionName));
+      }
+      if (!instanceMetadata.getBackendType().equals("SECOND_GEN")) {
+        throw new IllegalArgumentException(
+            String.format(
+                "[%s] Connections to Cloud SQL instance not supported - not a Second Generation "
+                    + "instance.",
+                connectionName));
+      }
+
+      // Verify the instance has at least one IP type assigned that can be used to connect.
+      if (instanceMetadata.getIpAddresses().isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
+                    + "IP address.",
+                connectionName));
+      }
+      // Update the IP addresses and types need to connect with the instance.
+      Map<String, String> ipAddrs = new HashMap<>();
+      for (IpMapping addr : instanceMetadata.getIpAddresses()) {
+        ipAddrs.put(addr.getType(), addr.getIpAddress());
+      }
+
+      // Update the Server CA certificate used to create the SSL connection with the instance.
+      try {
+        Certificate instanceCaCertificate =
+            createCertificate(instanceMetadata.getServerCaCert().getCert());
+        return new Metadata(ipAddrs, instanceCaCertificate);
+      } catch (CertificateException ex) {
+        throw new RuntimeException(
+            String.format(
+                "[%s] Unable to parse the server CA certificate for the Cloud SQL instance.",
+                connectionName),
+            ex);
+      }
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
           String.format("[%s] Failed to update metadata for Cloud SQL instance.", connectionName));
-    }
-
-    // Validate the instance will support the authenticated connection.
-    if (!instanceMetadata.getRegion().equals(regionId)) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] The region specified for the Cloud SQL instance is"
-                  + " incorrect. Please verify the instance connection name.",
-              connectionName));
-    }
-    if (!instanceMetadata.getBackendType().equals("SECOND_GEN")) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] Connections to Cloud SQL instance not supported - not a Second Generation "
-                  + "instance.",
-              connectionName));
-    }
-
-    // Verify the instance has at least one IP type assigned that can be used to connect.
-    if (instanceMetadata.getIpAddresses().isEmpty()) {
-      throw new IllegalStateException(
-          String.format(
-              "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
-                  + "IP address.",
-              connectionName));
-    }
-    // Update the IP addresses and types need to connect with the instance.
-    Map<String, String> ipAddrs = new HashMap<>();
-    for (IpMapping addr : instanceMetadata.getIpAddresses()) {
-      ipAddrs.put(addr.getType(), addr.getIpAddress());
-    }
-
-    // Update the Server CA certificate used to create the SSL connection with the instance.
-    try {
-      Certificate instanceCaCertificate =
-          createCertificate(instanceMetadata.getServerCaCert().getCert());
-      return new Metadata(ipAddrs, instanceCaCertificate);
-    } catch (CertificateException ex) {
-      throw new RuntimeException(
-          String.format(
-              "[%s] Unable to parse the server CA certificate for the Cloud SQL instance.",
-              connectionName),
-          ex);
     }
   }
 
