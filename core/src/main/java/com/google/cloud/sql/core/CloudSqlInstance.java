@@ -404,7 +404,7 @@ class CloudSqlInstance {
         nestedFuture,
         new FutureCallback<ListenableFuture<T>>() {
           @Override
-          public void onSuccess(@NullableDecl ListenableFuture<T> result) {
+          public void onSuccess(ListenableFuture<T> result) {
             blockedFuture.setFuture(result);
           }
 
