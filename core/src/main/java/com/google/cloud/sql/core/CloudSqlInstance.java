@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,8 +61,13 @@ class CloudSqlInstance {
   private final KeyPair keyPair;
 
   private final Object instanceDataGuard = new Object();
-  private volatile ListenableFuture<InstanceData> currentInstanceData;
-  private volatile ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
+
+  @GuardedBy("instanceDataGuard")
+  private ListenableFuture<InstanceData> currentInstanceData;
+
+  @GuardedBy("instanceDataGuard")
+  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
+
   // Limit forced refreshes to 1 every minute.
   private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
@@ -97,7 +103,8 @@ class CloudSqlInstance {
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.currentInstanceData = this.performRefresh();
+      this.nextInstanceData = Futures.immediateFuture(performRefresh());
+      this.currentInstanceData = blockOnNestedFuture(nextInstanceData);
     }
   }
 
@@ -106,13 +113,15 @@ class CloudSqlInstance {
    * no valid data is currently available.
    */
   private InstanceData getInstanceData() {
-    try {
-      // TODO(kvg): Let exceptions up to here before adding context
-      return Uninterruptibles.getUninterruptibly(currentInstanceData);
-    } catch (ExecutionException ex) {
-      Throwable cause = ex.getCause();
-      Throwables.throwIfUnchecked(cause);
-      throw new RuntimeException(cause);
+    synchronized (instanceDataGuard) {
+      try {
+        // TODO(kvg): Let exceptions up to here before adding context
+        return Uninterruptibles.getUninterruptibly(currentInstanceData);
+      } catch (ExecutionException ex) {
+        Throwable cause = ex.getCause();
+        Throwables.throwIfUnchecked(cause);
+        throw new RuntimeException(cause);
+      }
     }
   }
 
@@ -160,13 +169,12 @@ class CloudSqlInstance {
       return false;
     }
     synchronized (instanceDataGuard) {
-      // If a scheduled refresh exists and can't be canceled, fail the operation
-      if (nextInstanceData != null && !nextInstanceData.cancel(false)) {
-        return false;
+      // If a scheduled refresh doesn't exist or hasn't started, perform one immediately
+      if (nextInstanceData == null || nextInstanceData.cancel(false)) {
+        nextInstanceData = Futures.immediateFuture(performRefresh());
       }
-      // Otherwise, immediately perform the next refresh using currentInstanceData, to let any
-      // methods that rely on it block until it is complete
-      currentInstanceData = performRefresh();
+      // Update current to block on nextInstanceData
+      currentInstanceData = blockOnNestedFuture(nextInstanceData);
       return true;
     }
   }
@@ -376,6 +384,28 @@ class CloudSqlInstance {
     }
 
     return taskFuture;
+  }
+
+  /** Returns a future that blocks until the result of a nested future is complete. */
+  private <T> ListenableFuture<T> blockOnNestedFuture(
+      ListenableFuture<ListenableFuture<T>> nestedFuture) {
+    SettableFuture<T> blockedFuture = SettableFuture.create();
+    // Once the nested future is complete, update the blocked future to match
+    Futures.addCallback(
+        nestedFuture,
+        new FutureCallback<ListenableFuture<T>>() {
+          @Override
+          public void onSuccess(@NullableDecl ListenableFuture<T> result) {
+            blockedFuture.setFuture(result);
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            blockedFuture.setException(throwable);
+          }
+        },
+        executor);
+    return blockedFuture;
   }
 
   // Creates a Certificate object from a provided string.
