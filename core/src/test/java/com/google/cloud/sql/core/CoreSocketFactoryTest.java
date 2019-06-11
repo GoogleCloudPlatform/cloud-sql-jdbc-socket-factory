@@ -38,7 +38,6 @@ import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
-import com.google.cloud.sql.core.CoreSocketFactory.Clock;
 import com.google.common.collect.ImmutableList;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -108,7 +107,6 @@ public class CoreSocketFactoryTest {
   @Mock private SQLAdmin.Instances.Get adminApiInstancesGet;
   @Mock private SQLAdmin.SslCerts adminApiSslCerts;
   @Mock private SQLAdmin.SslCerts.CreateEphemeral adminApiSslCertsCreateEphemeral;
-  @Mock private Clock mockClock;
 
   private KeyPair clientKeyPair;
 
@@ -152,19 +150,19 @@ public class CoreSocketFactoryTest {
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
     try {
       coreSocketFactory.createSslSocket("foo", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
+      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
     try {
       coreSocketFactory.createSslSocket("foo:bar", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).startsWith("Invalid Cloud SQL instance");
+      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
   }
 
@@ -179,12 +177,14 @@ public class CoreSocketFactoryTest {
                 .setRegion("beer"));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
     try {
       coreSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).startsWith("Incorrect region value");
+      assertThat(e)
+          .hasMessageThat()
+          .contains("The region specified for the Cloud SQL instance is incorrect");
     }
   }
 
@@ -199,7 +199,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start(PRIVATE_IP);
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
 
@@ -215,13 +215,12 @@ public class CoreSocketFactoryTest {
   }
 
   @Test
-  public void create_successfulConnection()
-      throws IOException, GeneralSecurityException, InterruptedException {
+  public void create_successfulConnection() throws IOException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
@@ -252,7 +251,7 @@ public class CoreSocketFactoryTest {
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
@@ -268,13 +267,12 @@ public class CoreSocketFactoryTest {
   }
 
   @Test
-  public void create_certificateReusedIfNotExpired()
-      throws IOException, GeneralSecurityException, InterruptedException {
+  public void create_certificateReusedIfNotExpired() throws IOException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
     coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
@@ -289,29 +287,6 @@ public class CoreSocketFactoryTest {
   }
 
   @Test
-  public void create_certificateRenewedIfCloseToExpiration()
-      throws IOException, GeneralSecurityException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start();
-
-    // Certificate only valid for 4 more minutes.
-    when(adminApiSslCertsCreateEphemeral.execute())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(56))));
-
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, port);
-    coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
-
-    // Second time, we should renew the certificate since it's about to expire.
-    coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
-
-    verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
-    verify(adminApiSslCerts, times(2))
-        .createEphemeral(
-            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
-  }
-
-  @Test
   public void create_adminApiNotEnabled() throws IOException {
     ErrorInfo error = new ErrorInfo();
     error.setReason(CoreSocketFactory.ADMIN_API_NOT_ENABLED_REASON);
@@ -323,13 +298,18 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage()).contains("Cloud SQL API is not enabled");
+      assertThat(e)
+          .hasMessageThat()
+          .contains(
+              String.format(
+                  "[%s] The Google Cloud SQL Admin API is not enabled for the project",
+                  INSTANCE_CONNECTION_STRING));
     }
   }
 
@@ -345,59 +325,14 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage()).contains("not authorized");
+      assertThat(e).hasMessageThat().contains("not authorized");
     }
-  }
-
-  @Test
-  public void create_instanceNotFoundErrorCached() throws IOException {
-    ErrorInfo error = new ErrorInfo();
-    error.setReason(CoreSocketFactory.INSTANCE_NOT_AUTHORIZED_REASON);
-    GoogleJsonError details = new GoogleJsonError();
-    details.setErrors(ImmutableList.of(error));
-    when(adminApiInstancesGet.execute())
-        .thenThrow(
-            new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
-
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(mockClock, clientKeyPair, credential, adminApi, 3307);
-    try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
-      fail();
-    } catch (RuntimeException e) {
-      assertThat(e.getMessage()).contains("not authorized");
-    }
-
-    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
-
-    // Exception should be cached.
-    when(mockClock.now()).thenReturn(59 * 1000L);
-    try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
-      fail();
-    } catch (RuntimeException e) {
-      assertThat(e.getMessage()).contains("not authorized");
-    }
-    // Verify no additional interactions with API.
-    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
-
-    // Enough time has passed that cached exception should be ignored.
-    when(mockClock.now()).thenReturn(61 * 1000L);
-    try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
-      fail();
-    } catch (RuntimeException e) {
-      assertThat(e.getMessage()).contains("not authorized");
-    }
-    // Verify that the API was called one more time.
-    verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
   }
 
   @Test
@@ -412,13 +347,18 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(new Clock(), clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage()).contains("Unable to obtain ephemeral certificate");
+      assertThat(e)
+          .hasMessageThat()
+          .contains(
+              String.format(
+                  "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
+                  INSTANCE_CONNECTION_STRING));
     }
   }
 
