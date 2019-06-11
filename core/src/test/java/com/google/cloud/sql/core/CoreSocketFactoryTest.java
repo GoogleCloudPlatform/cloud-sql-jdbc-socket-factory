@@ -155,14 +155,14 @@ public class CoreSocketFactoryTest {
       coreSocketFactory.createSslSocket("foo", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("Cloud SQL connection name is invalid");
+      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
     try {
       coreSocketFactory.createSslSocket("foo:bar", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("Cloud SQL connection name is invalid");
+      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
   }
 
@@ -182,7 +182,8 @@ public class CoreSocketFactoryTest {
       coreSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains("The region specified for the Cloud SQL instance is incorrect");
     }
   }
@@ -303,7 +304,8 @@ public class CoreSocketFactoryTest {
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains(
               String.format(
                   "[%s] The Google Cloud SQL Admin API is not enabled for the project",
@@ -329,7 +331,7 @@ public class CoreSocketFactoryTest {
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage()).contains("not authorized");
+      assertThat(e).hasMessageThat().contains("not authorized");
     }
   }
 
@@ -351,7 +353,8 @@ public class CoreSocketFactoryTest {
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains(
               String.format(
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
