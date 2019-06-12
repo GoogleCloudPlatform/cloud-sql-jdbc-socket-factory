@@ -29,8 +29,12 @@ import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -46,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
@@ -93,7 +98,7 @@ public final class CoreSocketFactory {
   private static CoreSocketFactory coreSocketFactory;
 
   private final CertificateFactory certificateFactory;
-  private final KeyPair localKeyPair;
+  private final ListenableFuture<KeyPair> localKeyPair;
   private final Credential credential;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
@@ -108,7 +113,6 @@ public final class CoreSocketFactory {
     } catch (CertificateException err) {
       throw new RuntimeException("X509 implementation not available", err);
     }
-    this.localKeyPair = localKeyPair;
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
@@ -121,13 +125,18 @@ public final class CoreSocketFactory {
     this.executor =
         MoreExecutors.listeningDecorator(
             MoreExecutors.getExitingScheduledExecutorService(executor));
+
+    if (localKeyPair != null) {
+      this.localKeyPair = Futures.immediateFuture(localKeyPair);
+    } else {
+      this.localKeyPair = this.executor.submit(CoreSocketFactory::generateRsaKeyPair);
+    }
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
-      KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory;
       if (System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY) != null) {
         try {
@@ -146,7 +155,7 @@ public final class CoreSocketFactory {
 
       SQLAdmin adminApi = createAdminApiClient(credential);
       coreSocketFactory =
-          new CoreSocketFactory(keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
+          new CoreSocketFactory(null, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
     }
     return coreSocketFactory;
   }
@@ -220,7 +229,7 @@ public final class CoreSocketFactory {
   Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     CloudSqlInstance instance =
         instances.computeIfAbsent(
-            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, getLocalKeyPair()));
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -315,6 +324,17 @@ public final class CoreSocketFactory {
             credential.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
       }
       return credential;
+    }
+  }
+
+  // Safely returns the result of localKeyPair, or else throws the cause of the exception
+  private KeyPair getLocalKeyPair() {
+    try {
+      return Uninterruptibles.getUninterruptibly(localKeyPair);
+    } catch (ExecutionException ex) {
+      Throwable cause = ex.getCause();
+      Throwables.throwIfUnchecked(cause);
+      throw new RuntimeException(cause);
     }
   }
 
