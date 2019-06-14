@@ -167,8 +167,8 @@ public final class CoreSocketFactory {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
-    // GAE Standard runtimes provide a connection path at "/cloudsql/<CONNECTION_NAME>"
-    if (forceUnixSocket || runningOnGaeStandard()) {
+    // GAE Standard + GCF provide a connection path at "/cloudsql/<CONNECTION_NAME>"
+    if (forceUnixSocket || runningOnGaeStandard() || runningOnGoogleCloudFunctions()) {
       logger.info(
           String.format(
               "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
@@ -193,6 +193,13 @@ public final class CoreSocketFactory {
 
     return "standard".equals(gaeEnv)
         && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
+  }
+
+  /** Returns {@code true} if running in a Google Cloud Functions runtime. */
+  private static boolean runningOnGoogleCloudFunctions() {
+    // Functions automatically sets a few variables we can use to guess the env:
+    // See https://cloud.google.com/functions/docs/env-var#nodejs_10_and_subsequent_runtimes
+    return System.getenv("K_SERVICE") != null && System.getenv("K_REVISION") != null;
   }
 
   /**
