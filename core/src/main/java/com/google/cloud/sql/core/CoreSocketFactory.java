@@ -48,6 +48,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSocket;
@@ -115,7 +116,9 @@ public final class CoreSocketFactory {
     this.executor =
         MoreExecutors.listeningDecorator(
             MoreExecutors.getExitingScheduledExecutorService(
-                (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2)));
+                (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2),
+                0,
+                TimeUnit.MILLISECONDS));
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
