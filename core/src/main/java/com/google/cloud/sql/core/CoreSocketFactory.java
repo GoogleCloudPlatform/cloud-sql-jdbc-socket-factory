@@ -48,7 +48,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSocket;
@@ -113,12 +112,15 @@ public final class CoreSocketFactory {
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
+
+    // TODO(kvg): Figure out correct way to determine number of threads
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+
     this.executor =
         MoreExecutors.listeningDecorator(
-            MoreExecutors.getExitingScheduledExecutorService(
-                (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2),
-                0,
-                TimeUnit.MILLISECONDS));
+            MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
