@@ -112,10 +112,15 @@ public final class CoreSocketFactory {
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
+
+    // TODO(kvg): Figure out correct way to determine number of threads
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+
     this.executor =
         MoreExecutors.listeningDecorator(
-            MoreExecutors.getExitingScheduledExecutorService(
-                (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2)));
+            MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
