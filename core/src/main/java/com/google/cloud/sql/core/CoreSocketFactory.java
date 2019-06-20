@@ -29,7 +29,6 @@ import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -102,32 +101,34 @@ public final class CoreSocketFactory {
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
+  private CoreSocketFactory(
+      Credential credential,
+      SQLAdmin adminApi,
+      int serverProxyPort,
+      ListeningScheduledExecutorService executor) {
+    this(
+        x509CertificateFactory(),
+        executor.submit(CoreSocketFactory::generateRsaKeyPair),
+        credential,
+        adminApi,
+        serverProxyPort,
+        executor);
+  }
+
   @VisibleForTesting
   CoreSocketFactory(
-      KeyPair localKeyPair, Credential credential, SQLAdmin adminApi, int serverProxyPort) {
-    try {
-      this.certificateFactory = CertificateFactory.getInstance("X.509");
-    } catch (CertificateException err) {
-      throw new RuntimeException("X509 implementation not available", err);
-    }
+      CertificateFactory certificateFactory,
+      ListenableFuture<KeyPair> localKeyPair,
+      Credential credential,
+      SQLAdmin adminApi,
+      int serverProxyPort,
+      ListeningScheduledExecutorService executor) {
+    this.certificateFactory = certificateFactory;
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
-
-    // TODO(kvg): Figure out correct way to determine number of threads
-    ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-
-    this.executor =
-        MoreExecutors.listeningDecorator(
-            MoreExecutors.getExitingScheduledExecutorService(executor));
-
-    if (localKeyPair != null) {
-      this.localKeyPair = Futures.immediateFuture(localKeyPair);
-    } else {
-      this.localKeyPair = this.executor.submit(CoreSocketFactory::generateRsaKeyPair);
-    }
+    this.executor = executor;
+    this.localKeyPair = localKeyPair;
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
@@ -151,10 +152,31 @@ public final class CoreSocketFactory {
       Credential credential = credentialFactory.create();
 
       SQLAdmin adminApi = createAdminApiClient(credential);
+
       coreSocketFactory =
-          new CoreSocketFactory(null, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
+          new CoreSocketFactory(
+              credential, adminApi, DEFAULT_SERVER_PROXY_PORT, getDefaultExecutor());
     }
     return coreSocketFactory;
+  }
+
+  // Returns a factory used to create X.509 public certificates
+  private static CertificateFactory x509CertificateFactory() {
+    try {
+      return CertificateFactory.getInstance("X.509");
+    } catch (CertificateException err) {
+      throw new RuntimeException("X509 implementation not available", err);
+    }
+  }
+
+  // Returns a listenable, scheduled executor that exits upon shutdown.
+  private static ListeningScheduledExecutorService getDefaultExecutor() {
+    // TODO(kvg): Figure out correct way to determine number of threads
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    return MoreExecutors.listeningDecorator(
+        MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
   /**
