@@ -29,12 +29,10 @@ import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.Uninterruptibles;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -50,7 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
@@ -229,7 +226,7 @@ public final class CoreSocketFactory {
   Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     CloudSqlInstance instance =
         instances.computeIfAbsent(
-            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, getLocalKeyPair()));
+            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -324,17 +321,6 @@ public final class CoreSocketFactory {
             credential.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
       }
       return credential;
-    }
-  }
-
-  // Safely returns the result of localKeyPair, or else throws the cause of the exception
-  private KeyPair getLocalKeyPair() {
-    try {
-      return Uninterruptibles.getUninterruptibly(localKeyPair);
-    } catch (ExecutionException ex) {
-      Throwable cause = ex.getCause();
-      Throwables.throwIfUnchecked(cause);
-      throw new RuntimeException(cause);
     }
   }
 

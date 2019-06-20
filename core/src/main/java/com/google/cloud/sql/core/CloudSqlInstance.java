@@ -59,7 +59,7 @@ class CloudSqlInstance {
   private final String projectId;
   private final String regionId;
   private final String instanceId;
-  private final KeyPair keyPair;
+  private final ListenableFuture<KeyPair> keyPair;
 
   private final Object instanceDataGuard = new Object();
 
@@ -84,7 +84,7 @@ class CloudSqlInstance {
       String connectionName,
       SQLAdmin apiClient,
       ListeningScheduledExecutorService executor,
-      KeyPair keyPair) {
+      ListenableFuture<KeyPair> keyPair) {
     String[] connFields = connectionName.split(":");
     if (connFields.length != 3) {
       throw new IllegalArgumentException(
@@ -193,14 +193,18 @@ class CloudSqlInstance {
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
-        executor.submit(this::fetchEphemeralCertificate);
+        whenAllSucceed(
+            () -> fetchEphemeralCertificate(Futures.getDone(keyPair)), executor, keyPair);
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SSLContext> sslContextFuture =
         whenAllSucceed(
             () ->
                 createSslContext(
-                    Futures.getDone(metadataFuture), Futures.getDone(ephemeralCertificateFuture)),
+                    Futures.getDone(keyPair),
+                    Futures.getDone(metadataFuture),
+                    Futures.getDone(ephemeralCertificateFuture)),
             executor,
+            keyPair,
             metadataFuture,
             ephemeralCertificateFuture);
     // Once both the SSLContext and Metadata are complete, return the results
@@ -229,7 +233,8 @@ class CloudSqlInstance {
    * Creates a new SSLContext based on the provided parameters. This SSLContext will be used to
    * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
    */
-  private SSLContext createSslContext(Metadata metadata, Certificate ephemeralCertificate) {
+  private SSLContext createSslContext(
+      KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate) {
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
@@ -317,11 +322,11 @@ class CloudSqlInstance {
    * Uses the Cloud SQL Admin API to create an ephemeral SSL certificate that is authenticated to
    * connect the Cloud SQL instance for up to 60 minutes.
    */
-  private Certificate fetchEphemeralCertificate() {
+  private Certificate fetchEphemeralCertificate(KeyPair keyPair) {
 
     // Use the SQL Admin API to create a new ephemeral certificate.
     SslCertsCreateEphemeralRequest request =
-        new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert());
+        new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert(keyPair));
     SslCert response;
     try {
       response = apiClient.sslCerts().createEphemeral(projectId, instanceId, request).execute();
@@ -352,7 +357,7 @@ class CloudSqlInstance {
    *
    * @return PEM encoded public key certificate
    */
-  private String generatePublicKeyCert() {
+  private static String generatePublicKeyCert(KeyPair keyPair) {
     // Format the public key into a PEM encoded Certificate.
     return "-----BEGIN RSA PUBLIC KEY-----\n"
         + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
