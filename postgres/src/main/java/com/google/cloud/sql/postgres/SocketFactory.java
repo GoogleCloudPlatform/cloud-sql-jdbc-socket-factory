@@ -68,8 +68,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    return CoreSocketFactory.getInstance()
-        .connect(props, CoreSocketFactory.POSTGRES_SOCKET_FILE_FORMAT);
+    return CoreSocketFactory.connect(props, CoreSocketFactory.POSTGRES_SOCKET_FILE_FORMAT);
   }
 
   @Override
