@@ -98,10 +98,6 @@ import sun.security.x509.X509CertInfo;
 @RunWith(JUnit4.class)
 public class CoreSocketFactoryTest {
   private static final String SERVER_MESSAGE = "HELLO";
-  private static final String PROJECT_ID = "foo";
-  private static final String INSTANCE_NAME = "bar";
-  private static final String REGION = "baz";
-  private static final String INSTANCE_CONNECTION_STRING = "foo:baz:bar";
 
   private static final String PUBLIC_IP = "127.0.0.1";
   private static final String PRIVATE_IP = "127.0.1.1";
@@ -150,7 +146,7 @@ public class CoreSocketFactoryTest {
                         new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                         new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                .setRegion(REGION));
+                .setRegion("myRegion"));
     when(adminApiSslCertsCreateEphemeral.execute())
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
 
@@ -162,14 +158,14 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("foo", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
     try {
-      coreSocketFactory.createSslSocket("foo:bar", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
@@ -189,7 +185,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e)
@@ -211,12 +207,13 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
+        coreSocketFactory.createSslSocket(
+            "myProject:myRegion:myInstance", Arrays.asList("PRIVATE"));
 
-    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+    verify(adminApiInstances).get("myProject", "myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -232,12 +229,13 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+        coreSocketFactory.createSslSocket(
+            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+    verify(adminApiInstances).get("myProject", "myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -263,12 +261,13 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+        coreSocketFactory.createSslSocket(
+            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances, times(2)).get(PROJECT_ID, INSTANCE_NAME);
+    verify(adminApiInstances, times(2)).get("myProject", "myInstance");
     verify(adminApiSslCerts, times(2))
         .createEphemeral(
-            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -283,14 +282,14 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
-    coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
+    verify(adminApiInstances).get("myProject", "myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq(PROJECT_ID), eq(INSTANCE_NAME), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
-    coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+    coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
     verifyNoMoreInteractions(adminApiInstances);
     verifyNoMoreInteractions(adminApiSslCerts);
@@ -310,7 +309,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -319,7 +318,7 @@ public class CoreSocketFactoryTest {
           .contains(
               String.format(
                   "[%s] The Google Cloud SQL Admin API is not enabled for the project",
-                  INSTANCE_CONNECTION_STRING));
+                  "myProject:myRegion:myInstance"));
     }
   }
 
@@ -337,7 +336,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -359,7 +358,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -368,7 +367,7 @@ public class CoreSocketFactoryTest {
           .contains(
               String.format(
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
-                  INSTANCE_CONNECTION_STRING));
+                  "myProject:myRegion:myInstance"));
     }
   }
 
