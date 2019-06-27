@@ -101,29 +101,14 @@ public final class CoreSocketFactory {
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
-  private CoreSocketFactory(
-      Credential credential,
-      SQLAdmin adminApi,
-      int serverProxyPort,
-      ListeningScheduledExecutorService executor) {
-    this(
-        x509CertificateFactory(),
-        executor.submit(CoreSocketFactory::generateRsaKeyPair),
-        credential,
-        adminApi,
-        serverProxyPort,
-        executor);
-  }
-
   @VisibleForTesting
   CoreSocketFactory(
-      CertificateFactory certificateFactory,
       ListenableFuture<KeyPair> localKeyPair,
       Credential credential,
       SQLAdmin adminApi,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.certificateFactory = certificateFactory;
+    this.certificateFactory = x509CertificateFactory();
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
@@ -150,12 +135,16 @@ public final class CoreSocketFactory {
       }
 
       Credential credential = credentialFactory.create();
-
       SQLAdmin adminApi = createAdminApiClient(credential);
+      ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
           new CoreSocketFactory(
-              credential, adminApi, DEFAULT_SERVER_PROXY_PORT, getDefaultExecutor());
+              executor.submit(CoreSocketFactory::generateRsaKeyPair),
+              credential,
+              adminApi,
+              DEFAULT_SERVER_PROXY_PORT,
+              executor);
     }
     return coreSocketFactory;
   }
@@ -169,8 +158,10 @@ public final class CoreSocketFactory {
     }
   }
 
+  // TODO(kvg): Figure out better executor to use for testing
+  @VisibleForTesting
   // Returns a listenable, scheduled executor that exits upon shutdown.
-  private static ListeningScheduledExecutorService getDefaultExecutor() {
+  static ListeningScheduledExecutorService getDefaultExecutor() {
     // TODO(kvg): Figure out correct way to determine number of threads
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);

@@ -39,6 +39,9 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -66,6 +69,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -98,8 +102,12 @@ public class CoreSocketFactoryTest {
   private static final String INSTANCE_NAME = "bar";
   private static final String REGION = "baz";
   private static final String INSTANCE_CONNECTION_STRING = "foo:baz:bar";
+
   private static final String PUBLIC_IP = "127.0.0.1";
   private static final String PRIVATE_IP = "127.0.1.1";
+
+  // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
+  private ListeningScheduledExecutorService defaultExecutor;
 
   @Mock private GoogleCredential credential;
   @Mock private SQLAdmin adminApi;
@@ -108,10 +116,10 @@ public class CoreSocketFactoryTest {
   @Mock private SQLAdmin.SslCerts adminApiSslCerts;
   @Mock private SQLAdmin.SslCerts.CreateEphemeral adminApiSslCertsCreateEphemeral;
 
-  private KeyPair clientKeyPair;
+  private ListenableFuture<KeyPair> clientKeyPair;
 
   @Before
-  public void setup() throws IOException, GeneralSecurityException {
+  public void setup() throws IOException, GeneralSecurityException, ExecutionException {
     MockitoAnnotations.initMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -123,7 +131,7 @@ public class CoreSocketFactoryTest {
         new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-    clientKeyPair = new KeyPair(publicKey, privateKey);
+    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
 
     when(adminApi.instances()).thenReturn(adminApiInstances);
     when(adminApiInstances.get(anyString(), anyString())).thenReturn(adminApiInstancesGet);
@@ -145,12 +153,14 @@ public class CoreSocketFactoryTest {
                 .setRegion(REGION));
     when(adminApiSslCertsCreateEphemeral.execute())
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+
+    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
   }
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket("foo", Arrays.asList("PRIMARY"));
       fail();
@@ -177,7 +187,7 @@ public class CoreSocketFactoryTest {
                 .setRegion("beer"));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket("foo:bar:baz", Arrays.asList("PRIMARY"));
       fail();
@@ -199,7 +209,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start(PRIVATE_IP);
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIVATE"));
 
@@ -220,7 +230,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
@@ -242,7 +252,7 @@ public class CoreSocketFactoryTest {
   // TODO(berezv): figure out why the test server produces a different error on an expired
   // certificate
   public void create_expiredCertificateOnFirstConnection_certificateRenewed()
-      throws IOException, GeneralSecurityException, InterruptedException {
+      throws IOException, GeneralSecurityException, ExecutionException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
@@ -251,7 +261,7 @@ public class CoreSocketFactoryTest {
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
@@ -272,7 +282,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
     coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get(PROJECT_ID, INSTANCE_NAME);
@@ -298,7 +308,7 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
@@ -325,7 +335,7 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
@@ -347,7 +357,7 @@ public class CoreSocketFactoryTest {
                 new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307);
+        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(INSTANCE_CONNECTION_STRING, Arrays.asList("PRIMARY"));
       fail();
@@ -363,7 +373,7 @@ public class CoreSocketFactoryTest {
   }
 
   private String createEphemeralCert(Duration shiftIntoPast)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, ExecutionException, IOException {
     Duration validFor = Duration.ofHours(1);
     ZonedDateTime notBefore = ZonedDateTime.now().minus(shiftIntoPast);
     ZonedDateTime notAfter = notBefore.plus(validFor);
@@ -376,7 +386,7 @@ public class CoreSocketFactoryTest {
     info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(1));
     info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(AlgorithmId.get("SHA1withRSA")));
     info.set(X509CertInfo.SUBJECT, new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"));
-    info.set(X509CertInfo.KEY, new CertificateX509Key(clientKeyPair.getPublic()));
+    info.set(X509CertInfo.KEY, new CertificateX509Key(Futures.getDone(clientKeyPair).getPublic()));
     info.set(X509CertInfo.VALIDITY, interval);
     info.set(
         X509CertInfo.ISSUER,
