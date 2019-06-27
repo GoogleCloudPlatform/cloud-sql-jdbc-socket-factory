@@ -29,6 +29,7 @@ import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.File;
@@ -93,7 +94,7 @@ public final class CoreSocketFactory {
   private static CoreSocketFactory coreSocketFactory;
 
   private final CertificateFactory certificateFactory;
-  private final KeyPair localKeyPair;
+  private final ListenableFuture<KeyPair> localKeyPair;
   private final Credential credential;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
@@ -102,32 +103,23 @@ public final class CoreSocketFactory {
 
   @VisibleForTesting
   CoreSocketFactory(
-      KeyPair localKeyPair, Credential credential, SQLAdmin adminApi, int serverProxyPort) {
-    try {
-      this.certificateFactory = CertificateFactory.getInstance("X.509");
-    } catch (CertificateException err) {
-      throw new RuntimeException("X509 implementation not available", err);
-    }
-    this.localKeyPair = localKeyPair;
+      ListenableFuture<KeyPair> localKeyPair,
+      Credential credential,
+      SQLAdmin adminApi,
+      int serverProxyPort,
+      ListeningScheduledExecutorService executor) {
+    this.certificateFactory = x509CertificateFactory();
     this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
-
-    // TODO(kvg): Figure out correct way to determine number of threads
-    ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-
-    this.executor =
-        MoreExecutors.listeningDecorator(
-            MoreExecutors.getExitingScheduledExecutorService(executor));
+    this.executor = executor;
+    this.localKeyPair = localKeyPair;
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
-      KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory;
       if (System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY) != null) {
         try {
@@ -143,12 +135,39 @@ public final class CoreSocketFactory {
       }
 
       Credential credential = credentialFactory.create();
-
       SQLAdmin adminApi = createAdminApiClient(credential);
+      ListeningScheduledExecutorService executor = getDefaultExecutor();
+
       coreSocketFactory =
-          new CoreSocketFactory(keyPair, credential, adminApi, DEFAULT_SERVER_PROXY_PORT);
+          new CoreSocketFactory(
+              executor.submit(CoreSocketFactory::generateRsaKeyPair),
+              credential,
+              adminApi,
+              DEFAULT_SERVER_PROXY_PORT,
+              executor);
     }
     return coreSocketFactory;
+  }
+
+  // Returns a factory used to create X.509 public certificates
+  private static CertificateFactory x509CertificateFactory() {
+    try {
+      return CertificateFactory.getInstance("X.509");
+    } catch (CertificateException err) {
+      throw new RuntimeException("X509 implementation not available", err);
+    }
+  }
+
+  // TODO(kvg): Figure out better executor to use for testing
+  @VisibleForTesting
+  // Returns a listenable, scheduled executor that exits upon shutdown.
+  static ListeningScheduledExecutorService getDefaultExecutor() {
+    // TODO(kvg): Figure out correct way to determine number of threads
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    return MoreExecutors.listeningDecorator(
+        MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
   /**
