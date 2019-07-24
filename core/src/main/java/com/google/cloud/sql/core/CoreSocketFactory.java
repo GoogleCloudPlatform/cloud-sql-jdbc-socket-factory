@@ -81,9 +81,6 @@ public final class CoreSocketFactory {
 
   private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
 
-  static final String ADMIN_API_NOT_ENABLED_REASON = "accessNotConfigured";
-  static final String INSTANCE_NOT_AUTHORIZED_REASON = "notAuthorized";
-
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";

@@ -22,6 +22,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,8 +33,19 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpResponseException;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpStatusCodes;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.LowLevelHttpRequest;
+import com.google.api.client.json.GenericJson;
+import com.google.api.client.json.Json;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.testing.http.HttpTesting;
+import com.google.api.client.testing.http.MockHttpTransport;
+import com.google.api.client.testing.http.MockLowLevelHttpRequest;
+import com.google.api.client.testing.http.MockLowLevelHttpResponse;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
@@ -67,6 +80,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -129,8 +143,17 @@ public class CoreSocketFactoryTest {
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
 
+    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
+
+    // Mock the API client for testing
     when(adminApi.instances()).thenReturn(adminApiInstances);
-    when(adminApiInstances.get(anyString(), anyString())).thenReturn(adminApiInstancesGet);
+
+    // Mock wrong project and instance
+    doThrow(fakeNotConfiguredException()).when(adminApiInstances).get(anyString(), anyString());
+    // Mock correct project, wrong instance
+    doThrow(fakeNotAuthorizedException()).when(adminApiInstances).get(eq("myProject"), anyString());
+    // Mock correct instance
+    doReturn(adminApiInstancesGet).when(adminApiInstances).get(eq("myProject"), eq("myInstance"));
 
     when(adminApi.sslCerts()).thenReturn(adminApiSslCerts);
     when(adminApiSslCerts.createEphemeral(
@@ -149,8 +172,6 @@ public class CoreSocketFactoryTest {
                 .setRegion("myRegion"));
     when(adminApiSslCertsCreateEphemeral.execute())
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
-
-    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
   }
 
   @Test
@@ -174,18 +195,11 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    when(adminApiInstancesGet.execute())
-        .thenReturn(
-            new DatabaseInstance()
-                .setBackendType("SECOND_GEN")
-                .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP)))
-                .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                .setRegion("beer"));
-
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket(
+          "myProject:notMyRegion:myInstance", Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e)
@@ -297,19 +311,12 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
-    ErrorInfo error = new ErrorInfo();
-    error.setReason(CoreSocketFactory.ADMIN_API_NOT_ENABLED_REASON);
-    GoogleJsonError details = new GoogleJsonError();
-    details.setErrors(ImmutableList.of(error));
-    when(adminApiInstancesGet.execute())
-        .thenThrow(
-            new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
-
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+      // Use a different project to get Api Not Enabled Error.
+      coreSocketFactory.createSslSocket(
+          "NotMyProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -318,25 +325,18 @@ public class CoreSocketFactoryTest {
           .contains(
               String.format(
                   "[%s] The Google Cloud SQL Admin API is not enabled for the project",
-                  "myProject:myRegion:myInstance"));
+                  "NotMyProject:myRegion:myInstance"));
     }
   }
 
   @Test
   public void create_notAuthorizedToGetInstance() throws IOException {
-    ErrorInfo error = new ErrorInfo();
-    error.setReason(CoreSocketFactory.INSTANCE_NOT_AUTHORIZED_REASON);
-    GoogleJsonError details = new GoogleJsonError();
-    details.setErrors(ImmutableList.of(error));
-    when(adminApiInstancesGet.execute())
-        .thenThrow(
-            new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
-
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+      // Use a different instance to simulate incorrect permissions.
+      coreSocketFactory.createSslSocket(
+          "myProject:myRegion:NotMyInstance", Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
@@ -346,29 +346,117 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_notAuthorizedToCreateEphemeralCertificate() throws IOException {
-    ErrorInfo error = new ErrorInfo();
-    error.setReason(CoreSocketFactory.INSTANCE_NOT_AUTHORIZED_REASON);
-    GoogleJsonError details = new GoogleJsonError();
-    details.setErrors(ImmutableList.of(error));
-    when(adminApiSslCertsCreateEphemeral.execute())
-        .thenThrow(
-            new GoogleJsonResponseException(
-                new HttpResponseException.Builder(403, "Forbidden", new HttpHeaders()), details));
-
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+      // Use a different instance to simulate incorrect permissions.
+      coreSocketFactory.createSslSocket(
+          "myProject:myRegion:NotMyInstance", Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
-      // TODO(berezv): should we throw something more specific than RuntimeException?
       assertThat(e)
           .hasMessageThat()
           .contains(
               String.format(
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
-                  "myProject:myRegion:myInstance"));
+                  "myProject:myRegion:NotMyInstance"));
     }
+  }
+
+  /*
+   * Creates a fake "accessNotConfigured" exception that can be used for testing.
+   *
+   * Example Response:
+   *  {
+   *   "error":{
+   *      "code":403,
+   *      "message":"Cloud SQL Admin API has not been used in project ### before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=### then retry. If you enabled this API recently, wait a few minutes for the action to  propagate to our systems and retry.",
+   *      "errors":[
+   *         {
+   *            "message":"Cloud SQL Admin API has not been used in project ### before or it is disabled. Enable it by visiting  https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=###then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+   *            "domain":"usageLimits",
+   *            "reason":"accessNotConfigured",
+   *            "extendedHelp":"https://console.developers.google.com"
+   *         }
+   *      ],
+   *      "status":"PERMISSION_DENIED"
+   *   }
+   * }
+   */
+  private GoogleJsonResponseException fakeNotConfiguredException() throws IOException {
+    return fakeGoogleJsonResponseException(
+        HttpStatusCodes.STATUS_CODE_FORBIDDEN,
+        "accessNotConfigured",
+        "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
+            + " it by visiting "
+            + " https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=12345"
+            + " then retry. If you enabled this API recently, wait a few minutes for the action to"
+            + " propagate to our systems and retry.");
+  }
+
+  /*
+   * Creates a fake "notAuthorized" exception that can be used for testing.
+   *
+   * Example Response:
+   *  {
+   *   "error":{
+   *      "code":403,
+   *      "message":"The client is not authorized to make this request.",
+   *      "errors":[
+   *         {
+   *            "message":"The client is not authorized to make this request.",
+   *            "domain":"global",
+   *            "reason":"notAuthorized"
+   *         }
+   *      ]
+   *   }
+   *  }
+   */
+  private GoogleJsonResponseException fakeNotAuthorizedException() throws IOException {
+    return fakeGoogleJsonResponseException(
+        HttpStatusCodes.STATUS_CODE_FORBIDDEN,
+        "notAuthorized",
+        "The client is not authorized to make this request");
+  }
+
+  /** Builds a fake GoogleJsonResponseException for testing API error handling. */
+  private static GoogleJsonResponseException fakeGoogleJsonResponseException(
+      int httpStatus, String reason, String message) throws IOException {
+    ErrorInfo errorInfo = new ErrorInfo();
+    errorInfo.setReason(reason);
+    errorInfo.setMessage(message);
+    return fakeGoogleJsonResponseException(httpStatus, errorInfo, message);
+  }
+
+  private static GoogleJsonResponseException fakeGoogleJsonResponseException(
+      int status, ErrorInfo errorInfo, String httpStatusString) throws IOException {
+    final JsonFactory jsonFactory = new JacksonFactory();
+    HttpTransport transport =
+        new MockHttpTransport() {
+          @Override
+          public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+            errorInfo.setFactory(jsonFactory);
+            GoogleJsonError jsonError = new GoogleJsonError();
+            jsonError.setCode(status);
+            jsonError.setErrors(Collections.singletonList(errorInfo));
+            jsonError.setMessage(httpStatusString);
+            jsonError.setFactory(jsonFactory);
+            GenericJson errorResponse = new GenericJson();
+            errorResponse.set("error", jsonError);
+            errorResponse.setFactory(jsonFactory);
+            return new MockLowLevelHttpRequest()
+                .setResponse(
+                    new MockLowLevelHttpResponse()
+                        .setContent(errorResponse.toPrettyString())
+                        .setContentType(Json.MEDIA_TYPE)
+                        .setStatusCode(status));
+          }
+        };
+    HttpRequest request =
+        transport.createRequestFactory().buildGetRequest(HttpTesting.SIMPLE_GENERIC_URL);
+    request.setThrowExceptionOnExecuteError(false);
+    HttpResponse response = request.execute();
+    return GoogleJsonResponseException.from(jsonFactory, response);
   }
 
   private String createEphemeralCert(Duration shiftIntoPast)
