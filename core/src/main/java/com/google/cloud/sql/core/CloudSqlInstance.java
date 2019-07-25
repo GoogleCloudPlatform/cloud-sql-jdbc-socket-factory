@@ -86,18 +86,23 @@ class CloudSqlInstance {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
     String[] connFields = connectionName.split(":");
-    if (connFields.length != 3) {
+    if (connFields.length == 3) {
+      this.projectId = connFields[0];
+      this.regionId = connFields[1];
+      this.instanceId = connFields[2];
+    } else if (connFields.length == 4) {
+      this.projectId = connFields[0] + ":" + connFields[1];
+      this.regionId = connFields[2];
+      this.instanceId = connFields[3];
+    } else {
       throw new IllegalArgumentException(
           String.format(
               "[%s] Cloud SQL connection name is invalid, expected string in the form of "
                   + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
               connectionName));
     }
-    this.connectionName = connectionName;
-    this.projectId = connFields[0];
-    this.regionId = connFields[1];
-    this.instanceId = connFields[2];
 
+    this.connectionName = connectionName;
     this.apiClient = apiClient;
     this.executor = executor;
     this.keyPair = keyPair;
