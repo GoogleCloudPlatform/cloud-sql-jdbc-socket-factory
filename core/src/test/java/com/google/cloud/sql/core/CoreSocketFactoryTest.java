@@ -362,26 +362,7 @@ public class CoreSocketFactoryTest {
     }
   }
 
-  /*
-   * Creates a fake "accessNotConfigured" exception that can be used for testing.
-   *
-   * Example Response:
-   *  {
-   *   "error":{
-   *      "code":403,
-   *      "message":"Cloud SQL Admin API has not been used in project ### before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=### then retry. If you enabled this API recently, wait a few minutes for the action to  propagate to our systems and retry.",
-   *      "errors":[
-   *         {
-   *            "message":"Cloud SQL Admin API has not been used in project ### before or it is disabled. Enable it by visiting  https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=###then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
-   *            "domain":"usageLimits",
-   *            "reason":"accessNotConfigured",
-   *            "extendedHelp":"https://console.developers.google.com"
-   *         }
-   *      ],
-   *      "status":"PERMISSION_DENIED"
-   *   }
-   * }
-   */
+  // Creates a fake "accessNotConfigured" exception that can be used for testing.
   private static GoogleJsonResponseException fakeNotConfiguredException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
@@ -393,24 +374,7 @@ public class CoreSocketFactoryTest {
             + " propagate to our systems and retry.");
   }
 
-  /*
-   * Creates a fake "notAuthorized" exception that can be used for testing.
-   *
-   * Example Response:
-   *  {
-   *   "error":{
-   *      "code":403,
-   *      "message":"The client is not authorized to make this request.",
-   *      "errors":[
-   *         {
-   *            "message":"The client is not authorized to make this request.",
-   *            "domain":"global",
-   *            "reason":"notAuthorized"
-   *         }
-   *      ]
-   *   }
-   *  }
-   */
+  // Creates a fake "notAuthorized" exception that can be used for testing.
   private static GoogleJsonResponseException fakeNotAuthorizedException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
@@ -418,7 +382,7 @@ public class CoreSocketFactoryTest {
         "The client is not authorized to make this request");
   }
 
-  /** Builds a fake GoogleJsonResponseException for testing API error handling. */
+  // Builds a fake GoogleJsonResponseException for testing API error handling.
   private static GoogleJsonResponseException fakeGoogleJsonResponseException(
       int httpStatus, String reason, String message) throws IOException {
     ErrorInfo errorInfo = new ErrorInfo();
