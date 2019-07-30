@@ -22,8 +22,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -145,15 +143,16 @@ public class CoreSocketFactoryTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    // Mock the API client for testing
+    // Stub the API client for testing
     when(adminApi.instances()).thenReturn(adminApiInstances);
 
-    // Mock wrong project and instance
-    doThrow(fakeNotConfiguredException()).when(adminApiInstances).get(anyString(), anyString());
-    // Mock correct project, wrong instance
-    doThrow(fakeNotAuthorizedException()).when(adminApiInstances).get(eq("myProject"), anyString());
-    // Mock correct instance
-    doReturn(adminApiInstancesGet).when(adminApiInstances).get(eq("myProject"), eq("myInstance"));
+    // Stub when generic cases for project/instance
+    when(adminApiInstances.get(anyString(), anyString())).thenThrow(fakeNotConfiguredException());
+    // Stub when correct project, but generic instance
+    when(adminApiInstances.get(eq("myProject"), anyString()))
+        .thenThrow(fakeNotAuthorizedException());
+    // Stub when correct instance
+    when(adminApiInstances.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiInstancesGet);
 
     when(adminApi.sslCerts()).thenReturn(adminApiSslCerts);
     when(adminApiSslCerts.createEphemeral(
@@ -383,7 +382,7 @@ public class CoreSocketFactoryTest {
    *   }
    * }
    */
-  private GoogleJsonResponseException fakeNotConfiguredException() throws IOException {
+  private static GoogleJsonResponseException fakeNotConfiguredException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
         "accessNotConfigured",
@@ -412,7 +411,7 @@ public class CoreSocketFactoryTest {
    *   }
    *  }
    */
-  private GoogleJsonResponseException fakeNotAuthorizedException() throws IOException {
+  private static GoogleJsonResponseException fakeNotAuthorizedException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
         "notAuthorized",
@@ -429,7 +428,7 @@ public class CoreSocketFactoryTest {
   }
 
   private static GoogleJsonResponseException fakeGoogleJsonResponseException(
-      int status, ErrorInfo errorInfo, String httpStatusString) throws IOException {
+      int status, ErrorInfo errorInfo, String message) throws IOException {
     final JsonFactory jsonFactory = new JacksonFactory();
     HttpTransport transport =
         new MockHttpTransport() {
@@ -439,7 +438,7 @@ public class CoreSocketFactoryTest {
             GoogleJsonError jsonError = new GoogleJsonError();
             jsonError.setCode(status);
             jsonError.setErrors(Collections.singletonList(errorInfo));
-            jsonError.setMessage(httpStatusString);
+            jsonError.setMessage(message);
             jsonError.setFactory(jsonFactory);
             GenericJson errorResponse = new GenericJson();
             errorResponse.set("error", jsonError);
