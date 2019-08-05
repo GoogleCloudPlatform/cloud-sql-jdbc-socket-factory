@@ -176,7 +176,7 @@ public class CoreSocketFactoryTest {
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket("myProject", Arrays.asList("PRIMARY"));
       fail();
@@ -195,7 +195,7 @@ public class CoreSocketFactoryTest {
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
           "myProject:notMyRegion:myInstance", Arrays.asList("PRIMARY"));
@@ -218,7 +218,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start(PRIVATE_IP);
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIVATE"));
@@ -240,7 +240,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
@@ -272,7 +272,7 @@ public class CoreSocketFactoryTest {
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
@@ -294,7 +294,7 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
     verify(adminApiInstances).get("myProject", "myInstance");
@@ -311,7 +311,7 @@ public class CoreSocketFactoryTest {
   @Test
   public void create_adminApiNotEnabled() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, 3307, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
       coreSocketFactory.createSslSocket(
@@ -331,7 +331,7 @@ public class CoreSocketFactoryTest {
   @Test
   public void create_notAuthorized() throws IOException {
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, 3307, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
       coreSocketFactory.createSslSocket(

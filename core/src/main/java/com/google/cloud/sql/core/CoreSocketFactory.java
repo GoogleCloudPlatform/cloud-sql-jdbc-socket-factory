@@ -16,8 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
@@ -26,6 +24,8 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.api.services.sqladmin.SQLAdminScopes;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -40,8 +40,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +48,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -90,9 +87,7 @@ public final class CoreSocketFactory {
 
   private static CoreSocketFactory coreSocketFactory;
 
-  private final CertificateFactory certificateFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final Credential credential;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin adminApi;
@@ -101,12 +96,9 @@ public final class CoreSocketFactory {
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      Credential credential,
       SQLAdmin adminApi,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.certificateFactory = x509CertificateFactory();
-    this.credential = credential;
     this.adminApi = adminApi;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
@@ -131,28 +123,18 @@ public final class CoreSocketFactory {
         credentialFactory = new ApplicationDefaultCredentialFactory();
       }
 
-      Credential credential = credentialFactory.create();
+      HttpRequestInitializer credential = credentialFactory.create();
       SQLAdmin adminApi = createAdminApiClient(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              credential,
               adminApi,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
     }
     return coreSocketFactory;
-  }
-
-  // Returns a factory used to create X.509 public certificates
-  private static CertificateFactory x509CertificateFactory() {
-    try {
-      return CertificateFactory.getInstance("X.509");
-    } catch (CertificateException err) {
-      throw new RuntimeException("X509 implementation not available", err);
-    }
   }
 
   // TODO(kvg): Figure out better executor to use for testing
@@ -283,13 +265,6 @@ public final class CoreSocketFactory {
     return result;
   }
 
-  @Nullable
-  private String getCredentialServiceAccount(Credential credential) {
-    return credential instanceof GoogleCredential
-        ? ((GoogleCredential) credential).getServiceAccountId()
-        : null;
-  }
-
   private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
@@ -318,19 +293,19 @@ public final class CoreSocketFactory {
 
   private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
     @Override
-    public Credential create() {
-      GoogleCredential credential;
+    public HttpRequestInitializer create() {
+      GoogleCredentials credentials;
       try {
-        credential = GoogleCredential.getApplicationDefault();
+        credentials = GoogleCredentials.getApplicationDefault();
       } catch (IOException err) {
         throw new RuntimeException(
             "Unable to obtain credentials to communicate with the Cloud SQL API", err);
       }
-      if (credential.createScopedRequired()) {
-        credential =
-            credential.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
+      if (credentials.createScopedRequired()) {
+        credentials =
+            credentials.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
       }
-      return credential;
+      return new HttpCredentialsAdapter(credentials);
     }
   }
 
