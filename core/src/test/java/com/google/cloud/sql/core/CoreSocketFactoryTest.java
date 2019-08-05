@@ -329,22 +329,7 @@ public class CoreSocketFactoryTest {
   }
 
   @Test
-  public void create_notAuthorizedToGetInstance() throws IOException {
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
-    try {
-      // Use a different instance to simulate incorrect permissions.
-      coreSocketFactory.createSslSocket(
-          "myProject:myRegion:NotMyInstance", Arrays.asList("PRIMARY"));
-      fail("Expected RuntimeException");
-    } catch (RuntimeException e) {
-      // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e).hasMessageThat().contains("not authorized");
-    }
-  }
-
-  @Test
-  public void create_notAuthorizedToCreateEphemeralCertificate() throws IOException {
+  public void create_notAuthorized() throws IOException {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, credential, adminApi, 3307, defaultExecutor);
     try {
