@@ -98,7 +98,7 @@ jdbc:mysql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&
 
 ##### Postgres
 
-Base JDBC url: `jdbc:postgres://google/<DATABASE_NAME>`
+Base JDBC url: `jdbc:postgresql://google/<DATABASE_NAME>`
 
 When specifying the JDBC connection URL, add the additional parameters:
 
