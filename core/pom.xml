@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.0.15-SNAPSHOT</version>
+    <version>1.0.15</version>
   </parent>
   <artifactId>jdbc-socket-factory-core</artifactId>
   <packaging>jar</packaging>
@@ -23,13 +23,13 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20190510-1.28.0</version>
+      <version>v1beta4-rev20190607-1.30.1</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.16.2</version>
+      <version>0.17.1</version>
     </dependency>
 
     <dependency>
@@ -42,14 +42,14 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.28.2</version>
+      <version>3.0.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.45</version>
+      <version>1.0</version>
       <scope>test</scope>
     </dependency>
 
