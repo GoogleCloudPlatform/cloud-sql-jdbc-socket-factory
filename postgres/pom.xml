@@ -9,7 +9,6 @@
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.0.15</version>
   </parent>
-
   <artifactId>postgres-socket-factory</artifactId>
   <packaging>jar</packaging>
 
@@ -33,5 +32,18 @@
       <version>1.0.15</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jar-with-dependencies</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.2.6</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 
 </project>
