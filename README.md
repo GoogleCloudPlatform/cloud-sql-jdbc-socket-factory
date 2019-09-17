@@ -113,6 +113,22 @@ The full JDBC url should look like this:
 ```
 jdbc:postgresql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
+---
+
+## Building the Drivers
+To build a fat JAR containing the JDBC driver with the bundles Socket Factory dependencies you can issue the following Maven command from the location containing the project pom.xml:
+
+```mvn -P jar-with-dependencies clean package -DskipTests```
+
+This will create a *target* sub-folder within each of the module directories. Within these target directories you'll find the JDBC driver files.
+
+Example:
+```
+mysql-socket-factory-connector-j-8–1.0.15-jar-with-dependencies.jar
+postgres-socket-factory-1.0.15-jar-with-dependencies.jar
+```
+
+---
 
 ## Additional Information
 
