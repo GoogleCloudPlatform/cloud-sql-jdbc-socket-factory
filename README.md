@@ -79,7 +79,7 @@ compile 'com.google.cloud.sql:postgres-socket-factory:1.0.15'
 
 ##### MySQL
 
-Base JDBC url: `jdbc:mysql://google/<DATABASE_NAME>`
+Base JDBC url: `jdbc:mysql:///<DATABASE_NAME>`
 
 When specifying the JDBC connection URL, add the additional parameters:
 
@@ -95,6 +95,8 @@ The full JDBC url should look like this:
 ```
 jdbc:mysql://google/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
+
+Note: The host portion of the JDBC url is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
 
 ##### Postgres
 
