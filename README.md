@@ -79,7 +79,7 @@ compile 'com.google.cloud.sql:postgres-socket-factory:1.0.15'
 
 ##### MySQL
 
-Base JDBC url: `jdbc:mysql:///<DATABASE_NAME>`
+Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
 When specifying the JDBC connection URL, add the additional parameters:
 
@@ -91,16 +91,16 @@ When specifying the JDBC connection URL, add the additional parameters:
 | user             | MySQL username |
 | password         | MySQL user's password |
 
-The full JDBC url should look like this:
+The full JDBC URL should look like this:
 ```
 jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC url is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
 
 ##### Postgres
 
-Base JDBC url: `jdbc:postgresql:///<DATABASE_NAME>`
+Base JDBC URL: `jdbc:postgresql:///<DATABASE_NAME>`
 
 When specifying the JDBC connection URL, add the additional parameters:
 
@@ -111,12 +111,12 @@ When specifying the JDBC connection URL, add the additional parameters:
 | user             | Postgres username |
 | password         | Postgres user's password |
 
-The full JDBC url should look like this:
+The full JDBC URL should look like this:
 ```
 jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC url is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
 
 ---
 
