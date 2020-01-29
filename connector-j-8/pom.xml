@@ -35,7 +35,7 @@
 
   <profiles>
     <profile>
-      <id>jar-with-dependencies</id>
+      <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
           <groupId>mysql</groupId>
