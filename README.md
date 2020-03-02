@@ -51,7 +51,7 @@ Include the following in the project's `pom.xml`:
 ```
 
 ##### Gradle
-Include the following the project's `gradle.build`
+Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.15'
 ```
