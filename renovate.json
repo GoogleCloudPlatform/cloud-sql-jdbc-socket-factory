@@ -2,6 +2,12 @@
   "extends": [
     "config:base"
   ],
+  "packageRules": [
+    {
+      "packageNames":[ "mysql:mysql-connector-java" ],
+      "enabled": false
+    }
+  ],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
   "masterIssue": true
