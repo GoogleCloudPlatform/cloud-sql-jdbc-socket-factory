@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -108,7 +107,7 @@ class CloudSqlInstance {
     String[] connFields = connectionName.split(":");
     // Legacy support for domain-scoped projects (e.g. "google.com:project:region:instance").
     if (connFields.length == 4) {
-      connFields = new String[]{connFields[0] + ":" + connFields[1], connFields[2], connFields[3]};
+      connFields = new String[] {connFields[0] + ":" + connFields[1], connFields[2], connFields[3]};
     }
     if (connFields.length != 3) {
       throw new IllegalArgumentException(
