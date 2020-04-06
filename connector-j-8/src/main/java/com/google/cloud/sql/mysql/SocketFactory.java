@@ -52,7 +52,8 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready.
   // It is fine to implement these as no-ops.
   @Override
-  public void beforeHandshake() {}
+  public void beforeHandshake() {
+  }
 
   @Override
   public <T extends Closeable> T performTlsHandshake(
@@ -63,5 +64,6 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   }
 
   @Override
-  public void afterHandshake() {}
+  public void afterHandshake() {
+  }
 }
