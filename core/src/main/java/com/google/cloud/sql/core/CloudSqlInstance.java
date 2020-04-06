@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -85,15 +86,9 @@ class CloudSqlInstance {
       SQLAdmin apiClient,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
-    String[] connFields = connectionName.split(":");
-    if (connFields.length != 3) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] Cloud SQL connection name is invalid, expected string in the form of "
-                  + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
-              connectionName));
-    }
+
     this.connectionName = connectionName;
+    String[] connFields = parseConnectionName(connectionName);
     this.projectId = connFields[0];
     this.regionId = connFields[1];
     this.instanceId = connFields[2];
@@ -107,6 +102,22 @@ class CloudSqlInstance {
       this.currentInstanceData = performRefresh();
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
+  }
+
+  private static String[] parseConnectionName(String connectionName) {
+    String[] connFields = connectionName.split(":");
+    // Legacy support for domain-scoped projects (e.g. "google.com:project:region:instance").
+    if (connFields.length == 4) {
+      connFields = new String[]{connFields[0] + ":" + connFields[1], connFields[2], connFields[3]};
+    }
+    if (connFields.length != 3) {
+      throw new IllegalArgumentException(
+          String.format(
+              "[%s] Cloud SQL connection name is invalid, expected string in the form of "
+                  + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
+              connectionName));
+    }
+    return connFields;
   }
 
   /**

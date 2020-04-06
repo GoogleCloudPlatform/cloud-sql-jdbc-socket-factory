@@ -153,6 +153,7 @@ public class CoreSocketFactoryTest {
         .thenThrow(fakeNotAuthorizedException());
     // Stub when correct instance
     when(adminApiInstances.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiInstancesGet);
+    when(adminApiInstances.get(eq("example.com:myProject"), eq("myInstance"))).thenReturn(adminApiInstancesGet);
 
     when(adminApi.sslCerts()).thenReturn(adminApiSslCerts);
     when(adminApiSslCerts.createEphemeral(
@@ -249,6 +250,28 @@ public class CoreSocketFactoryTest {
     verify(adminApiSslCerts)
         .createEphemeral(
             eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+
+    BufferedReader bufferedReader =
+        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
+    String line = bufferedReader.readLine();
+    assertThat(line).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start();
+
+    CoreSocketFactory coreSocketFactory =
+        new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
+    Socket socket =
+        coreSocketFactory.createSslSocket(
+            "example.com:myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+
+    verify(adminApiInstances).get("example.com:myProject", "myInstance");
+    verify(adminApiSslCerts)
+        .createEphemeral(
+            eq("example.com:myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
