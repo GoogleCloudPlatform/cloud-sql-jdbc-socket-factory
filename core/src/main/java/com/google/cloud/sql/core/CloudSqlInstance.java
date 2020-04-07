@@ -1,5 +1,7 @@
 package com.google.cloud.sql.core;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
@@ -38,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -51,6 +55,11 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  */
 class CloudSqlInstance {
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
+
+  // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
+  // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
+  private static final Pattern CONNECTION_NAME =
+      Pattern.compile("([^:]+(:[^:]+)?):([^:]+):([^:]+)");
 
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
@@ -87,10 +96,14 @@ class CloudSqlInstance {
       ListenableFuture<KeyPair> keyPair) {
 
     this.connectionName = connectionName;
-    String[] connFields = parseConnectionName(connectionName);
-    this.projectId = connFields[0];
-    this.regionId = connFields[1];
-    this.instanceId = connFields[2];
+    Matcher matcher = CONNECTION_NAME.matcher(connectionName);
+    checkArgument(
+        matcher.matches(),
+        "[%s] Cloud SQL connection name is invalid, expected string in the form of"
+            + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".");
+    this.projectId = matcher.group(1);
+    this.regionId = matcher.group(3);
+    this.instanceId = matcher.group(4);
 
     this.apiClient = apiClient;
     this.executor = executor;
@@ -101,22 +114,6 @@ class CloudSqlInstance {
       this.currentInstanceData = performRefresh();
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
-  }
-
-  private static String[] parseConnectionName(String connectionName) {
-    String[] connFields = connectionName.split(":");
-    // Legacy support for domain-scoped projects (e.g. "google.com:project:region:instance").
-    if (connFields.length == 4) {
-      connFields = new String[] {connFields[0] + ":" + connFields[1], connFields[2], connFields[3]};
-    }
-    if (connFields.length != 3) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] Cloud SQL connection name is invalid, expected string in the form of "
-                  + "\"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
-              connectionName));
-    }
-    return connFields;
   }
 
   /**
