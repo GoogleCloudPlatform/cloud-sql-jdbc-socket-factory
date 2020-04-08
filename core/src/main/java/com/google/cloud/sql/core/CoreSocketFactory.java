@@ -63,8 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
-  public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
+  public static final String UNIX_SOCKET_PROPERTY = "unixSocket";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -103,6 +102,25 @@ public final class CoreSocketFactory {
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
+  }
+
+  /**
+   * If the deprecated "CLOUD_SQL_FORCE_UNIX_SOCKET" env var is set, log a warning and update the
+   * provided properties object to use the unix socket property instead.
+   */
+  public static void migrateForceSocketVarToProperty(Properties prop) {
+    if (System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null) {
+      logger.warning(
+          String.format(
+              "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
+                  + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
+                  + " instead.",
+              UNIX_SOCKET_PROPERTY));
+      if (prop.get(UNIX_SOCKET_PROPERTY) != null) {
+        String instanceName = prop.getProperty(CLOUD_SQL_INSTANCE_PROPERTY, "");
+        prop.setProperty(UNIX_SOCKET_PROPERTY, "/cloudsql/" + instanceName);
+      }
+    }
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
@@ -158,11 +176,10 @@ public final class CoreSocketFactory {
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public static Socket connect(Properties props, String socketPathFormat) throws IOException {
+  public static Socket connect(Properties props) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-    final boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -171,12 +188,13 @@ public final class CoreSocketFactory {
             + "connection Properties with value in form \"project:region:instance\"");
 
     // GAE Standard + GCF provide a connection path at "/cloudsql/<CONNECTION_NAME>"
-    if (forceUnixSocket || runningOnGaeStandard() || runningOnGoogleCloudFunctions()) {
+    String unixSocket = props.getProperty(UNIX_SOCKET_PROPERTY);
+    if (unixSocket != null) {
       logger.info(
           String.format(
-              "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
-      UnixSocketAddress socketAddress =
-          new UnixSocketAddress(new File(String.format(socketPathFormat, csqlInstanceName)));
+              "Connecting to Cloud SQL instance [%s] via unix socket at %s.",
+              csqlInstanceName, unixSocket));
+      UnixSocketAddress socketAddress = new UnixSocketAddress(new File(unixSocket));
       return UnixSocketChannel.open(socketAddress).socket();
     }
 

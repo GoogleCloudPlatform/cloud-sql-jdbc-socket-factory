@@ -34,6 +34,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
+  private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private Properties props;
 
@@ -50,6 +51,13 @@ public class SocketFactory extends javax.net.SocketFactory {
                   + "the  '%s' property in your JDBC url instead.",
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
+    }
+    CoreSocketFactory.migrateForceSocketVarToProperty(info);
+
+    // If unixSocket property is set, verify it ends with the correct suffix
+    String unixSocket = info.getProperty(CoreSocketFactory.UNIX_SOCKET_PROPERTY);
+    if (unixSocket != null && !unixSocket.endsWith(POSTGRES_SUFFIX)) {
+      info.setProperty(CoreSocketFactory.UNIX_SOCKET_PROPERTY, unixSocket + POSTGRES_SUFFIX);
     }
     this.props = info;
   }
@@ -68,7 +76,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    return CoreSocketFactory.connect(props, CoreSocketFactory.POSTGRES_SOCKET_FILE_FORMAT);
+    return CoreSocketFactory.connect(props);
   }
 
   @Override
