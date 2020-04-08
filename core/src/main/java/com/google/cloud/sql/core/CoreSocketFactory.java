@@ -203,26 +203,6 @@ public final class CoreSocketFactory {
     return getInstance().createSslSocket(csqlInstanceName, ipTypes);
   }
 
-  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
-  private static boolean runningOnGaeStandard() {
-    // gaeEnv="standard" indicates standard instances
-    String gaeEnv = System.getenv("GAE_ENV");
-    // runEnv="Production" requires to rule out Java 8 emulated environments
-    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
-    // gaeRuntime="java11" in Java 11 environments (no emulated environments)
-    String gaeRuntime = System.getenv("GAE_RUNTIME");
-
-    return "standard".equals(gaeEnv)
-        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
-  }
-
-  /** Returns {@code true} if running in a Google Cloud Functions runtime. */
-  private static boolean runningOnGoogleCloudFunctions() {
-    // Functions automatically sets a few variables we can use to guess the env:
-    // See https://cloud.google.com/functions/docs/env-var#nodejs_10_and_subsequent_runtimes
-    return System.getenv("K_SERVICE") != null && System.getenv("K_REVISION") != null;
-  }
-
   /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
