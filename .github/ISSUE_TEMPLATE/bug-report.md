@@ -47,4 +47,5 @@ Any relevant stacktrace here. Be sure to filter sensitive information.
 ## Environment
 
 1. OS type and version: <YOUR_OS_HERE>
-2. Cloud SQL Proxy version (`./cloud_sql_proxy -version`): <YOUR_VERSION_HERE>
+2. Java SDK version: `java -version`
+2. Socket Factory version: <YOUR_VERSION_HERE> 
