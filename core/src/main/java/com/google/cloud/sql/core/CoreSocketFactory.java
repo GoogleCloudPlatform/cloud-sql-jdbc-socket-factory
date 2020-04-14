@@ -116,7 +116,7 @@ public final class CoreSocketFactory {
                   + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
                   + " instead.",
               UNIX_SOCKET_PROPERTY));
-      if (prop.get(UNIX_SOCKET_PROPERTY) != null) {
+      if (prop.getProperty(UNIX_SOCKET_PROPERTY) != null) {
         String instanceName = prop.getProperty(CLOUD_SQL_INSTANCE_PROPERTY, "");
         prop.setProperty(UNIX_SOCKET_PROPERTY, "/cloudsql/" + instanceName);
       }
