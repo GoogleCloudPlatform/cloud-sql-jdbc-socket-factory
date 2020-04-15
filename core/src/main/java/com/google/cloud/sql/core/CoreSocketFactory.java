@@ -63,7 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String UNIX_SOCKET_PROPERTY = "unixSocket";
+  public static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.

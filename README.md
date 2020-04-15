@@ -160,9 +160,16 @@ this purpose.
  
 ### Connection via Unix Sockets
 
-The library will automatically detect when it is running on GAE Standard, and will connect via the 
- provided unix socket for reduced latency.
+To connect using a Unix domain socket (such as created by the Cloud SQL proxy), 
+you can use the `"unixSocketPath"` property to specify a path to a local file 
+instead of connecting directly over TCP.
 
-To force the library to connect to a unix socket (typically created by the Cloud SQL proxy) when 
-running outside of the GAE-Standard environment, set the environment variable 
-`CLOUD_SQL_FORCE_UNIX_SOCKET` to any value.
+Example using MySQL:
+```
+jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```
+
+Example using PostgreSQL:
+```
+jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```
