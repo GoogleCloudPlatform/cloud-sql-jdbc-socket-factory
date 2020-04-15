@@ -104,25 +104,6 @@ public final class CoreSocketFactory {
     this.localKeyPair = localKeyPair;
   }
 
-  /**
-   * If the deprecated "CLOUD_SQL_FORCE_UNIX_SOCKET" env var is set, log a warning and update the
-   * provided properties object to use the unix socket property instead.
-   */
-  public static void migrateForceSocketVarToProperty(Properties prop) {
-    if (System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null) {
-      logger.warning(
-          String.format(
-              "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
-                  + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
-                  + " instead.",
-              UNIX_SOCKET_PROPERTY));
-      if (prop.getProperty(UNIX_SOCKET_PROPERTY) != null) {
-        String instanceName = prop.getProperty(CLOUD_SQL_INSTANCE_PROPERTY, "");
-        prop.setProperty(UNIX_SOCKET_PROPERTY, "/cloudsql/" + instanceName);
-      }
-    }
-  }
-
   /** Returns the {@link CoreSocketFactory} singleton. */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
@@ -167,16 +148,46 @@ public final class CoreSocketFactory {
         MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
+  /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
+  private static String getUnixSocketArg(Properties props) {
+    String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
+    if (unixSocketPath != null) {
+      // Get the Unix socket file path from the properties object
+      return unixSocketPath;
+    } else if (System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null) {
+      // If the deprecated env var is set, warn and use `/cloudsql/INSTANCE_CONNECTION_NAME`
+      // A socket factory is provided at this path for GAE, GCF, and Cloud Run
+      logger.warning(
+          String.format(
+              "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
+                  + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
+                  + " instead.",
+              UNIX_SOCKET_PROPERTY));
+      return "/cloudsql/" + props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    }
+    return null; // if unset, default to null
+  }
+
   /**
    * Creates a socket representing a connection to a Cloud SQL instance.
    *
-   * <p>Depending on the environment, it may return either a SSL Socket or a Unix Socket.
+   * @see CoreSocketFactory#connect(Properties, String)
+   */
+  public static Socket connect(Properties props) throws IOException {
+    return connect(props, null);
+  }
+
+  /**
+   * Creates a socket representing a connection to a Cloud SQL instance.
+   *
+   * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
    * @param props Properties used to configure the connection.
+   * @param unixPathSuffix Optional suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public static Socket connect(Properties props) throws IOException {
+  public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
@@ -187,9 +198,13 @@ public final class CoreSocketFactory {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
-    // GAE Standard + GCF provide a connection path at "/cloudsql/<CONNECTION_NAME>"
-    String unixSocket = props.getProperty(UNIX_SOCKET_PROPERTY);
+    // Connect using the specified Unix socket
+    String unixSocket = getUnixSocketArg(props);
     if (unixSocket != null) {
+      // Verify it ends with the correct suffix
+      if (unixPathSuffix != null && !unixSocket.endsWith(unixPathSuffix)) {
+        unixSocket = unixSocket + unixPathSuffix;
+      }
       logger.info(
           String.format(
               "Connecting to Cloud SQL instance [%s] via unix socket at %s.",

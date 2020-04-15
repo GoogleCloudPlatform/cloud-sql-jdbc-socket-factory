@@ -52,13 +52,7 @@ public class SocketFactory extends javax.net.SocketFactory {
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
-    CoreSocketFactory.migrateForceSocketVarToProperty(info);
 
-    // If unixSocket property is set, verify it ends with the correct suffix
-    String unixSocket = info.getProperty(CoreSocketFactory.UNIX_SOCKET_PROPERTY);
-    if (unixSocket != null && !unixSocket.endsWith(POSTGRES_SUFFIX)) {
-      info.setProperty(CoreSocketFactory.UNIX_SOCKET_PROPERTY, unixSocket + POSTGRES_SUFFIX);
-    }
     this.props = info;
   }
 
@@ -76,7 +70,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    return CoreSocketFactory.connect(props);
+    return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
   }
 
   @Override

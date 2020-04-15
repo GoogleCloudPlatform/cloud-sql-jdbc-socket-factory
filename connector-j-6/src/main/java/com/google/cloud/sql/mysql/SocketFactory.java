@@ -34,7 +34,6 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
   @Override
   public Socket connect(String host, int portNumber, Properties props, int loginTimeout)
       throws IOException {
-    CoreSocketFactory.migrateForceSocketVarToProperty(props);
     socket = CoreSocketFactory.connect(props);
     return socket;
   }
