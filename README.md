@@ -160,9 +160,9 @@ this purpose.
  
 ### Connection via Unix Sockets
 
-To connect using a Unix domain socket (such as created by the Cloud SQL proxy), 
-you can use the `"unixSocketPath"` property to specify a path to a local file 
-instead of connecting directly over TCP.
+To connect using a Unix domain socket (such as the one created by the Cloud SQL 
+proxy), you can use the `unixSocketPath` property to specify a path to a local 
+file instead of connecting directly over TCP.
 
 Example using MySQL:
 ```

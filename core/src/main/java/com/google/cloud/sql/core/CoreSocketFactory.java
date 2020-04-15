@@ -63,7 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
+  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -170,8 +170,6 @@ public final class CoreSocketFactory {
 
   /**
    * Creates a socket representing a connection to a Cloud SQL instance.
-   *
-   * @see CoreSocketFactory#connect(Properties, String)
    */
   public static Socket connect(Properties props) throws IOException {
     return connect(props, null);
@@ -183,14 +181,13 @@ public final class CoreSocketFactory {
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
    * @param props Properties used to configure the connection.
-   * @param unixPathSuffix Optional suffix to add the the Unix socket path. Unused if null.
+   * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
   public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -213,6 +210,7 @@ public final class CoreSocketFactory {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
+    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
     return getInstance().createSslSocket(csqlInstanceName, ipTypes);
