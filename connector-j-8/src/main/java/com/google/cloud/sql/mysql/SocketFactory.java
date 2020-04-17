@@ -45,7 +45,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
     @SuppressWarnings("unchecked")
-    T socket = (T) CoreSocketFactory.connect(props, CoreSocketFactory.MYSQL_SOCKET_FILE_FORMAT);
+    T socket = (T) CoreSocketFactory.connect(props);
     return socket;
   }
 

@@ -63,8 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String MYSQL_SOCKET_FILE_FORMAT = "/cloudsql/%s";
-  public static final String POSTGRES_SOCKET_FILE_FORMAT = "/cloudsql/%s/.s.PGSQL.5432";
+  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -149,20 +148,46 @@ public final class CoreSocketFactory {
         MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
+  /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
+  private static String getUnixSocketArg(Properties props) {
+    String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
+    if (unixSocketPath != null) {
+      // Get the Unix socket file path from the properties object
+      return unixSocketPath;
+    } else if (System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null) {
+      // If the deprecated env var is set, warn and use `/cloudsql/INSTANCE_CONNECTION_NAME`
+      // A socket factory is provided at this path for GAE, GCF, and Cloud Run
+      logger.warning(
+          String.format(
+              "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
+                  + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
+                  + " instead.",
+              UNIX_SOCKET_PROPERTY));
+      return "/cloudsql/" + props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    }
+    return null; // if unset, default to null
+  }
+
+  /**
+   * Creates a socket representing a connection to a Cloud SQL instance.
+   */
+  public static Socket connect(Properties props) throws IOException {
+    return connect(props, null);
+  }
+
   /**
    * Creates a socket representing a connection to a Cloud SQL instance.
    *
-   * <p>Depending on the environment, it may return either a SSL Socket or a Unix Socket.
+   * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
    * @param props Properties used to configure the connection.
+   * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public static Socket connect(Properties props, String socketPathFormat) throws IOException {
+  public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-    final boolean forceUnixSocket = System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null;
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -170,39 +195,25 @@ public final class CoreSocketFactory {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
-    // GAE Standard + GCF provide a connection path at "/cloudsql/<CONNECTION_NAME>"
-    if (forceUnixSocket || runningOnGaeStandard() || runningOnGoogleCloudFunctions()) {
+    // Connect using the specified Unix socket
+    String unixSocket = getUnixSocketArg(props);
+    if (unixSocket != null) {
+      // Verify it ends with the correct suffix
+      if (unixPathSuffix != null && !unixSocket.endsWith(unixPathSuffix)) {
+        unixSocket = unixSocket + unixPathSuffix;
+      }
       logger.info(
           String.format(
-              "Connecting to Cloud SQL instance [%s] via unix socket.", csqlInstanceName));
-      UnixSocketAddress socketAddress =
-          new UnixSocketAddress(new File(String.format(socketPathFormat, csqlInstanceName)));
+              "Connecting to Cloud SQL instance [%s] via unix socket at %s.",
+              csqlInstanceName, unixSocket));
+      UnixSocketAddress socketAddress = new UnixSocketAddress(new File(unixSocket));
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
+    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
     return getInstance().createSslSocket(csqlInstanceName, ipTypes);
-  }
-
-  /** Returns {@code true} if running in a Google App Engine Standard runtime. */
-  private static boolean runningOnGaeStandard() {
-    // gaeEnv="standard" indicates standard instances
-    String gaeEnv = System.getenv("GAE_ENV");
-    // runEnv="Production" requires to rule out Java 8 emulated environments
-    String runEnv = System.getProperty("com.google.appengine.runtime.environment");
-    // gaeRuntime="java11" in Java 11 environments (no emulated environments)
-    String gaeRuntime = System.getenv("GAE_RUNTIME");
-
-    return "standard".equals(gaeEnv)
-        && ("Production".equals(runEnv) || "java11".equals(gaeRuntime));
-  }
-
-  /** Returns {@code true} if running in a Google Cloud Functions runtime. */
-  private static boolean runningOnGoogleCloudFunctions() {
-    // Functions automatically sets a few variables we can use to guess the env:
-    // See https://cloud.google.com/functions/docs/env-var#nodejs_10_and_subsequent_runtimes
-    return System.getenv("K_SERVICE") != null && System.getenv("K_REVISION") != null;
   }
 
   /**
