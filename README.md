@@ -35,9 +35,9 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.15 |
-| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.15 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.15              |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.16 |
+| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.16 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.16              |
 
 
 ##### Maven
@@ -46,14 +46,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.0.15</version>
+    <version>1.0.16</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.15'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.0.16'
 ```
 
 #### PostgreSQL
@@ -64,14 +64,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.0.15</version>
+    <version>1.0.16</version>
 </dependency>
 ```
 
 #### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.0.15'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.0.16'
 ```
 
 
@@ -128,8 +128,8 @@ This will create a *target* sub-folder within each of the module directories. Wi
 
 Example:
 ```
-mysql-socket-factory-connector-j-8–1.0.15-jar-with-dependencies.jar
-postgres-socket-factory-1.0.15-jar-with-dependencies.jar
+mysql-socket-factory-connector-j-8–1.0.16-jar-with-dependencies.jar
+postgres-socket-factory-1.0.16-jar-with-dependencies.jar
 ```
 
 ---
