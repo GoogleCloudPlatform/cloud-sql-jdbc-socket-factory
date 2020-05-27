@@ -70,7 +70,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.31</version>
+      <version>0.32</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
