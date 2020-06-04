@@ -23,7 +23,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.12</version>
+      <version>42.2.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -40,7 +40,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.2.12</version>
+          <version>42.2.13</version>
         </dependency>
       </dependencies>
     </profile>
