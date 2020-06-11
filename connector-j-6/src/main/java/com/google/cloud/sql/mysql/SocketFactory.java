@@ -31,9 +31,14 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
   private Socket socket;
 
+  private static final String USER_AGENT_STRING = String
+      .format("mysql-socket-factory-connector-j-6/%s",
+          SocketFactory.class.getPackage().getImplementationVersion());
+
   @Override
   public Socket connect(String host, int portNumber, Properties props, int loginTimeout)
       throws IOException {
+    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     socket = CoreSocketFactory.connect(props);
     return socket;
   }

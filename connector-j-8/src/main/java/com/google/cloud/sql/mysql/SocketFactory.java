@@ -32,6 +32,10 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
+  private static final String USER_AGENT_STRING = String
+      .format("mysql-socket-factory-connector-j-8/%s",
+          SocketFactory.class.getPackage().getImplementationVersion());
+
   @Override
   public <T extends Closeable> T connect(
       String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
@@ -44,6 +48,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
+    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;

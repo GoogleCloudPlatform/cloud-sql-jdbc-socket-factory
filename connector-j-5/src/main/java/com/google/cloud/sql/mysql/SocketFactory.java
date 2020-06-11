@@ -31,8 +31,14 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   private Socket socket;
 
+  private static final String USER_AGENT_STRING = String
+      .format("mysql-socket-factory-connector-j-5/%s",
+          SocketFactory.class.getPackage().getImplementationVersion());
+
+
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
+    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     socket = CoreSocketFactory.connect(props);
     return socket;
   }

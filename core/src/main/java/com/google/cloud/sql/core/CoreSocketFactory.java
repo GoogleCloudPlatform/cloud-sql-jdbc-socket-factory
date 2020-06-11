@@ -75,6 +75,9 @@ public final class CoreSocketFactory {
 
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
+  private static final String PACKAGE_VERSION = CoreSocketFactory.class.getPackage()
+      .getImplementationVersion();
+
   private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
 
   // Test properties, not for end-user use. May be changed or removed without notice.
@@ -333,6 +336,15 @@ public final class CoreSocketFactory {
     return generator.generateKeyPair();
   }
 
+  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
+  public static String getApplicationName() {
+    if (coreSocketFactory != null) {
+      return coreSocketFactory.adminApi.getApplicationName();
+    }
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, String
+        .format("cloud-sql-java-connector/%s", PACKAGE_VERSION));
+  }
+
   /**
    * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
    *
@@ -343,14 +355,12 @@ public final class CoreSocketFactory {
       throw new IllegalStateException(
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
-    System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-  }
-
-  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
-  public static String getApplicationName() {
-    if (coreSocketFactory != null) {
-      return coreSocketFactory.adminApi.getApplicationName();
+    if (System.getProperty(USER_TOKEN_PROPERTY_NAME) == null) {
+      System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
+    } else {
+      System.setProperty(USER_TOKEN_PROPERTY_NAME, String
+          .format("%s %s", applicationName, getApplicationName()));
     }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "Cloud SQL Java Socket Factory");
+
   }
 }

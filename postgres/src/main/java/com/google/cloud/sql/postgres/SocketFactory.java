@@ -33,6 +33,10 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
+  private static final String USER_AGENT_STRING = String
+      .format("postgres-socket-factory-connector/%s",
+          SocketFactory.class.getPackage().getImplementationVersion());
+
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
@@ -70,6 +74,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
+    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
   }
 
