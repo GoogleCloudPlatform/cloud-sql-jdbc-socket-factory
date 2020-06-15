@@ -48,6 +48,7 @@ public class SocketFactory extends javax.net.SocketFactory {
    */
   public SocketFactory(Properties info) {
     String oldInstanceKey = info.getProperty(DEPRECATED_SOCKET_ARG);
+    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     if (oldInstanceKey != null) {
       logger.warning(
           String.format(
@@ -74,7 +75,6 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
   }
 
