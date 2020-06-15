@@ -63,6 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+  public static final String USER_AGENT_PROPERTY = "userAgentString";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
@@ -191,12 +192,18 @@ public final class CoreSocketFactory {
   public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    final String userAgentString = props.getProperty(USER_AGENT_PROPERTY);
 
     // Validate parameters
     Preconditions.checkArgument(
         csqlInstanceName != null,
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
+
+    // Set the user agent string if connecting for the first time
+    if (coreSocketFactory == null) {
+      setApplicationName(userAgentString);
+    }
 
     // Connect using the specified Unix socket
     String unixSocket = getUnixSocketArg(props);

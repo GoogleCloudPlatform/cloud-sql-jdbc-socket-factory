@@ -48,7 +48,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
-    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
+    props.setProperty(CoreSocketFactory.USER_AGENT_PROPERTY, USER_AGENT_STRING);
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;

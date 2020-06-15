@@ -48,7 +48,6 @@ public class SocketFactory extends javax.net.SocketFactory {
    */
   public SocketFactory(Properties info) {
     String oldInstanceKey = info.getProperty(DEPRECATED_SOCKET_ARG);
-    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
     if (oldInstanceKey != null) {
       logger.warning(
           String.format(
@@ -57,7 +56,7 @@ public class SocketFactory extends javax.net.SocketFactory {
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
-
+    info.setProperty(CoreSocketFactory.USER_AGENT_PROPERTY, USER_AGENT_STRING);
     this.props = info;
   }
 

@@ -38,7 +38,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
-    CoreSocketFactory.setApplicationName(USER_AGENT_STRING);
+    props.setProperty(CoreSocketFactory.USER_AGENT_PROPERTY, USER_AGENT_STRING);
     socket = CoreSocketFactory.connect(props);
     return socket;
   }
