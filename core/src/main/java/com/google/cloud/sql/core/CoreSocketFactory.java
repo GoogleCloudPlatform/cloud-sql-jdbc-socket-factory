@@ -93,6 +93,7 @@ public final class CoreSocketFactory {
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
+
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
@@ -189,7 +190,9 @@ public final class CoreSocketFactory {
   public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final String userAgentString = props.getProperty(APPLICATION_NAME_PROPERTY);
+
+    // Set the default user agent
+    setDefaultUserAgent(props.getProperty(APPLICATION_NAME_PROPERTY));
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -197,10 +200,6 @@ public final class CoreSocketFactory {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
-    // Set the user agent string if connecting for the first time
-    if (coreSocketFactory == null) {
-      setApplicationName(userAgentString);
-    }
 
     // Connect using the specified Unix socket
     String unixSocket = getUnixSocketArg(props);
@@ -340,12 +339,22 @@ public final class CoreSocketFactory {
     return generator.generateKeyPair();
   }
 
+  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  private static void setDefaultUserAgent(String userAgent) {
+    System.setProperty(APPLICATION_NAME_PROPERTY, userAgent);
+  }
+
+  /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
+  private static String getDefaultUserAgent() {
+    return System.getProperty(APPLICATION_NAME_PROPERTY, "cloud-sql-java-connector");
+  }
+
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
   public static String getApplicationName() {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApi.getApplicationName();
     }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "cloud-sql-java-connector");
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, getDefaultUserAgent());
   }
 
   /**
@@ -358,12 +367,7 @@ public final class CoreSocketFactory {
       throw new IllegalStateException(
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
-    if (System.getProperty(USER_TOKEN_PROPERTY_NAME) == null) {
-      System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-    } else {
-      System.setProperty(USER_TOKEN_PROPERTY_NAME, String
-          .format("%s %s", applicationName, getApplicationName()));
-    }
-
+    System.setProperty(USER_TOKEN_PROPERTY_NAME,
+        String.format("%s %s", applicationName, getDefaultUserAgent()));
   }
 }
