@@ -296,7 +296,8 @@ public final class CoreSocketFactory {
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(getApplicationName());
+            .setApplicationName(
+                String.format("%s %s", getDefaultUserAgent(), getApplicationName()));
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -354,7 +355,7 @@ public final class CoreSocketFactory {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApi.getApplicationName();
     }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, getDefaultUserAgent());
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
   }
 
   /**
@@ -367,7 +368,6 @@ public final class CoreSocketFactory {
       throw new IllegalStateException(
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
-    System.setProperty(USER_TOKEN_PROPERTY_NAME,
-        String.format("%s %s", applicationName, getDefaultUserAgent()));
+    System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
 }
