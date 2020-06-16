@@ -33,9 +33,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
-  private static final String USER_AGENT_STRING = String
-      .format("postgres-socket-factory-connector/%s",
-          SocketFactory.class.getPackage().getImplementationVersion());
+  private static final String APPLICATION_NAME = "postgres-socket-factory";
 
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
@@ -56,7 +54,7 @@ public class SocketFactory extends javax.net.SocketFactory {
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
-    info.setProperty(CoreSocketFactory.USER_AGENT_PROPERTY, USER_AGENT_STRING);
+    info.setProperty(CoreSocketFactory.APPLICATION_NAME_PROPERTY, getUserAgentString());
     this.props = info;
   }
 
@@ -70,6 +68,19 @@ public class SocketFactory extends javax.net.SocketFactory {
     Properties info = new Properties();
     info.setProperty(DEPRECATED_SOCKET_ARG, instanceName);
     return info;
+  }
+
+  private static String getUserAgentString() {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo
+          .load(SocketFactory.class.getClassLoader().getResourceAsStream("project.properties"));
+      return String
+          .format("%s/%s", packageInfo.getProperty("artifactId"),
+              packageInfo.getProperty("version"));
+    } catch (IOException e) {
+      return APPLICATION_NAME;
+    }
   }
 
   @Override

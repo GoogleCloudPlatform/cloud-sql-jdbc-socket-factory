@@ -32,9 +32,20 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
-  private static final String USER_AGENT_STRING = String
-      .format("mysql-socket-factory-connector-j-8/%s",
-          SocketFactory.class.getPackage().getImplementationVersion());
+  private static final String APPLICATION_NAME = "mysql-socket-factory-connector-j-8";
+
+  private static String getUserAgentString() {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo
+          .load(SocketFactory.class.getClassLoader().getResourceAsStream("project.properties"));
+      return String
+          .format("%s/%s", packageInfo.getProperty("artifactId"),
+              packageInfo.getProperty("version"));
+    } catch (IOException e) {
+      return APPLICATION_NAME;
+    }
+  }
 
   @Override
   public <T extends Closeable> T connect(
@@ -48,7 +59,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
-    props.setProperty(CoreSocketFactory.USER_AGENT_PROPERTY, USER_AGENT_STRING);
+    props.setProperty(CoreSocketFactory.APPLICATION_NAME_PROPERTY, getUserAgentString());
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;

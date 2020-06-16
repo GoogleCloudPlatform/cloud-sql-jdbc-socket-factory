@@ -63,7 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String USER_AGENT_PROPERTY = "userAgentString";
+  public static final String APPLICATION_NAME_PROPERTY = "appName";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
@@ -75,9 +75,6 @@ public final class CoreSocketFactory {
   @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
-
-  private static final String PACKAGE_VERSION = CoreSocketFactory.class.getPackage()
-      .getImplementationVersion();
 
   private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
 
@@ -192,7 +189,7 @@ public final class CoreSocketFactory {
   public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final String userAgentString = props.getProperty(USER_AGENT_PROPERTY);
+    final String userAgentString = props.getProperty(APPLICATION_NAME_PROPERTY);
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -348,8 +345,7 @@ public final class CoreSocketFactory {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApi.getApplicationName();
     }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, String
-        .format("cloud-sql-java-connector/%s", PACKAGE_VERSION));
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "cloud-sql-java-connector");
   }
 
   /**
