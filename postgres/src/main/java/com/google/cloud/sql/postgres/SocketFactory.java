@@ -33,12 +33,16 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
-  private static final String APPLICATION_NAME = "postgres-socket-factory";
+  private static final String DEFAULT_APPLICATION_NAME = "postgres-socket-factory";
 
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private Properties props;
+
+  static {
+    CoreSocketFactory.setDefaultUserAgent(getUserAgentString());
+  }
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
@@ -54,7 +58,6 @@ public class SocketFactory extends javax.net.SocketFactory {
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
-    info.setProperty(CoreSocketFactory.APPLICATION_NAME_PROPERTY, getUserAgentString());
     this.props = info;
   }
 
@@ -79,7 +82,7 @@ public class SocketFactory extends javax.net.SocketFactory {
           .format("%s/%s", packageInfo.getProperty("artifactId"),
               packageInfo.getProperty("version"));
     } catch (IOException e) {
-      return APPLICATION_NAME;
+      return DEFAULT_APPLICATION_NAME;
     }
   }
 

@@ -32,7 +32,11 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
-  private static final String APPLICATION_NAME = "mysql-socket-factory-connector-j-8";
+  private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-8";
+
+  static {
+    CoreSocketFactory.setDefaultUserAgent(getUserAgentString());
+  }
 
   private static String getUserAgentString() {
     try {
@@ -43,7 +47,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
           .format("%s/%s", packageInfo.getProperty("artifactId"),
               packageInfo.getProperty("version"));
     } catch (IOException e) {
-      return APPLICATION_NAME;
+      return DEFAULT_APPLICATION_NAME;
     }
   }
 
@@ -59,7 +63,6 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout) throws IOException {
-    props.setProperty(CoreSocketFactory.APPLICATION_NAME_PROPERTY, getUserAgentString());
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;

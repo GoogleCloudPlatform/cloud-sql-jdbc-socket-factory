@@ -31,7 +31,11 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   private Socket socket;
 
-  private static final String APPLICATION_NAME = "mysql-socket-factory-connector-j-5";
+  private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-5";
+
+  static {
+    CoreSocketFactory.setDefaultUserAgent(getUserAgentString());
+  }
 
   private static String getUserAgentString() {
     try {
@@ -42,13 +46,12 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
           .format("%s/%s", packageInfo.getProperty("artifactId"),
               packageInfo.getProperty("version"));
     } catch (IOException e) {
-      return APPLICATION_NAME;
+      return DEFAULT_APPLICATION_NAME;
     }
   }
 
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
-    props.setProperty(CoreSocketFactory.APPLICATION_NAME_PROPERTY, getUserAgentString());
     socket = CoreSocketFactory.connect(props);
     return socket;
   }

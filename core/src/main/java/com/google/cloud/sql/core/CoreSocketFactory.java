@@ -63,7 +63,6 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String APPLICATION_NAME_PROPERTY = "appName";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
@@ -92,6 +91,8 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
+
+  private static String userAgentString;
 
 
   @VisibleForTesting
@@ -191,15 +192,11 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
 
-    // Set the default user agent
-    setDefaultUserAgent(props.getProperty(APPLICATION_NAME_PROPERTY));
-
     // Validate parameters
     Preconditions.checkArgument(
         csqlInstanceName != null,
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
-
 
     // Connect using the specified Unix socket
     String unixSocket = getUnixSocketArg(props);
@@ -341,13 +338,13 @@ public final class CoreSocketFactory {
   }
 
   /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
-  private static void setDefaultUserAgent(String userAgent) {
-    System.setProperty(APPLICATION_NAME_PROPERTY, userAgent);
+  public static void setDefaultUserAgent(String userAgent) {
+    userAgentString = userAgent;
   }
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
-  private static String getDefaultUserAgent() {
-    return System.getProperty(APPLICATION_NAME_PROPERTY, "cloud-sql-java-connector");
+  public static String getDefaultUserAgent() {
+    return userAgentString;
   }
 
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
