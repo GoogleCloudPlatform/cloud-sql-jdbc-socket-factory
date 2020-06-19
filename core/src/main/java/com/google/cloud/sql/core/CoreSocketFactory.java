@@ -338,8 +338,16 @@ public final class CoreSocketFactory {
   }
 
   /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static void setDefaultUserAgent(String userAgent) {
-    userAgentString = userAgent;
+  public static void setDefaultUserAgent(String artifactId) {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo
+          .load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
+              "com.google.cloud.sql.core/project.properties"));
+      userAgentString = artifactId + "/" + packageInfo.getProperty("version");
+    } catch (IOException e) {
+      userAgentString = artifactId;
+    }
   }
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */

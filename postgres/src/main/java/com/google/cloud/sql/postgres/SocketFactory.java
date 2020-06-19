@@ -41,8 +41,9 @@ public class SocketFactory extends javax.net.SocketFactory {
   private Properties props;
 
   static {
-    CoreSocketFactory.setDefaultUserAgent(getUserAgentString());
+    CoreSocketFactory.setDefaultUserAgent(getArtifactId());
   }
+
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
@@ -73,14 +74,13 @@ public class SocketFactory extends javax.net.SocketFactory {
     return info;
   }
 
-  private static String getUserAgentString() {
+  private static String getArtifactId() {
     try {
       Properties packageInfo = new Properties();
       packageInfo
-          .load(SocketFactory.class.getClassLoader().getResourceAsStream("project.properties"));
-      return String
-          .format("%s/%s", packageInfo.getProperty("artifactId"),
-              packageInfo.getProperty("version"));
+          .load(SocketFactory.class.getClassLoader().getResourceAsStream(
+              "com.google.cloud.sql.postgres/project.properties"));
+      return packageInfo.getProperty("artifactId");
     } catch (IOException e) {
       return DEFAULT_APPLICATION_NAME;
     }

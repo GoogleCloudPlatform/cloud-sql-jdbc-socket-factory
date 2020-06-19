@@ -34,17 +34,16 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
   private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-5";
 
   static {
-    CoreSocketFactory.setDefaultUserAgent(getUserAgentString());
+    CoreSocketFactory.setDefaultUserAgent(getArtifactId());
   }
 
-  private static String getUserAgentString() {
+  private static String getArtifactId() {
     try {
       Properties packageInfo = new Properties();
       packageInfo
-          .load(SocketFactory.class.getClassLoader().getResourceAsStream("project.properties"));
-      return String
-          .format("%s/%s", packageInfo.getProperty("artifactId"),
-              packageInfo.getProperty("version"));
+          .load(SocketFactory.class.getClassLoader().getResourceAsStream(
+              "com.google.cloud.sql.mysql/project.properties"));
+      return packageInfo.getProperty("artifactId");
     } catch (IOException e) {
       return DEFAULT_APPLICATION_NAME;
     }
