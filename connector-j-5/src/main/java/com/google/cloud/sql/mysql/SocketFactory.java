@@ -34,20 +34,9 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
   private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-5";
 
   static {
-    CoreSocketFactory.setDefaultUserAgent(getArtifactId());
+    CoreSocketFactory.addUserAgent(DEFAULT_APPLICATION_NAME);
   }
 
-  private static String getArtifactId() {
-    try {
-      Properties packageInfo = new Properties();
-      packageInfo
-          .load(SocketFactory.class.getClassLoader().getResourceAsStream(
-              "com.google.cloud.sql.mysql/project.properties"));
-      return packageInfo.getProperty("artifactId");
-    } catch (IOException e) {
-      return DEFAULT_APPLICATION_NAME;
-    }
-  }
 
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {

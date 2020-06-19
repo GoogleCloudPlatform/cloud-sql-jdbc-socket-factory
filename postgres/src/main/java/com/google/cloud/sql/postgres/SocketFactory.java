@@ -41,9 +41,8 @@ public class SocketFactory extends javax.net.SocketFactory {
   private Properties props;
 
   static {
-    CoreSocketFactory.setDefaultUserAgent(getArtifactId());
+    CoreSocketFactory.addUserAgent(DEFAULT_APPLICATION_NAME);
   }
-
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
@@ -72,18 +71,6 @@ public class SocketFactory extends javax.net.SocketFactory {
     Properties info = new Properties();
     info.setProperty(DEPRECATED_SOCKET_ARG, instanceName);
     return info;
-  }
-
-  private static String getArtifactId() {
-    try {
-      Properties packageInfo = new Properties();
-      packageInfo
-          .load(SocketFactory.class.getClassLoader().getResourceAsStream(
-              "com.google.cloud.sql.postgres/project.properties"));
-      return packageInfo.getProperty("artifactId");
-    } catch (IOException e) {
-      return DEFAULT_APPLICATION_NAME;
-    }
   }
 
   @Override

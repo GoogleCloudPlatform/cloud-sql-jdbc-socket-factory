@@ -92,7 +92,20 @@ public final class CoreSocketFactory {
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
-  private static String userAgentString;
+  private static List<String> userAgents = new ArrayList<String>();
+  private static String version;
+
+  static {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo.load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
+          "com.google.cloud.sql.core/project.properties"));
+      version = packageInfo.getProperty("version");
+    } catch (IOException e) {
+      // leave version null
+    }
+
+  }
 
 
   @VisibleForTesting
@@ -294,7 +307,7 @@ public final class CoreSocketFactory {
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
             .setApplicationName(
-                String.format("%s %s", getDefaultUserAgent(), getApplicationName()));
+                String.format("%s %s", getUserAgentString(), getApplicationName()));
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -338,21 +351,17 @@ public final class CoreSocketFactory {
   }
 
   /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static void setDefaultUserAgent(String artifactId) {
-    try {
-      Properties packageInfo = new Properties();
-      packageInfo
-          .load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
-              "com.google.cloud.sql.core/project.properties"));
-      userAgentString = artifactId + "/" + packageInfo.getProperty("version");
-    } catch (IOException e) {
-      userAgentString = artifactId;
+  public static void addUserAgent(String artifactId) {
+    if (version != null) {
+      userAgents.add(artifactId + "/" + version);
+    } else {
+      userAgents.add(artifactId);
     }
   }
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static String getDefaultUserAgent() {
-    return userAgentString;
+  public static String getUserAgentString() {
+    return String.join(" ", userAgents);
   }
 
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
