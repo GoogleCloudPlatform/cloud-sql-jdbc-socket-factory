@@ -360,7 +360,7 @@ public final class CoreSocketFactory {
 
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static String getUserAgents() {
+  private static String getUserAgents() {
     return String.join(" ", userAgents);
   }
 
