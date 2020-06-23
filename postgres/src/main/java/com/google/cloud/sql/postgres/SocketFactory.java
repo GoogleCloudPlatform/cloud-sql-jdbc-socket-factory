@@ -33,15 +33,13 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
-  private static final String DEFAULT_APPLICATION_NAME = "postgres-socket-factory";
-
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
   private Properties props;
 
   static {
-    CoreSocketFactory.addUserAgent(DEFAULT_APPLICATION_NAME);
+    CoreSocketFactory.addUserAgent("postgres-socket-factory");
   }
 
   /**

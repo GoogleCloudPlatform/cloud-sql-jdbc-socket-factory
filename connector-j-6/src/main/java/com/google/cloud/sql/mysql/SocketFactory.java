@@ -31,10 +31,8 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
   private Socket socket;
 
-  private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-6";
-
   static {
-    CoreSocketFactory.addUserAgent(DEFAULT_APPLICATION_NAME);
+    CoreSocketFactory.addUserAgent("mysql-socket-factory-connector-j-6");
   }
 
   @Override

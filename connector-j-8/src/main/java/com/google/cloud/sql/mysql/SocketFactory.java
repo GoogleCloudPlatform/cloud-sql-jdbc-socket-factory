@@ -32,10 +32,8 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
-  private static final String DEFAULT_APPLICATION_NAME = "mysql-socket-factory-connector-j-8";
-
   static {
-    CoreSocketFactory.addUserAgent(DEFAULT_APPLICATION_NAME);
+    CoreSocketFactory.addUserAgent("mysql-socket-factory-connector-j-8");
   }
 
   @Override
