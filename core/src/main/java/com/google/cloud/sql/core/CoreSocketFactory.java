@@ -294,8 +294,7 @@ public final class CoreSocketFactory {
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(
-                String.format("%s %s", getUserAgents(), getApplicationName()));
+            .setApplicationName(getUserAgents());
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -361,7 +360,7 @@ public final class CoreSocketFactory {
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
   private static String getUserAgents() {
-    return String.join(" ", userAgents);
+    return String.join(" ", userAgents) + " " + getApplicationName();
   }
 
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
