@@ -342,7 +342,7 @@ public final class CoreSocketFactory {
       Properties packageInfo = new Properties();
       packageInfo.load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
           "com.google.cloud.sql/project.properties"));
-      return packageInfo.getProperty("version");
+      return packageInfo.getProperty("version", "unknown");
     } catch (IOException e) {
       return "unknown";
     }
