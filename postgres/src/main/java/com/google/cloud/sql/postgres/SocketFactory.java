@@ -39,7 +39,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private Properties props;
 
   static {
-    CoreSocketFactory.addUserAgent("postgres-socket-factory");
+    CoreSocketFactory.addArtifactId("postgres-socket-factory");
   }
 
   /**

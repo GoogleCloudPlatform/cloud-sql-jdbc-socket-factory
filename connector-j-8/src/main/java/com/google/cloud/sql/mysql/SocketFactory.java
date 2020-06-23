@@ -33,7 +33,7 @@ import java.util.Properties;
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
   static {
-    CoreSocketFactory.addUserAgent("mysql-socket-factory-connector-j-8");
+    CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-8");
   }
 
   @Override

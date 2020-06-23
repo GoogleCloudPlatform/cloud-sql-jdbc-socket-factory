@@ -350,7 +350,7 @@ public final class CoreSocketFactory {
   }
 
   /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static void addUserAgent(String artifactId) {
+  public static void addArtifactId(String artifactId) {
     String userAgent = artifactId + "/" + version;
     if (!userAgents.contains(userAgent)) {
       userAgents.add(userAgent);

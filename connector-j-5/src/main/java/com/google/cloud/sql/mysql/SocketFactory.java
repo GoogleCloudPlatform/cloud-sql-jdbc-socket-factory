@@ -32,7 +32,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
   private Socket socket;
 
   static {
-    CoreSocketFactory.addUserAgent("mysql-socket-factory-connector-j-5");
+    CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-5");
   }
 
 
