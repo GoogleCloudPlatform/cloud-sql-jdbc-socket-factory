@@ -93,19 +93,7 @@ public final class CoreSocketFactory {
   private final int serverProxyPort;
 
   private static List<String> userAgents = new ArrayList<String>();
-  private static String version;
-
-  static {
-    try {
-      Properties packageInfo = new Properties();
-      packageInfo.load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
-          "com.google.cloud.sql.core/project.properties"));
-      version = packageInfo.getProperty("version");
-    } catch (IOException e) {
-      // leave version null
-    }
-
-  }
+  private static String version = getVersion();
 
 
   @VisibleForTesting
@@ -350,14 +338,26 @@ public final class CoreSocketFactory {
     return generator.generateKeyPair();
   }
 
-  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
-  public static void addUserAgent(String artifactId) {
-    if (version != null) {
-      userAgents.add(artifactId + "/" + version);
-    } else {
-      userAgents.add(artifactId);
+  private static String getVersion() {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo.load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
+          "com.google.cloud.sql/project.properties"));
+      return packageInfo.getProperty("version");
+    } catch (IOException e) {
+      return "unknown";
     }
   }
+
+  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  public static void addUserAgent(String artifactId) {
+    String userAgent = artifactId + "/" + version;
+    if (!userAgents.contains(userAgent)) {
+      userAgents.add(userAgent);
+    }
+  }
+
+
 
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
   public static String getUserAgentString() {
