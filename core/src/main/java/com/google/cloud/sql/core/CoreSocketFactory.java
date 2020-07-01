@@ -217,6 +217,40 @@ public final class CoreSocketFactory {
   }
 
   /**
+   * Returns data that can be used to establish Cloud SQL SSL connection.
+   */
+  public static SslData getSslData(Properties props) {
+    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+
+    return getInstance().computeSslData(csqlInstanceName);
+  }
+
+  private SslData computeSslData(String instanceName) {
+    CloudSqlInstance instance =
+        instances.computeIfAbsent(
+            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+    return instance.getSslData();
+  }
+
+  /**
+   * Returns preferred ip address that can be used to establish Cloud SQL connection.
+   */
+  public static String getHostIp(Properties props) {
+    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
+
+    return getInstance().getHostIp(csqlInstanceName, ipTypes);
+  }
+
+  private String getHostIp(String instanceName, List<String> ipTypes) {
+    CloudSqlInstance instance =
+        instances.computeIfAbsent(
+            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+    return instance.getPreferredIp(ipTypes);
+  }
+
+
+  /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
    * @param instanceName Name of the Cloud SQL instance.
