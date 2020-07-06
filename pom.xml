@@ -65,6 +65,7 @@
     <module>connector-j-6</module>
     <module>connector-j-8</module>
     <module>postgres</module>
+    <module>r2dbc</module>
   </modules>
 
   <dependencies>
@@ -97,7 +98,6 @@
           <target>8</target>
           <compilerArgs>
             <arg>-XDcompilePolicy=simple</arg>
-            <arg>-Xplugin:ErrorProne</arg>
           </compilerArgs>
           <annotationProcessorPaths>
             <path>

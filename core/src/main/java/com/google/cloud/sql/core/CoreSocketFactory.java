@@ -149,7 +149,7 @@ public final class CoreSocketFactory {
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
-  private static String getUnixSocketArg(Properties props) {
+  public static String getUnixSocketArg(Properties props) {
     String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
     if (unixSocketPath != null) {
       // Get the Unix socket file path from the properties object
