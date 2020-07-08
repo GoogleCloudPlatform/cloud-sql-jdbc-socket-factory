@@ -69,6 +69,7 @@
     <module>r2dbc-core</module>
     <module>r2dbc-mysql</module>
     <module>r2dbc-postgres</module>
+    <module>sqlserver</module>
   </modules>
 
   <dependencyManagement>
