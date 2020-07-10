@@ -31,6 +31,10 @@ public class SocketFactory implements com.mysql.cj.api.io.SocketFactory {
 
   private Socket socket;
 
+  static {
+    CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-6");
+  }
+
   @Override
   public Socket connect(String host, int portNumber, Properties props, int loginTimeout)
       throws IOException {

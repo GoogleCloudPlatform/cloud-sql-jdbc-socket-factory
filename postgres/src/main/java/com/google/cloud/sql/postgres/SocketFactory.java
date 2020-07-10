@@ -38,6 +38,10 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private Properties props;
 
+  static {
+    CoreSocketFactory.addArtifactId("postgres-socket-factory");
+  }
+
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
    * connections to a Cloud SQL instance.
@@ -52,7 +56,6 @@ public class SocketFactory extends javax.net.SocketFactory {
               DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
       info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
-
     this.props = info;
   }
 

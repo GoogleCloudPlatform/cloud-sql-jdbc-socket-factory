@@ -92,6 +92,10 @@ public final class CoreSocketFactory {
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
+  private static List<String> userAgents = new ArrayList<String>();
+  private static String version = getVersion();
+
+
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
@@ -324,7 +328,7 @@ public final class CoreSocketFactory {
     JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(getApplicationName());
+            .setApplicationName(getUserAgents());
     if (rootUrl != null) {
       logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
@@ -367,6 +371,40 @@ public final class CoreSocketFactory {
     return generator.generateKeyPair();
   }
 
+  private static String getVersion() {
+    try {
+      Properties packageInfo = new Properties();
+      packageInfo.load(CoreSocketFactory.class.getClassLoader().getResourceAsStream(
+          "com.google.cloud.sql/project.properties"));
+      return packageInfo.getProperty("version", "unknown");
+    } catch (IOException e) {
+      return "unknown";
+    }
+  }
+
+  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  public static void addArtifactId(String artifactId) {
+    String userAgent = artifactId + "/" + version;
+    if (!userAgents.contains(userAgent)) {
+      userAgents.add(userAgent);
+    }
+  }
+
+
+
+  /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
+  private static String getUserAgents() {
+    return String.join(" ", userAgents) + " " + getApplicationName();
+  }
+
+  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
+  public static String getApplicationName() {
+    if (coreSocketFactory != null) {
+      return coreSocketFactory.adminApi.getApplicationName();
+    }
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
+  }
+
   /**
    * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
    *
@@ -378,13 +416,5 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-  }
-
-  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
-  public static String getApplicationName() {
-    if (coreSocketFactory != null) {
-      return coreSocketFactory.adminApi.getApplicationName();
-    }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "Cloud SQL Java Socket Factory");
   }
 }
