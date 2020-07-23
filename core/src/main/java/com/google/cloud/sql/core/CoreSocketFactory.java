@@ -136,6 +136,10 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
+  static int getDefaultServerProxyPort() {
+    return DEFAULT_SERVER_PROXY_PORT;
+  }
+
   // TODO(kvg): Figure out better executor to use for testing
   @VisibleForTesting
   // Returns a listenable, scheduled executor that exits upon shutdown.
@@ -149,7 +153,7 @@ public final class CoreSocketFactory {
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
-  public static String getUnixSocketArg(Properties props) {
+  static String getUnixSocketArg(Properties props) {
     String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
     if (unixSocketPath != null) {
       // Get the Unix socket file path from the properties object

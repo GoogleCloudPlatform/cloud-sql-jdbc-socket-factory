@@ -238,8 +238,11 @@ class CloudSqlInstance {
   }
 
   /**
-   * Creates a new SSLContext based on the provided parameters. This SSLContext will be used to
-   * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
+   * Creates a new SslData based on the provided parameters.
+   * It contains a SSLContext that will be used to provide new SSLSockets
+   * that are authorized to connect to a Cloud SQL instance.
+   * It also contains a KeyManagerFactory keyManagerFactory and a TrustManagerFactory
+   * that can be used by drivers to establish an SSL tunnel.
    *
    * @return
    */
