@@ -32,6 +32,10 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
+  static {
+    CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-8");
+  }
+
   @Override
   public <T extends Closeable> T connect(
       String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
