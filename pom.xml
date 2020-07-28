@@ -106,6 +106,7 @@
           <target>8</target>
           <compilerArgs>
             <arg>-XDcompilePolicy=simple</arg>
+            <arg>-Xplugin:ErrorProne</arg>
           </compilerArgs>
           <annotationProcessorPaths>
             <path>
