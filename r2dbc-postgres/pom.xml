@@ -9,12 +9,12 @@
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.0.17-SNAPSHOT</version>
   </parent>
-  <artifactId>r2cbc-postgres-connection-factory</artifactId>
+  <artifactId>r2cbc-connection-factory-postgres</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory</name>
+  <name>Cloud SQL R2DBC Connection Factory for Postgres</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
+    R2DBC ConnectionFactory to connect to a Cloud SQL Postgres database without having to deal with IP whitelisting or SSL
     certificates manually.
   </description>
 
@@ -27,16 +27,11 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.4.BUILD-SNAPSHOT</version>
+      <version>0.8.4.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.0.17-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>r2cbc-connection-factory</artifactId>
+      <artifactId>r2cbc-connection-factory-core</artifactId>
       <version>1.0.17-SNAPSHOT</version>
     </dependency>
   </dependencies>

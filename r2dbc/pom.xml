@@ -9,10 +9,10 @@
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.0.17-SNAPSHOT</version>
   </parent>
-  <artifactId>r2cbc-connection-factory</artifactId>
+  <artifactId>r2cbc-connection-factory-core</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory</name>
+  <name>Cloud SQL R2DBC Connection Factory (R2DBC Core Library, don't depend on this directly)</name>
   <description>
     R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
     certificates manually.
@@ -28,18 +28,6 @@
       <groupId>io.projectreactor.netty</groupId>
       <artifactId>reactor-netty</artifactId>
       <version>0.9.9.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.4.BUILD-SNAPSHOT</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>dev.miku</groupId>
-      <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.BUILD-SNAPSHOT</version>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
