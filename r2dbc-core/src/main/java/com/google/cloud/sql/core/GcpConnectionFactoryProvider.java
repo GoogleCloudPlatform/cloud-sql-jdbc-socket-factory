@@ -49,12 +49,12 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     Properties properties = new Properties();
     properties.put(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, connectionName);
 
-    if (supportedProtocol(protocol)) {
-      return createFactory(connectionFactoryOptions, properties);
+    if (!supportedProtocol(protocol)) {
+        throw new UnsupportedOperationException(
+        "Cannot create ConnectionFactory: unsupported protocol" + protocol);
     }
-
-    throw new UnsupportedOperationException(
-        "Cannot create ConnectionFactory " + connectionFactoryOptions);
+    
+    return createFactory(connectionFactoryOptions, properties);
   }
 
   private ConnectionFactory createFactory(
