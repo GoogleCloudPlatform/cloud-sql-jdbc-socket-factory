@@ -57,7 +57,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
         "Cannot create ConnectionFactory " + connectionFactoryOptions);
   }
 
-  ConnectionFactory createFactory(
+  private ConnectionFactory createFactory(
       ConnectionFactoryOptions connectionFactoryOptions, Properties properties) {
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
