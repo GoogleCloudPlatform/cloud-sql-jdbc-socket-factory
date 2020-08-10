@@ -19,13 +19,13 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
-import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
+import io.r2dbc.spi.Option;
 import java.util.Properties;
 import java.util.function.Function;
 
@@ -33,7 +33,9 @@ import java.util.function.Function;
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
 
   abstract ConnectionFactory tcpConnectonFactory(
-      Builder optionBuilder, Function<SslContextBuilder, SslContextBuilder> customizer);
+      Builder optionBuilder,
+      Function<SslContextBuilder, SslContextBuilder> customizer,
+      Properties properties);
 
   abstract ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket);
 
@@ -41,19 +43,23 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
   abstract boolean supportedProtocol(String protocol);
 
+  private static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
+
   @Override
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
     String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
     String protocol = connectionFactoryOptions.getRequiredValue(PROTOCOL);
+    String unixSocket = connectionFactoryOptions.getValue(UNIX_SOCKET);
 
     Properties properties = new Properties();
     properties.put(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, connectionName);
+    properties.put(CoreSocketFactory.UNIX_SOCKET_PROPERTY, unixSocket);
 
     if (!supportedProtocol(protocol)) {
-        throw new UnsupportedOperationException(
-        "Cannot create ConnectionFactory: unsupported protocol" + protocol);
+      throw new UnsupportedOperationException(
+          "Cannot create ConnectionFactory: unsupported protocol" + protocol);
     }
-    
+
     return createFactory(connectionFactoryOptions, properties);
   }
 
@@ -68,7 +74,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectonFactory(optionBuilder, createSslCustomizer(optionBuilder, properties));
+    return tcpConnectonFactory(optionBuilder, createSslCustomizer(properties), properties);
   }
 
   @Override
@@ -88,9 +94,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   }
 
   private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
-      Builder optionBuilder, Properties properties) {
-    String hostIp = CoreSocketFactory.getHostIp(properties);
-    optionBuilder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
+      Properties properties) {
 
     Function<SslContextBuilder, SslContextBuilder> customizer =
         sslContextBuilder -> {

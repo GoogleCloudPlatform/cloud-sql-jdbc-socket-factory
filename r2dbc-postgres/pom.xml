@@ -27,7 +27,7 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.4.RELEASE</version>
+      <version>0.8.5.BUILD-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
@@ -40,6 +40,13 @@
     <repository>
       <id>oss-sonatype-snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+	  <repository>
+      <id>spring-snapshot</id>
+      <url>https://repo.spring.io/snapshot/</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
