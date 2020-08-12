@@ -6,6 +6,10 @@
     {
       "packageNames":[ "mysql:mysql-connector-java" ],
       "enabled": false
+    },
+    {
+      "packageNames": ["com.google.guava:guava"],
+      "allowedVersions": "/.+-android/"
     }
   ],
   "prConcurrentLimit": 0,
