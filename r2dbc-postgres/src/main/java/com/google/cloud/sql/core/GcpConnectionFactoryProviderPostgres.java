@@ -25,7 +25,6 @@ import io.r2dbc.postgresql.client.SSLMode;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.util.Properties;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances. */
@@ -46,7 +45,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   ConnectionFactory tcpConnectonFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      Properties properties) {
+      String csqlHostName) {
     optionBuilder
         .option(PostgresqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.TUNNEL)
@@ -56,7 +55,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
         (ConnectionFactoryOptions options) ->
             new PostgresqlConnectionFactoryProvider().create(options),
         optionBuilder,
-        properties);
+        csqlHostName);
   }
 
   @Override

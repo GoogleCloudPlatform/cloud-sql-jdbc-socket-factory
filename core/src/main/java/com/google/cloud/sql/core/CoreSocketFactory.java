@@ -140,6 +140,11 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
+  private CloudSqlInstance getCloudSqlInstance(String instanceName) {
+    return instances.computeIfAbsent(
+        instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+  }
+
   static int getDefaultServerProxyPort() {
     return DEFAULT_SERVER_PROXY_PORT;
   }
@@ -227,33 +232,19 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  public static SslData getSslData(Properties props) {
-    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-
-    return getInstance().computeSslData(csqlInstanceName);
-  }
-
-  private SslData computeSslData(String instanceName) {
-    CloudSqlInstance instance =
-        instances.computeIfAbsent(
-            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
-    return instance.getSslData();
+  public static SslData getSslData(String csqlInstanceName) {
+    return getInstance().getCloudSqlInstance(csqlInstanceName).getSslData();
   }
 
   /**
    * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(Properties props) {
-    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-
-    return getInstance().getHostIp(csqlInstanceName, ipTypes);
+  public static String getHostIp(String csqlInstanceName) {
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
   private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance =
-        instances.computeIfAbsent(
-            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }
 
@@ -269,9 +260,7 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
-    CloudSqlInstance instance =
-        instances.computeIfAbsent(
-            instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
 
     try {
       SSLSocket socket = instance.createSslSocket();

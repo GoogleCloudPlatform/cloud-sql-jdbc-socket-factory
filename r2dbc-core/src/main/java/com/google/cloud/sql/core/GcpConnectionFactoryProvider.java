@@ -26,55 +26,64 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
-import java.util.Properties;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances. */
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
 
+  /**
+   * Creates a ConnectionFactory that creates an SSL connection over TCP,
+   * using driver-specific options.
+   */
   abstract ConnectionFactory tcpConnectonFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      Properties properties);
+      String csqlHostName);
 
+  /**
+   * Creates a ConnectionFactory that creates an SSL connection over a unix socket,
+   * using driver-specific options.
+   */
   abstract ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket);
 
+  /**
+   * Creates a driver-specific {@link ConnectionFactoryOptions.Builder}.
+   */
   abstract Builder createBuilder(ConnectionFactoryOptions connectionFactoryOptions);
 
+  /**
+   * Allows a particular driver to indicate if it supports a protocol.
+   */
   abstract boolean supportedProtocol(String protocol);
 
   private static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
 
   @Override
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
-    String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
     String protocol = connectionFactoryOptions.getRequiredValue(PROTOCOL);
-    String unixSocket = connectionFactoryOptions.getValue(UNIX_SOCKET);
-
-    Properties properties = new Properties();
-    properties.put(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, connectionName);
-    properties.put(CoreSocketFactory.UNIX_SOCKET_PROPERTY, unixSocket);
 
     if (!supportedProtocol(protocol)) {
       throw new UnsupportedOperationException(
-          "Cannot create ConnectionFactory: unsupported protocol" + protocol);
+          "Cannot create ConnectionFactory: unsupported protocol (" + protocol + ")");
     }
 
-    return createFactory(connectionFactoryOptions, properties);
+    return createFactory(connectionFactoryOptions);
   }
 
   private ConnectionFactory createFactory(
-      ConnectionFactoryOptions connectionFactoryOptions, Properties properties) {
+      ConnectionFactoryOptions connectionFactoryOptions) {
+    String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
+    String socket = connectionFactoryOptions.getValue(UNIX_SOCKET);
+
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
     // precompute SSL Data to avoid blocking calls during the connect phase.
-    CoreSocketFactory.getSslData(properties);
-    String socket = CoreSocketFactory.getUnixSocketArg(properties);
+    SslData sslData = CoreSocketFactory.getSslData(connectionName);
 
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectonFactory(optionBuilder, createSslCustomizer(properties), properties);
+    return tcpConnectonFactory(optionBuilder, createSslCustomizer(sslData), connectionName);
   }
 
   @Override
@@ -94,12 +103,10 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   }
 
   private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
-      Properties properties) {
+      SslData sslData) {
 
     Function<SslContextBuilder, SslContextBuilder> customizer =
         sslContextBuilder -> {
-          SslData sslData = CoreSocketFactory.getSslData(properties);
-
           sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
           sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
           sslContextBuilder.protocols("TLSv1.2");

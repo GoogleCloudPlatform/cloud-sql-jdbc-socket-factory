@@ -8,14 +8,13 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
-import java.util.Properties;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
 public class CloudSqlConnectionFactory implements ConnectionFactory {
   private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
   private ConnectionFactoryOptions.Builder builder;
-  private Properties properties;
+  private String csqlHostName;
 
   /**
    * Creates an instance of ConnectionFactory that pulls and sets host ip before delegating.
@@ -23,10 +22,10 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public CloudSqlConnectionFactory(
       Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory,
       Builder builder,
-      Properties properties) {
+      String csqlHostName) {
     this.connectionFactoryFactory = connectionFactoryFactory;
     this.builder = builder;
-    this.properties = properties;
+    this.csqlHostName = csqlHostName;
   }
 
   @Override
@@ -40,7 +39,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   }
 
   private ConnectionFactory getConnectionFactory() {
-    String hostIp = CoreSocketFactory.getHostIp(properties);
+    String hostIp = CoreSocketFactory.getHostIp(csqlHostName);
     builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
     return connectionFactoryFactory.apply(builder.build());
   }

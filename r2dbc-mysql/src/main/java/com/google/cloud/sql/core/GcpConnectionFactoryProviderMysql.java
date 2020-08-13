@@ -25,7 +25,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.util.Properties;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
@@ -43,7 +42,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   ConnectionFactory tcpConnectonFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      Properties properties) {
+      String csqlHostName) {
     optionBuilder
         .option(MySqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(MySqlConnectionFactoryProvider.SSL_MODE, SslMode.TUNNEL)
@@ -52,7 +51,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) -> new MySqlConnectionFactoryProvider().create(options),
         optionBuilder,
-        properties);
+        csqlHostName);
   }
 
   @Override
