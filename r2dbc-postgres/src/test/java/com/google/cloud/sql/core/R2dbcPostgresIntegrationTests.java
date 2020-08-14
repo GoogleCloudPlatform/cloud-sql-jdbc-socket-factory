@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 @Ignore
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIntegrationTests {
+
+  @Rule
+  public Timeout globalTimeout= new Timeout(20, TimeUnit.SECONDS);
 
   private ConnectionFactory connectionFactory;
 
@@ -64,8 +69,6 @@ public class R2dbcPostgresIntegrationTests {
 
   @Test
   public void insertTest() {
-    Hooks.onOperatorDebug();
-
     Mono.from(this.connectionFactory.create())
         .flatMapMany(
             c ->
@@ -76,6 +79,7 @@ public class R2dbcPostgresIntegrationTests {
                     .bind("$1", "book2")
                     .bind("$2", "Book Two")
                     .execute())
+        .flatMap(postgresqlResult -> postgresqlResult.map((row, rowMetadata) -> row.get(0)))
         .blockLast();
 
     List<String> books =
@@ -91,6 +95,5 @@ public class R2dbcPostgresIntegrationTests {
             .block();
 
     assertThat(books).containsExactly("Book One", "Book Two");
-
   }
 }

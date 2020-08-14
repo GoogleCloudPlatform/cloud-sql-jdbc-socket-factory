@@ -63,7 +63,7 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
+  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -162,7 +162,7 @@ public final class CoreSocketFactory {
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
-  static String getUnixSocketArg(Properties props) {
+  private static String getUnixSocketArg(Properties props) {
     String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
     if (unixSocketPath != null) {
       // Get the Unix socket file path from the properties object
