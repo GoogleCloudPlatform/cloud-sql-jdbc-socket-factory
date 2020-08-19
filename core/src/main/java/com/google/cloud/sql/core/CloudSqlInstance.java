@@ -207,7 +207,7 @@ class CloudSqlInstance {
     ListenableFuture<SslData> sslContextFuture =
         whenAllSucceed(
             () ->
-                createSslContext(
+                createSslData(
                     Futures.getDone(keyPair),
                     Futures.getDone(metadataFuture),
                     Futures.getDone(ephemeralCertificateFuture)),
@@ -244,7 +244,7 @@ class CloudSqlInstance {
    * It also contains a KeyManagerFactory and a TrustManagerFactory
    * that can be used by drivers to establish an SSL tunnel.
    */
-  private SslData createSslContext(
+  private SslData createSslData(
       KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate) {
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
