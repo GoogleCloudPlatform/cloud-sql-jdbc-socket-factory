@@ -54,6 +54,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  * asynchronously, and this class should be considered threadsafe.
  */
 class CloudSqlInstance {
+
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
@@ -203,10 +204,10 @@ class CloudSqlInstance {
         whenAllSucceed(
             () -> fetchEphemeralCertificate(Futures.getDone(keyPair)), executor, keyPair);
     // Once the API calls are complete, construct the SSLContext for the sockets
-    ListenableFuture<SSLContext> sslContextFuture =
+    ListenableFuture<SslData> sslContextFuture =
         whenAllSucceed(
             () ->
-                createSslContext(
+                createSslData(
                     Futures.getDone(keyPair),
                     Futures.getDone(metadataFuture),
                     Futures.getDone(ephemeralCertificateFuture)),
@@ -237,16 +238,19 @@ class CloudSqlInstance {
   }
 
   /**
-   * Creates a new SSLContext based on the provided parameters. This SSLContext will be used to
-   * provide new SSLSockets that are authorized to connect to a Cloud SQL instance.
+   * Creates a new SslData based on the provided parameters.
+   * It contains a SSLContext that will be used to provide new SSLSockets
+   * authorized to connect to a Cloud SQL instance.
+   * It also contains a KeyManagerFactory and a TrustManagerFactory
+   * that can be used by drivers to establish an SSL tunnel.
    */
-  private SSLContext createSslContext(
+  private SslData createSslData(
       KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate) {
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
       KeyStore.PrivateKeyEntry privateKey =
-          new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
+          new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{ephemeralCertificate});
       authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
       KeyManagerFactory kmf =
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -261,7 +265,7 @@ class CloudSqlInstance {
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
-      return sslContext;
+      return new SslData(sslContext, kmf, tmf);
     } catch (GeneralSecurityException | IOException ex) {
       throw new RuntimeException(
           String.format(
@@ -270,7 +274,9 @@ class CloudSqlInstance {
     }
   }
 
-  /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
+  /**
+   * Fetches the latest version of the instance's metadata using the Cloud SQL Admin API.
+   */
   private Metadata fetchMetadata() {
     try {
       DatabaseInstance instanceMetadata =
@@ -407,7 +413,9 @@ class CloudSqlInstance {
     return taskFuture;
   }
 
-  /** Returns a future that blocks until the result of a nested future is complete. */
+  /**
+   * Returns a future that blocks until the result of a nested future is complete.
+   */
   private static <T> ListenableFuture<T> blockOnNestedFuture(
       ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
     SettableFuture<T> blockedFuture = SettableFuture.create();
@@ -481,14 +489,23 @@ class CloudSqlInstance {
     return new RuntimeException(fallbackDesc, ex);
   }
 
-  /** Represents the results of {@link #performRefresh()}. */
+  SslData getSslData() {
+    return getInstanceData().getSslData();
+  }
+
+  /**
+   * Represents the results of {@link #performRefresh()}.
+   */
   private static class InstanceData {
+
     private final Metadata metadata;
     private final SSLContext sslContext;
+    private final SslData sslData;
 
-    InstanceData(Metadata metadata, SSLContext sslContext) {
+    InstanceData(Metadata metadata, SslData sslData) {
       this.metadata = metadata;
-      this.sslContext = sslContext;
+      this.sslData = sslData;
+      this.sslContext = sslData.getSslContext();
     }
 
     SSLContext getSslContext() {
@@ -498,10 +515,17 @@ class CloudSqlInstance {
     Map<String, String> getIpAddrs() {
       return metadata.getIpAddrs();
     }
+
+    SslData getSslData() {
+      return sslData;
+    }
   }
 
-  /** Represents the results of @link #fetchMetadata(). */
+  /**
+   * Represents the results of @link #fetchMetadata().
+   */
   private static class Metadata {
+
     private final Map<String, String> ipAddrs;
     private final Certificate instanceCaCertificate;
 
