@@ -9,6 +9,7 @@
   <packaging>pom</packaging>
   <version>1.0.17-SNAPSHOT</version>
 
+
   <name>Cloud SQL JDBC Socket Factory</name>
   <description>
     Socket factories for MySQL/Postgres JDBC drivers that allows a user with the appropriate
@@ -70,11 +71,61 @@
     <module>r2dbc-postgres</module>
   </modules>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>2.1.16</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>8.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-analysis</artifactId>
+        <version>8.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>8.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.value</groupId>
+        <artifactId>auto-value-annotations</artifactId>
+        <version>1.7.4</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>29.0-android</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.13</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.http-client</groupId>
+        <artifactId>google-http-client</artifactId>
+        <version>1.36.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.http-client</groupId>
+        <artifactId>google-http-client-jackson2</artifactId>
+        <version>1.36.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.33</version>
+      <version>0.34</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
@@ -97,6 +148,24 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M3</version>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <configuration>
+              <rules>
+                <dependencyConvergence/>
+              </rules>
+            </configuration>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
