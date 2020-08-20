@@ -25,6 +25,11 @@
         <artifactId>reactor-core</artifactId>
         <version>3.3.6.RELEASE</version>
       </dependency>
+      <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty</artifactId>
+        <version>0.9.8.RELEASE</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
