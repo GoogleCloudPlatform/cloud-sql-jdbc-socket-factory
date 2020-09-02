@@ -9,12 +9,12 @@
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.0.17-SNAPSHOT</version>
   </parent>
-  <artifactId>sqlserver-socket-factory</artifactId>
+  <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
   <packaging>jar</packaging>
 
   <name>Cloud SQL MS SQL Server Socket Factory</name>
   <description>
-    Socket factory for the The Microsoft JDBC Driver for SQL Server that allows a user with the
+    Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
     appropriate permissions to connect to a Cloud SQL database without having to deal with IP
     allowlisting or SSL certificates manually.
   </description>
@@ -23,7 +23,7 @@
     <dependency>
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
-      <version>8.4.0-SNAPSHOT</version>
+      <version>9.1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
@@ -39,7 +39,7 @@
         <dependency>
           <groupId>com.microsoft.sqlserver</groupId>
           <artifactId>mssql-jdbc</artifactId>
-          <version>8.3.1.jre8-preview</version>
+          <version>9.1.0-SNAPSHOT</version>
         </dependency>
       </dependencies>
     </profile>

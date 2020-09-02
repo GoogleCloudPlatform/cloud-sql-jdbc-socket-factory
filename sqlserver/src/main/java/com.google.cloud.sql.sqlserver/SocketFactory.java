@@ -29,7 +29,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private Properties props = new Properties();
 
   static {
-    CoreSocketFactory.addArtifactId("sqlserver-socket-factory");
+    CoreSocketFactory.addArtifactId("cloud-sql-connector-jdbc-sqlserver");
   }
 
   /**
