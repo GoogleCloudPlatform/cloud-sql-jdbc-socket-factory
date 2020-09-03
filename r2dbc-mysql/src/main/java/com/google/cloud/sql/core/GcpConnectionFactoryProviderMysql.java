@@ -27,10 +27,18 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Function;
 
-/** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
+/**
+ * {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances.
+ */
 public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvider {
 
-  /** MySQL driver option value. */
+  static {
+    CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mysql");
+  }
+
+  /**
+   * MySQL driver option value.
+   */
   private static final String MYSQL_DRIVER = "mysql";
 
   @Override

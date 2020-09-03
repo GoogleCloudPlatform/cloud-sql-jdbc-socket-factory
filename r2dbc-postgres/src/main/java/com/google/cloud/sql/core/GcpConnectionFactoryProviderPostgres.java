@@ -27,13 +27,23 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Function;
 
-/** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances. */
+/**
+ * {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances.
+ */
 public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryProvider {
 
-  /** Postgres driver option value. */
+  static {
+    CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-postgres");
+  }
+
+  /**
+   * Postgres driver option value.
+   */
   private static final String POSTGRESQL_DRIVER = "postgresql";
 
-  /** Legacy postgres driver option value. */
+  /**
+   * Legacy postgres driver option value.
+   */
   private static final String LEGACY_POSTGRESQL_DRIVER = "postgres";
 
   @Override
