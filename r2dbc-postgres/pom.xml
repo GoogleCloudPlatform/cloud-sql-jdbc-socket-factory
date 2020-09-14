@@ -28,6 +28,7 @@
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
       <version>0.8.5.RELEASE</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
@@ -47,6 +48,19 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jar-with-driver-and-dependencies</id>
+      <dependencies>
+        <dependency>
+          <groupId>io.r2dbc</groupId>
+          <artifactId>r2dbc-postgresql</artifactId>
+          <version>0.8.5.RELEASE</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 
   <repositories>
 	  <repository>
