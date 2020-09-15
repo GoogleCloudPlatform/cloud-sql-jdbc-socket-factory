@@ -36,7 +36,7 @@ fi
 # Build jars and upload to GCS
 gcloud builds submit --config .build/build_uberjars.yaml --substitutions _VERSION="$VERSION"
 # Cleanup
-gsutil rm -f gs://$BUCKET_NAME/v"$VERSION"/*.json 2> /dev/null || true
+gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
 
 # Generate sha256 hashes for authentication
 echo -e "Add the following table to the release notes on GitHub: \n\n"
