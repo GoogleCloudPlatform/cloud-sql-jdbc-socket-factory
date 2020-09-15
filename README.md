@@ -42,6 +42,7 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 
 ##### Maven
 Include the following in the project's `pom.xml`:
+[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
@@ -73,7 +74,7 @@ Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:postgres-socket-factory:1.0.16'
 ```
-
+[//]: # ({x-version-update-end})
 
 #### Creating the JDBC URL
 
