@@ -9,7 +9,7 @@
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.1.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
   </parent>
-  <artifactId>r2cbc-connection-factory-core</artifactId>
+  <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
   <packaging>jar</packaging>
 
   <name>Cloud SQL R2DBC Connection Factory (R2DBC Core Library, don't depend on this directly)</name>
