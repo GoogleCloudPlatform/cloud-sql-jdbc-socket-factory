@@ -15,7 +15,7 @@
 
 set -e # exit immediatly if any step fails
 
-BUCKET_NAME='cloud-sql-java-connector'
+BUCKET_NAME="cloud-sql-connector-java"
 PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null 2>&1 && pwd )"
 cd "$PROJ_ROOT"
 
