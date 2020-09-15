@@ -32,7 +32,7 @@
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>r2cbc-connection-factory-core</artifactId>
+      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
       <version>1.1.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>

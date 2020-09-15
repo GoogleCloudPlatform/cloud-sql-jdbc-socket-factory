@@ -74,9 +74,9 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-          <groupId>io.projectreactor</groupId>
-          <artifactId>reactor-core</artifactId>
-          <version>3.3.10.RELEASE</version>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>3.3.10.RELEASE</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -281,6 +281,12 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
+                <configuration>
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
               </execution>
             </executions>
           </plugin>
