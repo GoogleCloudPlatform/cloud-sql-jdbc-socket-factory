@@ -34,7 +34,7 @@ then
 fi
 
 # Build jars and upload to GCS
-gcloud builds submit --config .build/build_uberjars.yaml --substitutions _VERSION="$VERSION"
+gcloud builds submit --config .build/build_uberjars.yaml --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
 # Cleanup
 gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
 

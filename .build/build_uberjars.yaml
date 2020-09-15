@@ -23,7 +23,7 @@ steps:
     args: ["-P", "jar-with-driver-and-dependencies", "package", "-DskipTests",  "-Dmaven.repo.local=/workspace/.m2"]
 artifacts:
   objects:
-    location: "gs://cloud-sql-java-connector/v${_VERSION}/"
+    location: "gs://${_BUCKET_NAME}/v${_VERSION}/"
     paths:
       - "postgres/target/*dependencies.jar"
       - "connector-j-*/target/*dependencies.jar"
