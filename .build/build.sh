@@ -40,12 +40,12 @@ gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
 
 # Generate sha256 hashes for authentication
 echo -e "Add the following table to the release notes on GitHub: \n\n"
-types=("connector-j postgres r2dbc-mysql r2dbc-postgres")
+types=("mysql-socket-factory" "postgres-socket-factory" "r2dbc-mysql" "r2dbc-postgres")
 for t in "${types[@]}"; do 
     echo "### $t"
     echo "| filename | sha256 hash |"
     echo "|----------|-------------|"
-    for f in $(gsutil ls "gs://$BUCKET_NAME/v$VERSION/$t*"); do
+    for f in $(gsutil ls "gs://$BUCKET_NAME/v$VERSION/*$t*"); do
         file=$(basename "$f")
         sha=$(gsutil cat "$f" | sha256sum --binary)
         echo "| [$file](https://storage.googleapis.com/$BUCKET_NAME/v$VERSION/$file) | $sha |"
