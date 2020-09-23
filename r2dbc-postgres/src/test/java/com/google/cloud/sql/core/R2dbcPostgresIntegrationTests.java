@@ -32,7 +32,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -43,14 +42,12 @@ import static com.google.common.truth.Truth.assertWithMessage;
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIntegrationTests {
 
-    private static  ImmutableList<String> requiredEnvVars = ImmutableList
-            .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
-
     private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
     private static final String DB_NAME = System.getenv("POSTGRES_DB");
     private static final String DB_USER = System.getenv("POSTGRES_USER");
     private static final String DB_PASSWORD = System.getenv("POSTGRES_PASS");
-
+    private static ImmutableList<String> requiredEnvVars = ImmutableList
+            .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
     @Rule
     public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
@@ -103,7 +100,7 @@ public class R2dbcPostgresIntegrationTests {
     }
 
     @Test
-    public void pooledConnectionTest()  {
+    public void pooledConnectionTest() {
         Mono.from(this.connectionPool.create())
                 .flatMapMany(
                         c ->

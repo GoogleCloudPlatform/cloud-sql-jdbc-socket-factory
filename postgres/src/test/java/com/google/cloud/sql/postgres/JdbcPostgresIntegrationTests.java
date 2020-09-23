@@ -29,13 +29,11 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -47,14 +45,12 @@ import static com.google.common.truth.Truth.assertWithMessage;
 @RunWith(JUnit4.class)
 public class JdbcPostgresIntegrationTests {
 
-    private static ImmutableList<String> requiredEnvVars = ImmutableList
-            .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
-
     private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
     private static final String DB_NAME = System.getenv("POSTGRES_DB");
     private static final String DB_USER = System.getenv("POSTGRES_USER");
     private static final String DB_PASSWORD = System.getenv("POSTGRES_PASS");
-
+    private static ImmutableList<String> requiredEnvVars = ImmutableList
+            .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
     @Rule
     public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
@@ -87,7 +83,6 @@ public class JdbcPostgresIntegrationTests {
 
 
         this.connectionPool = new HikariDataSource(config);
-        ;
 
         // Create table
         try (Connection conn = connectionPool.getConnection()) {

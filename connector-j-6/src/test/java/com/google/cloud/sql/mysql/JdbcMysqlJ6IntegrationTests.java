@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mysql;
+package com.google.cloud.sql.mysql;
 
 
 import com.google.common.collect.ImmutableList;
@@ -43,16 +43,14 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 
 @RunWith(JUnit4.class)
-public class JdbcMysqlJ5IntegrationTests {
-
-    private static ImmutableList<String> requiredEnvVars = ImmutableList
-            .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
+public class JdbcMysqlJ6IntegrationTests {
 
     private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
     private static final String DB_NAME = System.getenv("MYSQL_DB");
     private static final String DB_USER = System.getenv("MYSQL_USER");
     private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
-
+    private static ImmutableList<String> requiredEnvVars = ImmutableList
+            .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
     @Rule
     public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
@@ -85,7 +83,6 @@ public class JdbcMysqlJ5IntegrationTests {
 
 
         this.connectionPool = new HikariDataSource(config);
-        ;
 
         // Create table
         try (Connection conn = connectionPool.getConnection()) {
