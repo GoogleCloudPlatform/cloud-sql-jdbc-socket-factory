@@ -1,8 +1,8 @@
-## Cloud SQL Socket Factory for JDBC drivers
+## Cloud SQL Connector for Java
 [![Build
 Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
 
-The Cloud SQL Socket Factory is a library for the MySQL/Postgres JDBC drivers that allows a user 
+The Cloud SQL Connector for Java is a library for the MySQL/Postgres JDBC and R2DBC drivers that allows a user 
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
 whitelisting or SSL certificates manually.
 
@@ -28,7 +28,7 @@ gcloud auth application-default login
 
 ### Add library as a dependency
 
-#### MySQL
+#### MySQL JDBC
 
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
@@ -39,10 +39,10 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 | mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.16 |
 | mysql-connector-java:5.1.x | mysql-socket-factory:1.0.16              |
 
+[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
 
 ##### Maven
-Include the following in the project's `pom.xml`:
-[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
+Include the following in the project's `pom.xml`: 
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
@@ -56,8 +56,31 @@ Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.1.0'
 ```
+#### MySQL R2DBC
 
-#### PostgreSQL
+##### Maven
+Include the following in the project's `pom.xml`: 
+```maven-pom
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.miku</groupId>
+      <artifactId>r2dbc-mysql</artifactId>
+      <version>0.8.2.RELEASE</version>
+    </dependency>
+```
+
+##### Gradle
+Include the following the project's `build.gradle`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.1.0'
+compile 'dev.miku:r2dbc-mysql:0.8.2.RELEASE'
+```
+
+#### PostgreSQL JDBC
 
 ##### Maven
 Include the following in the project's `pom.xml`:
@@ -74,7 +97,33 @@ Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:postgres-socket-factory:1.1.0'
 ```
+
+#### PostgreSQL R2DBC
+Include the following in the project's `pom.xml`: 
+```maven-pom
+    <dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-postgresql</artifactId>
+      <version>0.8.5.RELEASE</version>
+    </dependency>
+```
+
+##### Gradle
+Include the following the project's `build.gradle`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
+compile 'io.r2dbc:r2dbc-postgresql:0.8.5.RELEASE'
+```
+
 [//]: # ({x-version-update-end})
+
+---
 
 #### Creating the JDBC URL
 
@@ -117,6 +166,34 @@ jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&s
 ```
 
 Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
+
+---
+#### Creating the R2DBC URL
+
+##### MySQL
+R2DBC URL template: `r2dbc:gcp:mysql//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+
+Add the following parameters:
+
+| Property         | Value         |
+| ---------------- | ------------- |
+| DATABASE_NAME   | The name of the database to connect to |
+| CLOUD_SQL_CONNECTION_NAME | The instance connection name (found on the instance details page) |
+| DB_USER         | MySQL username |
+| DB_PASS         | MySQL user's password |
+
+
+##### Postgres
+R2DBC URL template: `r2dbc:gcp:postgres//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+
+Add the following parameters:
+
+| Property         | Value         |
+| ---------------- | ------------- |
+| DATABASE_NAME   | The name of the database to connect to |
+| CLOUD_SQL_CONNECTION_NAME | The instance connection name (found on the instance details page) |
+| DB_USER         | Postgres username |
+| DB_PASS         | Postgres user's password |
 
 ---
 
