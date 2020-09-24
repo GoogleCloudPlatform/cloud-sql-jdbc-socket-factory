@@ -6,15 +6,15 @@ The Cloud SQL Connector for Java is a library for the MySQL/Postgres JDBC and R2
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
 whitelisting or SSL certificates manually.
 
-## Instructions
 
-### Examples
+
+## Examples
 
 For examples of this library being used in the context of an application, check out the sample 
 applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
 
-### Authentication
+## Authentication
 
 This library uses the [Application Default Credentials](
 https://developers.google.com/identity/protocols/application-default-credentials) to authenticate
@@ -25,10 +25,13 @@ command:
 ```bash
 gcloud auth application-default login
 ```
+---
+
+## Instructions for JDBC
 
 ### Add library as a dependency
 
-#### MySQL JDBC
+#### MySQL
 
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
@@ -56,31 +59,8 @@ Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.1.0'
 ```
-#### MySQL R2DBC
 
-##### Maven
-Include the following in the project's `pom.xml`: 
-```maven-pom
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-      <version>1.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.miku</groupId>
-      <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.RELEASE</version>
-    </dependency>
-```
-
-##### Gradle
-Include the following the project's `build.gradle`
-```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.1.0'
-compile 'dev.miku:r2dbc-mysql:0.8.2.RELEASE'
-```
-
-#### PostgreSQL JDBC
+#### PostgreSQL
 
 ##### Maven
 Include the following in the project's `pom.xml`:
@@ -98,32 +78,8 @@ Include the following the project's `gradle.build`
 compile 'com.google.cloud.sql:postgres-socket-factory:1.1.0'
 ```
 
-#### PostgreSQL R2DBC
-Include the following in the project's `pom.xml`: 
-```maven-pom
-    <dependency>
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
-      <version>1.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.5.RELEASE</version>
-    </dependency>
-```
-
-##### Gradle
-Include the following the project's `build.gradle`
-```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
-compile 'io.r2dbc:r2dbc-postgresql:0.8.5.RELEASE'
-```
-
 [//]: # ({x-version-update-end})
 
----
 
 #### Creating the JDBC URL
 
@@ -168,6 +124,63 @@ jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&s
 Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
 
 ---
+
+## Instructions for R2DBC
+
+### Add library as a dependency
+
+[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
+
+#### MySQL
+
+##### Maven
+Include the following in the project's `pom.xml`: 
+```maven-pom
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.miku</groupId>
+      <artifactId>r2dbc-mysql</artifactId>
+      <version>0.8.2.RELEASE</version>
+    </dependency>
+```
+
+##### Gradle
+Include the following the project's `build.gradle`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.1.0'
+compile 'dev.miku:r2dbc-mysql:0.8.2.RELEASE'
+```
+
+#### PostgreSQL
+
+##### Maven
+Include the following in the project's `pom.xml`: 
+```maven-pom
+    <dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-postgresql</artifactId>
+      <version>0.8.5.RELEASE</version>
+    </dependency>
+```
+##### Gradle
+Include the following the project's `build.gradle`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
+compile 'io.r2dbc:r2dbc-postgresql:0.8.5.RELEASE'
+```
+
+[//]: # ({x-version-update-end})
+
 #### Creating the R2DBC URL
 
 ##### MySQL
