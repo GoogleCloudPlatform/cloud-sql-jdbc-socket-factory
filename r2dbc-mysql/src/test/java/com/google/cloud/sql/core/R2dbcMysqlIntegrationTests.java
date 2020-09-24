@@ -93,7 +93,7 @@ public class R2dbcMysqlIntegrationTests {
         .flatMapMany(
             c ->
                 c.createStatement(
-                    String.format("CREATE TABLE IF NOT EXISTS %s (", this.tableName)
+                    String.format("CREATE TABLE %s (", this.tableName)
                         + "  ID CHAR(20) NOT NULL,"
                         + "  TITLE TEXT NOT NULL"
                         + ")")

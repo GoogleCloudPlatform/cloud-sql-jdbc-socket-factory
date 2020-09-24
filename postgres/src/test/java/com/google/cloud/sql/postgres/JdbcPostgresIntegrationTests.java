@@ -87,7 +87,7 @@ public class JdbcPostgresIntegrationTests {
 
     // Create table
     try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("CREATE TABLE IF NOT EXISTS %s (", this.tableName)
+      String stmt = String.format("CREATE TABLE %s (", this.tableName)
           + "  ID CHAR(20) NOT NULL,"
           + "  TITLE TEXT NOT NULL"
           + ");";
