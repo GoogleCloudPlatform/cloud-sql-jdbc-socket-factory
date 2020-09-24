@@ -14,5 +14,5 @@
   ],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
-  "masterIssue": false
+  "masterIssue": true
 }
