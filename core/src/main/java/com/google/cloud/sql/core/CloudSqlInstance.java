@@ -69,7 +69,7 @@ class CloudSqlInstance {
   private final String projectId;
   private final String regionId;
   private final String instanceId;
-  private final String prefixedInstanceId;
+  private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
 
   private final Object instanceDataGuard = new Object();
@@ -106,7 +106,7 @@ class CloudSqlInstance {
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
-    this.prefixedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
+    this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
 
     this.apiClient = apiClient;
     this.executor = executor;
@@ -281,7 +281,7 @@ class CloudSqlInstance {
   private Metadata fetchMetadata() {
     try {
       DatabaseInstance instanceMetadata =
-          apiClient.instances().get(projectId, prefixedInstanceId).execute();
+          apiClient.instances().get(projectId, regionalizedInstanceId).execute();
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(regionId)) {
@@ -343,7 +343,7 @@ class CloudSqlInstance {
         new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert(keyPair));
     SslCert response;
     try {
-      response = apiClient.sslCerts().createEphemeral(projectId, prefixedInstanceId, request)
+      response = apiClient.sslCerts().createEphemeral(projectId, regionalizedInstanceId, request)
           .execute();
     } catch (IOException ex) {
       throw addExceptionContext(
