@@ -151,9 +151,15 @@ public class CoreSocketFactoryTest {
     // Stub when correct project, but generic instance
     when(adminApiInstances.get(eq("myProject"), anyString()))
         .thenThrow(fakeNotAuthorizedException());
+
     // Stub when correct instance
     when(adminApiInstances.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiInstancesGet);
     when(adminApiInstances.get(eq("example.com:myProject"), eq("myInstance"))).thenReturn(adminApiInstancesGet);
+
+    // Prefixing the region to the instance name is considered valid
+    when(adminApiInstances.get(eq("myProject"), eq("myRegion~myInstance"))).thenReturn(adminApiInstancesGet);
+    when(adminApiInstances.get(eq("myProject"), eq("notMyRegion~myInstance"))).thenReturn(adminApiInstancesGet);
+    when(adminApiInstances.get(eq("example.com:myProject"), eq("myRegion~myInstance"))).thenReturn(adminApiInstancesGet);
 
     when(adminApi.sslCerts()).thenReturn(adminApiSslCerts);
     when(adminApiSslCerts.createEphemeral(
@@ -224,10 +230,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIVATE"));
 
-    verify(adminApiInstances).get("myProject", "myInstance");
+    verify(adminApiInstances).get("myProject", "myRegion~myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myRegion~myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -246,10 +252,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances).get("myProject", "myInstance");
+    verify(adminApiInstances).get("myProject", "myRegion~myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myRegion~myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -268,10 +274,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "example.com:myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances).get("example.com:myProject", "myInstance");
+    verify(adminApiInstances).get("example.com:myProject", "myRegion~myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq("example.com:myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+            eq("example.com:myProject"), eq("myRegion~myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -300,10 +306,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances, times(2)).get("myProject", "myInstance");
+    verify(adminApiInstances, times(2)).get("myProject", "myRegion~myInstance");
     verify(adminApiSslCerts, times(2))
         .createEphemeral(
-            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myRegion~myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
@@ -320,10 +326,10 @@ public class CoreSocketFactoryTest {
         new CoreSocketFactory(clientKeyPair, adminApi, port, defaultExecutor);
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiInstances).get("myProject", "myInstance");
+    verify(adminApiInstances).get("myProject", "myRegion~myInstance");
     verify(adminApiSslCerts)
         .createEphemeral(
-            eq("myProject"), eq("myInstance"), isA(SslCertsCreateEphemeralRequest.class));
+            eq("myProject"), eq("myRegion~myInstance"), isA(SslCertsCreateEphemeralRequest.class));
 
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
