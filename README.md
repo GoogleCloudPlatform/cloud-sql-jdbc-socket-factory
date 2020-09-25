@@ -141,19 +141,15 @@ Include the following in the project's `pom.xml`:
       <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
       <version>1.1.0</version>
     </dependency>
-    <dependency>
-      <groupId>dev.miku</groupId>
-      <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.RELEASE</version>
-    </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.1.0'
-compile 'dev.miku:r2dbc-mysql:0.8.2.RELEASE'
 ```
+
+*Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:LATEST-VERSION`
 
 #### PostgreSQL
 
@@ -161,23 +157,17 @@ compile 'dev.miku:r2dbc-mysql:0.8.2.RELEASE'
 Include the following in the project's `pom.xml`: 
 ```maven-pom
     <dependency>
-    <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
       <version>1.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.5.RELEASE</version>
     </dependency>
 ```
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
-compile 'io.r2dbc:r2dbc-postgresql:0.8.5.RELEASE'
 ```
+*Note: Also include the R2DBC Driver for Postgres, `io.r2dbc:r2dbc-postgresql:LATEST-VERSION`
 
 [//]: # ({x-version-update-end})
 
