@@ -69,6 +69,7 @@ class CloudSqlInstance {
   private final String projectId;
   private final String regionId;
   private final String instanceId;
+  private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
 
   private final Object instanceDataGuard = new Object();
@@ -86,9 +87,9 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
-   * @param executor executor used to schedule asynchronous tasks
-   * @param keyPair public/private key pair used to authenticate connections
+   * @param apiClient      Cloud SQL Admin API client for interacting with the Cloud SQL instance
+   * @param executor       executor used to schedule asynchronous tasks
+   * @param keyPair        public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
@@ -105,6 +106,7 @@ class CloudSqlInstance {
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
+    this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
 
     this.apiClient = apiClient;
     this.executor = executor;
@@ -149,10 +151,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *     "Private".
+   *                       "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   *     preferences.
+   *                                  preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -238,11 +240,10 @@ class CloudSqlInstance {
   }
 
   /**
-   * Creates a new SslData based on the provided parameters.
-   * It contains a SSLContext that will be used to provide new SSLSockets
-   * authorized to connect to a Cloud SQL instance.
-   * It also contains a KeyManagerFactory and a TrustManagerFactory
-   * that can be used by drivers to establish an SSL tunnel.
+   * Creates a new SslData based on the provided parameters. It contains a SSLContext that will be
+   * used to provide new SSLSockets authorized to connect to a Cloud SQL instance. It also contains
+   * a KeyManagerFactory and a TrustManagerFactory that can be used by drivers to establish an SSL
+   * tunnel.
    */
   private SslData createSslData(
       KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate) {
@@ -280,7 +281,7 @@ class CloudSqlInstance {
   private Metadata fetchMetadata() {
     try {
       DatabaseInstance instanceMetadata =
-          apiClient.instances().get(projectId, instanceId).execute();
+          apiClient.instances().get(projectId, regionalizedInstanceId).execute();
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(regionId)) {
@@ -342,7 +343,8 @@ class CloudSqlInstance {
         new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert(keyPair));
     SslCert response;
     try {
-      response = apiClient.sslCerts().createEphemeral(projectId, instanceId, request).execute();
+      response = apiClient.sslCerts().createEphemeral(projectId, regionalizedInstanceId, request)
+          .execute();
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
@@ -448,9 +450,9 @@ class CloudSqlInstance {
    * Checks for common errors that can occur when interacting with the Cloud SQL Admin API, and adds
    * additional context to help the user troubleshoot them.
    *
-   * @param ex exception thrown by the Admin API request
+   * @param ex           exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   *     provided to the user
+   *                     provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
