@@ -77,6 +77,7 @@ Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:postgres-socket-factory:1.1.0'
 ```
+*Note: Also include the JDBC Driver for MySQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 
 [//]: # ({x-version-update-end})
 
@@ -149,7 +150,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.1.0'
 ```
 
-*Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:LATEST-VERSION`
+*Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:<LATEST-VERSION>`
 
 #### PostgreSQL
 
@@ -167,7 +168,7 @@ Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
 ```
-*Note: Also include the R2DBC Driver for Postgres, `io.r2dbc:r2dbc-postgresql:LATEST-VERSION`
+*Note: Also include the R2DBC Driver for Postgres, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
 
 [//]: # ({x-version-update-end})
 
