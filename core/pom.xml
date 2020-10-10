@@ -23,7 +23,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20200919-1.30.10</version>
+      <version>v1beta4-rev20201007-1.30.10</version>
     </dependency>
 
     <dependency>
