@@ -61,15 +61,15 @@
   </properties>
 
   <modules>
-    <module>core</module>
-    <module>connector-j-5</module>
-    <module>connector-j-6</module>
-    <module>connector-j-8</module>
-    <module>postgres</module>
-    <module>r2dbc-core</module>
-    <module>r2dbc-mysql</module>
-    <module>r2dbc-postgres</module>
-    <module>sqlserver</module>
+    <module>jdbc/core</module>
+    <module>jdbc/connector-j-5</module>
+    <module>jdbc/connector-j-6</module>
+    <module>jdbc/connector-j-8</module>
+    <module>jdbc/postgres</module>
+    <module>jdbc/sqlserver</module>
+    <module>r2dbc/r2dbc-core</module>
+    <module>r2dbc/r2dbc-mysql</module>
+    <module>r2dbc/r2dbc-postgres</module>
   </modules>
 
   <dependencyManagement>
