@@ -26,5 +26,5 @@ if [ -n "$KOKORO_GFILE_DIR" ]; then
 fi
 
 echo -e "******************** Running tests... ********************\n"
-mvn -e -B clean verify -P e2e
+mvn -e -B clean verify -P e2e -Dcheckstyle.skip
 echo -e "******************** Tests complete.  ********************\n"
