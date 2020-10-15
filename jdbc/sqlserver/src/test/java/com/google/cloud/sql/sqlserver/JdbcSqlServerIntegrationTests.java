@@ -69,19 +69,19 @@ public class JdbcSqlServerIntegrationTests {
 
   @Before
   public void setUpPool() throws SQLException {
-    // Set up URL parameters
-    String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
-    Properties connProps = new Properties();
-    connProps.setProperty("user", DB_USER);
-    connProps.setProperty("password", DB_PASSWORD);
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
-    connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
-    config.setJdbcUrl(jdbcURL);
-    config.setDataSourceProperties(connProps);
+    config
+        .setDataSourceClassName(String.format("com.microsoft.sqlserver.jdbc.SQLServerDataSource"));
+    config.setUsername(DB_USER); // e.g. "root", "sqlserver"
+    config.setPassword(DB_PASSWORD); // e.g. "my-password"
+    config.addDataSourceProperty("databaseName", DB_NAME);
 
+    config.addDataSourceProperty("socketFactoryClass",
+        "com.google.cloud.sql.sqlserver.SocketFactory");
+    config.addDataSourceProperty("socketFactoryConstructorArg", CONNECTION_NAME);
+    
     this.connectionPool = new HikariDataSource(config);
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
