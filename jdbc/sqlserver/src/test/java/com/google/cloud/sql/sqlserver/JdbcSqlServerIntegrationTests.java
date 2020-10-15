@@ -73,7 +73,7 @@ public class JdbcSqlServerIntegrationTests {
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
     config
-        .setDataSourceClassName(String.format("com.microsoft.sqlserver.jdbc.SQLServerDataSource"));
+        .setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
     config.setUsername(DB_USER); // e.g. "root", "sqlserver"
     config.setPassword(DB_PASSWORD); // e.g. "my-password"
     config.addDataSourceProperty("databaseName", DB_NAME);
