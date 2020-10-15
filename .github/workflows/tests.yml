@@ -27,4 +27,4 @@ jobs:
         with:
           java-version: 1.8
       - name: Get Maven checkstyle report
-        run: mvn checkstyle:check
+        run: mvn -B checkstyle:check
