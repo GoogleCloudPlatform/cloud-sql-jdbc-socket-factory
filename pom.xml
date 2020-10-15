@@ -61,7 +61,7 @@
   </properties>
 
   <modules>
-    <module>jdbc/core</module>
+    <module>core</module>
     <module>jdbc/connector-j-5</module>
     <module>jdbc/connector-j-6</module>
     <module>jdbc/connector-j-8</module>
