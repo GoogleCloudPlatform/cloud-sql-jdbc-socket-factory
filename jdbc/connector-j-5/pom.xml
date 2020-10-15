@@ -6,31 +6,29 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.2.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
+  
+  <artifactId>mysql-socket-factory</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory for Postgres</name>
+  <name>Cloud SQL MySQL Socket Factory (for Connector/J 5.x)</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL Postgres database without having to deal with IP allowlisting or SSL
-    certificates manually.
+    Socket factory for the MySQL JDBC driver (version 5.x) that allows a user with the appropriate
+    permissions to connect to a Cloud SQL database without having to deal with IP allowlisting or
+    SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-spi</artifactId>
-      <version>0.8.4.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.7.RELEASE</version>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.49</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -45,12 +43,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-pool</artifactId>
-      <version>0.8.6.RELEASE</version>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <profiles>
@@ -58,22 +55,12 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>io.r2dbc</groupId>
-          <artifactId>r2dbc-postgresql</artifactId>
-          <version>0.8.7.RELEASE</version>
+          <groupId>mysql</groupId>
+          <artifactId>mysql-connector-java</artifactId>
+          <version>5.1.48</version>
         </dependency>
       </dependencies>
     </profile>
   </profiles>
-
-  <repositories>
-	  <repository>
-      <id>spring-snapshot</id>
-      <url>https://repo.spring.io/snapshot/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
 </project>
