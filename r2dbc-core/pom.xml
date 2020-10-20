@@ -22,7 +22,7 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-spi</artifactId>
-      <version>0.8.2.RELEASE</version>
+      <version>0.8.3.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>io.projectreactor.netty</groupId>
