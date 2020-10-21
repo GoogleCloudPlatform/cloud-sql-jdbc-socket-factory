@@ -47,16 +47,16 @@ public class R2dbcMssqlIntegrationTests {
         ConnectionFactories.get(
             "r2dbc:gcp:mssql:////user:password@connectionString/dbName");
 
-	  Mono.from(this.connectionFactory.create())
-			  .flatMapMany(
-					  c ->
-							  c.createStatement(
-									  "CREATE TABLE books ("
-											  + "  ID CHAR(20) NOT NULL,"
-											  + "  TITLE TEXT NOT NULL"
-											  + ")")
-									  .execute())
-			  .blockLast();
+    Mono.from(this.connectionFactory.create())
+        .flatMapMany(
+            c ->
+                c.createStatement(
+                    "CREATE TABLE books ("
+                        + "  ID CHAR(20) NOT NULL,"
+                        + "  TITLE TEXT NOT NULL"
+                        + ")")
+                    .execute())
+        .blockLast();
   }
 
   @After
