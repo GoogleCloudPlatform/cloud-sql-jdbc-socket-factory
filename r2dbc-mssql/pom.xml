@@ -27,7 +27,7 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-mssql</artifactId>
-      <version>0.8.5.BUILD-SNAPSHOT</version>
+      <version>0.8.5.RELEASE</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -61,21 +61,6 @@
       </dependencies>
     </profile>
   </profiles>
-
-  <repositories>
-		<repository>
-			<id>spring-snapshot</id>
-			<url>https://repo.spring.io/snapshot/</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>sonatype-nexus-snapshots</id>
-			<name>Sonatype OSS Snapshot Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</repository>
-	</repositories>
 
   <dependencyManagement>
     <dependencies>
