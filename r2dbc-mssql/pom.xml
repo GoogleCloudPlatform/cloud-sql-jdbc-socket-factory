@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.1.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-mssql</artifactId>
   <packaging>jar</packaging>
@@ -21,11 +21,6 @@
   <dependencies>
     <dependency>
       <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-spi</artifactId>
-      <version>0.8.2.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-mssql</artifactId>
       <version>0.8.5.RELEASE</version>
       <scope>provided</scope>
@@ -33,7 +28,7 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
-      <version>1.1.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+      <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -61,15 +56,5 @@
       </dependencies>
     </profile>
   </profiles>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.r2dbc</groupId>
-        <artifactId>r2dbc-spi</artifactId>
-        <version>0.8.2.RELEASE</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
 </project>
