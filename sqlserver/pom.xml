@@ -8,29 +8,28 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
-    <relativePath>../..</relativePath>
+    <relativePath>..</relativePath>
   </parent>
-  <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+  <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL MySQL Socket Factory (for Connector/J 8.x)</name>
+  <name>Cloud SQL MS SQL Server Socket Factory</name>
   <description>
-    Socket factory for the MySQL JDBC driver (version 8.x) that allows a user with the appropriate
-    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting or
-    SSL certificates manually.
+    Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
+    appropriate permissions to connect to a Cloud SQL database without having to deal with IP
+    allowlisting or SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.17</version>
-      <scope>provided</scope>
+      <groupId>com.microsoft.sqlserver</groupId>
+      <artifactId>mssql-jdbc</artifactId>
+      <version>9.1.0.jre8-preview</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+      <version>1.1.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -41,7 +40,7 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>1.1</version>
+      <version>1.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -57,9 +56,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>mysql</groupId>
-          <artifactId>mysql-connector-java</artifactId>
-          <version>8.0.17</version>
+          <groupId>com.microsoft.sqlserver</groupId>
+          <artifactId>mssql-jdbc</artifactId>
+          <version>9.1.0-SNAPSHOT</version>
         </dependency>
       </dependencies>
     </profile>

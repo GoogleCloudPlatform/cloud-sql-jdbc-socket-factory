@@ -8,23 +8,23 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
-    <relativePath>../..</relativePath>
+    <relativePath>..</relativePath>
   </parent>
-  <artifactId>postgres-socket-factory</artifactId>
+  <artifactId>mysql-socket-factory-connector-j-8</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL Postgres Socket Factory</name>
+  <name>Cloud SQL MySQL Socket Factory (for Connector/J 8.x)</name>
   <description>
-    Socket factory for the Postgres JDBC driver that allows a user with the appropriate permissions
-    to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
-    certificates manually.
+    Socket factory for the MySQL JDBC driver (version 8.x) that allows a user with the appropriate
+    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting or
+    SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.2.18</version>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.17</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -57,9 +57,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>org.postgresql</groupId>
-          <artifactId>postgresql</artifactId>
-          <version>42.2.18</version>
+          <groupId>mysql</groupId>
+          <artifactId>mysql-connector-java</artifactId>
+          <version>8.0.17</version>
         </dependency>
       </dependencies>
     </profile>

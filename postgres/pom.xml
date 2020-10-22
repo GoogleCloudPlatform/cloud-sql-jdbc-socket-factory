@@ -8,32 +8,28 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
-    <relativePath>../..</relativePath>
+    <relativePath>..</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+  <artifactId>postgres-socket-factory</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory for MySQL</name>
+  <name>Cloud SQL Postgres Socket Factory</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL MySQL database without having to deal with IP whitelisting or SSL
+    Socket factory for the Postgres JDBC driver that allows a user with the appropriate permissions
+    to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
     certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-spi</artifactId>
-      <version>0.8.3.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.miku</groupId>
-      <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.RELEASE</version>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.18</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
       <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>
@@ -49,9 +45,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-pool</artifactId>
-      <version>0.8.5.RELEASE</version>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>3.4.5</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -61,9 +57,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-        <groupId>dev.miku</groupId>
-        <artifactId>r2dbc-mysql</artifactId>
-        <version>0.8.2.RELEASE</version>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.2.18</version>
         </dependency>
       </dependencies>
     </profile>

@@ -8,28 +8,33 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
-    <relativePath>../..</relativePath>
+    <relativePath>..</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+  <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL MS SQL Server Socket Factory</name>
+  <name>Cloud SQL R2DBC Connection Factory for MySQL</name>
   <description>
-    Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
-    appropriate permissions to connect to a Cloud SQL database without having to deal with IP
-    allowlisting or SSL certificates manually.
+    R2DBC ConnectionFactory to connect to a Cloud SQL MySQL database without having to deal with IP whitelisting or SSL
+    certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>com.microsoft.sqlserver</groupId>
-      <artifactId>mssql-jdbc</artifactId>
-      <version>9.1.0.jre8-preview</version>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-spi</artifactId>
+      <version>0.8.3.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.miku</groupId>
+      <artifactId>r2dbc-mysql</artifactId>
+      <version>0.8.2.RELEASE</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.1.1-SNAPSHOT</version>
+      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -40,13 +45,13 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>1.0.1</version>
+      <version>1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <version>3.4.5</version>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-pool</artifactId>
+      <version>0.8.5.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -56,9 +61,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>com.microsoft.sqlserver</groupId>
-          <artifactId>mssql-jdbc</artifactId>
-          <version>9.1.0-SNAPSHOT</version>
+        <groupId>dev.miku</groupId>
+        <artifactId>r2dbc-mysql</artifactId>
+        <version>0.8.2.RELEASE</version>
         </dependency>
       </dependencies>
     </profile>
