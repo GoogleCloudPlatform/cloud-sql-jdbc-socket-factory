@@ -16,16 +16,15 @@
 
 package com.google.cloud.sql.core;
 
-import java.util.function.Function;
+import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
+import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.mssql.MssqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-
-import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
-import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
+import java.util.function.Function;
 
 /**
  * {@link ConnectionFactoryProvider} for proxied access to GCP MsSQL instances.
@@ -52,7 +51,9 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
     optionBuilder
-        .option(MssqlConnectionFactoryProvider.SSL_TUNNEL, customizer);
+        .option(MssqlConnectionFactoryProvider.SSL_TUNNEL, customizer)
+        .option(MssqlConnectionFactoryProvider.TCP_NODELAY, true)
+        .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) -> new MssqlConnectionFactoryProvider().create(options),
@@ -62,8 +63,7 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
 
   @Override
   ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket) {
-    //optionBuilder.option(MssqlConnectionFactoryProvider.UNIX_SOCKET, socket).build();
-    return new MssqlConnectionFactoryProvider().create(optionBuilder.build());
+    throw new RuntimeException("UNIX socket connections are not supported");
   }
 
   @Override

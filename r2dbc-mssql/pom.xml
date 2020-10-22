@@ -77,5 +77,14 @@
 		</repository>
 	</repositories>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.r2dbc</groupId>
+        <artifactId>r2dbc-spi</artifactId>
+        <version>0.8.2.RELEASE</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>
