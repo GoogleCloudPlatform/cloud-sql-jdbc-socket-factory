@@ -46,7 +46,7 @@ public class R2dbcPostgresIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_USER");
   private static final String DB_PASSWORD = System.getenv("POSTGRES_PASS");
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
   @Rule
   public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
@@ -54,18 +54,15 @@ public class R2dbcPostgresIntegrationTests {
   private ConnectionFactory connectionPool;
   private String tableName;
 
-  @BeforeClass
-  public static void checkEnvVars() {
+  @Before
+  public void setUpPool() {
     // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
+    requiredEnvVars.forEach((varName) -> {
       assertWithMessage(
           String.format("Environment variable '%s' must be set to perform these tests.", varName))
           .that(System.getenv(varName)).isNotEmpty();
     });
-  }
 
-  @Before
-  public void setUpPool() {
     // Set up URL parameters
     String r2dbcURL = String
         .format("r2dbc:gcp:postgres://%s:%s@%s/%s", DB_USER, DB_PASSWORD, CONNECTION_NAME,

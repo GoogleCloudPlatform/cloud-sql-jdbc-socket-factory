@@ -40,7 +40,7 @@ import reactor.core.publisher.Mono;
 @RunWith(JUnit4.class)
 public class R2dbcMysqlIntegrationTests {
 
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
 
   private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
@@ -54,21 +54,10 @@ public class R2dbcMysqlIntegrationTests {
   private ConnectionPool connectionPool;
   private String tableName;
 
-
-  @BeforeClass
-  public static void checkEnvVars() {
-    // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
-  }
-
   @Before
   public void setUpPool() {
     // Check that required env vars are set
-    this.requiredEnvVars.stream().forEach((varName) -> {
+    requiredEnvVars.forEach((varName) -> {
       assertWithMessage(
           String.format("Environment variable '%s' must be set to perform these tests.", varName))
           .that(System.getenv(varName)).isNotEmpty();
