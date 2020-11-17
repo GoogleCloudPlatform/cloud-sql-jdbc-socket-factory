@@ -72,15 +72,34 @@ Include the following in the project's `pom.xml`:
 </dependency>
 ```
 
-#### Gradle
+##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:postgres-socket-factory:1.1.0'
 ```
 *Note: Also include the JDBC Driver for MySQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 
-[//]: # ({x-version-update-end})
 
+#### SQL Server
+
+##### Maven
+Include the following in the project's `pom.xml`:
+```maven-pom
+<dependency>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+    <version>1.1.0</version>
+</dependency>
+```
+
+##### Gradle
+Include the following the project's `gradle.build`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.1.0'
+```
+
+
+[//]: # ({x-version-update-end})
 
 #### Creating the JDBC URL
 
