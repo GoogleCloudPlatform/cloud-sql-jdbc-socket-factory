@@ -13,7 +13,7 @@
   <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL MS SQL Server Socket Factory</name>
+  <name>Cloud SQL JDBC connector for SQL Server</name>
   <description>
     Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
     appropriate permissions to connect to a Cloud SQL database without having to deal with IP
