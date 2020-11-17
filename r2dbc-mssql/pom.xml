@@ -12,10 +12,11 @@
   <artifactId>cloud-sql-connector-r2dbc-mssql</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory for MS SQL Server</name>
+  <name>Cloud SQL R2DBC connector for SQL Server</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL MS SQL Server database without having to deal with IP whitelisting or SSL
-    certificates manually.
+    Connection Factory for the R2DBC Driver for SQL Server that allows a user with the
+    appropriate permissions to connect to a Cloud SQL database without having to deal with IP
+    allowlisting or SSL certificates manually.
   </description>
 
   <dependencies>
