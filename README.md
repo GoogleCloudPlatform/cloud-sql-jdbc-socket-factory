@@ -189,6 +189,24 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.1.0'
 ```
 *Note: Also include the R2DBC Driver for Postgres, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
 
+#### PostgreSQL
+
+##### Maven
+Include the following in the project's `pom.xml`: 
+```maven-pom
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+```
+##### Gradle
+Include the following the project's `build.gradle`
+```gradle
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.1.0'
+```
+*Note: Also include the R2DBC Driver for SQL Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
+
 [//]: # ({x-version-update-end})
 
 #### Creating the R2DBC URL
@@ -217,6 +235,19 @@ Add the following parameters:
 | CLOUD_SQL_CONNECTION_NAME | The instance connection name (found on the instance details page) |
 | DB_USER         | Postgres username |
 | DB_PASS         | Postgres user's password |
+
+##### SQL Server
+R2DBC URL template: `r2dbc:gcp:mssql//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+
+Add the following parameters:
+
+| Property         | Value         |
+| ---------------- | ------------- |
+| DATABASE_NAME   | The name of the database to connect to |
+| CLOUD_SQL_CONNECTION_NAME | The instance connection name (found on the instance details page) |
+| DB_USER         | SQL Server username |
+| DB_PASS         | SQL Server user's password |
+
 
 ---
 

@@ -68,7 +68,7 @@
     <module>postgres</module>
     <module>sqlserver</module>
     <module>r2dbc-core</module>
-    <module>r2dbc-mssql</module>
+    <module>r2dbc-sqlserver</module>
     <module>r2dbc-mysql</module>
     <module>r2dbc-postgres</module>
   </modules>
