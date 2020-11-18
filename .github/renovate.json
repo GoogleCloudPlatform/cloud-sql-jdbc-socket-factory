@@ -10,6 +10,10 @@
     {
       "packageNames": ["com.google.guava:guava"],
       "allowedVersions": "/.+-android/"
+    },
+    {
+      "packageNames": ["com.google.guava:guava"],
+      "allowedVersions": "/.+-jre8?+/"
     }
   ],
   "prConcurrentLimit": 0,
