@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>1.2.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
   </parent>
   <artifactId>postgres-socket-factory</artifactId>
   <packaging>jar</packaging>
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+      <version>1.2.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>

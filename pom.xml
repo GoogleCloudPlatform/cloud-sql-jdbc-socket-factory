@@ -7,7 +7,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.1.1-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+  <version>1.2.0</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
