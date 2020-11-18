@@ -37,15 +37,15 @@ import org.junit.runners.JUnit4;
 import reactor.core.publisher.Mono;
 
 @RunWith(JUnit4.class)
-public class R2dbcMssqlIntegrationTests {
+public class R2dbcSqlserverIntegrationTests {
 
   private static final ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("MSSQL_USER", "MSSQL_PASS", "MSSQL_DB", "MSSQL_CONNECTION_NAME");
+      .of("SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
 
-  private static final String CONNECTION_NAME = System.getenv("MSSQL_CONNECTION_NAME");
-  private static final String DB_NAME = System.getenv("MSSQL_DB");
-  private static final String DB_USER = System.getenv("MSSQL_USER");
-  private static final String DB_PASSWORD = System.getenv("MSSQL_PASS");
+  private static final String CONNECTION_NAME = System.getenv("SQLSERVER_CONNECTION_NAME");
+  private static final String DB_NAME = System.getenv("SQLSERVER_DB");
+  private static final String DB_USER = System.getenv("SQLSERVER_USER");
+  private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
 
   @Rule
   public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
