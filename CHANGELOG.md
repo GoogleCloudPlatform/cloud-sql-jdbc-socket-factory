@@ -11,15 +11,6 @@
 * use regionalized instance ids to prevent global conflicts with sqladmin v1 ([#303](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/303)) ([4bacca4](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4bacca40b49cc1867a06cf4b2b7cc04c94ad9a07))
 
 
-### Reverts
-
-* Revert "chore: use github action to tag releases (#282)" (#307) ([a1a902d](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a1a902d389866dbda3ef3265fe171cde6b0ae367)), closes [#282](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/282) [#307](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/307)
-
-
-### Documentation
-
-* add R2DBC connector info to README ([#302](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/302)) ([d20e54d](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d20e54dd4ff998a3612f05b2caa4a6c7529d3c38))
-
 ## [1.1.0](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.0.16...v1.1.0) (2020-09-15)
 
 
