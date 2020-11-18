@@ -12,8 +12,8 @@
       "allowedVersions": "/.+-android/"
     },
     {
-      "packageNames": ["com.google.guava:guava"],
-      "allowedVersions": "/.+-jre8?+/"
+      "packageNames": ["com.microsoft.sqlserver:mssql-jdbc"],
+      "allowedVersions": "/.+jre8.?/"
     }
   ],
   "prConcurrentLimit": 0,
