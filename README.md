@@ -38,9 +38,8 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.0.16 |
-| mysql-connector-java:6.x   | mysql-socket-factory-connector-j-6:1.0.16 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.0.16              |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.1.0 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.1.0             |
 
 [//]: # ({x-version-update-start:cloud-sql-java-connector:released})
 
