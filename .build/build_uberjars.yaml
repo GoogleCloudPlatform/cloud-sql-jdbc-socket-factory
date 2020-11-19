@@ -27,5 +27,7 @@ artifacts:
     paths:
       - "postgres/target/*dependencies.jar"
       - "connector-j-*/target/*dependencies.jar"
+      - "sqlserver/target/*dependencies.jar"
       - "r2dbc-mysql/target/*dependencies.jar"
       - "r2dbc-postgres/target/*dependencies.jar"
+      - "r2dbc-sqlserver/target/*dependencies.jar"
