@@ -15,7 +15,7 @@
 
 set -e # exit immediatly if any step fails
 
-BUCKET_NAME="cloud-sql-connector-java"
+BUCKET_NAME="cloud-sql-java-connector"
 PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null 2>&1 && pwd )"
 cd "$PROJ_ROOT"
 
@@ -40,7 +40,7 @@ gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
 
 # Generate sha256 hashes for authentication
 echo -e "Add the following table to the release notes on GitHub: \n\n"
-types=("mysql-socket-factory" "postgres-socket-factory" "r2dbc-mysql" "r2dbc-postgres")
+types=("mysql-socket-factory" "postgres-socket-factory" "jdbc-sqlserver" "r2dbc-mysql" "r2dbc-postgres" "r2dbc-sqlserver")
 for t in "${types[@]}"; do 
     echo "### $t"
     echo "| filename | sha256 hash |"
