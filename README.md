@@ -2,7 +2,7 @@
 [![Build
 Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
 
-The Cloud SQL Connector for Java is a library for the MySQL/Postgres JDBC and R2DBC drivers that allows a user 
+The Cloud SQL Connector for Java is a library for the MySQL/PostgreSQL JDBC and R2DBC drivers that allows a user 
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
 whitelisting or SSL certificates manually.
 
@@ -76,7 +76,7 @@ Include the following the project's `gradle.build`
 ```gradle
 compile 'com.google.cloud.sql:postgres-socket-factory:1.2.0'
 ```
-*Note: Also include the JDBC Driver for MySQL, `org.postgresql:postgresql:<LATEST-VERSION>`
+*Note: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 
 
 #### SQL Server
@@ -122,7 +122,7 @@ jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socket
 
 Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address base on the provided `cloudSqlInstance` arg. 
 
-##### Postgres
+##### PostgreSQL
 
 Base JDBC URL: `jdbc:postgresql:///<DATABASE_NAME>`
 
@@ -132,8 +132,8 @@ When specifying the JDBC connection URL, add the additional parameters:
 | ---------------- | ------------- |
 | socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
 | cloudSqlInstance | The instance connection name (found on the instance details page) |
-| user             | Postgres username |
-| password         | Postgres user's password |
+| user             | PostgreSQL username |
+| password         | PostgreSQL user's password |
 
 The full JDBC URL should look like this:
 ```
@@ -186,9 +186,9 @@ Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.2.0'
 ```
-*Note: Also include the R2DBC Driver for Postgres, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
+*Note: Also include the R2DBC Driver for PostgreSQL, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
 
-#### PostgreSQL
+#### SQL Server
 
 ##### Maven
 Include the following in the project's `pom.xml`: 
@@ -223,7 +223,7 @@ Add the following parameters:
 | DB_PASS         | MySQL user's password |
 
 
-##### Postgres
+##### PostgreSQL
 R2DBC URL template: `r2dbc:gcp:postgres//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
 
 Add the following parameters:
@@ -232,8 +232,8 @@ Add the following parameters:
 | ---------------- | ------------- |
 | DATABASE_NAME   | The name of the database to connect to |
 | CLOUD_SQL_CONNECTION_NAME | The instance connection name (found on the instance details page) |
-| DB_USER         | Postgres username |
-| DB_PASS         | Postgres user's password |
+| DB_USER         | PostgreSQL username |
+| DB_PASS         | PostgreSQL user's password |
 
 ##### SQL Server
 R2DBC URL template: `r2dbc:gcp:mssql//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
