@@ -304,3 +304,13 @@ Example using PostgreSQL:
 ```
 jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
+
+## Troubleshooting
+
+## Networking
+
+`java.net.ConnectException: Connection timed out` failures from (with `The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.` e.g. from the MySQL JDBC drivers) indicate that this Connector could not reach the Cloud SQL database on its public or private IP address.  (See above re. the `ipTypes=PRIVATE` parameter in the JDBC URL.)
+
+If the Cloud SQL database instance is secured and does not have a public but only a private IP to connect to from within a Google Cloud hosted service, then additional configuration in Google Cloud (GCP) may be required to enable private networking connectivity between where the Java code is running and Cloud SQL.  The section about _Connecting from external applications_ in the Cloud SQL Guide for [MySQL](https://cloud.google.com/sql/docs/mysql/connect-overview#external-connection-methods), [PostgreSQL](https://cloud.google.com/sql/docs/postgres/connect-overview#external-connection-methods) and [SQL Server](https://cloud.google.com/sql/docs/sqlserver/connect-overview#external-connection-methods) provides links to detailed documentation about required steps.
+
+For example, for connecting from an App Engine standard environment, we must [enable Serverless VPC Access API](https://console.cloud.google.com/marketplace/product/google/vpcaccess.googleapis.com), then [create Serverless VPC access Connector](https://console.cloud.google.com/networking/connectors/list), and [add `vpc_access_connector:` to `app.yaml`](https://cloud.google.com/appengine/docs/standard/java11/connecting-vpc), and lastly [add the _Serverless VPC Access User_ and _Compute Viewer_ IAM roles to the Service Account under which the `gcloud app deploy` runs](https://console.cloud.google.com/iam-admin/iam).
