@@ -123,7 +123,7 @@
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>1.38.0</version>
+        <version>1.38.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -139,6 +139,11 @@
         <groupId>io.r2dbc</groupId>
         <artifactId>r2dbc-spi</artifactId>
         <version>0.8.3.RELEASE</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.14</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
