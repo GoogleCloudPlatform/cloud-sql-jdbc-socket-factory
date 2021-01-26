@@ -211,7 +211,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.2.0'
 #### Creating the R2DBC URL
 
 ##### MySQL
-R2DBC URL template: `r2dbc:gcp:mysql//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+R2DBC URL template: `r2dbc:gcp:mysql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
 
 Add the following parameters:
 
@@ -224,7 +224,7 @@ Add the following parameters:
 
 
 ##### PostgreSQL
-R2DBC URL template: `r2dbc:gcp:postgres//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+R2DBC URL template: `r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
 
 Add the following parameters:
 
@@ -236,7 +236,7 @@ Add the following parameters:
 | DB_PASS         | PostgreSQL user's password |
 
 ##### SQL Server
-R2DBC URL template: `r2dbc:gcp:mssql//<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
+R2DBC URL template: `r2dbc:gcp:mssql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>`
 
 Add the following parameters:
 
