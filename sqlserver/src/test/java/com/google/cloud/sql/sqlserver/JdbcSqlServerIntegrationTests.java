@@ -52,7 +52,7 @@ public class JdbcSqlServerIntegrationTests {
   private static ImmutableList<String> requiredEnvVars = ImmutableList
       .of("SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
   @Rule
-  public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
   private String tableName;
@@ -81,7 +81,8 @@ public class JdbcSqlServerIntegrationTests {
     config.addDataSourceProperty("socketFactoryClass",
         "com.google.cloud.sql.sqlserver.SocketFactory");
     config.addDataSourceProperty("socketFactoryConstructorArg", CONNECTION_NAME);
-    
+    config.setConnectionTimeout(10000); // 10s
+
     this.connectionPool = new HikariDataSource(config);
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
@@ -113,6 +114,7 @@ public class JdbcSqlServerIntegrationTests {
     try (Connection conn = connectionPool.getConnection()) {
       String stmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (?, ?)", this.tableName);
       try (PreparedStatement insertStmt = conn.prepareStatement(stmt)) {
+        insertStmt.setQueryTimeout(10);
         insertStmt.setString(1, "book1");
         insertStmt.setString(2, "Book One");
         insertStmt.execute();
@@ -126,7 +128,7 @@ public class JdbcSqlServerIntegrationTests {
     try (Connection conn = connectionPool.getConnection()) {
       String stmt = String.format("SELECT TITLE FROM %s ORDER BY ID", this.tableName);
       try (PreparedStatement selectStmt = conn.prepareStatement(stmt)) {
-
+        selectStmt.setQueryTimeout(10); // 10s
         ResultSet rs = selectStmt.executeQuery();
         while (rs.next()) {
           bookList.add(rs.getString("TITLE"));
