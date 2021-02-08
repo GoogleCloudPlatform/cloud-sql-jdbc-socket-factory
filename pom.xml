@@ -163,7 +163,7 @@
     <dependency> <!-- Allows jnr-unixsocket Java11 compatibility -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>9.0</version>
+      <version>9.1</version>
     </dependency>
   </dependencies>
 
