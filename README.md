@@ -40,8 +40,8 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.2.0 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.2.0             |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.2.1 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.2.1             |
 
 
 
@@ -51,14 +51,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.0'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.1'
 ```
 
 #### PostgreSQL
@@ -69,14 +69,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.2.0'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.2.1'
 ```
 *Note: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 
@@ -89,14 +89,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.0'
+compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.1'
 ```
 
 
@@ -160,14 +160,14 @@ Include the following in the project's `pom.xml`:
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1</version>
     </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.2.0'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.2.1'
 ```
 
 *Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:<LATEST-VERSION>`
@@ -180,13 +180,13 @@ Include the following in the project's `pom.xml`:
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1</version>
     </dependency>
 ```
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.2.0'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.2.1'
 ```
 *Note: Also include the R2DBC Driver for PostgreSQL, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
 
@@ -198,13 +198,13 @@ Include the following in the project's `pom.xml`:
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1</version>
     </dependency>
 ```
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.2.0'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.2.1'
 ```
 *Note: Also include the R2DBC Driver for SQL Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
 
