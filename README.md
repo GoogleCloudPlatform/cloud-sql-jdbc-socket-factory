@@ -36,12 +36,14 @@ gcloud auth application-default login
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
 
+[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
+
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.1.0 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.1.0             |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.2.0 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.2.0             |
 
-[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
+
 
 ##### Maven
 Include the following in the project's `pom.xml`: 
