@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.2.2-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>${revision}</version>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
   <packaging>jar</packaging>
@@ -32,7 +32,7 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.2.2-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>${revision}</version>
     </dependency>
   </dependencies>
 

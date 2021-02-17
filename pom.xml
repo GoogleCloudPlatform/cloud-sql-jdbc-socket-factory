@@ -7,7 +7,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.2.2-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>${revision}</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -58,6 +58,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
+    <revision>1.2.2-SNAPSHOT</revision>
   </properties>
 
   <modules>
@@ -175,6 +176,31 @@
       </resource>
     </resources>
     <plugins>
+    <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>1.2.2</version>
+        <configuration>
+        </configuration>
+        <executions>
+          <!-- enable flattening -->
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+          <!-- ensure proper cleanup -->
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>

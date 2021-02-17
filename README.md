@@ -36,7 +36,6 @@ gcloud auth application-default login
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
 
-[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
@@ -100,7 +99,6 @@ compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.1'
 ```
 
 
-[//]: # ({x-version-update-end})
 
 #### Creating the JDBC URL
 
@@ -150,7 +148,7 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 ### Add library as a dependency
 
-[//]: # ({x-version-update-start:cloud-sql-java-connector:released})
+
 
 #### MySQL
 
@@ -208,7 +206,6 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.2.1'
 ```
 *Note: Also include the R2DBC Driver for SQL Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
 
-[//]: # ({x-version-update-end})
 
 #### Creating the R2DBC URL
 

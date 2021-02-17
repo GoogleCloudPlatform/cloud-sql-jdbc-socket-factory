@@ -1,4 +1,1 @@
-# Format:
-# module:released-version:current-version
-
-cloud-sql-java-connector:1.2.1:1.2.2-SNAPSHOT
+1.2.2-SNAPSHOT
