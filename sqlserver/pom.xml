@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.2.2-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+    <version>1.2.2</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     <relativePath>..</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>jdbc-socket-factory-core</artifactId>
-      <version>1.2.2-SNAPSHOT</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
+      <version>1.2.2</version> <!-- {x-version-update:cloud-sql-java-connector:current} -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>

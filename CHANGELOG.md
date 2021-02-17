@@ -1,5 +1,17 @@
 # Changelog
 
+### [1.2.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.2.0...v1.2.1) (2021-02-17)
+
+
+### Bug Fixes
+
+* update dependencies to latest versions ([#399](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/399)) ([9289357](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/9289357755e2065bdbf4b32172685083fd3c142a))
+
+
+### Documentation
+
+* fix error in r2dbc URLs ([#384](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/384)) ([52990d0](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/52990d00254d1e36e8e1fc8e788a6953ef1b3722))
+
 ### [1.2.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.2.0...v1.2.1) (2021-02-16)
 
 
