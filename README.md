@@ -1,6 +1,4 @@
 ## Cloud SQL Connector for Java
-[![Build
-Status](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory)
 
 The Cloud SQL Connector for Java is a library for the MySQL/PostgreSQL JDBC and R2DBC drivers that allows a user 
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
@@ -12,7 +10,7 @@ whitelisting or SSL certificates manually.
 
 For examples of this library being used in the context of an application, check out the sample 
 applications located 
-[here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
+[here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/main/cloud-sql).
 
 ## Authentication
 
