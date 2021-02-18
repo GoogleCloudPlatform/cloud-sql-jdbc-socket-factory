@@ -6,10 +6,8 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.2.2-SNAPSHOT</version>
-    <relativePath>..</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
-  <version>1.2.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Cloud SQL JDBC connector for SQL Server</name>

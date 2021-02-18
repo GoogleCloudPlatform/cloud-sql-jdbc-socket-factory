@@ -8,7 +8,6 @@
     <version>1.2.2-SNAPSHOT</version>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
-  <version>1.2.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Cloud SQL R2DBC Connection Factory (R2DBC Core Library, don't depend on this directly)</name>

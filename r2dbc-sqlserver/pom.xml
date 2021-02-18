@@ -8,7 +8,6 @@
     <version>1.2.2-SNAPSHOT</version>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
-  <version>1.2.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Cloud SQL R2DBC connector for SQL Server</name>
