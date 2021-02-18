@@ -25,8 +25,7 @@
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>
-    <version>${revision}</version>
+      <artifactId>jdbc-socket-factory-core</artifactId>  
     </dependency>
     <dependency>
       <groupId>junit</groupId>

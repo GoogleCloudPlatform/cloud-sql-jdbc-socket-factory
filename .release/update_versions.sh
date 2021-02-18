@@ -17,9 +17,6 @@ VERSION=$(cat version.txt)
 # Update parent pom version
 mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
-# Update revision property which is used to determine core dependency version
-mvn versions:set-property -Dproperty="revision" -DnewVersion=$VERSION -DgenerateBackupPoms=false
-
 # Update versions in README if not snapshot release
 if ! [[ $VERSION =~ .*SNAPSHOT ]]
 then 

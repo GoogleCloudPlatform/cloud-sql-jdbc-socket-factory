@@ -37,7 +37,6 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>jdbc-socket-factory-core</artifactId>
-    <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

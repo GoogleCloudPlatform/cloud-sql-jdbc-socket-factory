@@ -56,7 +56,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <revision>1.2.2-SNAPSHOT</revision>
   </properties>
 
   <modules>
@@ -78,6 +77,16 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>3.4.3</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>jdbc-socket-factory-core</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -174,32 +183,6 @@
       </resource>
     </resources>
     <plugins>
-    <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>flatten-maven-plugin</artifactId>
-        <version>1.2.2</version>
-        <configuration>
-        </configuration>
-        <executions>
-          <!-- enable flattening -->
-          <execution>
-            <id>flatten</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>flatten</goal>
-            </goals>
-          </execution>
-          <!-- ensure proper cleanup -->
-          <execution>
-            <id>flatten.clean</id>
-            <phase>clean</phase>
-            <goals>
-              <goal>clean</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>

@@ -31,7 +31,6 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
-    <version>${revision}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
