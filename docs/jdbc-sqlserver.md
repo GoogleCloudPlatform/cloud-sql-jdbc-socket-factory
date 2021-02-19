@@ -20,7 +20,7 @@ Include the following the project's `gradle.build`
 compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.1'
 ```
 *Note*: Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
-The minimum compatible version is 9.1.0.
+
 ### Create the JDBC URL
 
 Base JDBC URL: `jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>`
