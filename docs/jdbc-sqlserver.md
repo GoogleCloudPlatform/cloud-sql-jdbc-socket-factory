@@ -2,7 +2,7 @@
 
 ## Setup and Usage
 
-### Add library as a dependency
+### Adding the library as a dependency
 
 ##### Maven
 Include the following in the project's `pom.xml`:
@@ -21,7 +21,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.1'
 ```
 *Note*: Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
 
-### Create the JDBC URL
+### Creating theJDBC URL
 
 Base JDBC URL: `jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>`
 

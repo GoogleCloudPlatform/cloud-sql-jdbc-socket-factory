@@ -2,7 +2,7 @@
 
 ## Setup and Usage
 
-### Add library as a dependency
+### Adding the library as a dependency
 
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
@@ -28,7 +28,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.1'
 ```
 
-### Create the JDBC URL
+### Creating theJDBC URL
 
 Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
@@ -50,10 +50,7 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 ### Specifying IP Types
  
-The `ipTypes` argument can be used to specify a comma delimited list of preferred IP types for
-connecting to a Cloud SQL instance. The argument `ipTypes=PRIVATE` will force the 
-SocketFactory to connect with an instance's associated private IP. Default value is 
-`PUBLIC,PRIVATE`.
+"The `ipTypes` argument is used to specify a preferred order of IP types used to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE` will use the instance's Public IP if it exists, otherwise private. The value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via it's private IP. If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`. For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 
 ### Connection via Unix Sockets
 

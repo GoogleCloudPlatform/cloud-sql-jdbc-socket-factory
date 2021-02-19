@@ -3,18 +3,24 @@
 ![CI Java 8][ci-badge-java-8]
 ![CI Java 11][ci-badge-java-8]
 
-The Cloud SQL Connector for Java is a library for the MySQL/PostgreSQL/SQL Server JDBC and R2DBC drivers that allows a user 
-with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
-allowlisting or SSL certificates manually.
+The Cloud SQL Connector for Java is a library that provides IAM-based authorization and encryption when connecting to a Cloud SQL instance. It can *not* provide a network path to a Cloud SQL instance if one is not already present.  See the [Connecting Overview](https://cloud.google.com/sql/docs/mysql/connect-overview) page for more information on connecting to a Cloud SQL instance.
 
 ## Usage
 For usage information specific to your database engine and driver, see the pages below:
+
+JDBC:
 * [Connecting to MySQL using JDBC](docs/jdbc-mysql)
 * [Connecting to Postgres using JDBC](docs/jdbc-postgres.md)
 * [Connecting to SQL Server using JDBC](docs/jdbc-sqlserver.md)
+
+R2DBC:
 * [Connecting to MySQL using R2DBC](docs/r2dbc-mysql.md)
 * [Connecting to Postgres using R2DBC](docs/r2dbc-postgres.md)
 * [Connecting to SQL Server using R2DBC](docs/r2dbc-sqlserver.md)
+
+For examples of this library being used in the context of an application, check out the sample applications located 
+[here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
+
 ### Authentication
 
 This library uses [Application Default Credentials](
@@ -58,12 +64,6 @@ to your Cloud SQL instance, you will need to add this library as a jar with depe
 [Releases](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/releases) page for 
 this purpose. 
  
-
-## Examples
-
-For examples of this library being used in the context of an application, check out the sample applications located 
-[here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
-
 ## Troubleshooting
 
 Here are some troubleshooting tips to resolve common issues that come up when using the Java Connector:

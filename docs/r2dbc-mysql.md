@@ -2,7 +2,7 @@
 
 ## Setup and Usage
 
-### Add library as a dependency
+### Adding the library as a dependency
 
 ##### Maven
 Include the following in the project's `pom.xml`: 
