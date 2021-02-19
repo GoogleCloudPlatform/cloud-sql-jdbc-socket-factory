@@ -1,5 +1,8 @@
 ## Cloud SQL Connector for Java
 
+![CI Java 8][ci-badge-java-8]
+![CI Java 11][ci-badge-java-8]
+
 The Cloud SQL Connector for Java is a library for the MySQL/PostgreSQL/SQL Server JDBC and R2DBC drivers that allows a user 
 with the appropriate permissions to connect to a Cloud SQL database without having to deal with IP 
 allowlisting or SSL certificates manually.
@@ -67,3 +70,6 @@ Here are some troubleshooting tips to resolve common issues that come up when us
 
 1. Make sure you are using the latest version of the Cloud SQL Connector and your database driver to avoid incompatibilities. Some older versions of drivers are not supported
 1. The Java connector provides authorization for connections, but it does not provide new paths to connectivity. For example, in order to connect to a Cloud SQL instance using a Private IP address, your application must already have VPC access. 
+
+[ci-badge-java-8]: https://storage.googleapis.com/cloud-devrel-public/cloud-sql-connectors/java/java8_linux.svg
+[ci-badge-java-11]: https://storage.googleapis.com/cloud-devrel-public/cloud-sql-connectors/java/java11_linux.svg
