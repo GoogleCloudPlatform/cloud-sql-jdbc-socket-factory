@@ -60,3 +60,10 @@ this purpose.
 
 For examples of this library being used in the context of an application, check out the sample applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
+
+## Troubleshooting
+
+Here are some troubleshooting tips to resolve common issues that come up when using the Java Connector:
+
+1. Make sure you are using the latest version of the Cloud SQL Connector and your database driver to avoid incompatibilities. Some older versions of drivers are not supported
+1. The Java connector provides authorization for connections, but it does not provide new paths to connectivity. For example, in order to connect to a Cloud SQL instance using a Private IP address, your application must already have VPC access. 
