@@ -12,7 +12,7 @@
 
   <name>Cloud SQL R2DBC Connection Factory (R2DBC Core Library, don't depend on this directly)</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
+    R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
     certificates manually.
   </description>
 

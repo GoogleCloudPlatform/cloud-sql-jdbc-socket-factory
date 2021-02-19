@@ -12,7 +12,7 @@
 
   <name>Cloud SQL R2DBC Connection Factory for Postgres</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL Postgres database without having to deal with IP whitelisting or SSL
+    R2DBC ConnectionFactory to connect to a Cloud SQL Postgres database without having to deal with IP allowlisting or SSL
     certificates manually.
   </description>
 
