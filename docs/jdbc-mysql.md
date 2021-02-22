@@ -28,7 +28,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.1'
 ```
 
-### Creating theJDBC URL
+### Creating the JDBC URL
 
 Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
