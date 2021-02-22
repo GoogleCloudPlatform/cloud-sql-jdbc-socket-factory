@@ -44,5 +44,11 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 ## Examples
 
-Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.
-* [Usage example](../sqlserver/src/test/java/com/google/cloud/sql/mysql/JdbcSqlServerIntegrationTests.java)
+Examples for using the Cloud SQL JDBC Connector for SQL Server can be found by looking at the integration tests in this repository.
+* [Usage example](../sqlserver/src/test/java/com/google/cloud/sql/sqlserver/JdbcSqlServerIntegrationTests.java)
+
+## Reference Documentation
+* [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/sqlserver/connect-app-engine-standard)
+* [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/sqlserver/connect-app-engine-flexible)
+* [Connecting to Cloud SQL from Cloud Functions](https://cloud.google.com/sql/docs/sqlserver/connect-functions)
+* [Connecting to Cloud SQL from Cloud Run](https://cloud.google.com/sql/docs/sqlserver/connect-run)
