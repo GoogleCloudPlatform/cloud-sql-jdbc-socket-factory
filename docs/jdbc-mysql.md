@@ -28,7 +28,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.1'
 ```
 
-### Creating the JDBC URL
+### Creating theJDBC URL
 
 Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
@@ -69,3 +69,9 @@ jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInst
 Examples for using the Cloud SQL JDBC Connector for MySQL can be found by looking at the integration tests in this repository.
 * [Usage example with connector-j-5](../connector-j-5/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ5IntegrationTests.java)
 * [Usage example with connector-j-8](../connector-j-8/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ8IntegrationTests.java)
+
+## Reference Documentation
+* [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/mysql/connect-app-engine-standard)
+* [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/mysql/connect-app-engine-flexible)
+* [Connecting to Cloud SQL from Cloud Functions](https://cloud.google.com/sql/docs/mysql/connect-functions)
+* [Connecting to Cloud SQL from Cloud Run](https://cloud.google.com/sql/docs/mysql/connect-run)
