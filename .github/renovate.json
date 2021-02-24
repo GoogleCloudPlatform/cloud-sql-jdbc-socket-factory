@@ -1,7 +1,7 @@
 {
   "extends": [
     "config:base",
-    ":semanticCommitTypeAll(chore)"
+    ":semanticCommitType(chore)"
   ],
   "packageRules": [
     {
@@ -19,5 +19,5 @@
   ],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
-  "masterIssue": true
+  "dependencyDashboard": true
 }
