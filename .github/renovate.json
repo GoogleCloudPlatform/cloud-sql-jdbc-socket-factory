@@ -3,6 +3,7 @@
     "config:base",
     ":semanticCommitTypeAll(chore)"
   ],
+  "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
   "packageRules": [
     {
       "packageNames":[ "mysql:mysql-connector-java" ],
@@ -19,5 +20,5 @@
   ],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
-  "masterIssue": true
+  "dependencyDashboard": true
 }
