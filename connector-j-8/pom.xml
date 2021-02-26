@@ -14,7 +14,7 @@
   <name>Cloud SQL MySQL Socket Factory (for Connector/J 8.x)</name>
   <description>
     Socket factory for the MySQL JDBC driver (version 8.x) that allows a user with the appropriate
-    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting or
+    permissions to connect to a Cloud SQL database without having to deal with IP allowlisting or
     SSL certificates manually.
   </description>
 

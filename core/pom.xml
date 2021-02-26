@@ -10,11 +10,10 @@
   <artifactId>jdbc-socket-factory-core</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL MySQL Socket Factory (Core Library, don't depend on this directly)</name>
+  <name>Cloud SQL Core Socket Factory (Core Library, don't depend on this directly)</name>
   <description>
-    Core library for establishing secure connections. End users should depend on the the
-    mysql-socket-factory
-    artifact.
+    Core library for establishing secure connections. End users should depend on the
+    driver-specific socket factory artifacts.
   </description>
 
   <dependencies>

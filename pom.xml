@@ -11,7 +11,7 @@
   <name>Cloud SQL JDBC Socket Factory</name>
   <description>
     Socket factories for MySQL/Postgres JDBC drivers that allows a user with the appropriate
-    permissions to connect to a Cloud SQL database without having to deal with IP whitelisting
+    permissions to connect to a Cloud SQL database without having to deal with IP allowlisting
     or SSL certificates manually
   </description>
   <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory</url>

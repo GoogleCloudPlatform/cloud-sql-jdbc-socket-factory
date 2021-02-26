@@ -13,7 +13,7 @@
   <name>Cloud SQL Postgres Socket Factory</name>
   <description>
     Socket factory for the Postgres JDBC driver that allows a user with the appropriate permissions
-    to connect to a Cloud SQL database without having to deal with IP whitelisting or SSL
+    to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
     certificates manually.
   </description>
 
