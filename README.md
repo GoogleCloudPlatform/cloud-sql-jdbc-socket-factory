@@ -1,7 +1,7 @@
 ## Cloud SQL Connector for Java
 
 ![CI Java 8][ci-badge-java-8]
-![CI Java 11][ci-badge-java-8]
+![CI Java 11][ci-badge-java-11]
 
 The Cloud SQL Connector for Java is a library that provides IAM-based authorization and encryption when connecting to a Cloud SQL instance. It can *not* provide a network path to a Cloud SQL instance if one is not already present.  See the [Connecting Overview](https://cloud.google.com/sql/docs/mysql/connect-overview) page for more information on connecting to a Cloud SQL instance.
 
