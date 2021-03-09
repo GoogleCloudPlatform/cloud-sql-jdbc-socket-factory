@@ -61,7 +61,6 @@
   <modules>
     <module>core</module>
     <module>connector-j-5</module>
-    <module>connector-j-6</module>
     <module>connector-j-8</module>
     <module>postgres</module>
     <module>sqlserver</module>
