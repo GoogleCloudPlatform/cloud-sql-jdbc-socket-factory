@@ -6,31 +6,27 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.2.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+  <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory for MySQL</name>
+  <name>Cloud SQL JDBC Connector for SQL Server</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL MySQL database without having to deal with IP allowlisting or SSL
-    certificates manually.
+    Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
+    appropriate permissions to connect to a Cloud SQL database without having to deal with IP
+    allowlisting or SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-spi</artifactId>
-      <version>0.8.4.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.miku</groupId>
-      <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.RELEASE</version>
-      <scope>provided</scope>
+      <groupId>com.microsoft.sqlserver</groupId>
+      <artifactId>mssql-jdbc</artifactId>
+      <version>9.2.1.jre8</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <artifactId>jdbc-socket-factory-core</artifactId>  
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -45,9 +41,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-pool</artifactId>
-      <version>0.8.6.RELEASE</version>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -57,9 +53,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-        <groupId>dev.miku</groupId>
-        <artifactId>r2dbc-mysql</artifactId>
-        <version>0.8.2.RELEASE</version>
+          <groupId>com.microsoft.sqlserver</groupId>
+          <artifactId>mssql-jdbc</artifactId>
+          <version>9.2.1.jre8</version>
         </dependency>
       </dependencies>
     </profile>

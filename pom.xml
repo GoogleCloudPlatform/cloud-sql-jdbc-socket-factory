@@ -60,14 +60,14 @@
 
   <modules>
     <module>core</module>
-    <module>connector-j-5</module>
-    <module>connector-j-8</module>
-    <module>postgres</module>
-    <module>sqlserver</module>
-    <module>r2dbc-core</module>
-    <module>r2dbc-sqlserver</module>
-    <module>r2dbc-mysql</module>
-    <module>r2dbc-postgres</module>
+    <module>jdbc/mysql-j-5</module>
+    <module>jdbc/mysql-j-8</module>
+    <module>jdbc/postgres</module>
+    <module>jdbc/sqlserver</module>
+    <module>r2dbc/core</module>
+    <module>r2dbc/mysql</module>
+    <module>r2dbc/postgres</module>
+    <module>r2dbc/sqlserver</module>
   </modules>
 
   <dependencyManagement>
