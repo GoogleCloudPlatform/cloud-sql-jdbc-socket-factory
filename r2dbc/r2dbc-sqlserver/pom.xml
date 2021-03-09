@@ -6,26 +6,28 @@
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
     <version>1.2.2-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+  <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL JDBC connector for SQL Server</name>
+  <name>Cloud SQL R2DBC Connection Factory for SQL Server</name>
   <description>
-    Socket factory for the Microsoft JDBC Driver for SQL Server that allows a user with the
+    Connection Factory for the R2DBC Driver for SQL Server that allows a user with the
     appropriate permissions to connect to a Cloud SQL database without having to deal with IP
     allowlisting or SSL certificates manually.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>com.microsoft.sqlserver</groupId>
-      <artifactId>mssql-jdbc</artifactId>
-      <version>9.2.1.jre8</version>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-mssql</artifactId>
+      <version>0.8.5.RELEASE</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>  
+      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -40,9 +42,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <version>4.0.3</version>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-pool</artifactId>
+      <version>0.8.6.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -52,9 +54,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>com.microsoft.sqlserver</groupId>
-          <artifactId>mssql-jdbc</artifactId>
-          <version>9.2.1.jre8</version>
+          <groupId>io.r2dbc</groupId>
+          <artifactId>r2dbc-mssql</artifactId>
+          <version>0.8.5.RELEASE</version>
         </dependency>
       </dependencies>
     </profile>
