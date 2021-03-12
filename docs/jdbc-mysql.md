@@ -67,8 +67,8 @@ jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInst
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for MySQL can be found by looking at the integration tests in this repository.
-* [Usage example with connector-j-5](../connector-j-5/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ5IntegrationTests.java)
-* [Usage example with connector-j-8](../connector-j-8/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ8IntegrationTests.java)
+* [Usage example with connector-j-5](../jdbc/connector-j-5/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ5IntegrationTests.java)
+* [Usage example with connector-j-8](../jdbc/connector-j-8/src/test/java/com/google/cloud/sql/mysql/JdbcMysqlJ8IntegrationTests.java)
 
 ## Reference Documentation
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/mysql/connect-app-engine-standard)
