@@ -59,7 +59,7 @@ jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSq
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.
-* [Usage example](../postgres/src/test/java/com/google/cloud/sql/postgres/JdbcPostgresIntegrationTests.java)
+* [Usage example](../jdbc/postgres/src/test/java/com/google/cloud/sql/postgres/JdbcPostgresIntegrationTests.java)
 
 ## Reference Documentation
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/postgres/connect-app-engine-standard)

@@ -36,4 +36,4 @@ Add the following parameters:
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.
-* [Usage example](../r2dbc-postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
+* [Usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
