@@ -10,14 +10,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.1'
+compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.2.2'
 ```
 *Note*: Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
 
