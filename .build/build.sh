@@ -20,7 +20,7 @@ PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null 2>&1 && pwd )"
 cd "$PROJ_ROOT"
 
 # get the current version
-export VERSION=$(grep -oP "(?<=:)[0-9A-Z\.\-]*$" versions.txt)
+export VERSION=$(cat version.txt)
 if [ -z "$VERSION" ]; then
   echo "error: No versions.txt found in $PROJ_ROOT"
   exit 1
