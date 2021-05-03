@@ -26,7 +26,9 @@ import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.TokenSourceFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -40,6 +42,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -333,9 +336,16 @@ public final class CoreSocketFactory {
     return adminApiBuilder.build();
   }
 
-  private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+  private static class ApplicationDefaultCredentialFactory implements CredentialFactory,
+      TokenSourceFactory {
     @Override
     public HttpRequestInitializer create() {
+      GoogleCredentials credentials = createTokenSource();
+      return new HttpCredentialsAdapter(credentials);
+    }
+
+    @Override
+    public GoogleCredentials createTokenSource(){
       GoogleCredentials credentials;
       try {
         credentials = GoogleCredentials.getApplicationDefault();
@@ -345,9 +355,12 @@ public final class CoreSocketFactory {
       }
       if (credentials.createScopedRequired()) {
         credentials =
-            credentials.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
+            credentials.createScoped(Arrays.asList(
+                SQLAdminScopes.SQLSERVICE_ADMIN,
+                SQLAdminScopes.CLOUD_PLATFORM)
+            );
       }
-      return new HttpCredentialsAdapter(credentials);
+      return credentials;
     }
   }
 
