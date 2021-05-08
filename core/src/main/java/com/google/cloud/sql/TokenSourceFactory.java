@@ -22,7 +22,7 @@ import com.google.auth.oauth2.OAuth2Credentials;
 /** Factory for creating a token source from {@link Credential}s for IAM Authentication. */
 public interface TokenSourceFactory {
   /** Name of system property that can specify an alternative credential factory. */
-  String TOKEN_SOURCE_FACTORY_PROPERTY = "cloudSql.socketFactory.tokenSourceFactory";
+  String TOKEN_SOURCE_FACTORY_PROPERTY = "cloudSql.socketFactory.TokenSourceFactory";
 
-  OAuth2Credentials createTokenSource();
+  OAuth2Credentials create();
 }

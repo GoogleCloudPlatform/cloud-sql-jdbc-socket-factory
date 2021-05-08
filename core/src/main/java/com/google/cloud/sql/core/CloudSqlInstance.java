@@ -4,10 +4,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.TokenSourceFactory;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.FutureCallback;
@@ -30,6 +35,11 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +74,8 @@ class CloudSqlInstance {
 
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
+  private final boolean enableIamAuth;
+  private final OAuth2Credentials tokenSource;
 
   private final String connectionName;
   private final String projectId;
@@ -71,6 +83,17 @@ class CloudSqlInstance {
   private final String instanceId;
   private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
+
+  // defaultRefreshBuffer is the minimum amount of time for which a
+  // certificate must be valid to ensure the next refresh attempt has adequate
+  // time to complete.
+  private static Duration defaultRefreshBuffer = Duration.ofMinutes(5);
+
+  // iamAuthRefreshBuffer is the minimum amount of time for which a
+  // certificate holding an Access Token must be valid. Because some token
+  // sources are refreshed with only ~60 seconds before expiration, this value
+  // must be smaller than the defaultRefreshBuffer.
+  private static Duration iamAuthRefreshBuffer = Duration.ofSeconds(55);
 
   private final Object instanceDataGuard = new Object();
 
@@ -83,6 +106,8 @@ class CloudSqlInstance {
   // Limit forced refreshes to 1 every minute.
   private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
+  private Date certExpiration;
+
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
@@ -94,6 +119,7 @@ class CloudSqlInstance {
   CloudSqlInstance(
       String connectionName,
       SQLAdmin apiClient,
+      boolean enableIamAuth,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
 
@@ -109,8 +135,33 @@ class CloudSqlInstance {
     this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
 
     this.apiClient = apiClient;
+    this.enableIamAuth = enableIamAuth;
     this.executor = executor;
     this.keyPair = keyPair;
+
+    if (enableIamAuth) {
+      // Get token source
+      String userTokenSourceFactoryClassName = System.getProperty(
+          TokenSourceFactory.TOKEN_SOURCE_FACTORY_PROPERTY);
+      TokenSourceFactory tokenSourceFactory;
+
+      CredentialFactory credentialFactory;
+      if (userTokenSourceFactoryClassName != null) {
+        try {
+          tokenSourceFactory =
+              (TokenSourceFactory)
+                  Class.forName(userTokenSourceFactoryClassName).newInstance();
+        } catch (Exception err) {
+          throw new RuntimeException(err);
+        }
+      } else {
+        tokenSourceFactory = new DefaultTokenSourceFactory();
+      }
+      this.tokenSource = tokenSourceFactory.create();
+    } else {
+      // tokenSource shouldn't be used unless IAM Auth is enabled.
+      this.tokenSource = null;
+    }
 
     // Kick off initial async jobs
     synchronized (instanceDataGuard) {
@@ -232,7 +283,8 @@ class CloudSqlInstance {
             // update currentInstanceData with the most recent results
             currentInstanceData = refreshFuture;
             // schedule a replacement before the SSLContext expires
-            nextInstanceData = executor.schedule(this::performRefresh, 55, TimeUnit.MINUTES);
+            nextInstanceData = executor
+                .schedule(this::performRefresh, secondsUntilRefresh(), TimeUnit.SECONDS);
           }
         },
         executor);
@@ -341,6 +393,18 @@ class CloudSqlInstance {
     // Use the SQL Admin API to create a new ephemeral certificate.
     SslCertsCreateEphemeralRequest request =
         new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert(keyPair));
+
+    if (enableIamAuth) {
+      try {
+        tokenSource.refresh();
+        String token = tokenSource.getAccessToken().getTokenValue();
+        request.setAccessToken(token);
+      } catch (IOException ex) {
+        throw addExceptionContext(
+            ex,
+            "An exception occurred while fetching access token:");
+      }
+    }
     SslCert response;
     try {
       response = apiClient.sslCerts().createEphemeral(projectId, regionalizedInstanceId, request)
@@ -364,8 +428,37 @@ class CloudSqlInstance {
               connectionName),
           ex);
     }
+    // Update certExpiration with the value for the new cert
+    X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+    certExpiration = x509Certificate.getNotAfter();
+
     return ephemeralCertificate;
   }
+
+  private Date getTokenExpirationTime() {
+    return tokenSource.getAccessToken().getExpirationTime();
+  }
+
+  private long secondsUntilRefresh() {
+    Duration refreshBuffer = enableIamAuth ? iamAuthRefreshBuffer : defaultRefreshBuffer;
+    if (enableIamAuth) {
+      Date tokenExpiration = getTokenExpirationTime();
+      if (certExpiration.after(tokenExpiration)) {
+        certExpiration = tokenExpiration;
+      }
+    }
+
+    Duration timeUntilRefresh = Duration.between(Instant.now(), certExpiration.toInstant())
+        .minus(refreshBuffer);
+
+    if (timeUntilRefresh.isNegative()) {
+      // If the time until the certificate expires is less than the buffer, schedule the refresh
+      // closer to the expiration time
+      Duration.between(Instant.now(), certExpiration.toInstant()).minus(Duration.ofSeconds(5));
+    }
+    return timeUntilRefresh.getSeconds();
+  }
+
 
   /**
    * Generates public key certificate for which the instance has the matching private key.
@@ -520,6 +613,29 @@ class CloudSqlInstance {
 
     SslData getSslData() {
       return sslData;
+    }
+  }
+
+
+  private static class DefaultTokenSourceFactory implements TokenSourceFactory {
+
+    @Override
+    public GoogleCredentials create() {
+      GoogleCredentials credentials;
+      try {
+        credentials = GoogleCredentials.getApplicationDefault();
+      } catch (IOException err) {
+        throw new RuntimeException(
+            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
+      }
+      if (credentials.createScopedRequired()) {
+        credentials =
+            credentials.createScoped(Arrays.asList(
+                SQLAdminScopes.SQLSERVICE_ADMIN,
+                SQLAdminScopes.CLOUD_PLATFORM)
+            );
+      }
+      return credentials;
     }
   }
 
