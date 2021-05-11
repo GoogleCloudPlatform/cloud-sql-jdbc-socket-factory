@@ -49,11 +49,11 @@ import reactor.core.publisher.Mono;
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIamAuthIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   private static final ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
+      .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule
   public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
@@ -73,6 +73,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
     ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
         .option(DRIVER, "gcp")
         .option(PROTOCOL, "postgresql")
+        .option(PASSWORD, "password")
         .option(USER, DB_USER)
         .option(DATABASE, DB_NAME)
         .option(HOST, CONNECTION_NAME)

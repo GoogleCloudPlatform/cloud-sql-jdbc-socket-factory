@@ -145,7 +145,6 @@ class CloudSqlInstance {
           TokenSourceFactory.TOKEN_SOURCE_FACTORY_PROPERTY);
       TokenSourceFactory tokenSourceFactory;
 
-      CredentialFactory credentialFactory;
       if (userTokenSourceFactoryClassName != null) {
         try {
           tokenSourceFactory =
@@ -398,6 +397,7 @@ class CloudSqlInstance {
       try {
         tokenSource.refresh();
         String token = tokenSource.getAccessToken().getTokenValue();
+        logger.info(token);
         request.setAccessToken(token);
       } catch (IOException ex) {
         throw addExceptionContext(
@@ -431,6 +431,7 @@ class CloudSqlInstance {
     // Update certExpiration with the value for the new cert
     X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
     certExpiration = x509Certificate.getNotAfter();
+    logger.info(certExpiration.toString());
 
     return ephemeralCertificate;
   }
