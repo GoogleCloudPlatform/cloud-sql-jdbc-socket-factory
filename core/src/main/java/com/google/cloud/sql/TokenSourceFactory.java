@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All Rights Reserved.
+ * Copyright 2021 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,14 @@ package com.google.cloud.sql;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.auth.oauth2.OAuth2Credentials;
 
-/** Factory for creating a token source from {@link Credential}s for IAM Authentication. */
+/**
+ * Factory for creating a token source from {@link Credential}s for IAM Authentication.
+ */
 public interface TokenSourceFactory {
-  /** Name of system property that can specify an alternative credential factory. */
+
+  /**
+   * Name of system property that can specify an alternative credential factory.
+   */
   String TOKEN_SOURCE_FACTORY_PROPERTY = "cloudSql.socketFactory.TokenSourceFactory";
 
   OAuth2Credentials create();

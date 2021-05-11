@@ -11,7 +11,6 @@ import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
-import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.TokenSourceFactory;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
