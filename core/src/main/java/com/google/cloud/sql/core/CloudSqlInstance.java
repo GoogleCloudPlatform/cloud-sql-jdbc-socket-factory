@@ -454,7 +454,8 @@ class CloudSqlInstance {
     if (timeUntilRefresh.isNegative()) {
       // If the time until the certificate expires is less than the buffer, schedule the refresh
       // closer to the expiration time
-      Duration.between(Instant.now(), certExpiration.toInstant()).minus(Duration.ofSeconds(5));
+      timeUntilRefresh = Duration.between(Instant.now(), certExpiration.toInstant())
+          .minus(Duration.ofSeconds(5));
     }
     return timeUntilRefresh.getSeconds();
   }

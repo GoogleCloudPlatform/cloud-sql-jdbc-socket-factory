@@ -300,6 +300,10 @@ public final class CoreSocketFactory {
     }
   }
 
+  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
+    return createSslSocket(instanceName, ipTypes, false);
+  }
+
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(
