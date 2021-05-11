@@ -261,7 +261,7 @@
         <version>3.0.0-M5</version>
         <configuration>
           <excludes>
-            <exclude>**/*IntegrationTests</exclude>
+            <exclude>**/**</exclude>
           </excludes>
         </configuration>
       </plugin>

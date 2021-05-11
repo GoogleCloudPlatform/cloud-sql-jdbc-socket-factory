@@ -248,8 +248,12 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
+  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth) {
+    return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
+  }
+
   public static SslData getSslData(String csqlInstanceName) {
-    return getInstance().getCloudSqlInstance(csqlInstanceName).getSslData();
+    return getSslData(csqlInstanceName, false);
   }
 
   /**

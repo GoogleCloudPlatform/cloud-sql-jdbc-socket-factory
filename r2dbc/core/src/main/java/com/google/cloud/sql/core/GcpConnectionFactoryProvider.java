@@ -56,7 +56,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    */
   abstract boolean supportedProtocol(String protocol);
 
-  private static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
+  public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
+  public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
 
   @Override
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
@@ -74,11 +75,16 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       ConnectionFactoryOptions connectionFactoryOptions) {
     String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
     String socket = connectionFactoryOptions.getValue(UNIX_SOCKET);
+    Boolean enableIamAuth = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
+    if (enableIamAuth == null) {
+      enableIamAuth = false;
+    }
+
     // precompute SSL Data to avoid blocking calls during the connect phase.
-    SslData sslData = CoreSocketFactory.getSslData(connectionName);
+    SslData sslData = CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
