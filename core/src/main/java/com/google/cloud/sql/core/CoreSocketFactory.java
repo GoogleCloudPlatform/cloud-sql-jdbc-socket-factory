@@ -72,6 +72,7 @@ public final class CoreSocketFactory {
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
    * programmatically.
    */
+
   @Deprecated
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
