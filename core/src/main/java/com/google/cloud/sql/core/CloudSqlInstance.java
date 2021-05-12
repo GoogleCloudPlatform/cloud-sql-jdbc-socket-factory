@@ -58,6 +58,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -90,7 +91,7 @@ class CloudSqlInstance {
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
   private final boolean enableIamAuth;
-  private final OAuth2Credentials tokenSource;
+  private final Optional<OAuth2Credentials> tokenSource;
 
   private final String connectionName;
   private final String projectId;
@@ -102,13 +103,13 @@ class CloudSqlInstance {
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
-  private static Duration defaultRefreshBuffer = Duration.ofMinutes(5);
+  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(5);
 
   // iamAuthRefreshBuffer is the minimum amount of time for which a
   // certificate holding an Access Token must be valid. Because some token
   // sources are refreshed with only ~60 seconds before expiration, this value
   // must be smaller than the defaultRefreshBuffer.
-  private static Duration iamAuthRefreshBuffer = Duration.ofSeconds(55);
+  private static final Duration IAM_AUTH_REFRESH_BUFFER = Duration.ofSeconds(55);
 
   private final Object instanceDataGuard = new Object();
 
@@ -171,10 +172,9 @@ class CloudSqlInstance {
       } else {
         tokenSourceFactory = new DefaultTokenSourceFactory();
       }
-      this.tokenSource = tokenSourceFactory.create();
+      this.tokenSource = Optional.of(tokenSourceFactory.create());
     } else {
-      // tokenSource shouldn't be used unless IAM Auth is enabled.
-      this.tokenSource = null;
+      this.tokenSource = Optional.empty();
     }
 
     // Kick off initial async jobs
@@ -410,8 +410,8 @@ class CloudSqlInstance {
 
     if (enableIamAuth) {
       try {
-        tokenSource.refresh();
-        String token = tokenSource.getAccessToken().getTokenValue();
+        tokenSource.get().refresh();
+        String token = tokenSource.get().getAccessToken().getTokenValue();
         request.setAccessToken(token);
       } catch (IOException ex) {
         throw addExceptionContext(
@@ -450,11 +450,11 @@ class CloudSqlInstance {
   }
 
   private Date getTokenExpirationTime() {
-    return tokenSource.getAccessToken().getExpirationTime();
+    return tokenSource.get().getAccessToken().getExpirationTime();
   }
 
   private long secondsUntilRefresh() {
-    Duration refreshBuffer = enableIamAuth ? iamAuthRefreshBuffer : defaultRefreshBuffer;
+    Duration refreshBuffer = enableIamAuth ? IAM_AUTH_REFRESH_BUFFER : DEFAULT_REFRESH_BUFFER;
     if (enableIamAuth) {
       Date tokenExpiration = getTokenExpirationTime();
       if (certExpiration.after(tokenExpiration)) {
