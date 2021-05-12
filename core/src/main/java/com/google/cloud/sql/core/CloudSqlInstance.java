@@ -87,30 +87,25 @@ class CloudSqlInstance {
   // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
   private static final Pattern CONNECTION_NAME =
       Pattern.compile("([^:]+(:[^:]+)?):([^:]+):([^:]+)");
-
+  // defaultRefreshBuffer is the minimum amount of time for which a
+  // certificate must be valid to ensure the next refresh attempt has adequate
+  // time to complete.
+  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(5);
+  // iamAuthRefreshBuffer is the minimum amount of time for which a
+  // certificate holding an Access Token must be valid. Because some token
+  // sources are refreshed with only ~60 seconds before expiration, this value
+  // must be smaller than the defaultRefreshBuffer.
+  private static final Duration IAM_AUTH_REFRESH_BUFFER = Duration.ofSeconds(55);
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
   private final boolean enableIamAuth;
   private final Optional<OAuth2Credentials> tokenSource;
-
   private final String connectionName;
   private final String projectId;
   private final String regionId;
   private final String instanceId;
   private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
-
-  // defaultRefreshBuffer is the minimum amount of time for which a
-  // certificate must be valid to ensure the next refresh attempt has adequate
-  // time to complete.
-  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(5);
-
-  // iamAuthRefreshBuffer is the minimum amount of time for which a
-  // certificate holding an Access Token must be valid. Because some token
-  // sources are refreshed with only ~60 seconds before expiration, this value
-  // must be smaller than the defaultRefreshBuffer.
-  private static final Duration IAM_AUTH_REFRESH_BUFFER = Duration.ofSeconds(55);
-
   private final Object instanceDataGuard = new Object();
 
   @GuardedBy("instanceDataGuard")
@@ -120,9 +115,9 @@ class CloudSqlInstance {
   private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
 
   // Limit forced refreshes to 1 every minute.
-  private RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
+  private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
-  private Date certExpiration;
+  private Date expiration;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -182,6 +177,85 @@ class CloudSqlInstance {
       this.currentInstanceData = performRefresh();
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
+  }
+
+  /**
+   * Generates public key certificate for which the instance has the matching private key.
+   *
+   * @return PEM encoded public key certificate
+   */
+  private static String generatePublicKeyCert(KeyPair keyPair) {
+    // Format the public key into a PEM encoded Certificate.
+    return "-----BEGIN RSA PUBLIC KEY-----\n"
+        + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
+        + "\n"
+        + "-----END RSA PUBLIC KEY-----\n";
+  }
+
+  // Schedules task to be executed once the provided futures are complete.
+  private static <T> ListenableFuture<T> whenAllSucceed(
+      Callable<T> task,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<?>... futures) {
+    SettableFuture<T> taskFuture = SettableFuture.create();
+
+    // Create a countDown for all Futures to complete.
+    AtomicInteger countDown = new AtomicInteger(futures.length);
+
+    // Trigger the task when all futures are complete.
+    FutureCallback<Object> runWhenInputAreComplete =
+        new FutureCallback<Object>() {
+          @Override
+          public void onSuccess(@NullableDecl Object o) {
+            if (countDown.decrementAndGet() == 0) {
+              taskFuture.setFuture(executor.submit(task));
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            if (!taskFuture.setException(throwable)) {
+              String msg = "Got more than one input failure. Logging failures after the first";
+              logger.log(Level.SEVERE, msg, throwable);
+            }
+          }
+        };
+    for (ListenableFuture<?> future : futures) {
+      Futures.addCallback(future, runWhenInputAreComplete, executor);
+    }
+
+    return taskFuture;
+  }
+
+  /**
+   * Returns a future that blocks until the result of a nested future is complete.
+   */
+  private static <T> ListenableFuture<T> blockOnNestedFuture(
+      ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
+    SettableFuture<T> blockedFuture = SettableFuture.create();
+    // Once the nested future is complete, update the blocked future to match
+    Futures.addCallback(
+        nestedFuture,
+        new FutureCallback<ListenableFuture<T>>() {
+          @Override
+          public void onSuccess(ListenableFuture<T> result) {
+            blockedFuture.setFuture(result);
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            blockedFuture.setException(throwable);
+          }
+        },
+        executor);
+    return blockedFuture;
+  }
+
+  // Creates a Certificate object from a provided string.
+  private static Certificate createCertificate(String cert) throws CertificateException {
+    byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
+    ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
+    return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
   }
 
   /**
@@ -285,9 +359,20 @@ class CloudSqlInstance {
     // Once both the SSLContext and Metadata are complete, return the results
     ListenableFuture<InstanceData> refreshFuture =
         whenAllSucceed(
-            () ->
-                new InstanceData(
-                    Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture)),
+            () -> {
+
+              if (enableIamAuth) {
+                Date tokenExpiration = getTokenExpirationTime();
+                if (expiration.after(tokenExpiration)) {
+                  expiration = tokenExpiration;
+                }
+              }
+
+              long delay = secondsUntilRefresh();
+              return new InstanceData(
+                  Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture),
+                  expiration, delay);
+            },
             executor,
             metadataFuture,
             sslContextFuture);
@@ -298,7 +383,8 @@ class CloudSqlInstance {
             currentInstanceData = refreshFuture;
             // schedule a replacement before the SSLContext expires
             nextInstanceData = executor
-                .schedule(this::performRefresh, secondsUntilRefresh(), TimeUnit.SECONDS);
+                .schedule(this::performRefresh, getInstanceData().secondsUntilRefresh,
+                    TimeUnit.SECONDS);
           }
         },
         executor);
@@ -444,7 +530,7 @@ class CloudSqlInstance {
     }
     // Update certExpiration with the value for the new cert
     X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-    certExpiration = x509Certificate.getNotAfter();
+    expiration = x509Certificate.getNotAfter();
 
     return ephemeralCertificate;
   }
@@ -455,103 +541,17 @@ class CloudSqlInstance {
 
   private long secondsUntilRefresh() {
     Duration refreshBuffer = enableIamAuth ? IAM_AUTH_REFRESH_BUFFER : DEFAULT_REFRESH_BUFFER;
-    if (enableIamAuth) {
-      Date tokenExpiration = getTokenExpirationTime();
-      if (certExpiration.after(tokenExpiration)) {
-        certExpiration = tokenExpiration;
-      }
-    }
 
-    Duration timeUntilRefresh = Duration.between(Instant.now(), certExpiration.toInstant())
+    Duration timeUntilRefresh = Duration.between(Instant.now(), expiration.toInstant())
         .minus(refreshBuffer);
 
     if (timeUntilRefresh.isNegative()) {
       // If the time until the certificate expires is less than the buffer, schedule the refresh
       // closer to the expiration time
-      timeUntilRefresh = Duration.between(Instant.now(), certExpiration.toInstant())
+      timeUntilRefresh = Duration.between(Instant.now(), expiration.toInstant())
           .minus(Duration.ofSeconds(5));
     }
     return timeUntilRefresh.getSeconds();
-  }
-
-
-  /**
-   * Generates public key certificate for which the instance has the matching private key.
-   *
-   * @return PEM encoded public key certificate
-   */
-  private static String generatePublicKeyCert(KeyPair keyPair) {
-    // Format the public key into a PEM encoded Certificate.
-    return "-----BEGIN RSA PUBLIC KEY-----\n"
-        + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
-        + "\n"
-        + "-----END RSA PUBLIC KEY-----\n";
-  }
-
-  // Schedules task to be executed once the provided futures are complete.
-  private static <T> ListenableFuture<T> whenAllSucceed(
-      Callable<T> task,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<?>... futures) {
-    SettableFuture<T> taskFuture = SettableFuture.create();
-
-    // Create a countDown for all Futures to complete.
-    AtomicInteger countDown = new AtomicInteger(futures.length);
-
-    // Trigger the task when all futures are complete.
-    FutureCallback<Object> runWhenInputAreComplete =
-        new FutureCallback<Object>() {
-          @Override
-          public void onSuccess(@NullableDecl Object o) {
-            if (countDown.decrementAndGet() == 0) {
-              taskFuture.setFuture(executor.submit(task));
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (!taskFuture.setException(throwable)) {
-              String msg = "Got more than one input failure. Logging failures after the first";
-              logger.log(Level.SEVERE, msg, throwable);
-            }
-          }
-        };
-    for (ListenableFuture<?> future : futures) {
-      Futures.addCallback(future, runWhenInputAreComplete, executor);
-    }
-
-    return taskFuture;
-  }
-
-  /**
-   * Returns a future that blocks until the result of a nested future is complete.
-   */
-  private static <T> ListenableFuture<T> blockOnNestedFuture(
-      ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
-    SettableFuture<T> blockedFuture = SettableFuture.create();
-    // Once the nested future is complete, update the blocked future to match
-    Futures.addCallback(
-        nestedFuture,
-        new FutureCallback<ListenableFuture<T>>() {
-          @Override
-          public void onSuccess(ListenableFuture<T> result) {
-            blockedFuture.setFuture(result);
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            blockedFuture.setException(throwable);
-          }
-        },
-        executor);
-    return blockedFuture;
-  }
-
-  // Creates a Certificate object from a provided string.
-  private static Certificate createCertificate(String cert) throws CertificateException {
-    byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
-    ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
-    return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
   }
 
   /**
@@ -611,11 +611,19 @@ class CloudSqlInstance {
     private final Metadata metadata;
     private final SSLContext sslContext;
     private final SslData sslData;
+    private final Date expiration;
+    private final long secondsUntilRefresh;
 
-    InstanceData(Metadata metadata, SslData sslData) {
+    InstanceData(Metadata metadata, SslData sslData, Date expiration, long secondsUntilRefresh) {
       this.metadata = metadata;
       this.sslData = sslData;
       this.sslContext = sslData.getSslContext();
+      this.expiration = expiration;
+      this.secondsUntilRefresh = secondsUntilRefresh;
+    }
+
+    long getSecondsUntilRefresh() {
+      return secondsUntilRefresh;
     }
 
     SSLContext getSslContext() {
