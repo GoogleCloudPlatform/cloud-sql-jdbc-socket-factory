@@ -416,7 +416,7 @@ class CloudSqlInstance {
       } catch (IOException ex) {
         throw addExceptionContext(
             ex,
-            "An exception occurred while fetching access token:");
+            "An exception occurred while fetching IAM auth token:");
       }
     }
     SslCert response;
