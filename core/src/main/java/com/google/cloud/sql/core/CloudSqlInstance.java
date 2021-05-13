@@ -368,10 +368,9 @@ class CloudSqlInstance {
                 }
               }
 
-              long delay = secondsUntilRefresh();
               return new InstanceData(
                   Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture),
-                  expiration, delay);
+                  expiration);
             },
             executor,
             metadataFuture,
@@ -381,9 +380,9 @@ class CloudSqlInstance {
           synchronized (instanceDataGuard) {
             // update currentInstanceData with the most recent results
             currentInstanceData = refreshFuture;
-            // schedule a replacement before the SSLContext expires
+            // schedule a replacement before the SSLContext expires;
             nextInstanceData = executor
-                .schedule(this::performRefresh, getInstanceData().secondsUntilRefresh,
+                .schedule(this::performRefresh, secondsUntilRefresh(),
                     TimeUnit.SECONDS);
           }
         },
@@ -542,6 +541,8 @@ class CloudSqlInstance {
   private long secondsUntilRefresh() {
     Duration refreshBuffer = enableIamAuth ? IAM_AUTH_REFRESH_BUFFER : DEFAULT_REFRESH_BUFFER;
 
+    Date expiration = getInstanceData().getExpiration();
+
     Duration timeUntilRefresh = Duration.between(Instant.now(), expiration.toInstant())
         .minus(refreshBuffer);
 
@@ -612,18 +613,16 @@ class CloudSqlInstance {
     private final SSLContext sslContext;
     private final SslData sslData;
     private final Date expiration;
-    private final long secondsUntilRefresh;
 
-    InstanceData(Metadata metadata, SslData sslData, Date expiration, long secondsUntilRefresh) {
+    InstanceData(Metadata metadata, SslData sslData, Date expiration) {
       this.metadata = metadata;
       this.sslData = sslData;
       this.sslContext = sslData.getSslContext();
       this.expiration = expiration;
-      this.secondsUntilRefresh = secondsUntilRefresh;
     }
 
-    long getSecondsUntilRefresh() {
-      return secondsUntilRefresh;
+    Date getExpiration() {
+      return expiration;
     }
 
     SSLContext getSslContext() {
