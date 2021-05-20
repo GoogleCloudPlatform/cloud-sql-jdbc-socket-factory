@@ -92,6 +92,7 @@ public final class CoreSocketFactory {
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
+  private final CredentialFactory credentialFactory;
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
@@ -103,9 +104,11 @@ public final class CoreSocketFactory {
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
       SQLAdmin adminApi,
+      CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
     this.adminApi = adminApi;
+    this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -142,6 +145,7 @@ public final class CoreSocketFactory {
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
               adminApi,
+              credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
     }
@@ -151,12 +155,12 @@ public final class CoreSocketFactory {
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
         instanceName,
-        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, executor, localKeyPair));
+        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor, localKeyPair));
   }
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return instances.computeIfAbsent(
-        instanceName, k -> new CloudSqlInstance(k, adminApi, false, executor, localKeyPair));
+        instanceName, k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
   }
 
   static int getDefaultServerProxyPort() {

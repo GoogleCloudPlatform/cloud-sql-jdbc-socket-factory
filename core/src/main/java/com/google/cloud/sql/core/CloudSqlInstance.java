@@ -20,14 +20,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.api.services.sqladmin.model.DatabaseInstance;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.OAuth2Credentials;
-import com.google.cloud.sql.TokenSourceFactory;
+import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.FutureCallback;
@@ -53,7 +52,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -131,6 +129,7 @@ class CloudSqlInstance {
       String connectionName,
       SQLAdmin apiClient,
       boolean enableIamAuth,
+      CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
 
@@ -151,23 +150,9 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     if (enableIamAuth) {
-      // Get token source
-      String userTokenSourceFactoryClassName = System.getProperty(
-          TokenSourceFactory.TOKEN_SOURCE_FACTORY_PROPERTY);
-      TokenSourceFactory tokenSourceFactory;
-
-      if (userTokenSourceFactoryClassName != null) {
-        try {
-          tokenSourceFactory =
-              (TokenSourceFactory)
-                  Class.forName(userTokenSourceFactoryClassName).newInstance();
-        } catch (Exception err) {
-          throw new RuntimeException(err);
-        }
-      } else {
-        tokenSourceFactory = new DefaultTokenSourceFactory();
-      }
-      this.tokenSource = Optional.of(tokenSourceFactory.create());
+      HttpCredentialsAdapter credentialsAdapter = (HttpCredentialsAdapter) tokenSourceFactory
+          .create();
+      this.tokenSource = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
     } else {
       this.tokenSource = Optional.empty();
     }
@@ -635,29 +620,6 @@ class CloudSqlInstance {
 
     SslData getSslData() {
       return sslData;
-    }
-  }
-
-
-  private static class DefaultTokenSourceFactory implements TokenSourceFactory {
-
-    @Override
-    public GoogleCredentials create() {
-      GoogleCredentials credentials;
-      try {
-        credentials = GoogleCredentials.getApplicationDefault();
-      } catch (IOException err) {
-        throw new RuntimeException(
-            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
-      }
-      if (credentials.createScopedRequired()) {
-        credentials =
-            credentials.createScoped(Arrays.asList(
-                SQLAdminScopes.SQLSERVICE_ADMIN,
-                SQLAdminScopes.CLOUD_PLATFORM)
-            );
-      }
-      return credentials;
     }
   }
 
