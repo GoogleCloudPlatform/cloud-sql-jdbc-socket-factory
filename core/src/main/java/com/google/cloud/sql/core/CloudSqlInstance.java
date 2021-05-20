@@ -115,8 +115,6 @@ class CloudSqlInstance {
   // Limit forced refreshes to 1 every minute.
   private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
 
-  private Date expiration;
-
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
@@ -346,6 +344,11 @@ class CloudSqlInstance {
         whenAllSucceed(
             () -> {
 
+              // Get expiration value for new cert
+              Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
+              X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+              Date expiration = x509Certificate.getNotAfter();
+
               if (enableIamAuth) {
                 Date tokenExpiration = getTokenExpirationTime();
                 if (expiration.after(tokenExpiration)) {
@@ -512,9 +515,6 @@ class CloudSqlInstance {
               connectionName),
           ex);
     }
-    // Update certExpiration with the value for the new cert
-    X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-    expiration = x509Certificate.getNotAfter();
 
     return ephemeralCertificate;
   }
