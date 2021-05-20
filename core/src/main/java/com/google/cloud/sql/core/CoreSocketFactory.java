@@ -155,12 +155,14 @@ public final class CoreSocketFactory {
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
         instanceName,
-        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor, localKeyPair));
+        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+            localKeyPair));
   }
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return instances.computeIfAbsent(
-        instanceName, k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
+        instanceName,
+        k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
   }
 
   static int getDefaultServerProxyPort() {

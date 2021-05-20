@@ -97,7 +97,7 @@ class CloudSqlInstance {
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
   private final boolean enableIamAuth;
-  private final Optional<OAuth2Credentials> tokenSource;
+  private final Optional<OAuth2Credentials> credentials;
   private final String connectionName;
   private final String projectId;
   private final String regionId;
@@ -152,9 +152,9 @@ class CloudSqlInstance {
     if (enableIamAuth) {
       HttpCredentialsAdapter credentialsAdapter = (HttpCredentialsAdapter) tokenSourceFactory
           .create();
-      this.tokenSource = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
+      this.credentials = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
     } else {
-      this.tokenSource = Optional.empty();
+      this.credentials = Optional.empty();
     }
 
     // Kick off initial async jobs
@@ -480,8 +480,8 @@ class CloudSqlInstance {
 
     if (enableIamAuth) {
       try {
-        tokenSource.get().refresh();
-        String token = tokenSource.get().getAccessToken().getTokenValue();
+        credentials.get().refresh();
+        String token = credentials.get().getAccessToken().getTokenValue();
         request.setAccessToken(token);
       } catch (IOException ex) {
         throw addExceptionContext(
@@ -520,7 +520,7 @@ class CloudSqlInstance {
   }
 
   private Date getTokenExpirationTime() {
-    return tokenSource.get().getAccessToken().getExpirationTime();
+    return credentials.get().getAccessToken().getExpirationTime();
   }
 
   private long secondsUntilRefresh() {
