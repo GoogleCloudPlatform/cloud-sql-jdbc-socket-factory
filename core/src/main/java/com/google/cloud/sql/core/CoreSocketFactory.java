@@ -41,7 +41,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +62,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * <p>The API of this class is subject to change without notice.
  */
 public final class CoreSocketFactory {
+
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
@@ -69,9 +70,11 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   *     programmatically.
+   *             programmatically.
    */
-  @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+
+  @Deprecated
+  public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
@@ -89,6 +92,7 @@ public final class CoreSocketFactory {
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
+  private final CredentialFactory credentialFactory;
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
 
@@ -100,25 +104,32 @@ public final class CoreSocketFactory {
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
       SQLAdmin adminApi,
+      CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
     this.adminApi = adminApi;
+    this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
   }
 
-  /** Returns the {@link CoreSocketFactory} singleton. */
+  /**
+   * Returns the {@link CoreSocketFactory} singleton.
+   */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
+
+      String userCredentialFactoryClassName = System.getProperty(
+          CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+
       CredentialFactory credentialFactory;
-      if (System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY) != null) {
+      if (userCredentialFactoryClassName != null) {
         try {
           credentialFactory =
               (CredentialFactory)
-                  Class.forName(System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY))
-                      .newInstance();
+                  Class.forName(userCredentialFactoryClassName).newInstance();
         } catch (Exception err) {
           throw new RuntimeException(err);
         }
@@ -134,15 +145,24 @@ public final class CoreSocketFactory {
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
               adminApi,
+              credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
     }
     return coreSocketFactory;
   }
 
+  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
+    return instances.computeIfAbsent(
+        instanceName,
+        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+            localKeyPair));
+  }
+
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return instances.computeIfAbsent(
-        instanceName, k -> new CloudSqlInstance(k, adminApi, executor, localKeyPair));
+        instanceName,
+        k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
   }
 
   static int getDefaultServerProxyPort() {
@@ -161,7 +181,9 @@ public final class CoreSocketFactory {
         MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 
-  /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
+  /**
+   * Extracts the Unix socket argument from specified properties object. If unset, returns null.
+   */
   private static String getUnixSocketArg(Properties props) {
     String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
     if (unixSocketPath != null) {
@@ -193,7 +215,7 @@ public final class CoreSocketFactory {
    *
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
-   * @param props Properties used to configure the connection.
+   * @param props          Properties used to configure the connection.
    * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
@@ -201,6 +223,7 @@ public final class CoreSocketFactory {
   public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+    final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -226,14 +249,18 @@ public final class CoreSocketFactory {
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    return getInstance().createSslSocket(csqlInstanceName, ipTypes);
+    return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
   }
 
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
+  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth) {
+    return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
+  }
+
   public static SslData getSslData(String csqlInstanceName) {
-    return getInstance().getCloudSqlInstance(csqlInstanceName).getSslData();
+    return getSslData(csqlInstanceName, false);
   }
 
   /**
@@ -253,14 +280,15 @@ public final class CoreSocketFactory {
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
    * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @param ipTypes      Preferred type of IP to use ("PRIVATE", "PUBLIC")
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
-  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
+  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
+      throws IOException {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -281,6 +309,10 @@ public final class CoreSocketFactory {
       instance.forceRefresh();
       throw ex;
     }
+  }
+
+  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
+    return createSslSocket(instanceName, ipTypes, false);
   }
 
   private static void logTestPropertyWarning(String property) {
@@ -334,6 +366,7 @@ public final class CoreSocketFactory {
   }
 
   private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+
     @Override
     public HttpRequestInitializer create() {
       GoogleCredentials credentials;
@@ -345,7 +378,10 @@ public final class CoreSocketFactory {
       }
       if (credentials.createScopedRequired()) {
         credentials =
-            credentials.createScoped(Collections.singletonList(SQLAdminScopes.SQLSERVICE_ADMIN));
+            credentials.createScoped(Arrays.asList(
+                SQLAdminScopes.SQLSERVICE_ADMIN,
+                SQLAdminScopes.CLOUD_PLATFORM)
+            );
       }
       return new HttpCredentialsAdapter(credentials);
     }
@@ -375,7 +411,9 @@ public final class CoreSocketFactory {
     }
   }
 
-  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  /**
+   * Sets the default string which is appended to the SQLAdmin API client User-Agent header.
+   */
   public static void addArtifactId(String artifactId) {
     String userAgent = artifactId + "/" + version;
     if (!userAgents.contains(userAgent)) {
@@ -384,13 +422,16 @@ public final class CoreSocketFactory {
   }
 
 
-
-  /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
+  /**
+   * Returns the default string which is appended to the SQLAdmin API client User-Agent header.
+   */
   private static String getUserAgents() {
     return String.join(" ", userAgents) + " " + getApplicationName();
   }
 
-  /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
+  /**
+   * Returns the current User-Agent header set for the underlying SQLAdmin API client.
+   */
   public static String getApplicationName() {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApi.getApplicationName();

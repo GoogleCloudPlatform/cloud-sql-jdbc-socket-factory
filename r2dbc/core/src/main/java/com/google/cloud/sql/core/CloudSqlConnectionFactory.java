@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package com.google.cloud.sql.core;
 
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
@@ -28,6 +28,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
 public class CloudSqlConnectionFactory implements ConnectionFactory {
+
   private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
   private ConnectionFactoryOptions.Builder builder;
   private String csqlHostName;
