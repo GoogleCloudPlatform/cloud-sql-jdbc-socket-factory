@@ -28,12 +28,32 @@ import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import java.util.function.Function;
 
-/** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances. */
+/**
+ * {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances.
+ */
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
 
+  public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
+  public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
+
+  private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
+      SslData sslData) {
+
+    Function<SslContextBuilder, SslContextBuilder> customizer =
+        sslContextBuilder -> {
+          sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
+          sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
+          sslContextBuilder.protocols("TLSv1.2");
+
+          return sslContextBuilder;
+        };
+
+    return customizer;
+  }
+
   /**
-   * Creates a ConnectionFactory that creates an SSL connection over TCP,
-   * using driver-specific options.
+   * Creates a ConnectionFactory that creates an SSL connection over TCP, using driver-specific
+   * options.
    */
   abstract ConnectionFactory tcpConnectonFactory(
       Builder optionBuilder,
@@ -41,8 +61,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       String csqlHostName);
 
   /**
-   * Creates a ConnectionFactory that creates an SSL connection over a unix socket,
-   * using driver-specific options.
+   * Creates a ConnectionFactory that creates an SSL connection over a unix socket, using
+   * driver-specific options.
    */
   abstract ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket);
 
@@ -55,8 +75,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    * Allows a particular driver to indicate if it supports a protocol.
    */
   abstract boolean supportedProtocol(String protocol);
-
-  private static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
 
   @Override
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
@@ -74,11 +92,16 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       ConnectionFactoryOptions connectionFactoryOptions) {
     String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
     String socket = connectionFactoryOptions.getValue(UNIX_SOCKET);
+    Boolean enableIamAuth = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
+    if (enableIamAuth == null) {
+      enableIamAuth = false;
+    }
+
     // precompute SSL Data to avoid blocking calls during the connect phase.
-    SslData sslData = CoreSocketFactory.getSslData(connectionName);
+    SslData sslData = CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
@@ -100,20 +123,5 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   @Override
   public String getDriver() {
     return "gcp";
-  }
-
-  private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
-      SslData sslData) {
-
-    Function<SslContextBuilder, SslContextBuilder> customizer =
-        sslContextBuilder -> {
-          sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
-          sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
-          sslContextBuilder.protocols("TLSv1.2");
-
-          return sslContextBuilder;
-        };
-
-    return customizer;
   }
 }
