@@ -45,6 +45,7 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -401,8 +402,22 @@ class CloudSqlInstance {
       trustedKeyStore.setCertificateEntry("instance", metadata.getInstanceCaCertificate());
       TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
       tmf.init(trustedKeyStore);
+      SSLContext sslContext;
+      if (enableIamAuth) {
+        try {
+          sslContext = SSLContext.getInstance("TLSv1.3");
+        } catch (NoSuchAlgorithmException ex) {
+          throw new RuntimeException(
+              String.format(
+                  "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName)
+                  + " TLSv1.3 is not supported for your Java version and is required to connect"
+                  + " using IAM authentication",
+              ex);
+        }
+      } else {
+        sslContext = SSLContext.getInstance("TLSv1.2");
+      }
 
-      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
       return new SslData(sslContext, kmf, tmf);
