@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>cloud-sql-connector-bom</artifactId>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>jdbc-socket-factory-parent</artifactId>
+    <version>1.2.4-SNAPSHOT</version>
+  </parent>
+
+  <name>Cloud SQL Connector BOM</name>
+  <description>BOM for Cloud SQL Connectors</description>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues</url>
+  </issueManagement>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>jdbc-socket-factory-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>mysql-socket-factory</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>postgres-socket-factory</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud.sql</groupId>
+        <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
