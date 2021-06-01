@@ -24,6 +24,12 @@
       <artifactId>r2dbc-mssql</artifactId>
       <version>0.8.6.RELEASE</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.micrometer</groupId>
+          <artifactId>micrometer-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
