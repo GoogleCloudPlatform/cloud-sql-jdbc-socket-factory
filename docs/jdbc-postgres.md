@@ -20,7 +20,7 @@ compile 'com.google.cloud.sql:postgres-socket-factory:1.3.0'
 ```
 *Note*: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 
-### Creating theJDBC URL
+### Creating the JDBC URL
 
 Base JDBC URL: `jdbc:postgresql:///<DATABASE_NAME>`
 
@@ -45,6 +45,45 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 "The `ipTypes` argument is used to specify a preferred order of IP types used to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE` will use the instance's Public IP if it exists, otherwise private. The value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via it's private IP. If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`. 
 
 For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
+
+### IAM Authentication
+*Note:* This feature is currently only supported for Postgres drivers.
+Connections using 
+[IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins) 
+are supported when connecting to Postgres instances.
+This feature is unsupported for other drivers. First, make sure to
+[configure your Cloud SQL Instance to allow IAM authentication](https://cloud.google.com/sql/docs/postgres/create-edit-iam-instances#configure-iam-db-instance)
+and
+[add an IAM database user](https://cloud.google.com/sql/docs/postgres/create-manage-iam-users#creating-a-database-user).
+Now, you can connect using user or service
+account credentials instead of a password. 
+When setting up the connection, set the `enableIamAuth` connection property to `"true"` and `user`
+to the email address associated with your IAM user. 
+
+Example:
+```java
+    // Set up URL parameters
+    String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
+    Properties connProps = new Properties();
+    connProps.setProperty("user", "postgres-iam-user@gmail.com");
+    connProps.setProperty("password", "password");
+    connProps.setProperty("sslmode", "disable");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("cloudSqlInstance", "project:region:instance");
+    connProps.setProperty("enableIamAuth", "true");
+
+    // Initialize connection pool
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(jdbcURL);
+    config.setDataSourceProperties(connProps);
+    config.setConnectionTimeout(10000); // 10s
+
+    HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
+Note: a non-empty string value for the `password` property must be set. While this property will
+be ignored when connecting with the Cloud SQL Connector using IAM auth, leaving it empty will cause
+driver-level validations to fail.
 
 ### Connection via Unix Sockets
 
