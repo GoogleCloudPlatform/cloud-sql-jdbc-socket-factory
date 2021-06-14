@@ -1,7 +1,7 @@
 ---
 name: Question
 about: Questions on how something works or the best way to do something. 
-title: "Breif summary of your question"
+title: "Brief summary of your question"
 labels: 'type: question'
 
 ---
