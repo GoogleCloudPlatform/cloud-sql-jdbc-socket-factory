@@ -16,6 +16,10 @@
     {
       "packageNames": ["com.microsoft.sqlserver:mssql-jdbc"],
       "allowedVersions": "/.+jre8.?/"
+    },
+    {
+      "packageNames": ["google-api-services-sqladmin"],
+      "allowedVersions": "/v1beta4-.*/"
     }
   ],
   "prConcurrentLimit": 0,
