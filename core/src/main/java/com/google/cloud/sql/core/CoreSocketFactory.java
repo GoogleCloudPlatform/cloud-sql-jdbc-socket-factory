@@ -20,7 +20,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.api.services.sqladmin.SQLAdminScopes;
@@ -350,7 +350,7 @@ public final class CoreSocketFactory {
     String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
 
-    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
         new Builder(httpTransport, jsonFactory, requestInitializer)
             .setApplicationName(getUserAgents());
