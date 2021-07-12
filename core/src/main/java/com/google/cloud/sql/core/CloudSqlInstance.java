@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
 import com.google.api.client.http.HttpRequest;
-import com.google.api.client.util.BackOff;
+import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Instances.Get;
 import com.google.api.services.sqladmin.SQLAdmin.SslCerts.CreateEphemeral;
@@ -443,7 +443,8 @@ class CloudSqlInstance {
           apiClient.instances().get(projectId, regionalizedInstanceId);
       HttpRequest httpRequest = getInstanceMetadata.buildHttpRequest();
       // Retry request with backoff if an IOException occurs
-      httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(BackOff.ZERO_BACKOFF));
+      httpRequest
+          .setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
 
       DatabaseInstance instanceMetadata = httpRequest.execute()
           .parseAs(getInstanceMetadata.getResponseClass());
@@ -524,7 +525,7 @@ class CloudSqlInstance {
           .createEphemeral(projectId, regionalizedInstanceId, request);
       // Retry request with backoff if an IOException occurs
       HttpRequest httpRequest = createEphemeral.buildHttpRequest();
-      httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(BackOff.ZERO_BACKOFF));
+      httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff());
 
       response = httpRequest.execute().parseAs(createEphemeral.getResponseClass());
 
