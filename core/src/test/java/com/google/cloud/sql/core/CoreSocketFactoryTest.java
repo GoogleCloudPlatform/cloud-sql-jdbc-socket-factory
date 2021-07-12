@@ -207,7 +207,7 @@ public class CoreSocketFactoryTest {
 
   @Before
   public void setup() throws IOException, GeneralSecurityException, ExecutionException {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
