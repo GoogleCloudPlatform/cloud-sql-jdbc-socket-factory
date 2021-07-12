@@ -525,7 +525,8 @@ class CloudSqlInstance {
           .createEphemeral(projectId, regionalizedInstanceId, request);
       // Retry request with backoff if an IOException occurs
       HttpRequest httpRequest = createEphemeral.buildHttpRequest();
-      httpRequest.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff());
+      httpRequest
+          .setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
 
       response = httpRequest.execute().parseAs(createEphemeral.getResponseClass());
 
