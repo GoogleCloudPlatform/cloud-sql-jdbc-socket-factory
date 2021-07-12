@@ -259,7 +259,8 @@ public class CoreSocketFactoryTest {
     when(httpRequest
         .setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff())))
         .thenReturn(httpRequest);
-
+    when(adminApiInstancesGet.getResponseClass()).thenReturn(DatabaseInstance.class);
+    when(adminApiSslCertsCreateEphemeral.getResponseClass()).thenReturn(SslCert.class);
     when(httpRequest.execute()).thenReturn(httpResponse);
     when(httpResponse.parseAs(adminApiInstancesGet.getResponseClass()))
         .thenReturn(
