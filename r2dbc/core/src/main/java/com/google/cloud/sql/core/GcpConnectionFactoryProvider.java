@@ -27,6 +27,8 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import java.util.function.Function;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances.
@@ -37,10 +39,16 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
 
   private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
-      SslData sslData) {
+      String connectionName, boolean enableIamAuth) {
 
     Function<SslContextBuilder, SslContextBuilder> customizer =
         sslContextBuilder -> {
+          // Execute in a default scheduler to prevent it from blocking event loop
+          SslData sslData = Mono
+              .fromSupplier(() -> CoreSocketFactory.getSslData(connectionName, enableIamAuth))
+              .subscribeOn(Schedulers.boundedElastic())
+              .share()
+              .block();
           sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
           sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
           sslContextBuilder.protocols("TLSv1.2");
@@ -100,13 +108,15 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       enableIamAuth = false;
     }
 
-    // precompute SSL Data to avoid blocking calls during the connect phase.
-    SslData sslData = CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+    // Precompute SSL Data to trigger the initial refresh to happen immediately,
+    // and ensure enableIAMAuth is set correctly.
+    CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectonFactory(optionBuilder, createSslCustomizer(sslData), connectionName);
+    return tcpConnectonFactory(optionBuilder, createSslCustomizer(connectionName, enableIamAuth),
+        connectionName);
   }
 
   @Override
