@@ -265,6 +265,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M5</version>
         <configuration>
+          <trimStackTrace>false</trimStackTrace>
           <excludes>
             <exclude>**/*IntegrationTests</exclude>
           </excludes>
@@ -321,6 +322,7 @@
                   <goal>test</goal>
                 </goals>
                 <configuration>
+                  <trimStackTrace>false</trimStackTrace>
                   <excludes>
                     <exclude>none</exclude>
                   </excludes>
