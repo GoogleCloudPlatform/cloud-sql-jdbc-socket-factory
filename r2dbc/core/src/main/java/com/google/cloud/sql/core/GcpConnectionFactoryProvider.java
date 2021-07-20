@@ -47,6 +47,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
           SslData sslData = Mono
               .fromSupplier(() -> CoreSocketFactory.getSslData(connectionName, enableIamAuth))
               .subscribeOn(Schedulers.boundedElastic())
+              .share()
               .block();
           sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
           sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
