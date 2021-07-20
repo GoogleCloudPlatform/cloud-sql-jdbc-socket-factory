@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.3.2](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.3.1...v1.3.2) (2021-07-20)
+
+
+### Bug Fixes
+
+* **r2dbc:** fetch updated SSLData for each new connection ([#554](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/554)) ([007759c](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/007759ce9f63ed4247dbeef61772f86f6708d0ac))
+
 ### [1.3.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.3.0...v1.3.1) (2021-07-13)
 
 
