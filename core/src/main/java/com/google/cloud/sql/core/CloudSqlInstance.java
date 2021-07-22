@@ -301,9 +301,6 @@ class CloudSqlInstance {
    * @return {@code true} if successfully scheduled, or {@code false} otherwise.
    */
   boolean forceRefresh() {
-    if (!forcedRenewRateLimiter.tryAcquire()) {
-      return false;
-    }
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
@@ -323,6 +320,7 @@ class CloudSqlInstance {
    * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
+    forcedRenewRateLimiter.acquire(1);
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
