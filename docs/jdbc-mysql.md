@@ -64,7 +64,7 @@ file instead of connecting directly over TCP.
 jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
-Note: We recommend using the Unix socket in Cloud Run and Cloud Function.
+Note: We recommend using the Unix socket in Cloud Run and Cloud Functions.
 
 ## Examples
 
