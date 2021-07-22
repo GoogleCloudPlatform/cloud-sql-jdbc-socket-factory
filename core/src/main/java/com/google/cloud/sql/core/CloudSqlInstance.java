@@ -320,6 +320,7 @@ class CloudSqlInstance {
    * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
+    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage. 
     forcedRenewRateLimiter.acquire(1);
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
@@ -379,23 +380,20 @@ class CloudSqlInstance {
           public void onFailure(Throwable t) {
             logger.log(Level.WARNING,
                 "An error occurred while performing refresh. Retrying immediately.", t);
-            try {
-              InstanceData instanceData = getInstanceData();
-              Instant expiration = instanceData.getExpiration().toInstant();
-              if (expiration.isBefore(Instant.now())) {
-                synchronized (instanceDataGuard) {
+            synchronized (instanceDataGuard) {
+              try {
+                InstanceData instanceData = getInstanceData();
+                Instant expiration = instanceData.getExpiration().toInstant();
+                if (expiration.isBefore(Instant.now())) {
                   // replace current if it is expired
                   currentInstanceData = refreshFuture;
                 }
-              }
-            } catch (Exception e) {
-              synchronized (instanceDataGuard) {
+              } catch (Exception e) {
                 // replace current if accessing it throws an error
                 currentInstanceData = refreshFuture;
               }
+              nextInstanceData = Futures.immediateFuture(performRefresh());
             }
-
-            nextInstanceData = Futures.immediateFuture(performRefresh());
           }
         }, executor);
 
