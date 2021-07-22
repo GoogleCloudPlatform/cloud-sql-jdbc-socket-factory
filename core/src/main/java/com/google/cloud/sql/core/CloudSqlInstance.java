@@ -364,18 +364,33 @@ class CloudSqlInstance {
             executor,
             metadataFuture,
             sslContextFuture);
-    refreshFuture.addListener(
-        () -> {
-          synchronized (instanceDataGuard) {
-            // update currentInstanceData with the most recent results
-            currentInstanceData = refreshFuture;
-            // schedule a replacement before the SSLContext expires;
-            nextInstanceData = executor
-                .schedule(this::performRefresh, secondsUntilRefresh(),
-                    TimeUnit.SECONDS);
+    Futures.addCallback(refreshFuture,
+        new FutureCallback<InstanceData>() {
+          public void onSuccess(InstanceData instanceData) {
+            synchronized (instanceDataGuard) {
+              // update currentInstanceData with the most recent results
+              currentInstanceData = refreshFuture;
+              // schedule a replacement before the SSLContext expires;
+              nextInstanceData = executor
+                  .schedule(() -> performRefresh(),
+                      secondsUntilRefresh(),
+                      TimeUnit.SECONDS);
+            }
           }
-        },
-        executor);
+
+          public void onFailure(Throwable t) {
+            // if current data isn't valid, update anyway
+            if (getInstanceData().getExpiration().toInstant().isBefore(Instant.now())) {
+              synchronized (instanceDataGuard) {
+                currentInstanceData = refreshFuture;
+              }
+            }
+            logger.log(Level.WARNING,
+                "An error occurred while performing refresh. Retrying immediately.", t);
+            forceRefresh();
+          }
+        }, executor);
+
     return refreshFuture;
   }
 
