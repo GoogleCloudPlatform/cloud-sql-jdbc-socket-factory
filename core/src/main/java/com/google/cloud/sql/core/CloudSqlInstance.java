@@ -387,7 +387,10 @@ class CloudSqlInstance {
             }
             logger.log(Level.WARNING,
                 "An error occurred while performing refresh. Retrying immediately.", t);
-            forceRefresh();
+
+            if (forcedRenewRateLimiter.tryAcquire()) {
+              performRefresh();
+            }
           }
         }, executor);
 
