@@ -58,6 +58,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -68,8 +69,10 @@ import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -90,6 +93,16 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -97,15 +110,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
 
 // TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
@@ -136,7 +140,8 @@ public class CoreSocketFactoryTest {
   private ListenableFuture<KeyPair> clientKeyPair;
 
   @Before
-  public void setup() throws IOException, GeneralSecurityException, ExecutionException {
+  public void setup()
+      throws IOException, GeneralSecurityException, ExecutionException, OperatorCreationException {
     MockitoAnnotations.initMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -306,7 +311,7 @@ public class CoreSocketFactoryTest {
   // TODO(berezv): figure out why the test server produces a different error on an expired
   // certificate
   public void create_expiredCertificateOnFirstConnection_certificateRenewed()
-      throws IOException, GeneralSecurityException, ExecutionException, InterruptedException {
+      throws IOException, GeneralSecurityException, ExecutionException, InterruptedException, OperatorCreationException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
@@ -451,36 +456,45 @@ public class CoreSocketFactoryTest {
   }
 
   private String createEphemeralCert(Duration shiftIntoPast)
-      throws GeneralSecurityException, ExecutionException, IOException {
+      throws GeneralSecurityException, ExecutionException, IOException, OperatorCreationException {
     Duration validFor = Duration.ofHours(1);
     ZonedDateTime notBefore = ZonedDateTime.now().minus(shiftIntoPast);
     ZonedDateTime notAfter = notBefore.plus(validFor);
-
-    CertificateValidity interval =
-        new CertificateValidity(Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()));
-
-    X509CertInfo info = new X509CertInfo();
-    info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
-    info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(1));
-    info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(AlgorithmId.get("SHA1withRSA")));
-    info.set(X509CertInfo.SUBJECT, new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"));
-    info.set(X509CertInfo.KEY, new CertificateX509Key(Futures.getDone(clientKeyPair).getPublic()));
-    info.set(X509CertInfo.VALIDITY, interval);
-    info.set(
-        X509CertInfo.ISSUER,
-        new X500Name("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz"));
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec keySpec =
         new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
-    X509CertImpl cert = new X509CertImpl(info);
-    cert.sign(signingKey, "SHA1withRSA");
+    // add Bouncy Castle provider
+    Provider provider = new BouncyCastleProvider()
+    Security.addProvider(provider);
+
+    SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
+        Futures.getDone(clientKeyPair).getPublic());
+
+    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
+        .setProvider(new BouncyCastleProvider())
+        .build(signingKey);
+
+    X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(
+        new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"),
+        BigInteger.ONE,
+        Date.from(notBefore.toInstant()),
+        Date.from(notAfter.toInstant()),
+        new X500Name("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz"),
+        subjectPublicKeyInfo
+    );
+
+    X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
+
+    Certificate cert = new JcaX509CertificateConverter()
+        .getCertificate(certificateHolder);
 
     StringBuilder sb = new StringBuilder();
     sb.append("-----BEGIN CERTIFICATE-----\n");
-    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
+    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded())
+        .replaceAll("(.{64})", "$1\n"));
     sb.append("\n");
     sb.append("-----END CERTIFICATE-----\n");
 
@@ -505,6 +519,7 @@ public class CoreSocketFactoryTest {
         @Override
         public void run() {
           try {
+
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
             KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -518,7 +533,7 @@ public class CoreSocketFactoryTest {
                 new PrivateKeyEntry(
                     privateKey,
                     new Certificate[]{
-                        certFactory.generateCertificate(
+                        (X509Certificate) certFactory.generateCertificate(
                             new ByteArrayInputStream(
                                 TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))
                     });
