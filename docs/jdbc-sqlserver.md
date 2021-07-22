@@ -40,7 +40,7 @@ The full JDBC URL should look like this:
 jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg.
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instance's IP address based on the provided `socketFactoryConstructorArg` arg.
 
 ### Connection via Unix Sockets
 
