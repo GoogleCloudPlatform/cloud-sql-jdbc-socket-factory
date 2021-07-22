@@ -98,6 +98,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
@@ -470,22 +471,17 @@ public class CoreSocketFactoryTest {
     Provider provider = new BouncyCastleProvider();
     Security.addProvider(provider);
 
-    byte[] decodedPublicKey = decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY);
-    SubjectPublicKeyInfo subjectPublicKeyInfo = new SubjectPublicKeyInfo(
-        new DefaultSignatureAlgorithmIdentifierFinder().find("SHA1withRSA"),
-        decodedPublicKey);
-
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
         .setProvider(new BouncyCastleProvider())
         .build(signingKey);
 
-    X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(
+    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
         new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"),
         BigInteger.ONE,
         Date.from(notBefore.toInstant()),
         Date.from(notAfter.toInstant()),
         new X500Name("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz"),
-        subjectPublicKeyInfo
+        Futures.getDone(clientKeyPair).getPublic()
     );
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
@@ -524,7 +520,7 @@ public class CoreSocketFactoryTest {
 
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
-            KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            KeyStore authKeyStore = KeyStore.getInstance("BKS", "BC");
             authKeyStore.load(null, null);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PKCS8EncodedKeySpec keySpec =
@@ -535,7 +531,7 @@ public class CoreSocketFactoryTest {
                 new PrivateKeyEntry(
                     privateKey,
                     new Certificate[]{
-                        (X509Certificate) certFactory.generateCertificate(
+                        certFactory.generateCertificate(
                             new ByteArrayInputStream(
                                 TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))
                     });
