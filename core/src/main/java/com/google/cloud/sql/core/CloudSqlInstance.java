@@ -320,6 +320,7 @@ class CloudSqlInstance {
    * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
+    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage. 
     forcedRenewRateLimiter.acquire(1);
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
