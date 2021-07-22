@@ -379,18 +379,19 @@ class CloudSqlInstance {
           }
 
           public void onFailure(Throwable t) {
-            // if current data isn't valid, update anyway
+            logger.log(Level.WARNING,
+                "An error occurred while performing refresh. Retrying immediately.", t);
             if (getInstanceData().getExpiration().toInstant().isBefore(Instant.now())) {
               synchronized (instanceDataGuard) {
                 currentInstanceData = refreshFuture;
+                nextInstanceData = Futures.immediateFuture(performRefresh());
               }
+            } else {
+              forceRefresh();
             }
-            logger.log(Level.WARNING,
-                "An error occurred while performing refresh. Retrying immediately.", t);
 
-            if (forcedRenewRateLimiter.tryAcquire()) {
-              performRefresh();
-            }
+
+
           }
         }, executor);
 
