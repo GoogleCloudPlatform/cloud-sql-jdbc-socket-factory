@@ -52,7 +52,7 @@ file instead of connecting directly over TCP.
 jdbc:sqlserver:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.sqlserver.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
-Note: We recommend using the Unix socket in Cloud Run and Cloud Function.
+Note: We recommend using the Unix socket in Cloud Run and Cloud Functions.
 
 ## Examples
 
