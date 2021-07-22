@@ -35,6 +35,18 @@ Add the following parameters:
 | DB_USER         | MySQL username |
 | DB_PASS         | MySQL user's password |
 
+### Connection via Unix Sockets
+
+To connect using a Unix domain socket (such as the one created by the Cloud SQL
+proxy), you can use the `unixSocketPath` property to specify a path to a local
+file instead of connecting directly over TCP.
+
+```
+r2dbc:gcp:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```
+
+Note: We recommend using the Unix socket in Cloud Run and Cloud Function.
+
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.

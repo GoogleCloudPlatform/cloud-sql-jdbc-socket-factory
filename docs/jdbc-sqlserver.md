@@ -40,7 +40,19 @@ The full JDBC URL should look like this:
 jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg.
+
+### Connection via Unix Sockets
+
+To connect using a Unix domain socket (such as the one created by the Cloud SQL
+proxy), you can use the `unixSocketPath` property to specify a path to a local
+file instead of connecting directly over TCP.
+
+```
+jdbc:sqlserver:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.sqlserver.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```
+
+Note: We recommend using the Unix socket in Cloud Run and Cloud Function.
 
 ## Examples
 
