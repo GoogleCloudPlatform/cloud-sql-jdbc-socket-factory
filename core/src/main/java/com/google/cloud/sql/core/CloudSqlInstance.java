@@ -387,10 +387,11 @@ class CloudSqlInstance {
               } catch (Exception e) {
                 // this means the result was invalid
               }
-              if (instanceData == null || instanceData.getExpiration().toInstant().isBefore(Instant.now())) {
-                  // replace current if it is expired or invalid
-                  currentInstanceData = refreshFuture;
-                }
+              if (instanceData == null || instanceData.getExpiration().toInstant()
+                  .isBefore(Instant.now())) {
+                // replace current if it is expired or invalid
+                currentInstanceData = refreshFuture;
+              }
               nextInstanceData = Futures.immediateFuture(performRefresh());
             }
           }
