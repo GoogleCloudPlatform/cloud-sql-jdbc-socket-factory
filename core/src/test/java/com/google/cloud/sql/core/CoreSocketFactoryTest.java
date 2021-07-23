@@ -98,10 +98,9 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
+import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Before;
@@ -475,13 +474,18 @@ public class CoreSocketFactoryTest {
         .setProvider(new BouncyCastleProvider())
         .build(signingKey);
 
-    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
+    byte[] decodedPublicKey = decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY);
+    SubjectPublicKeyInfo subjectPublicKeyInfo = new SubjectPublicKeyInfo(
+        new DefaultDigestAlgorithmIdentifierFinder().find("SHA1withRSA"),
+        decodedPublicKey);
+
+    X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(
         new X500Name("C = US, O = Google\\, Inc, CN=temporary-subject"),
         BigInteger.ONE,
         Date.from(notBefore.toInstant()),
         Date.from(notAfter.toInstant()),
         new X500Name("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz"),
-        Futures.getDone(clientKeyPair).getPublic()
+        subjectPublicKeyInfo
     );
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
