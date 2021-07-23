@@ -509,7 +509,6 @@ public class CoreSocketFactoryTest {
         @Override
         public void run() {
           try {
-
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
             KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
