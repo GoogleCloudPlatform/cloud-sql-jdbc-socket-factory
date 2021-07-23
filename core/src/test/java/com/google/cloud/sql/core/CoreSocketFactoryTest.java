@@ -464,7 +464,8 @@ public class CoreSocketFactoryTest {
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
         .build(signingKey);
 
-    X500Principal issuer = new X500Principal("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
+    X500Principal issuer = new X500Principal(
+        "C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
     X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
 
     JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
