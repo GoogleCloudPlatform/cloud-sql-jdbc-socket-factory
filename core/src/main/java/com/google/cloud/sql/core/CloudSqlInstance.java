@@ -381,17 +381,16 @@ class CloudSqlInstance {
             logger.log(Level.WARNING,
                 "An error occurred while performing refresh. Retrying immediately.", t);
             synchronized (instanceDataGuard) {
+              InstanceData instanceData = null;
               try {
-                InstanceData instanceData = getInstanceData();
-                Instant expiration = instanceData.getExpiration().toInstant();
-                if (expiration.isBefore(Instant.now())) {
-                  // replace current if it is expired
+                instanceData = getInstanceData();
+              } catch (Exception e) {
+                // this means the result was invalid
+              }
+              if (instanceData == null || instanceData.getExpiration().toInstant().isBefore(Instant.now())) {
+                  // replace current if it is expired or invalid
                   currentInstanceData = refreshFuture;
                 }
-              } catch (Exception e) {
-                // replace current if accessing it throws an error
-                currentInstanceData = refreshFuture;
-              }
               nextInstanceData = Futures.immediateFuture(performRefresh());
             }
           }
