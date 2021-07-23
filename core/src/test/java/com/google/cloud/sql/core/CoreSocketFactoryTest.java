@@ -69,10 +69,8 @@ import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -98,7 +96,6 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -142,7 +139,7 @@ public class CoreSocketFactoryTest {
   @Before
   public void setup()
       throws IOException, GeneralSecurityException, ExecutionException, OperatorCreationException {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
@@ -466,12 +463,7 @@ public class CoreSocketFactoryTest {
         new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
-    // add Bouncy Castle provider
-    Provider provider = new BouncyCastleProvider();
-    Security.addProvider(provider);
-
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
-        .setProvider(new BouncyCastleProvider())
         .build(signingKey);
 
     byte[] decodedPublicKey = decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY);
@@ -524,7 +516,7 @@ public class CoreSocketFactoryTest {
 
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
-            KeyStore authKeyStore = KeyStore.getInstance("BKS", "BC");
+            KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             authKeyStore.load(null, null);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PKCS8EncodedKeySpec keySpec =
