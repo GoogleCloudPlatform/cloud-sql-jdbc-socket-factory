@@ -301,9 +301,6 @@ class CloudSqlInstance {
    * @return {@code true} if successfully scheduled, or {@code false} otherwise.
    */
   boolean forceRefresh() {
-    if (!forcedRenewRateLimiter.tryAcquire()) {
-      return false;
-    }
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
@@ -323,6 +320,8 @@ class CloudSqlInstance {
    * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
+    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage. 
+    forcedRenewRateLimiter.acquire(1);
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
@@ -364,18 +363,40 @@ class CloudSqlInstance {
             executor,
             metadataFuture,
             sslContextFuture);
-    refreshFuture.addListener(
-        () -> {
-          synchronized (instanceDataGuard) {
-            // update currentInstanceData with the most recent results
-            currentInstanceData = refreshFuture;
-            // schedule a replacement before the SSLContext expires;
-            nextInstanceData = executor
-                .schedule(this::performRefresh, secondsUntilRefresh(),
-                    TimeUnit.SECONDS);
+    Futures.addCallback(refreshFuture,
+        new FutureCallback<InstanceData>() {
+          public void onSuccess(InstanceData instanceData) {
+            synchronized (instanceDataGuard) {
+              // update currentInstanceData with the most recent results
+              currentInstanceData = refreshFuture;
+              // schedule a replacement before the SSLContext expires;
+              nextInstanceData = executor
+                  .schedule(() -> performRefresh(),
+                      secondsUntilRefresh(),
+                      TimeUnit.SECONDS);
+            }
           }
-        },
-        executor);
+
+          public void onFailure(Throwable t) {
+            logger.log(Level.WARNING,
+                "An error occurred while performing refresh. Retrying immediately.", t);
+            synchronized (instanceDataGuard) {
+              InstanceData instanceData = null;
+              try {
+                instanceData = getInstanceData();
+              } catch (Exception e) {
+                // this means the result was invalid
+              }
+              if (instanceData == null || instanceData.getExpiration().toInstant()
+                  .isBefore(Instant.now())) {
+                // replace current if it is expired or invalid
+                currentInstanceData = refreshFuture;
+              }
+              nextInstanceData = Futures.immediateFuture(performRefresh());
+            }
+          }
+        }, executor);
+
     return refreshFuture;
   }
 
