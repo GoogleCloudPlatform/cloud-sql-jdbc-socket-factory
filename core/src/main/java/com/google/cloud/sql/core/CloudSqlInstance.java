@@ -522,6 +522,7 @@ class CloudSqlInstance {
       try {
         credentials.get().refresh();
         String token = credentials.get().getAccessToken().getTokenValue();
+        // TODO: remove this once issue with OAuth2 Tokens is resolved.
         String strippedToken = CharMatcher.is('.').trimTrailingFrom(token);
         request.setAccessToken(strippedToken);
       } catch (IOException ex) {
