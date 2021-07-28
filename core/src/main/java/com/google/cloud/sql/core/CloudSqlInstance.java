@@ -27,6 +27,7 @@ import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.FutureCallback;
@@ -521,7 +522,8 @@ class CloudSqlInstance {
       try {
         credentials.get().refresh();
         String token = credentials.get().getAccessToken().getTokenValue();
-        request.setAccessToken(token);
+        String strippedToken = CharMatcher.is('.').trimTrailingFrom(token);
+        request.setAccessToken(strippedToken);
       } catch (IOException ex) {
         throw addExceptionContext(
             ex,
