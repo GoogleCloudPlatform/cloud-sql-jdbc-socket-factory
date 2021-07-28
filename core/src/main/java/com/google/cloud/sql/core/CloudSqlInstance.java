@@ -524,8 +524,7 @@ class CloudSqlInstance {
         String token = credentials.get().getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
         // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
-        String strippedToken = CharMatcher.is('.').trimTrailingFrom(token);
-        request.setAccessToken(strippedToken);
+        request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
       } catch (IOException ex) {
         throw addExceptionContext(
             ex,
