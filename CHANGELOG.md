@@ -1,5 +1,15 @@
 # Changelog
 
+### [1.3.2](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.3.1...v1.3.2) (2021-08-03)
+
+
+### Bug Fixes
+
+* only replace refresh result if successful or current result is invalid ([#561](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/561)) ([01226b0](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/01226b000b4596c76ed5809d02853b353725b669))
+* **r2dbc:** fetch updated SSLData for each new connection ([#554](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/554)) ([007759c](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/007759ce9f63ed4247dbeef61772f86f6708d0ac))
+* remove dependency on internal sun.security.x509 classes ([#564](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/564)) ([79250e2](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/79250e24bbe89ab39d506910b5fb1160a4c1f695))
+* strip padding from access tokens if present ([#566](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/566)) ([406bb66](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/406bb66a37f34ba8b7a7a6f84a64a9e20e9cc925))
+
 ### [1.3.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.3.0...v1.3.1) (2021-07-13)
 
 
