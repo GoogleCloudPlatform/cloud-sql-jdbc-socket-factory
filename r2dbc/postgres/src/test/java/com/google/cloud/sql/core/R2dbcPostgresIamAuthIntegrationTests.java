@@ -48,10 +48,11 @@ import reactor.core.publisher.Mono;
 
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIamAuthIntegrationTests {
-
+  // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  // [END cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule
@@ -69,10 +70,12 @@ public class R2dbcPostgresIamAuthIntegrationTests {
           .that(System.getenv(varName)).isNotEmpty();
     });
 
+    // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
     // Set up ConnectionFactoryOptions
     ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
         .option(DRIVER, "gcp")
         .option(PROTOCOL, "postgresql")
+        // Password must be set to a nonempty value to bypass driver validation errors
         .option(PASSWORD, "password")
         .option(USER, DB_USER)
         .option(DATABASE, DB_NAME)
@@ -87,6 +90,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
         .build();
 
     this.connectionPool = new ConnectionPool(configuration);
+    // [END cloud_sql_connector_postgres_r2dbc_iam_auth]
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
     // Create table
