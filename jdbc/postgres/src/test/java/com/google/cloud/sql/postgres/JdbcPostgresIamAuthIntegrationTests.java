@@ -44,10 +44,11 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class JdbcPostgresIamAuthIntegrationTests {
-
+  // [START cloud_sql_connector_postgres_jdbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  // [END cloud_sql_connector_postgres_jdbc_iam_auth]
   ;
   private static ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
@@ -69,10 +70,12 @@ public class JdbcPostgresIamAuthIntegrationTests {
 
   @Before
   public void setUpPool() throws SQLException {
+    // [START cloud_sql_connector_postgres_jdbc_iam_auth]
     // Set up URL parameters
     String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
+    // Password must be set to a nonempty value to bypass driver validation errors
     connProps.setProperty("password", "password");
     connProps.setProperty("sslmode", "disable");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
@@ -86,6 +89,8 @@ public class JdbcPostgresIamAuthIntegrationTests {
     config.setConnectionTimeout(10000); // 10s
 
     this.connectionPool = new HikariDataSource(config);
+    // [END cloud_sql_connector_postgres_jdbc_iam_auth]
+
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
     // Create table
