@@ -147,6 +147,11 @@
       <artifactId>error_prone_annotations</artifactId>
       <version>2.9.0</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client-gson</artifactId>
+      <version>1.40.0</version>
+    </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
