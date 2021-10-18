@@ -50,7 +50,6 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -320,8 +319,6 @@ public class CoreSocketFactoryTest {
         .thenReturn(generateEphemeralCertResponse);
     when(generateEphemeralCertResponse.getEphemeralCert())
         .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
-
-
 
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
