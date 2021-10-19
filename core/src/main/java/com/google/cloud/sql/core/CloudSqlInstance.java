@@ -20,10 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.model.DatabaseInstance;
+import com.google.api.services.sqladmin.model.ConnectSettings;
+import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
+import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
-import com.google.api.services.sqladmin.model.SslCert;
-import com.google.api.services.sqladmin.model.SslCertsCreateEphemeralRequest;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
@@ -456,8 +456,8 @@ class CloudSqlInstance {
    */
   private Metadata fetchMetadata() {
     try {
-      DatabaseInstance instanceMetadata =
-          apiClient.instances().get(projectId, regionalizedInstanceId).execute();
+      ConnectSettings instanceMetadata =
+          apiClient.connect().get(projectId, regionalizedInstanceId).execute();
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(regionId)) {
@@ -515,8 +515,8 @@ class CloudSqlInstance {
   private Certificate fetchEphemeralCertificate(KeyPair keyPair) {
 
     // Use the SQL Admin API to create a new ephemeral certificate.
-    SslCertsCreateEphemeralRequest request =
-        new SslCertsCreateEphemeralRequest().setPublicKey(generatePublicKeyCert(keyPair));
+    GenerateEphemeralCertRequest request =
+        new GenerateEphemeralCertRequest().setPublicKey(generatePublicKeyCert(keyPair));
 
     if (enableIamAuth) {
       try {
@@ -531,10 +531,10 @@ class CloudSqlInstance {
             "An exception occurred while fetching IAM auth token:");
       }
     }
-    SslCert response;
+    GenerateEphemeralCertResponse response;
     try {
-      response = apiClient.sslCerts().createEphemeral(projectId, regionalizedInstanceId, request)
-          .execute();
+      response = apiClient.connect()
+          .generateEphemeralCert(projectId, regionalizedInstanceId, request).execute();
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
@@ -546,7 +546,7 @@ class CloudSqlInstance {
     // Parse the certificate from the response.
     Certificate ephemeralCertificate;
     try {
-      ephemeralCertificate = createCertificate(response.getCert());
+      ephemeralCertificate = createCertificate(response.getEphemeralCert().getCert());
     } catch (CertificateException ex) {
       throw new RuntimeException(
           String.format(
