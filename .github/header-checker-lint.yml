@@ -20,3 +20,4 @@ sourceFileExtensions:
   - 'java'
   - 'yaml'
   - 'yml'
+  - 'xml'
