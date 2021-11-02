@@ -10,13 +10,13 @@ Include the following in the project's `pom.xml`:
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
-      <version>1.3.4</version>
+      <version>1.4.1-dev</version>
     </dependency>
 ```
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.3.4'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.4.1-dev'
 ```
 *Note: Also include the R2DBC Driver for SQL Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
 

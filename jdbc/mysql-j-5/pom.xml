@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.3.5-SNAPSHOT</version>
+    <version>1.4.1-dev</version>
     <relativePath>../..</relativePath>
   </parent>
   
