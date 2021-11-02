@@ -19,6 +19,6 @@ mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
 # Update versions in README if not snapshot release
 if ! [[ $VERSION =~ .*SNAPSHOT ]]
-then 
-    sed -Ei '' 's/[0-9]+\.[0-9]+\.[0-9]+/'"$VERSION"'/g' docs/*.md
+then
+    sed -i.bak -E '' 's/[0-9]+\.[0-9]+\.[0-9]+/'"$VERSION"'/g' docs/*.md
 fi
