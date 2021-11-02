@@ -3,3 +3,4 @@ target/
 *.class
 *.iml
 .envrc
+*.bak
