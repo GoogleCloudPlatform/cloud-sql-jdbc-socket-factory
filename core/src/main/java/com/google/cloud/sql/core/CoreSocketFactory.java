@@ -122,6 +122,9 @@ public final class CoreSocketFactory {
    * Returns the {@link CoreSocketFactory} singleton.
    */
   public static synchronized CoreSocketFactory getInstance(String saFile) {
+    if (saFile == null || saFile.trim().isEmpty()) {
+      saFile = "DEFAULT";
+    }
     if (!coreSocketFactory.containsKey(saFile)) {
       coreSocketFactory.put(saFile, createInstanceInternal(saFile));
     }
