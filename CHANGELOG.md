@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.4.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.0...v1.4.1) (2021-12-07)
+
+
+### Bug Fixes
+
+* update dependencies to latest versions ([#671](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/671)) ([ae81368](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ae81368bc6e0e7d838c6d1b11e936e186359ffec))
+
 ## [1.4.0](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.3.4...v1.4.0) (2021-11-02)
 
 
