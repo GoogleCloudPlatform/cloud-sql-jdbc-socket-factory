@@ -86,7 +86,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
   @Override
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
-    String protocol = connectionFactoryOptions.getRequiredValue(PROTOCOL);
+    String protocol = (String) connectionFactoryOptions.getRequiredValue(PROTOCOL);
 
     if (!supportedProtocol(protocol)) {
       throw new UnsupportedOperationException(
@@ -98,9 +98,9 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
   private ConnectionFactory createFactory(
       ConnectionFactoryOptions connectionFactoryOptions) {
-    String connectionName = connectionFactoryOptions.getRequiredValue(HOST);
-    String socket = connectionFactoryOptions.getValue(UNIX_SOCKET);
-    Boolean enableIamAuth = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
+    String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
+    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
+    Boolean enableIamAuth = (Boolean) connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
@@ -121,8 +121,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
   @Override
   public boolean supports(ConnectionFactoryOptions connectionFactoryOptions) {
-    String driver = connectionFactoryOptions.getValue(DRIVER);
-    String protocol = connectionFactoryOptions.getValue(PROTOCOL);
+    String driver = (String) connectionFactoryOptions.getValue(DRIVER);
+    String protocol = (String) connectionFactoryOptions.getValue(PROTOCOL);
 
     return driver != null
         && protocol != null
