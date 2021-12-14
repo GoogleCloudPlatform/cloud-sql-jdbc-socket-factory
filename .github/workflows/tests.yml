@@ -17,7 +17,7 @@ on: [pull_request]
 
 jobs:
   build:
-    name: checkstyle
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,5 +27,5 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '8'
-      - name: Get Maven checkstyle report
-        run: mvn -B checkstyle:check
+      - name: lint
+        run: mvn -B compile -Plint
