@@ -100,13 +100,17 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       ConnectionFactoryOptions connectionFactoryOptions) {
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
     String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
-    Boolean enableIamAuth = (Boolean) connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
+
+    Object iamAuthObj = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
+    Boolean enableIamAuth = false;
+    if (iamAuthObj instanceof Boolean) {
+      enableIamAuth = (Boolean) iamAuthObj;
+    } else if (iamAuthObj instanceof String) {
+      enableIamAuth = Boolean.parseBoolean((String) iamAuthObj);
+    }
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
-    if (enableIamAuth == null) {
-      enableIamAuth = false;
-    }
 
     // Precompute SSL Data to trigger the initial refresh to happen immediately,
     // and ensure enableIAMAuth is set correctly.
