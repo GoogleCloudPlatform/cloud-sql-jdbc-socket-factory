@@ -147,4 +147,40 @@ public class R2dbcPostgresIamAuthIntegrationTests {
 
     assertThat(books).containsExactly("Book One", "Book Two");
   }
+
+  // This test verifies the "enable_iam_authn" parameter works when a URL is used
+  @Test
+  public void urlPooledConnectionTest() {
+    String url = String.format("r2dbc:gcp:postgres://%s:%s@%s/%s?ENABLE_IAM_AUTH=true", DB_USER, "password", CONNECTION_NAME, DB_NAME);
+    ConnectionFactory connectionPool = ConnectionFactories.get(url);
+    String insertStmt = String
+        .format("INSERT INTO  %s (ID, TITLE) VALUES ($1, $2)", this.tableName);
+    Mono.from(connectionPool.create())
+        .flatMapMany(
+            c ->
+                c.createStatement(insertStmt)
+                    .bind("$1", "book1")
+                    .bind("$2", "Book One")
+                    .add()
+                    .bind("$1", "book2")
+                    .bind("$2", "Book Two")
+                    .execute())
+        .flatMap(result -> result.map((row, rowMetadata) -> row.get(0)))
+        .blockLast();
+
+    String selectStmt = String.format("SELECT TITLE FROM %s ORDER BY ID", this.tableName);
+    List<String> books =
+        Mono.from(this.connectionPool.create())
+            .flatMapMany(
+                connection ->
+                    connection.createStatement(selectStmt).execute())
+            .flatMap(
+                result ->
+                    result.map(
+                        (r, meta) -> r.get("TITLE", String.class)))
+            .collectList()
+            .block();
+
+    assertThat(books).containsExactly("Book One", "Book Two");
+  }
 }
