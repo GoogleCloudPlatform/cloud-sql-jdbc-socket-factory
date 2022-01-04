@@ -1,5 +1,13 @@
 # Changelog
 
+### [1.4.2](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.1...v1.4.2) (2022-01-04)
+
+
+### Bug Fixes
+
+* Ensure all required dependencies are declared ([#634](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/634)) ([2fe4bf4](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2fe4bf4a6dae64da16d07528830af3327efd599b))
+* **r2dbc:** parse 'enable_iam_authn' as String or Boolean as needed ([#688](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/688)) ([d294864](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d2948640cb111f5b0f621da0cdaa68843feefe7b))
+
 ### [1.4.1](https://www.github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.0...v1.4.1) (2021-12-07)
 
 
