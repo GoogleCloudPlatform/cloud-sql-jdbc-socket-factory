@@ -1,6 +1,16 @@
-.idea/
+# misc java
 target/
 *.class
+
+# IntelliJ
+.idea/
 *.iml
-.envrc
 *.bak
+
+# vscode
+**/.project
+**/.settings/
+**/.classpath
+
+# direnv
+.envrc

@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.4.2-dev</version>
+    <version>1.4.2</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
@@ -32,6 +32,10 @@
     R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
     certificates manually.
   </description>
+
+  <properties>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
+  </properties>
 
   <dependencyManagement>
     <dependencies>

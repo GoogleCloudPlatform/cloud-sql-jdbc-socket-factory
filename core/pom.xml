@@ -23,7 +23,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.4.2-dev</version>
+    <version>1.4.2</version>
   </parent>
   <artifactId>jdbc-socket-factory-core</artifactId>
   <packaging>jar</packaging>
@@ -33,6 +33,10 @@
     Core library for establishing secure connections. End users should depend on the
     driver-specific socket factory artifacts.
   </description>
+
+  <properties>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
+  </properties>
 
   <dependencyManagement>
     <dependencies>
