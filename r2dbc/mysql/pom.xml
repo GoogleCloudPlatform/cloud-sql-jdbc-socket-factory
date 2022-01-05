@@ -34,6 +34,10 @@
     certificates manually.
   </description>
 
+  <properties>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
+  </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
