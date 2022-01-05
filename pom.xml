@@ -72,6 +72,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
+    <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
   <modules>
