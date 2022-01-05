@@ -10,14 +10,14 @@ Include the following in the project's `pom.xml`:
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-      <version>1.4.1-dev</version>
+      <version>1.4.2-dev</version>
     </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.4.1-dev'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.4.2-dev'
 ```
 
 *Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:<LATEST-VERSION>`
