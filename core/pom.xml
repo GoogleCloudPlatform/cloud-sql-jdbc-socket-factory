@@ -88,12 +88,17 @@
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-jackson2</artifactId>
-        <version>1.40.1</version>
+        <version>1.41.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>2.10.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>2.2.11</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -116,7 +121,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.15</version>
+      <version>0.38.16</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
@@ -185,7 +190,6 @@
     <dependency>
       <groupId>com.google.http-client</groupId>
       <artifactId>google-http-client-jackson2</artifactId>
-      <version>1.40.1</version>
       <scope>test</scope>
     </dependency>
 
