@@ -14,14 +14,14 @@
 
 assign_issues:
    - enocom
-   - kurtisvg
+#   - kurtisvg
 #   - shubha-rajan
 #   - jackwotherspoon
 
 
 assign_prs:
    - enocom
-   - kurtisvg
+#   - kurtisvg
 #   - shubha-rajan
 #   - jackwotherspoon
 
