@@ -70,7 +70,7 @@
       <dependency>
         <groupId>com.google.api-client</groupId>
         <artifactId>google-api-client</artifactId>
-        <version>1.32.2</version>
+        <version>1.33.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -86,6 +86,11 @@
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-ffi</artifactId>
         <version>2.2.11</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.http-client</groupId>
+        <artifactId>google-http-client-gson</artifactId>
+        <version>1.40.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
