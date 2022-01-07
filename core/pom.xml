@@ -121,7 +121,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.16</version>
+      <version>0.38.17</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
