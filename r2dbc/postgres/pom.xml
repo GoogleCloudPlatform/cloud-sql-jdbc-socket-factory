@@ -163,7 +163,7 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.10.RELEASE</version>
+      <version>0.8.11.RELEASE</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -219,7 +219,7 @@
         <dependency>
           <groupId>io.r2dbc</groupId>
           <artifactId>r2dbc-postgresql</artifactId>
-          <version>0.8.10.RELEASE</version>
+          <version>0.8.11.RELEASE</version>
         </dependency>
       </dependencies>
     </profile>
