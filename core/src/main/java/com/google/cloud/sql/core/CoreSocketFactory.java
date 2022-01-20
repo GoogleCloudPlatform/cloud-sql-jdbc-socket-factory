@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -94,6 +95,7 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final SQLAdmin adminApi;
+  private String credsJsonFileLoc;
   private final int serverProxyPort;
 
   private static List<String> userAgents = new ArrayList<String>();
@@ -120,7 +122,6 @@ public final class CoreSocketFactory {
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
-
       String userCredentialFactoryClassName = System.getProperty(
           CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
@@ -151,6 +152,42 @@ public final class CoreSocketFactory {
     }
     return coreSocketFactory;
   }
+
+  // Start
+  public static synchronized CoreSocketFactory getInstance(String credsJsonFileLoc) {
+    if (coreSocketFactory == null) {
+      logger.info("First Cloud SQL connection, generating RSA key pair.");
+      String userCredentialFactoryClassName = System.getProperty(
+              CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+
+      CredentialFactory credentialFactory;
+      if (userCredentialFactoryClassName != null) {
+        try {
+          credentialFactory =
+                  (CredentialFactory)
+                          Class.forName(userCredentialFactoryClassName).newInstance();
+        } catch (Exception err) {
+          throw new RuntimeException(err);
+        }
+      } else {
+        credentialFactory = new ApplicationDefaultCredentialFactory();
+      }
+      credentialFactory.getFileLoc(credsJsonFileLoc);
+      HttpRequestInitializer credential = credentialFactory.create();
+      SQLAdmin adminApi = createAdminApiClient(credential);
+      ListeningScheduledExecutorService executor = getDefaultExecutor();
+
+      coreSocketFactory =
+              new CoreSocketFactory(
+                      executor.submit(CoreSocketFactory::generateRsaKeyPair),
+                      adminApi,
+                      credentialFactory,
+                      DEFAULT_SERVER_PROXY_PORT,
+                      executor);
+    }
+    return coreSocketFactory;
+  }
+  // End
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
@@ -224,7 +261,8 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
-
+    final String credsJsonFileLoc = props.getProperty("credsJsonFileLoc");
+    System.out.println("Props-credsJsonFileLoc"+credsJsonFileLoc);
     // Validate parameters
     Preconditions.checkArgument(
         csqlInstanceName != null,
@@ -249,7 +287,7 @@ public final class CoreSocketFactory {
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    return getInstance(credsJsonFileLoc).createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
   }
 
   /**
@@ -369,6 +407,7 @@ public final class CoreSocketFactory {
 
     @Override
     public HttpRequestInitializer create() {
+      System.out.println("***********Old App Factory******");
       GoogleCredentials credentials;
       try {
         credentials = GoogleCredentials.getApplicationDefault();
@@ -386,6 +425,8 @@ public final class CoreSocketFactory {
       return new HttpCredentialsAdapter(credentials);
     }
   }
+
+
 
   private static KeyPair generateRsaKeyPair() {
     KeyPairGenerator generator;
@@ -450,5 +491,35 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
+  }
+}
+class NewApplicationDefaultCredentialFactory implements CredentialFactory {
+  private String credsJsonFileLocation;
+
+  @Override
+  public void getFileLoc(String credsJsonFileLoc)
+  {
+    this.credsJsonFileLocation = credsJsonFileLoc;
+  }
+
+  @Override
+  public HttpRequestInitializer create() {
+    System.out.println("***********New App Factory******");
+    GoogleCredentials credentials;
+    try {
+      //credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/indumathyt/Downloads/dc-in-pocs-24e0972a309e.json"));
+      credentials = GoogleCredentials.fromStream(new FileInputStream(credsJsonFileLocation));
+    } catch (IOException err) {
+      throw new RuntimeException(
+              "Unable to obtain credentials to communicate with the Cloud SQL API", err);
+    }
+    if (credentials.createScopedRequired()) {
+      credentials =
+              credentials.createScoped(Arrays.asList(
+                      SQLAdminScopes.SQLSERVICE_ADMIN,
+                      SQLAdminScopes.CLOUD_PLATFORM)
+              );
+    }
+    return new HttpCredentialsAdapter(credentials);
   }
 }
