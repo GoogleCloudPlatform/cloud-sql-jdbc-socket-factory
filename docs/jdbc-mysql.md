@@ -18,7 +18,7 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.4.2-dev</version>
+    <version>1.4.2</version>
 </dependency>
 ```
 
