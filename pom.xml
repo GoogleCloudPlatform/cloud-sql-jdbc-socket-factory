@@ -299,7 +299,7 @@
     </profile>
 
     <profile>
-      <id>cov</id>
+      <id>coverage</id>
       <build>
         <plugins>
           <plugin>
