@@ -133,12 +133,14 @@ class CloudSqlInstance {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
 
-    this.connectionName = connectionName;
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
         matcher.matches(),
-        "[%s] Cloud SQL connection name is invalid, expected string in the form of"
-            + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".");
+        String.format(
+            "[%s] Cloud SQL connection name is invalid, expected string in the form of"
+                + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
+            connectionName));
+    this.connectionName = connectionName;
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
