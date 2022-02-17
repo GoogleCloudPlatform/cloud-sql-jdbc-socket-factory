@@ -32,15 +32,17 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
+
+import javax.net.ssl.SSLSocket;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,9 +51,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
-import javax.net.ssl.SSLSocket;
-import jnr.unixsocket.UnixSocketAddress;
-import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
@@ -153,10 +152,10 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
-  // Start
+  // Overloaded getInstance method to accept Credential File Location
   public static synchronized CoreSocketFactory getInstance(String credsJsonFileLoc) {
     if (coreSocketFactory == null) {
-      logger.info("First Cloud SQL connection, generating RSA key pair.");
+      logger.info("First Cloud SQL connection, generating RSA key pair using creds file.");
       String userCredentialFactoryClassName = System.getProperty(
               CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
@@ -187,7 +186,7 @@ public final class CoreSocketFactory {
     }
     return coreSocketFactory;
   }
-  // End
+
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
@@ -261,8 +260,8 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
-    final String credsJsonFileLoc = props.getProperty("credsJsonFileLoc");
-    System.out.println("Props-credsJsonFileLoc"+credsJsonFileLoc);
+    // Get Creds File Location if passed
+    final String credsJsonFileLoc = props.getProperty("credsJsonFileLoc","");
     // Validate parameters
     Preconditions.checkArgument(
         csqlInstanceName != null,
@@ -287,7 +286,13 @@ public final class CoreSocketFactory {
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    return getInstance(credsJsonFileLoc).createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    // invoke getInstance(credsJsonFileLoc) if creds file location is present
+    if (credsJsonFileLoc != null && credsJsonFileLoc.trim().length() != 0) {
+      return getInstance(credsJsonFileLoc).createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    }
+    else {
+      return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    }
   }
 
   /**
@@ -407,7 +412,6 @@ public final class CoreSocketFactory {
 
     @Override
     public HttpRequestInitializer create() {
-      System.out.println("***********Old App Factory******");
       GoogleCredentials credentials;
       try {
         credentials = GoogleCredentials.getApplicationDefault();
@@ -493,7 +497,12 @@ public final class CoreSocketFactory {
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
 }
-class NewApplicationDefaultCredentialFactory implements CredentialFactory {
+
+/**
+ * This Factory generates the credentials based on the credentials read from file
+ */
+class CredsJsonFileCredentialFactory implements CredentialFactory {
+  private static final Logger logger = Logger.getLogger(CredsJsonFileCredentialFactory.class.getName());
   private String credsJsonFileLocation;
 
   @Override
@@ -504,12 +513,11 @@ class NewApplicationDefaultCredentialFactory implements CredentialFactory {
 
   @Override
   public HttpRequestInitializer create() {
-    System.out.println("***********New App Factory******");
+    logger.info("Initializing CredsJsonFileCredentialFactory");
     GoogleCredentials credentials;
     try {
-      //credentials = GoogleCredentials.fromStream(new FileInputStream("/Users/indumathyt/Downloads/dc-in-pocs-24e0972a309e.json"));
       credentials = GoogleCredentials.fromStream(new FileInputStream(credsJsonFileLocation));
-    } catch (IOException err) {
+    } catch (Exception err) {
       throw new RuntimeException(
               "Unable to obtain credentials to communicate with the Cloud SQL API", err);
     }
