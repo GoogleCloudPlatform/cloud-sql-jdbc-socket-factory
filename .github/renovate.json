@@ -4,7 +4,15 @@
     ":semanticCommitTypeAll(chore)"
   ],
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
+  "prConcurrentLimit": 0,
+  "rebaseStalePrs": true,
+  "dependencyDashboard": true,
+  "semanticCommits": true,
   "packageRules": [
+    {
+      "matchPackagePatterns": [".*"],
+      "addLabels": ["automerge"]
+    },
     {
       "packageNames":[ "mysql:mysql-connector-java" ],
       "enabled": false
@@ -22,7 +30,8 @@
       "allowedVersions": "/v1beta4-.*/"
     }
   ],
-  "prConcurrentLimit": 0,
-  "rebaseStalePrs": true,
-  "dependencyDashboard": true
+  "schedule": [
+    "after 8am on Friday",
+    "before 12pm on Friday"
+  ]
 }
