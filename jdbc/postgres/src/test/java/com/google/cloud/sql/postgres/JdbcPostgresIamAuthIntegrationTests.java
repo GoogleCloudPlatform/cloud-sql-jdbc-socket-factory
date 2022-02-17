@@ -53,7 +53,7 @@ public class JdbcPostgresIamAuthIntegrationTests {
   private static ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule
-  public Timeout globalTimeout = new Timeout(3600, TimeUnit.SECONDS);
+  public Timeout globalTimeout = new Timeout(60, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
   private String tableName;
@@ -69,10 +69,9 @@ public class JdbcPostgresIamAuthIntegrationTests {
   }
 
   @Before
-  public void setUpPool() throws Exception {
+  public void setUpPool() throws SQLException {
     // [START cloud_sql_connector_postgres_jdbc_iam_auth]
     // Set up URL parameters
-    Thread.sleep(2000);
     String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
@@ -82,8 +81,6 @@ public class JdbcPostgresIamAuthIntegrationTests {
     connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("enableIamAuth", "true");
-    connProps.setProperty("credsJsonFileLoc", "/Users/indumathyt/Downloads/dc-in-pocs-24e0972a309e.json");
-    //System.setProperty("cloudSql.socketFactory.credentialFactory","com.google.cloud.sql.core.NewApplicationDefaultCredentialFactory");
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
