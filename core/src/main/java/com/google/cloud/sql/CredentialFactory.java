@@ -26,5 +26,6 @@ public interface CredentialFactory {
   /** Name of system property that can specify an alternative credential factory. */
   String CREDENTIAL_FACTORY_PROPERTY = "cloudSql.socketFactory.credentialFactory";
   HttpRequestInitializer create();
+  // Default method added to support all flavours
   default void getFileLoc(String fileLocation) {}
 }
