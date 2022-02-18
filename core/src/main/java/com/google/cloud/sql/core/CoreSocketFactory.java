@@ -70,7 +70,7 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   *             programmatically.
+   * programmatically.
    */
 
   @Deprecated
@@ -94,7 +94,7 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final SQLAdmin adminApi;
-  private String credsJsonFileLoc;
+  private String serviceAccountFile;
   private final int serverProxyPort;
 
   private static List<String> userAgents = new ArrayList<String>();
@@ -152,37 +152,44 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
-  // Overloaded getInstance method to accept Credential File Location
-  public static synchronized CoreSocketFactory getInstance(String credsJsonFileLoc) {
+  /**
+   * Overloaded getInstance method to accept Credential File Location
+   *
+   * @param serviceAccountFile : Location of the SA credentials file
+   * @return CoreSocketFactory
+   */
+  public static synchronized CoreSocketFactory getInstance(String serviceAccountFile) {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair using creds file.");
       String userCredentialFactoryClassName = System.getProperty(
-              CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+          CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
       CredentialFactory credentialFactory;
       if (userCredentialFactoryClassName != null) {
         try {
           credentialFactory =
-                  (CredentialFactory)
-                          Class.forName(userCredentialFactoryClassName).newInstance();
+              (CredentialFactory)
+                  Class.forName(userCredentialFactoryClassName)
+                      .getDeclaredConstructor(new Class[] {String.class})
+                      .newInstance(serviceAccountFile);
         } catch (Exception err) {
           throw new RuntimeException(err);
         }
       } else {
         credentialFactory = new ApplicationDefaultCredentialFactory();
       }
-      credentialFactory.getFileLoc(credsJsonFileLoc);
+
       HttpRequestInitializer credential = credentialFactory.create();
       SQLAdmin adminApi = createAdminApiClient(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
-              new CoreSocketFactory(
-                      executor.submit(CoreSocketFactory::generateRsaKeyPair),
-                      adminApi,
-                      credentialFactory,
-                      DEFAULT_SERVER_PROXY_PORT,
-                      executor);
+          new CoreSocketFactory(
+              executor.submit(CoreSocketFactory::generateRsaKeyPair),
+              adminApi,
+              credentialFactory,
+              DEFAULT_SERVER_PROXY_PORT,
+              executor);
     }
     return coreSocketFactory;
   }
@@ -261,7 +268,7 @@ public final class CoreSocketFactory {
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
     // Get Creds File Location if passed
-    final String credsJsonFileLoc = props.getProperty("credsJsonFileLoc","");
+    final String serviceAccountFile = props.getProperty("serviceAccountFile", "");
     // Validate parameters
     Preconditions.checkArgument(
         csqlInstanceName != null,
@@ -286,11 +293,11 @@ public final class CoreSocketFactory {
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    // invoke getInstance(credsJsonFileLoc) if creds file location is present
-    if (credsJsonFileLoc != null && credsJsonFileLoc.trim().length() != 0) {
-      return getInstance(credsJsonFileLoc).createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
-    }
-    else {
+    // invoke getInstance(serviceAccountFile) if creds file location is present
+    if (serviceAccountFile != null && serviceAccountFile.trim().length() != 0) {
+      return getInstance(serviceAccountFile).createSslSocket(csqlInstanceName, ipTypes,
+          enableIamAuth);
+    } else {
       return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
     }
   }
@@ -431,7 +438,6 @@ public final class CoreSocketFactory {
   }
 
 
-
   private static KeyPair generateRsaKeyPair() {
     KeyPairGenerator generator;
     try {
@@ -499,34 +505,38 @@ public final class CoreSocketFactory {
 }
 
 /**
- * This Factory generates the credentials based on the credentials read from file
+ * This Factory generates the credentials based on the credentials read from file.
  */
 class CredsJsonFileCredentialFactory implements CredentialFactory {
-  private static final Logger logger = Logger.getLogger(CredsJsonFileCredentialFactory.class.getName());
-  private String credsJsonFileLocation;
+  private static final Logger logger =
+      Logger.getLogger(CredsJsonFileCredentialFactory.class.getName());
+  private String serviceAccountFile;
 
-  @Override
-  public void getFileLoc(String credsJsonFileLoc)
-  {
-    this.credsJsonFileLocation = credsJsonFileLoc;
+  CredsJsonFileCredentialFactory(String serviceAccountFile) {
+    this.serviceAccountFile = serviceAccountFile;
   }
+ /* @Override
+  public void getFileLoc(String serviceAccountFile)
+  {
+    this.serviceAccountFile = serviceAccountFile;
+  }*/
 
   @Override
   public HttpRequestInitializer create() {
     logger.info("Initializing CredsJsonFileCredentialFactory");
     GoogleCredentials credentials;
     try {
-      credentials = GoogleCredentials.fromStream(new FileInputStream(credsJsonFileLocation));
+      credentials = GoogleCredentials.fromStream(new FileInputStream(serviceAccountFile));
     } catch (Exception err) {
       throw new RuntimeException(
-              "Unable to obtain credentials to communicate with the Cloud SQL API", err);
+          "Unable to obtain credentials to communicate with the Cloud SQL API", err);
     }
     if (credentials.createScopedRequired()) {
       credentials =
-              credentials.createScoped(Arrays.asList(
-                      SQLAdminScopes.SQLSERVICE_ADMIN,
-                      SQLAdminScopes.CLOUD_PLATFORM)
-              );
+          credentials.createScoped(Arrays.asList(
+              SQLAdminScopes.SQLSERVICE_ADMIN,
+              SQLAdminScopes.CLOUD_PLATFORM)
+          );
     }
     return new HttpCredentialsAdapter(credentials);
   }
