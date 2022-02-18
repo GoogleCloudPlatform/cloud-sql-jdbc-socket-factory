@@ -47,7 +47,7 @@ public class JdbcPostgresIamAuthIntegrationTestsWithCredsFile {
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   private static final String CREDS_JSON_FILE_LOC = System.getenv("CREDS_JSON_FILE_LOC");
   // [END cloud_sql_connector_postgres_jdbc_iam_auth]
-  ;
+  
   private static ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule
