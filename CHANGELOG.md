@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.4.4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.3...v1.4.4) (2022-02-25)
+
+
+### Bug Fixes
+
+* include value of INSTANCE_CONNECTION_NAME when invalid ([#752](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/752)) ([12e3e7b](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/12e3e7bcd82cba3d625d5c05bec7f0120c8f2ad6))
+
 ### [1.4.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.2...v1.4.3) (2022-02-01)
 
 
