@@ -30,6 +30,7 @@
       "allowedVersions": "/v1beta4-.*/"
     }
   ],
+  "timezone": "America/Los_Angeles",
   "schedule": [
     "after 8am on Friday",
     "before 12pm on Friday"
