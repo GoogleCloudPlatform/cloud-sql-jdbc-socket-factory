@@ -43,12 +43,12 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.4.15</version>
+        <version>3.4.16</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.0.16</version>
+        <version>1.0.17</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -123,12 +123,12 @@
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>1.41.4</version>
+        <version>1.41.5</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>1.41.4</version>
+        <version>1.41.5</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
