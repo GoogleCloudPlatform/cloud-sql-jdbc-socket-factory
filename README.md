@@ -89,6 +89,12 @@ supported for 1 year.
 **Unsupported** - Any major version that has been deprecated for >=1 year is
 considered publicly unsupported.
 
+### Supported JDK versions
+
+We test and support at minimum, any publically supported LTS JDK version.
+Changes in supported versions will be considered a minor change, and will be
+listed in the realease notes.
+
 ### Release cadence
 This project aims for a minimum monthly release cadence. If no new
 features or fixes have been added, a new PATCH version with the latest
