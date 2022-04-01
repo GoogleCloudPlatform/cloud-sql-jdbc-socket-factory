@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.4...v1.5.0) (2022-04-01)
+
+
+### Features
+
+* Add language support policy ([#787](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/787)) ([0b7e9a7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0b7e9a79f49d7e50bf3ce5982e0d021d2ed45eea))
+
 ### [1.4.4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.3...v1.4.4) (2022-02-25)
 
 
