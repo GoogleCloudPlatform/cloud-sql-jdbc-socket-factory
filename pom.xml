@@ -14,8 +14,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.google.cloud.sql</groupId>
@@ -26,11 +27,14 @@
 
   <name>Cloud SQL JDBC Socket Factory</name>
   <description>
-    Socket factories for MySQL/Postgres JDBC drivers that allows a user with the appropriate
-    permissions to connect to a Cloud SQL database without having to deal with IP allowlisting
+    Socket factories for MySQL/Postgres JDBC drivers that allows a user with the
+    appropriate
+    permissions to connect to a Cloud SQL database without having to deal with
+    IP allowlisting
     or SSL certificates manually
   </description>
-  <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory</url>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory
+  </url>
 
   <licenses>
     <license>
@@ -58,7 +62,9 @@
     <developerConnection>
       scm:git:ssh://git@github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
     </developerConnection>
-    <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git</url>
+    <url>
+      https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
+    </url>
     <tag>HEAD</tag>
   </scm>
 
@@ -130,16 +136,36 @@
           <compilerArgs>
             <arg>-XDcompilePolicy=simple</arg>
             <arg>-Xplugin:ErrorProne</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
-            <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
-            <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-            <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
+            </arg>
+            <arg>
+              -J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED
+            </arg>
           </compilerArgs>
           <annotationProcessorPaths>
             <path>
@@ -221,7 +247,8 @@
               <logViolationsToConsole>true</logViolationsToConsole>
               <violationSeverity>warning</violationSeverity>
               <failOnViolation>true</failOnViolation>
-              <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+              <suppressionsLocation>checkstyle-suppressions.xml
+              </suppressionsLocation>
             </configuration>
             <executions>
               <execution>
@@ -308,19 +335,19 @@
             <version>0.8.8</version>
             <executions>
               <execution>
-                  <id>prepare-agent</id>
-                      <goals>
-                          <goal>prepare-agent</goal>
-                      </goals>
-                </execution>
-                <execution>
-                      <id>report</id>
-                      <phase>test</phase>
-                        <goals>
-                          <goal>report</goal>
-                        </goals>
-                  </execution>
-              </executions>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>report</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
@@ -346,6 +373,78 @@
                   -J-Xbootclasspath/p:${settings.localRepository}/com/google/errorprone/javac/${javac.version}/javac-${javac.version}.jar
                 </arg>
               </compilerArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <!-- This profile is used to enable GraalVM native image testing
+      (.kokoro/graalvm-native/linux) -->
+      <id>native</id>
+
+      <dependencies>
+        <dependency>
+          <groupId>com.google.cloud</groupId>
+          <artifactId>native-image-support</artifactId>
+          <version>0.12.11</version>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.junit.vintage</groupId>
+          <artifactId>junit-vintage-engine</artifactId>
+          <version>5.8.2</version>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.graalvm.buildtools</groupId>
+          <artifactId>junit-platform-native</artifactId>
+          <version>0.9.11</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <!-- Must use older version of surefire plugin for native-image testing. -->
+            <version>2.22.2</version>
+            <configuration>
+              <!-- Include all tests during native image testing. -->
+              <excludes combine.self="override"/>
+              <includes>
+                <include>**/*IntegrationTests</include>
+              </includes>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>0.9.11</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <id>test-native</id>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <phase>test</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <buildArgs>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--no-server</buildArg>
+                <buildArg>
+                  --features=com.google.cloud.nativeimage.features.ProtobufMessageFeature
+                </buildArg>
+              </buildArgs>
             </configuration>
           </plugin>
         </plugins>
@@ -453,7 +552,9 @@
               <descriptorRefs>
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
-              <finalName>${project.artifactId}-${project.version}-jar-with-driver-and-dependencies</finalName>
+              <finalName>
+                ${project.artifactId}-${project.version}-jar-with-driver-and-dependencies
+              </finalName>
               <appendAssemblyId>false</appendAssemblyId>
             </configuration>
             <executions>
