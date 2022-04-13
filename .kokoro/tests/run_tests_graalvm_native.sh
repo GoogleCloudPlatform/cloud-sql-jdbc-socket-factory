@@ -44,7 +44,7 @@ for test_directory in jdbc/postgres jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserve
   # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
   # version of junit-platform-engine GraalVM requires.
   mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
-    return_code=$((return_code || $?))
+  return_code=$((return_code || $?))
   popd
   echo -e "******************** Tests complete in ${test_directory} ********************\n"
 done
