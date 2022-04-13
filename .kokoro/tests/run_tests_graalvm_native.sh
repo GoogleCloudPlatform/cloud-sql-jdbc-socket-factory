@@ -25,7 +25,19 @@ if [ -n "$KOKORO_GFILE_DIR" ]; then
   export GOOGLE_APPLICATION_CREDENTIALS="${KOKORO_GFILE_DIR}/testing-service-account.json"
 fi
 
+echo -e "******************** Installing modules... ********************\n"
+mvn install -DskipTests
+echo -e "******************** Installation complete.  ********************\n"
 echo -e "******************** Running tests... ********************\n"
 echo "JAVA_HOME: $JAVA_HOME"
-mvn -e -B clean verify -P e2e -Dcheckstyle.skip -Pnative
+
+# Why "-Denforcer.skip"? It's because  enforcer complains about the specific
+# version of junit-platform-engine GraalVM requires.
+pushd jdbc/postgres
+mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+popd
+
+pushd ./jdbc/mysql-j-5
+mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+popd
 echo -e "******************** Tests complete.  ********************\n"
