@@ -28,7 +28,6 @@ fi
 echo -e "******************** Installing modules... ********************\n"
 mvn -e -B install -DskipTests
 echo -e "******************** Installation complete.  ********************\n"
-echo -e "******************** Running tests... ********************\n"
 echo "JAVA_HOME: $JAVA_HOME"
 echo "Java version:"
 java -version
@@ -37,11 +36,16 @@ java -version
 # requires at least one matching test per Maven module. Not all modules in this
 # repository have "*IntegrationTests.java".
 # https://github.com/graalvm/native-build-tools/issues/188
-for test_directory in jdbc/postgres jdbc/mysql-j-5; do
+set +e
+return_code=0
+for test_directory in jdbc/postgres jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserver r2dbc/sqlserver r2dbc/sqlserver r2dbc/mysql; do
   pushd ${test_directory}
-    # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
-    # version of junit-platform-engine GraalVM requires.
-    mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+  echo -e "******************** Running tests in ${test_directory} ********************\n"
+  # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
+  # version of junit-platform-engine GraalVM requires.
+  mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+    return_code=$((return_code || $?))
   popd
+  echo -e "******************** Tests complete in ${test_directory} ********************\n"
 done
-echo -e "******************** Tests complete.  ********************\n"
+exit ${return_code}
