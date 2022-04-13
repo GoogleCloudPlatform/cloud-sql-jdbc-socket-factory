@@ -26,22 +26,22 @@ if [ -n "$KOKORO_GFILE_DIR" ]; then
 fi
 
 echo -e "******************** Installing modules... ********************\n"
-mvn install -DskipTests
+mvn -e -B install -DskipTests
 echo -e "******************** Installation complete.  ********************\n"
 echo -e "******************** Running tests... ********************\n"
 echo "JAVA_HOME: $JAVA_HOME"
-
-# Why "-Denforcer.skip"? It's because  enforcer complains about the specific
-# version of junit-platform-engine GraalVM requires.
+echo "Java version:"
+java -version
 
 # Why change directories to run the tests? Because GraalVM test execution
 # requires at least one matching test per Maven module. Not all modules in this
 # repository have "*IntegrationTests.java".
-pushd jdbc/postgres
-mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
-popd
-
-pushd ./jdbc/mysql-j-5
-mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
-popd
+# https://github.com/graalvm/native-build-tools/issues/188
+for test_directory in jdbc/postgres jdbc/mysql-j-5; do
+  pushd ${test_directory}
+    # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
+    # version of junit-platform-engine GraalVM requires.
+    mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+  popd
+done
 echo -e "******************** Tests complete.  ********************\n"
