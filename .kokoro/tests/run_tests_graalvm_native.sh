@@ -33,6 +33,10 @@ echo "JAVA_HOME: $JAVA_HOME"
 
 # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
 # version of junit-platform-engine GraalVM requires.
+
+# Why change directories to run the tests? Because GraalVM test execution
+# requires at least one matching test per Maven module. Not all modules in this
+# repository have "*IntegrationTests.java".
 pushd jdbc/postgres
 mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
 popd
