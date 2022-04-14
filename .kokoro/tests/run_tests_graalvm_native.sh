@@ -37,15 +37,14 @@ java -version
 # repository have "*IntegrationTests.java".
 # https://github.com/graalvm/native-build-tools/issues/188
 set +e
-return_code=0
+declare -i return_code=0
 for test_directory in jdbc/postgres jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserver r2dbc/sqlserver r2dbc/sqlserver r2dbc/mysql; do
   pushd ${test_directory}
   echo -e "******************** Running tests in ${test_directory} ********************\n"
-  # Why "-Denforcer.skip"? It's because  enforcer complains about the specific
-  # version of junit-platform-engine GraalVM requires.
   mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
-  return_code=$((return_code || $?))
+  result=$?
+  return_code=$((return_code || result))
+  echo -e "******************** Tests complete in ${test_directory}, result: $result ********************\n"
   popd
-  echo -e "******************** Tests complete in ${test_directory} ********************\n"
 done
 exit ${return_code}

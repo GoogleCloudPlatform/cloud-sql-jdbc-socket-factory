@@ -72,6 +72,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
+    <native-image.version>0.9.11</native-image.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -359,23 +360,10 @@
 
       <dependencies>
         <dependency>
-          <groupId>com.google.cloud</groupId>
-          <artifactId>native-image-support</artifactId>
-          <version>0.12.11</version>
-          <scope>test</scope>
-        </dependency>
-
-        <dependency>
-          <groupId>org.junit.vintage</groupId>
-          <artifactId>junit-vintage-engine</artifactId>
-          <version>5.8.2</version>
-          <scope>test</scope>
-        </dependency>
-
-        <dependency>
-          <groupId>org.graalvm.buildtools</groupId>
-          <artifactId>junit-platform-native</artifactId>
-          <version>0.9.11</version>
+          <!-- GAX provides native-image metadata for core Google libraries -->
+          <groupId>com.google.api</groupId>
+          <artifactId>gax</artifactId>
+          <version>2.16.0</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -397,7 +385,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.9.11</version>
+            <version>${native-image.version}</version>
             <extensions>true</extensions>
             <executions>
               <execution>
