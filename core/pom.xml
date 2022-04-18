@@ -96,6 +96,22 @@
         <version>2.12.1</version>
       </dependency>
       <dependency>
+        <groupId>org.graalvm.nativeimage</groupId>
+        <artifactId>svm</artifactId>
+        <version>${graalvm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>graal-sdk</artifactId>
+        <version>${graalvm.version}</version>
+      </dependency>
+      <dependency>
+        <!-- GAX provides native-image metadata for core Google libraries -->
+        <groupId>com.google.api</groupId>
+        <artifactId>gax</artifactId>
+        <version>2.16.0</version>
+      </dependency>
+      <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-ffi</artifactId>
         <version>2.2.12</version>
@@ -178,6 +194,22 @@
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
       <version>1.6.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.graalvm.nativeimage</groupId>
+      <artifactId>svm</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- GAX provides native-image metadata for core Google libraries -->
+      <groupId>com.google.api</groupId>
+      <artifactId>gax</artifactId>
     </dependency>
 
     <dependency>
