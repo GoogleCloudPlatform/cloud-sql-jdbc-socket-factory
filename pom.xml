@@ -77,27 +77,6 @@
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
-  <dependencyManagement>
-    <!-- Forcing the versions for Enforcer's dependency convergence rule -->
-    <dependencies>
-      <dependency>
-        <groupId>io.opencensus</groupId>
-        <artifactId>opencensus-api</artifactId>
-        <version>0.31.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java</artifactId>
-        <version>3.19.4</version>
-      </dependency>
-      <dependency>
-        <groupId>org.graalvm.nativeimage</groupId>
-        <artifactId>svm</artifactId>
-        <version>22.0.0.2</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <modules>
     <module>core</module>
     <module>jdbc/mysql-j-5</module>
