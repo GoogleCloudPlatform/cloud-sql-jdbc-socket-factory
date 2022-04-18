@@ -23,6 +23,7 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 /** Registers GraalVM configuration for the Cloud SQL libraries for MySQL and Postgres. */
 @AutomaticFeature
@@ -46,8 +47,12 @@ final class CloudSqlFeature implements Feature {
 
     // Resources for Cloud SQL
     ResourcesRegistry resourcesRegistry = ImageSingletons.lookup(ResourcesRegistry.class);
-    resourcesRegistry.addResources("\\Qcom.google.cloud.sql/project.properties\\E");
-    resourcesRegistry.addResources("\\QMETA-INF/services/java.sql.Driver\\E");
+    resourcesRegistry.addResources(
+        ConfigurationCondition.alwaysTrue(),
+        "\\Qcom.google.cloud.sql/project.properties\\E");
+    resourcesRegistry.addResources(
+        ConfigurationCondition.alwaysTrue(),
+        "\\QMETA-INF/services/java.sql.Driver\\E");
 
     // Register Hikari configs if used with Cloud SQL.
     if (access.findClassByName("com.zaxxer.hikari.HikariConfig") != null) {
