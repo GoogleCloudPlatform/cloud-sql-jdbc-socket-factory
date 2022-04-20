@@ -48,11 +48,9 @@ final class CloudSqlFeature implements Feature {
     // Resources for Cloud SQL
     ResourcesRegistry resourcesRegistry = ImageSingletons.lookup(ResourcesRegistry.class);
     resourcesRegistry.addResources(
-        ConfigurationCondition.alwaysTrue(),
-        "\\Qcom.google.cloud.sql/project.properties\\E");
+        ConfigurationCondition.alwaysTrue(), "\\Qcom.google.cloud.sql/project.properties\\E");
     resourcesRegistry.addResources(
-        ConfigurationCondition.alwaysTrue(),
-        "\\QMETA-INF/services/java.sql.Driver\\E");
+        ConfigurationCondition.alwaysTrue(), "\\QMETA-INF/services/java.sql.Driver\\E");
 
     // Register Hikari configs if used with Cloud SQL.
     if (access.findClassByName("com.zaxxer.hikari.HikariConfig") != null) {
@@ -79,7 +77,8 @@ final class CloudSqlFeature implements Feature {
           access, "com.mysql.cj.conf.url.SingleConnectionUrl");
 
       // for mysql-j-5
-      NativeImageUtils.registerConstructorsForReflection(access, "com.mysql.jdbc.log.StandardLogger");
+      NativeImageUtils.registerConstructorsForReflection(
+          access, "com.mysql.jdbc.log.StandardLogger");
       // for mysql-j-8
       NativeImageUtils.registerConstructorsForReflection(access, "com.mysql.cj.log.StandardLogger");
 
@@ -92,9 +91,9 @@ final class CloudSqlFeature implements Feature {
             cjExceptionClass);
       }
 
-      Class<?> mySqlNonTransientException = access.findClassByName("com.mysql.jdbc.exceptions.MySQLNonTransientException");
+      Class<?> mySqlNonTransientException =
+          access.findClassByName("com.mysql.jdbc.exceptions.MySQLNonTransientException");
       if (mySqlNonTransientException != null) {
-        // The CJException exists only jdbc/mysql-j-8 module's dependency
         access.registerSubtypeReachabilityHandler(
             (duringAccess, exceptionClass) ->
                 NativeImageUtils.registerClassForReflection(duringAccess, exceptionClass.getName()),
@@ -106,11 +105,9 @@ final class CloudSqlFeature implements Feature {
 
       // Additional MySQL resources.
       resourcesRegistry.addResourceBundles(
-          ConfigurationCondition.alwaysTrue(),
-          "com.mysql.cj.LocalizedErrorMessages");
+          ConfigurationCondition.alwaysTrue(), "com.mysql.cj.LocalizedErrorMessages");
       resourcesRegistry.addResourceBundles(
-          ConfigurationCondition.alwaysTrue(),
-          "com.mysql.jdbc.LocalizedErrorMessages");
+          ConfigurationCondition.alwaysTrue(), "com.mysql.jdbc.LocalizedErrorMessages");
     }
   }
 }
