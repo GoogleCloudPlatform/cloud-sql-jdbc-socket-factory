@@ -78,6 +78,9 @@ final class CloudSqlFeature implements Feature {
       NativeImageUtils.registerConstructorsForReflection(
           access, "com.mysql.cj.conf.url.SingleConnectionUrl");
 
+      // for mysql-j-5
+      NativeImageUtils.registerConstructorsForReflection(access, "com.mysql.jdbc.log.StandardLogger");
+      // for mysql-j-8
       NativeImageUtils.registerConstructorsForReflection(access, "com.mysql.cj.log.StandardLogger");
 
       Class<?> cjExceptionClass = access.findClassByName("com.mysql.cj.exceptions.CJException");
