@@ -73,6 +73,8 @@ final class CloudSqlFeature implements Feature {
     if (access.findClassByName(MYSQL_SOCKET_CLASS) != null) {
       NativeImageUtils.registerClassForReflection(access, MYSQL_SOCKET_CLASS);
 
+      NativeImageUtils.registerClassForReflection(access, "com.mysql.jdbc.StandardSocketFactory");
+
       NativeImageUtils.registerConstructorsForReflection(
           access, "com.mysql.cj.conf.url.SingleConnectionUrl");
 
@@ -92,15 +94,18 @@ final class CloudSqlFeature implements Feature {
       }
 
       Class<?> mySqlNonTransientConnectionException =
-          access.findClassByName("com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException");
+          access.findClassByName(
+              "com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException");
       if (mySqlNonTransientConnectionException != null) {
-        access.registerAsUsed(mySqlNonTransientConnectionException);
+        NativeImageUtils.registerConstructorsForReflection(
+            access, mySqlNonTransientConnectionException.getName());
       }
 
       Class<?> mySqlNonTransientException =
           access.findClassByName("com.mysql.jdbc.exceptions.MySQLNonTransientException");
       if (mySqlNonTransientException != null) {
-        access.registerAsUsed(mySqlNonTransientException);
+        NativeImageUtils.registerConstructorsForReflection(
+            access, mySqlNonTransientException.getName());
       }
 
       // JDBC classes create socket connections which must be initialized at run time.
