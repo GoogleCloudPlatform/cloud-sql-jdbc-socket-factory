@@ -80,18 +80,22 @@ final class CloudSqlFeature implements Feature {
 
       NativeImageUtils.registerConstructorsForReflection(access, "com.mysql.cj.log.StandardLogger");
 
-      Class<?> klass = access.findClassByName("com.mysql.cj.exceptions.CJException");
-      System.out.println("access.findClassByName for com.mysql.cj.exceptions.CJException" + klass);
-      access.registerSubtypeReachabilityHandler(
-          (duringAccess, exceptionClass) ->
-              NativeImageUtils.registerClassForReflection(duringAccess, exceptionClass.getName()),
-          klass);
+      Class<?> cjExceptionClass = access.findClassByName("com.mysql.cj.exceptions.CJException");
+      if (cjExceptionClass != null) {
+        // The CJException exists only jdbc/mysql-j-8 module's dependency
+        access.registerSubtypeReachabilityHandler(
+            (duringAccess, exceptionClass) ->
+                NativeImageUtils.registerClassForReflection(duringAccess, exceptionClass.getName()),
+            cjExceptionClass);
+      }
 
       // JDBC classes create socket connections which must be initialized at run time.
       RuntimeClassInitialization.initializeAtRunTime("com.mysql.cj.jdbc");
 
       // Additional MySQL resources.
-      resourcesRegistry.addResourceBundles("com.mysql.cj.LocalizedErrorMessages");
+      resourcesRegistry.addResourceBundles(
+          ConfigurationCondition.alwaysTrue(),
+          "com.mysql.cj.LocalizedErrorMessages");
     }
   }
 }
