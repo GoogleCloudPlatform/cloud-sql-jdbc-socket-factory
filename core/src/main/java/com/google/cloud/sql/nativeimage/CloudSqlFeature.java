@@ -96,6 +96,9 @@ final class CloudSqlFeature implements Feature {
       resourcesRegistry.addResourceBundles(
           ConfigurationCondition.alwaysTrue(),
           "com.mysql.cj.LocalizedErrorMessages");
+      resourcesRegistry.addResourceBundles(
+          ConfigurationCondition.alwaysTrue(),
+          "com.mysql.jdbc.LocalizedErrorMessages");
     }
   }
 }
