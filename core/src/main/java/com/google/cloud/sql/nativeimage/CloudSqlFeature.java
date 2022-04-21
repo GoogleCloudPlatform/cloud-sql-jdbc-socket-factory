@@ -117,5 +117,11 @@ final class CloudSqlFeature implements Feature {
       resourcesRegistry.addResourceBundles(
           ConfigurationCondition.alwaysTrue(), "com.mysql.jdbc.LocalizedErrorMessages");
     }
+
+    // https://github.com/netty/netty/issues/11638
+    Class<?> bcsslEngine = access.findClassByName("org.bouncycastle.jsse.BCSSLEngine");
+    if (bcsslEngine != null) {
+      RuntimeClassInitialization.initializeAtRunTime(bcsslEngine);
+    }
   }
 }
