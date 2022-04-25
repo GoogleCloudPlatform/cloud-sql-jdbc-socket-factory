@@ -119,9 +119,9 @@ final class CloudSqlFeature implements Feature {
     }
 
     // https://github.com/netty/netty/issues/11638
-    Class<?> bcsslEngine = access.findClassByName("org.bouncycastle.jsse.BCSSLEngine");
-    if (bcsslEngine != null) {
-      RuntimeClassInitialization.initializeAtRunTime(bcsslEngine);
+    Class<?> bouncyCastleAlpnSslUtils = access.findClassByName("io.netty.handler.ssl.BouncyCastleAlpnSslUtils");
+    if (bouncyCastleAlpnSslUtils != null) {
+      RuntimeClassInitialization.initializeAtRunTime(bouncyCastleAlpnSslUtils);
     }
   }
 }
