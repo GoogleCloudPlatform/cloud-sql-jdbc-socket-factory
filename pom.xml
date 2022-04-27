@@ -366,6 +366,7 @@
       <id>native</id>
 
       <dependencies>
+        <!-- GraalVM native image test needs newer JUnit platform -->
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>

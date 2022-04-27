@@ -206,6 +206,9 @@
       <version>1.6.0</version>
     </dependency>
 
+    <!-- com.google.cloud.sql.nativeimage.CloudSqlFeature needs the GraalVM
+      dependencies for compilation. The provided-scope dependencies do not add
+      additional dependencies to library users. -->
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
@@ -216,9 +219,11 @@
       <artifactId>graal-sdk</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- GAX provides native-image metadata for core Google libraries, such as
+      Google API Client and Google HTTP Client. Users' GraalVM native image
+      compilation needs the metadata. Therefore, this is not part of a profile
+      or provided-scope. -->
     <dependency>
-      <!-- GAX provides native-image metadata for core Google libraries. GAX's
-       opencensus-api, protobuf-java, -->
       <groupId>com.google.api</groupId>
       <artifactId>gax</artifactId>
     </dependency>

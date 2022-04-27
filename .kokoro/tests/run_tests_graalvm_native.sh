@@ -47,6 +47,9 @@ declare -i return_code=0
 for test_directory in jdbc/postgres; do
   pushd ${test_directory}
   echo -e "******************** Running tests in ${test_directory} ********************\n"
+  # Dependency convergence enforcer rule would fail with the junit dependencies
+  # specified in "native" profile. The test-scope dependencies do not have any
+  # effect to library users' class path.
   mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
   result=$?
   return_code=$((return_code || result))
