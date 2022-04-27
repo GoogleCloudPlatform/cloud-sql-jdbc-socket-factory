@@ -38,7 +38,13 @@ java -version
 # https://github.com/graalvm/native-build-tools/issues/188
 set +e
 declare -i return_code=0
-for test_directory in jdbc/postgres jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserver r2dbc/sqlserver r2dbc/sqlserver r2dbc/mysql; do
+
+# Currently, jdbc/postgres works with GraalVM native image.
+# TODO(#824): Provide GraalVM configuration and enable native image tests below:
+# jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserver r2dbc/sqlserver r2dbc/sqlserver
+# r2dbc/mysql
+# https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/824
+for test_directory in jdbc/postgres; do
   pushd ${test_directory}
   echo -e "******************** Running tests in ${test_directory} ********************\n"
   mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip

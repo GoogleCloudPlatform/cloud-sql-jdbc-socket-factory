@@ -25,7 +25,13 @@ import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
-/** Registers GraalVM configuration for the Cloud SQL libraries for MySQL and Postgres. */
+/**
+ * Registers GraalVM configuration for the Cloud SQL libraries.
+ *
+ * <p>This class is only used when this library is used in <a
+ * href="https://www.graalvm.org/22.0/reference-manual/native-image/">GraalVM native image</a>
+ * compilation.
+ */
 @AutomaticFeature
 final class CloudSqlFeature implements Feature {
 
@@ -118,8 +124,10 @@ final class CloudSqlFeature implements Feature {
           ConfigurationCondition.alwaysTrue(), "com.mysql.jdbc.LocalizedErrorMessages");
     }
 
+    // This Netty class should be initialized at runtime
     // https://github.com/netty/netty/issues/11638
-    Class<?> bouncyCastleAlpnSslUtils = access.findClassByName("io.netty.handler.ssl.BouncyCastleAlpnSslUtils");
+    Class<?> bouncyCastleAlpnSslUtils =
+        access.findClassByName("io.netty.handler.ssl.BouncyCastleAlpnSslUtils");
     if (bouncyCastleAlpnSslUtils != null) {
       RuntimeClassInitialization.initializeAtRunTime(bouncyCastleAlpnSslUtils);
     }
