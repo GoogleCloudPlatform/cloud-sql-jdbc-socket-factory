@@ -54,17 +54,6 @@
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
         <version>4.1.76.Final</version>
-        <exclusions>
-          <exclusion>
-            <!--
-            Because this svn dependency is provided-scope, the users of this
-            library don't get this svn dependency anyway. Explicitly excluding
-            this dependency for the dependencyConvergence enforcer rule.
-            -->
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
