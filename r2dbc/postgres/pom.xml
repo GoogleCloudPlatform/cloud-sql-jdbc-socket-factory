@@ -125,7 +125,7 @@
       <dependency>
         <groupId>io.r2dbc</groupId>
         <artifactId>r2dbc-spi</artifactId>
-        <version>0.9.1.RELEASE</version>
+        <version>1.0.0.RELEASE</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -174,7 +174,7 @@
     <dependency>
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-spi</artifactId>
-      <version>0.9.1.RELEASE</version>
+      <version>1.0.0.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>io.r2dbc</groupId>
