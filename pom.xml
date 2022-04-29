@@ -365,6 +365,22 @@
       (.kokoro/graalvm-native/linux) -->
       <id>native</id>
 
+      <dependencyManagement>
+        <!-- Controlling version for dependencyConvergence enforcer rule -->
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.8.2</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.8.2</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+
       <dependencies>
         <!-- GraalVM native image test needs newer JUnit platform -->
         <dependency>

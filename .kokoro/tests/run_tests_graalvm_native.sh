@@ -50,7 +50,7 @@ for test_directory in jdbc/postgres; do
   # Dependency convergence enforcer rule would fail with the junit dependencies
   # specified in "native" profile. The test-scope dependencies do not have any
   # effect to library users' class path.
-  mvn -e -B clean verify -P e2e,native -Dcheckstyle.skip -Denforcer.skip
+  mvn -e -B clean verify -P e2e,native
   result=$?
   return_code=$((return_code || result))
   echo -e "******************** Tests complete in ${test_directory}, result: $result ********************\n"
