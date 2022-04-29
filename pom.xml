@@ -72,6 +72,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
+    <native-image.version>0.9.11</native-image.version>
+    <graalvm.version>22.0.0.2</graalvm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -308,18 +310,24 @@
             <version>0.8.8</version>
             <executions>
               <execution>
-                  <id>prepare-agent</id>
-                      <goals>
-                          <goal>prepare-agent</goal>
-                      </goals>
+                <id>prepare-agent</id>
+                <goals>
+                    <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>report</id>
+                <phase>test</phase>
+                  <goals>
+                    <goal>report</goal>
+                  </goals>
+                  <configuration>
+                    <excludes>
+                      <!-- Native image test is not part of coverage execution -->
+                      <exclude>com/google/cloud/sql/nativeimage/*</exclude>
+                    </excludes>
+                  </configuration>
                 </execution>
-                <execution>
-                      <id>report</id>
-                      <phase>test</phase>
-                        <goals>
-                          <goal>report</goal>
-                        </goals>
-                  </execution>
               </executions>
           </plugin>
         </plugins>
@@ -346,6 +354,83 @@
                   -J-Xbootclasspath/p:${settings.localRepository}/com/google/errorprone/javac/${javac.version}/javac-${javac.version}.jar
                 </arg>
               </compilerArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <!-- This profile is used to enable GraalVM native image testing
+      (.kokoro/graalvm-native/linux) -->
+      <id>native</id>
+
+      <dependencyManagement>
+        <!-- Controlling version for dependencyConvergence enforcer rule -->
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.8.2</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.8.2</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+
+      <dependencies>
+        <!-- GraalVM native image test needs newer JUnit platform -->
+        <dependency>
+          <groupId>org.junit.vintage</groupId>
+          <artifactId>junit-vintage-engine</artifactId>
+          <version>5.8.2</version>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.graalvm.buildtools</groupId>
+          <artifactId>junit-platform-native</artifactId>
+          <version>${native-image.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- Include all matching tests during native image testing -->
+              <excludes combine.self="override"/>
+              <includes>
+                <include>**/*IntegrationTests</include>
+              </includes>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>${native-image.version}</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <id>test-native</id>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <phase>test</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <buildArgs>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--no-server</buildArg>
+              </buildArgs>
             </configuration>
           </plugin>
         </plugins>
