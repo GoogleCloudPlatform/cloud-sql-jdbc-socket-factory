@@ -133,7 +133,7 @@
     <dependency> <!-- Allows jnr-unixsocket Java11 compatibility -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>9.2</version>
+      <version>9.3</version>
     </dependency>
 
     <dependency>
