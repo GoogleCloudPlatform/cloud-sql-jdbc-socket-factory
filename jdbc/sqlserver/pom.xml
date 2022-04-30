@@ -104,6 +104,7 @@
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
       <version>9.4.1.jre8</version>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>io.micrometer</groupId>
@@ -118,6 +119,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
