@@ -26,6 +26,6 @@ if [ -n "$KOKORO_GFILE_DIR" ]; then
 fi
 
 echo -e "******************** Running tests... ********************\n"
-echo "JAVA_HOME: $JAVA_HOME"
+echo "Maven version: $(mvn --version)"
 mvn -e -B clean verify -P e2e -Dcheckstyle.skip
 echo -e "******************** Tests complete.  ********************\n"
