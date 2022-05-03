@@ -102,6 +102,18 @@
         <artifactId>google-http-client-gson</artifactId>
         <version>1.41.7</version>
       </dependency>
+      <dependency>
+        <!-- This dependency is "provided" scope. It doesn't affect library
+        users' class paths -->
+        <groupId>org.graalvm.nativeimage</groupId>
+        <artifactId>svm</artifactId>
+        <version>${graal-svm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>graal-sdk</artifactId>
+        <version>${graal-sdk.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

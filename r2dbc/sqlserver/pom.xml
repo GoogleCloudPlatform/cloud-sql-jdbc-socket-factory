@@ -156,7 +156,12 @@
         users' class paths -->
         <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>${graalvm.version}</version>
+        <version>${graal-svm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>graal-sdk</artifactId>
+        <version>${graal-sdk.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
