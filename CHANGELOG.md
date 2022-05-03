@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.5.0...v1.6.0) (2022-05-03)
+
+
+### Features
+
+* **jdbc/postgres:** add compatibility for GraalVM native image ([#805](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/805)) ([c00c255](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c00c25533e31caadf0db8c50077cc1c310fd106c))
+
 ## [1.5.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.4.4...v1.5.0) (2022-04-01)
 
 
