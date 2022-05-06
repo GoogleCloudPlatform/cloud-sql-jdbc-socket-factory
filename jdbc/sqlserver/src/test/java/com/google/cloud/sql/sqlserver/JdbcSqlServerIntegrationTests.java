@@ -81,6 +81,7 @@ public class JdbcSqlServerIntegrationTests {
     config.addDataSourceProperty("socketFactoryClass",
         "com.google.cloud.sql.sqlserver.SocketFactory");
     config.addDataSourceProperty("socketFactoryConstructorArg", CONNECTION_NAME);
+    config.addDataSourceProperty("encrypt", "false");
     config.setConnectionTimeout(10000); // 10s
 
     this.connectionPool = new HikariDataSource(config);
