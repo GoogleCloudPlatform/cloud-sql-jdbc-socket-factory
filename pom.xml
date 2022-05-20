@@ -73,7 +73,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.9.11</native-image.version>
-    <graal-sdk.version>21.3.2</graal-sdk.version>
+    <graal-sdk.version>21.3.2.1</graal-sdk.version>
     <graal-svm.version>22.0.0.2</graal-svm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
