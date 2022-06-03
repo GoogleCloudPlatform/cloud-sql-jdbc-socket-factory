@@ -168,6 +168,11 @@
         <artifactId>graal-sdk</artifactId>
         <version>${graal-sdk.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>1.0.4</version>
+    </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -206,7 +211,6 @@
     <dependency>
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
-      <version>1.0.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
