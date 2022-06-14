@@ -125,7 +125,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.3.6</version>
+      <version>42.4.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -160,7 +160,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.3.6</version>
+          <version>42.4.0</version>
         </dependency>
       </dependencies>
     </profile>
