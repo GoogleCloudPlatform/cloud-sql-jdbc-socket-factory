@@ -29,7 +29,7 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| socketFactoryClass    | com.google.cloud.sql.mysql.SocketFactory |
+| socketFactoryClass    | com.google.cloud.sql.sqlserver.SocketFactory |
 | socketFactoryConstructorArg | The instance connection name (found on the instance details page) |
 | user             | SQL Server username |
 | password         | SQL Server user's password |
