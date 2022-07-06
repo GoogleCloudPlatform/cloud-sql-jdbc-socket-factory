@@ -114,7 +114,7 @@ public class CoreSocketFactoryTest {
   private static final String SERVER_MESSAGE = "HELLO";
 
   private static final String PUBLIC_IP = "127.0.0.1";
-  private static final String PRIVATE_IP = "127.0.1.1";
+  private static final String PRIVATE_IP = "127.0.0.2";
 
   // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
   private ListeningScheduledExecutorService defaultExecutor;
