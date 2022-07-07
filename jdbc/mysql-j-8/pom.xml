@@ -80,12 +80,12 @@
       <dependency>
         <groupId>com.google.api-client</groupId>
         <artifactId>google-api-client</artifactId>
-        <version>1.35.1</version>
+        <version>1.35.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>1.42.0</version>
+        <version>1.42.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
@@ -100,7 +100,7 @@
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>1.42.0</version>
+        <version>1.42.1</version>
       </dependency>
       <dependency>
         <!-- This dependency is "provided" scope. It doesn't affect library
