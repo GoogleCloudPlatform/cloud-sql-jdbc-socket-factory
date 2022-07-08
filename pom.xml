@@ -255,10 +255,13 @@
 
                 Necessary for SQL Server support
 
+                Necessary to allow guava into the assembly jars
+                com.google.guava:guava
+
                 Global test dependencies unused in r2dbc core (no tests currently):
                 junit:junit,com.google.truth:truth
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava
               </ignoredDependencies>
             </configuration>
             <executions>
