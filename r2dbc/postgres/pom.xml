@@ -193,9 +193,9 @@
       <version>1.0.0.RELEASE</version>
     </dependency>
     <dependency>
-      <groupId>io.r2dbc</groupId>
+      <groupId>org.postgresql</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
-      <version>0.8.12.RELEASE</version>
+      <version>0.9.1.RELEASE</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -248,9 +248,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>io.r2dbc</groupId>
+          <groupId>org.postgresql</groupId>
           <artifactId>r2dbc-postgresql</artifactId>
-          <version>0.8.12.RELEASE</version>
+          <version>0.9.1.RELEASE</version>
         </dependency>
       </dependencies>
     </profile>
