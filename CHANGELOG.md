@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.6.1...v1.6.2) (2022-07-12)
+
+
+### Bug Fixes
+
+* add back missing dependencies to JAR files ([#904](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/904)) ([3028ece](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3028ecef050c0fa063ee6bd62197029e54dedaa9))
+
 ## [1.6.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.6.0...v1.6.1) (2022-06-07)
 
 
