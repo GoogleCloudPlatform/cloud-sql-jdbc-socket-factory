@@ -445,6 +445,11 @@
 
     <profile>
       <id>release</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
