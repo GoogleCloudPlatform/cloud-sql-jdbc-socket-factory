@@ -377,12 +377,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.8.2</version>
+            <version>1.9.0</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.8.2</version>
+            <version>1.9.0</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -392,7 +392,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.8.2</version>
+          <version>5.9.0</version>
           <scope>test</scope>
         </dependency>
 
