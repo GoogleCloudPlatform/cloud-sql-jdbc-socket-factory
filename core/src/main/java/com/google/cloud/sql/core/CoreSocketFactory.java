@@ -16,16 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.SQLAdmin.Builder;
-import com.google.api.services.sqladmin.SQLAdminScopes;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -34,21 +25,18 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
-import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
 
@@ -66,23 +54,10 @@ public final class CoreSocketFactory {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
-  /**
-   * Property used to set the application name for the underlying SQLAdmin client.
-   *
-   * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   *             programmatically.
-   */
-
-  @Deprecated
-  public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
-
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
   private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
 
-  // Test properties, not for end-user use. May be changed or removed without notice.
-  private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
-  private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
 
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
@@ -90,16 +65,25 @@ public final class CoreSocketFactory {
   private static CoreSocketFactory coreSocketFactory;
 
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<CloudSqlInstanceKey, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
-  private final CredentialFactory credentialFactory;
-  private final SQLAdmin adminApi;
-  private final int serverProxyPort;
 
-  private static List<String> userAgents = new ArrayList<String>();
+  /* package*/ static List<String> userAgents = new ArrayList<String>();
   private static String version = getVersion();
 
+  private final Optional<CredentialFactory> credentialFactory;
+  private final Optional<SQLAdmin> adminApi;
+  private final Optional<Integer> serverProxyPort;
 
+
+  /**
+   * Only used for mock testing.
+   * @param localKeyPair
+   * @param adminApi
+   * @param credentialFactory
+   * @param serverProxyPort
+   * @param executor
+   */
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
@@ -107,62 +91,51 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.adminApi = adminApi;
-    this.credentialFactory = credentialFactory;
-    this.serverProxyPort = serverProxyPort;
+    this.adminApi = Optional.of(adminApi);
+    this.credentialFactory = Optional.of(credentialFactory);
+    this.serverProxyPort = Optional.of(serverProxyPort);
     this.executor = executor;
     this.localKeyPair = localKeyPair;
   }
 
   /**
-   * Returns the {@link CoreSocketFactory} singleton.
+   * The real constructor used by getInstance()
    */
+  private CoreSocketFactory(ListenableFuture<KeyPair> localKeyPair,
+      ListeningScheduledExecutorService executor) {
+    this.adminApi = Optional.empty();
+    this.credentialFactory = Optional.empty();
+    this.serverProxyPort = Optional.empty();
+    this.executor = executor;
+    this.localKeyPair = localKeyPair;
+  }
+
+
+      /**
+       * Returns the {@link CoreSocketFactory} singleton.
+       */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
-
-      String userCredentialFactoryClassName = System.getProperty(
-          CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
-
-      CredentialFactory credentialFactory;
-      if (userCredentialFactoryClassName != null) {
-        try {
-          credentialFactory =
-              (CredentialFactory)
-                  Class.forName(userCredentialFactoryClassName).newInstance();
-        } catch (Exception err) {
-          throw new RuntimeException(err);
-        }
-      } else {
-        credentialFactory = new ApplicationDefaultCredentialFactory();
-      }
-
-      HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = createAdminApiClient(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
-
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              adminApi,
-              credentialFactory,
-              DEFAULT_SERVER_PROXY_PORT,
               executor);
     }
     return coreSocketFactory;
   }
 
-  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
-    return instances.computeIfAbsent(
-        instanceName,
-        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-            localKeyPair));
+  private CloudSqlInstance getCloudSqlInstance(CloudSqlInstanceKey key) {
+    return instances.computeIfAbsent(key, this::createInstance);
   }
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return instances.computeIfAbsent(
-        instanceName,
-        k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
+    return getCloudSqlInstance(CloudSqlInstanceKey.MatchInstance(instanceName));
+  }
+
+  private CloudSqlInstance createInstance(CloudSqlInstanceKey key) {
+    return new CloudSqlInstance(key, adminApi, credentialFactory, serverProxyPort, executor, localKeyPair);
   }
 
   static int getDefaultServerProxyPort() {
@@ -255,12 +228,13 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
+  @Deprecated
   public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth) {
-    return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
+    return getSslData(CloudSqlInstanceKey.Create(csqlInstanceName, enableIamAuth));
   }
 
-  public static SslData getSslData(String csqlInstanceName) {
-    return getSslData(csqlInstanceName, false);
+  public static SslData getSslData(CloudSqlInstanceKey key) {
+    return getInstance().getCloudSqlInstance(key).getSslData();
   }
 
   /**
@@ -288,40 +262,15 @@ public final class CoreSocketFactory {
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
       throws IOException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
+    CloudSqlInstance instance = getCloudSqlInstance(CloudSqlInstanceKey.Create(instanceName, enableIamAuth));
+    return instance.createAndConfigureSocket(ipTypes);
 
-    try {
-      SSLSocket socket = instance.createSslSocket();
-
-      // TODO(kvg): Support all socket related options listed here:
-      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
-      socket.setKeepAlive(true);
-      socket.setTcpNoDelay(true);
-
-      String instanceIp = instance.getPreferredIp(ipTypes);
-
-      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-      socket.startHandshake();
-
-      return socket;
-    } catch (Exception ex) {
-      // TODO(kvg): Let user know about the rate limit
-      instance.forceRefresh();
-      throw ex;
-    }
   }
 
   Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
     return createSslSocket(instanceName, ipTypes, false);
   }
 
-  private static void logTestPropertyWarning(String property) {
-    logger.warning(
-        String.format(
-            "%s is a test property and may be changed or removed in a future version without "
-                + "notice.",
-            property));
-  }
 
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
@@ -339,53 +288,6 @@ public final class CoreSocketFactory {
     return result;
   }
 
-  private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
-    HttpTransport httpTransport;
-    try {
-      httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-    } catch (GeneralSecurityException | IOException err) {
-      throw new RuntimeException("Unable to initialize HTTP transport", err);
-    }
-
-    String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
-    String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
-
-    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-    SQLAdmin.Builder adminApiBuilder =
-        new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(getUserAgents());
-    if (rootUrl != null) {
-      logTestPropertyWarning(API_ROOT_URL_PROPERTY);
-      adminApiBuilder.setRootUrl(rootUrl);
-    }
-    if (servicePath != null) {
-      logTestPropertyWarning(API_SERVICE_PATH_PROPERTY);
-      adminApiBuilder.setServicePath(servicePath);
-    }
-    return adminApiBuilder.build();
-  }
-
-  private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
-
-    @Override
-    public HttpRequestInitializer create() {
-      GoogleCredentials credentials;
-      try {
-        credentials = GoogleCredentials.getApplicationDefault();
-      } catch (IOException err) {
-        throw new RuntimeException(
-            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
-      }
-      if (credentials.createScopedRequired()) {
-        credentials =
-            credentials.createScoped(Arrays.asList(
-                SQLAdminScopes.SQLSERVICE_ADMIN,
-                SQLAdminScopes.CLOUD_PLATFORM)
-            );
-      }
-      return new HttpCredentialsAdapter(credentials);
-    }
-  }
 
   private static KeyPair generateRsaKeyPair() {
     KeyPairGenerator generator;
@@ -421,34 +323,4 @@ public final class CoreSocketFactory {
     }
   }
 
-
-  /**
-   * Returns the default string which is appended to the SQLAdmin API client User-Agent header.
-   */
-  private static String getUserAgents() {
-    return String.join(" ", userAgents) + " " + getApplicationName();
-  }
-
-  /**
-   * Returns the current User-Agent header set for the underlying SQLAdmin API client.
-   */
-  public static String getApplicationName() {
-    if (coreSocketFactory != null) {
-      return coreSocketFactory.adminApi.getApplicationName();
-    }
-    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
-  }
-
-  /**
-   * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
-   *
-   * @throws IllegalStateException if the SQLAdmin client has already been initialized
-   */
-  public static void setApplicationName(String applicationName) {
-    if (coreSocketFactory != null) {
-      throw new IllegalStateException(
-          "Unable to set ApplicationName - SQLAdmin client already initialized.");
-    }
-    System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-  }
 }

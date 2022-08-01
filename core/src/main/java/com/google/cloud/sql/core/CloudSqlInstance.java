@@ -18,7 +18,12 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
@@ -40,6 +45,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -80,6 +86,9 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  * asynchronously, and this class should be considered threadsafe.
  */
 class CloudSqlInstance {
+  // Test properties, not for end-user use. May be changed or removed without notice.
+  private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
+  private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
@@ -108,6 +117,9 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
 
+  private final CredentialFactory credentialFactory;
+  private final int serverProxyPort;
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
 
@@ -119,35 +131,52 @@ class CloudSqlInstance {
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
-   *
-   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiClient      Cloud SQL Admin API client for interacting with the Cloud SQL instance
+   *  @param key instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param apiClientOpt      Cloud SQL Admin API client for interacting with the Cloud SQL instance
+   * @param credentialFactoryOpt     Cloud SQL Admin API client credential factory
+   * @param serverProxyPort
    * @param executor       executor used to schedule asynchronous tasks
    * @param keyPair        public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
-      String connectionName,
-      SQLAdmin apiClient,
-      boolean enableIamAuth,
-      CredentialFactory tokenSourceFactory,
+      CloudSqlInstanceKey key,
+      Optional<SQLAdmin> apiClientOpt,
+      Optional<CredentialFactory> credentialFactoryOpt,
+      Optional<Integer> serverProxyPort,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
 
-    Matcher matcher = CONNECTION_NAME.matcher(connectionName);
+    Matcher matcher = CONNECTION_NAME.matcher(key.getInstanceName());
     checkArgument(
         matcher.matches(),
         String.format(
             "[%s] Cloud SQL connection name is invalid, expected string in the form of"
                 + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
-            connectionName));
-    this.connectionName = connectionName;
+            key.getInstanceName()));
+    this.connectionName = key.getInstanceName();
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
     this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
 
+    CredentialFactory tokenSourceFactory;
+    if(credentialFactoryOpt.isPresent()) {
+      tokenSourceFactory = credentialFactoryOpt.get();
+    } else {
+      tokenSourceFactory = loadCredentialFactory();
+    }
+    this.credentialFactory = tokenSourceFactory;
+
+    SQLAdmin apiClient;
+    if(credentialFactoryOpt.isPresent()) {
+      apiClient = apiClientOpt.get();
+    } else {
+      apiClient = createAdminApiClient();
+    }
     this.apiClient = apiClient;
-    this.enableIamAuth = enableIamAuth;
+
+    this.serverProxyPort = serverProxyPort.orElse(CoreSocketFactory.getDefaultServerProxyPort());
+    this.enableIamAuth = key.getEnableIamAuth().orElse(Boolean.FALSE);
     this.executor = executor;
     this.keyPair = keyPair;
 
@@ -165,6 +194,72 @@ class CloudSqlInstance {
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
   }
+
+  private static CredentialFactory loadCredentialFactory() {
+    String userCredentialFactoryClassName = System.getProperty(
+        CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+
+    CredentialFactory credentialFactory;
+    if (userCredentialFactoryClassName != null) {
+      try {
+        credentialFactory =
+            (CredentialFactory)
+                Class.forName(userCredentialFactoryClassName).newInstance();
+      } catch (Exception err) {
+        throw new RuntimeException(err);
+      }
+    } else {
+      credentialFactory = new ApplicationDefaultCredentialFactory();
+    }
+
+    return credentialFactory;
+  }
+
+
+  private SQLAdmin createAdminApiClient() {
+    HttpRequestInitializer credential = credentialFactory.create();
+    HttpTransport httpTransport;
+    try {
+      httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+    } catch (GeneralSecurityException | IOException err) {
+      throw new RuntimeException("Unable to initialize HTTP transport", err);
+    }
+
+    String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
+    String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
+
+    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+    SQLAdmin.Builder adminApiBuilder =
+        new SQLAdmin.Builder(httpTransport, jsonFactory, credential)
+            .setApplicationName(getUserAgents());
+    if (rootUrl != null) {
+      logTestPropertyWarning(API_ROOT_URL_PROPERTY);
+      adminApiBuilder.setRootUrl(rootUrl);
+    }
+    if (servicePath != null) {
+      logTestPropertyWarning(API_SERVICE_PATH_PROPERTY);
+      adminApiBuilder.setServicePath(servicePath);
+    }
+    return adminApiBuilder.build();
+  }
+
+
+  /**
+   * Returns the default string which is appended to the SQLAdmin API client User-Agent header.
+   */
+  static String getUserAgents() {
+    return String.join(" ", CoreSocketFactory.userAgents);
+  }
+
+  private static void logTestPropertyWarning(String property) {
+    logger.warning(
+        String.format(
+            "%s is a test property and may be changed or removed in a future version without "
+                + "notice.",
+            property));
+  }
+
 
   /**
    * Generates public key certificate for which the instance has the matching private key.
@@ -272,6 +367,27 @@ class CloudSqlInstance {
     return (SSLSocket) getInstanceData().getSslContext().getSocketFactory().createSocket();
   }
 
+  public SSLSocket createAndConfigureSocket(List<String> ipTypes) throws IOException {
+    try {
+      SSLSocket socket = createSslSocket();
+
+      // TODO(kvg): Support all socket related options listed here:
+      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
+      socket.setKeepAlive(true);
+      socket.setTcpNoDelay(true);
+
+      String instanceIp = getPreferredIp(ipTypes);
+
+      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
+      socket.startHandshake();
+
+      return socket;
+    } catch (Exception ex) {
+      // TODO(kvg): Let user know about the rate limit
+      forceRefresh();
+      throw ex;
+    }
+  }
   /**
    * Returns the first IP address for the instance, in order of the preference supplied by
    * preferredTypes.
