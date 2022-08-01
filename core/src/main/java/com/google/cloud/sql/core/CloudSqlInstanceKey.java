@@ -12,11 +12,11 @@ public class CloudSqlInstanceKey {
     this.enableIamAuth = enableIamAuth;
   }
 
-  public static CloudSqlInstanceKey Create(String instanceName, boolean enableIamAuthn) {
+  public static CloudSqlInstanceKey create(String instanceName, boolean enableIamAuthn) {
     return new CloudSqlInstanceKey(instanceName, Optional.of(enableIamAuthn));
   }
 
-  public static CloudSqlInstanceKey MatchInstance(String instanceName) {
+  public static CloudSqlInstanceKey matchingInstanceName(String instanceName) {
     return new CloudSqlInstanceKey(instanceName, Optional.empty());
   }
 

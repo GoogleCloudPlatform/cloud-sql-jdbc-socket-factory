@@ -134,7 +134,7 @@ class CloudSqlInstance {
    *  @param key instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiClientOpt      Cloud SQL Admin API client for interacting with the Cloud SQL instance
    * @param credentialFactoryOpt     Cloud SQL Admin API client credential factory
-   * @param serverProxyPort
+   * @param serverProxyPort proxy port
    * @param executor       executor used to schedule asynchronous tasks
    * @param keyPair        public/private key pair used to authenticate connections
    */
@@ -160,7 +160,7 @@ class CloudSqlInstance {
     this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
 
     CredentialFactory tokenSourceFactory;
-    if(credentialFactoryOpt.isPresent()) {
+    if (credentialFactoryOpt.isPresent()) {
       tokenSourceFactory = credentialFactoryOpt.get();
     } else {
       tokenSourceFactory = loadCredentialFactory();
@@ -168,7 +168,7 @@ class CloudSqlInstance {
     this.credentialFactory = tokenSourceFactory;
 
     SQLAdmin apiClient;
-    if(credentialFactoryOpt.isPresent()) {
+    if (credentialFactoryOpt.isPresent()) {
       apiClient = apiClientOpt.get();
     } else {
       apiClient = createAdminApiClient();
@@ -388,6 +388,7 @@ class CloudSqlInstance {
       throw ex;
     }
   }
+
   /**
    * Returns the first IP address for the instance, in order of the preference supplied by
    * preferredTypes.

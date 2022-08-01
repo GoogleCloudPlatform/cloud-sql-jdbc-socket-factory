@@ -65,7 +65,8 @@ public final class CoreSocketFactory {
   private static CoreSocketFactory coreSocketFactory;
 
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<CloudSqlInstanceKey, CloudSqlInstance> instances = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<CloudSqlInstanceKey, CloudSqlInstance> instances
+      = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
 
   /* package*/ static List<String> userAgents = new ArrayList<String>();
@@ -78,11 +79,6 @@ public final class CoreSocketFactory {
 
   /**
    * Only used for mock testing.
-   * @param localKeyPair
-   * @param adminApi
-   * @param credentialFactory
-   * @param serverProxyPort
-   * @param executor
    */
   @VisibleForTesting
   CoreSocketFactory(
@@ -99,7 +95,7 @@ public final class CoreSocketFactory {
   }
 
   /**
-   * The real constructor used by getInstance()
+   * The real constructor used by getInstance().
    */
   private CoreSocketFactory(ListenableFuture<KeyPair> localKeyPair,
       ListeningScheduledExecutorService executor) {
@@ -111,9 +107,9 @@ public final class CoreSocketFactory {
   }
 
 
-      /**
-       * Returns the {@link CoreSocketFactory} singleton.
-       */
+  /**
+   * Returns the {@link CoreSocketFactory} singleton.
+   */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
@@ -131,11 +127,12 @@ public final class CoreSocketFactory {
   }
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(CloudSqlInstanceKey.MatchInstance(instanceName));
+    return getCloudSqlInstance(CloudSqlInstanceKey.matchingInstanceName(instanceName));
   }
 
   private CloudSqlInstance createInstance(CloudSqlInstanceKey key) {
-    return new CloudSqlInstance(key, adminApi, credentialFactory, serverProxyPort, executor, localKeyPair);
+    return new CloudSqlInstance(key, adminApi, credentialFactory, serverProxyPort, executor,
+        localKeyPair);
   }
 
   static int getDefaultServerProxyPort() {
@@ -188,7 +185,7 @@ public final class CoreSocketFactory {
    *
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
-   * @param props          Properties used to configure the connection.
+   * @param props Properties used to configure the connection.
    * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
@@ -228,9 +225,8 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  @Deprecated
   public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth) {
-    return getSslData(CloudSqlInstanceKey.Create(csqlInstanceName, enableIamAuth));
+    return getSslData(CloudSqlInstanceKey.create(csqlInstanceName, enableIamAuth));
   }
 
   public static SslData getSslData(CloudSqlInstanceKey key) {
@@ -254,7 +250,7 @@ public final class CoreSocketFactory {
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
    * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes      Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
@@ -262,7 +258,8 @@ public final class CoreSocketFactory {
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
       throws IOException {
-    CloudSqlInstance instance = getCloudSqlInstance(CloudSqlInstanceKey.Create(instanceName, enableIamAuth));
+    CloudSqlInstance instance = getCloudSqlInstance(
+        CloudSqlInstanceKey.create(instanceName, enableIamAuth));
     return instance.createAndConfigureSocket(ipTypes);
 
   }
