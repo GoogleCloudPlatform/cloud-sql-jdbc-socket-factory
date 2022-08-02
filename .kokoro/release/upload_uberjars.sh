@@ -15,9 +15,14 @@
 
 set -e # exit immediatly if any step fails
 
+GCLOUD_PROJECT_NAME="cloudsql-docker" 
 BUCKET_NAME="cloud-sql-java-connector"
 PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null 2>&1 && pwd )"
+
+gcloud config set project "$GCLOUD_PROJECT_NAME"
+
 cd "$PROJ_ROOT"
+
 
 # get the current version
 export VERSION=$(cat version.txt)
