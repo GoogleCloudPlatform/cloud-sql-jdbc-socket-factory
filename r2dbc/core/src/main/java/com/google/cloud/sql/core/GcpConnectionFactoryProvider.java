@@ -131,7 +131,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
-
     // Precompute SSL Data to trigger the initial refresh to happen immediately,
     // and ensure enableIAMAuth is set correctly.
     CoreSocketFactory.getSslData(connectionName, enableIamAuth);
@@ -139,7 +138,9 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectionFactory(optionBuilder, enableIamAuth, ipTypes, createSslCustomizer(connectionName, enableIamAuth),
+
+    return tcpConnectionFactory(optionBuilder, enableIamAuth, ipTypes,
+        createSslCustomizer(connectionName, enableIamAuth),
         connectionName);
   }
 
