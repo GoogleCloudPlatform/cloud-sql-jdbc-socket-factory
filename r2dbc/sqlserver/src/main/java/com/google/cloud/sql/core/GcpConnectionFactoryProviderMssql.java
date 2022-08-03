@@ -48,6 +48,8 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
   @Override
   ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
+      boolean enableIamAuth,
+      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
     optionBuilder
@@ -57,6 +59,8 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
 
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) -> new MssqlConnectionFactoryProvider().create(options),
+        enableIamAuth,
+        ipTypes,
         optionBuilder,
         csqlHostName);
   }
