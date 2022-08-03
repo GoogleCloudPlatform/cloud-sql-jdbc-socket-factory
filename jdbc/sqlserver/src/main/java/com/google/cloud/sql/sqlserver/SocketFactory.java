@@ -26,7 +26,8 @@ import java.util.logging.Logger;
 public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
-  private Properties props = new Properties();
+  // props are protected, not private, so that they can be accessed from unit tests
+  protected Properties props = new Properties();
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-jdbc-sqlserver");
@@ -36,8 +37,16 @@ public class SocketFactory extends javax.net.SocketFactory {
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
    * connections to a Cloud SQL instance.
    */
-  public SocketFactory(String instanceName) {
-    this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, instanceName);
+  public SocketFactory(String socketFactoryConstructorArg) {
+    String[] s = socketFactoryConstructorArg.split("\\?");
+    this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, s[0]);
+    if (s.length == 2) {
+      String[] queryParams = s[1].split("&");
+      for (String param : queryParams) {
+        String[] splitParam = param.split("=");
+        this.props.setProperty(splitParam[0], splitParam[1]);
+      }
+    }
   }
 
   @Override
