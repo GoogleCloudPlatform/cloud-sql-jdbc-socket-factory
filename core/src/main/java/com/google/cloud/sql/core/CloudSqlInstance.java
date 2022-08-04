@@ -121,9 +121,9 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiClient      Cloud SQL Admin API client for interacting with the Cloud SQL instance
-   * @param executor       executor used to schedule asynchronous tasks
-   * @param keyPair        public/private key pair used to authenticate connections
+   * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
+   * @param executor executor used to schedule asynchronous tasks
+   * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
@@ -277,10 +277,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *                       "Private".
+   * "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   *                                  preferences.
+   * preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -427,19 +427,22 @@ class CloudSqlInstance {
       TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
       tmf.init(trustedKeyStore);
       SSLContext sslContext;
-      if (enableIamAuth) {
-        try {
-          sslContext = SSLContext.getInstance("TLSv1.3");
-        } catch (NoSuchAlgorithmException ex) {
+
+      try {
+        sslContext = SSLContext.getInstance("TLSv1.3");
+      } catch (NoSuchAlgorithmException ex) {
+        if (enableIamAuth) {
           throw new RuntimeException(
               String.format(
-                  "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName)
+                  "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
+                  connectionName)
                   + " TLSv1.3 is not supported for your Java version and is required to connect"
                   + " using IAM authentication",
               ex);
+        } else {
+          logger.warning("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
+          sslContext = SSLContext.getInstance("TLSv1.2");
         }
-      } else {
-        sslContext = SSLContext.getInstance("TLSv1.2");
       }
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
@@ -585,9 +588,9 @@ class CloudSqlInstance {
    * Checks for common errors that can occur when interacting with the Cloud SQL Admin API, and adds
    * additional context to help the user troubleshoot them.
    *
-   * @param ex           exception thrown by the Admin API request
+   * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   *                     provided to the user
+   * provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
