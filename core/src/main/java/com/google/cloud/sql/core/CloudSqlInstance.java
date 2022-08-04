@@ -277,10 +277,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   * "Private".
+   *                       "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   * preferences.
+   *                                  preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -590,7 +590,7 @@ class CloudSqlInstance {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   * provided to the user
+   *                     provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
