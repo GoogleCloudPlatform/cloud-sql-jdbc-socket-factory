@@ -31,12 +31,15 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-read -p "This will release new Cloud SQL Java Connector artifacts for \"$VERSION\", even if they already exist. Are you sure (y/Y)? " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    exit 1
+# get the service account email
+export _SERVICE_ACCOUNT_EMAIL=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
+if [ -z "$VERSION" ]; then
+  echo "error: No active authenticated service account"
+  exit 1
 fi
+
+read -p "This will release new Cloud SQL Java Connector artifacts for \"$VERSION\", even if they already exist."
+
 
 # Build jars and upload to GCS
 gcloud builds submit --config .build/build_uberjars.yaml --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
