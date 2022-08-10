@@ -17,6 +17,7 @@
 package com.google.cloud.sql.sqlserver;
 
 import com.google.cloud.sql.core.CoreSocketFactory;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
@@ -31,6 +32,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
   // props are protected, not private, so that they can be accessed from unit tests
+  @VisibleForTesting
   protected Properties props = new Properties();
 
   static {
