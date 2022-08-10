@@ -113,7 +113,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   private ConnectionFactory createFactory(
       ConnectionFactoryOptions connectionFactoryOptions) throws IOException {
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
-    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
 
     String ipTypes = CoreSocketFactory.DEFAULT_IP_TYPES;
     Object ipTypesObj = connectionFactoryOptions.getValue(IP_TYPES);
@@ -135,6 +134,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     // and ensure enableIAMAuth is set correctly.
     CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
+    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
