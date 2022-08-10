@@ -27,10 +27,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class JdbcSqlServerUnitTests {
 
-  private static final String CONNECTION_NAME = "my-project:my-region:my-instance";
+  private static final String CONNECTION_NAME = "my-projectmy-regionmy-instance";
 
   @Test
-  public void checkConnectionStringNoQueryParams() throws UnsupportedEncodingException {
+  public void checkConnectionStringNoQueryParams()
+      throws UnsupportedEncodingException {
     String socketFactoryConstructorArg = CONNECTION_NAME;
     SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
     assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
@@ -38,13 +39,53 @@ public class JdbcSqlServerUnitTests {
   }
 
   @Test
-  public void checkConnectionStringWithQueryParam() throws UnsupportedEncodingException {
-    String socketFactoryConstructorArg = String.format("%s?%s=%s", CONNECTION_NAME, "ipTypes", "PRIVATE");
+  public void checkConnectionStringWithQueryParam()
+      throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg = String.format("%s?%s=%s", CONNECTION_NAME, "ipTypes",
+        "PRIVATE");
     SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
     assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
         CONNECTION_NAME);
     assertThat(socketFactory.props.get("ipTypes")).isEqualTo(
         "PRIVATE");
+  }
+
+  @Test
+  public void checkConnectionStringWithEmptyQueryParam()
+      throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg = String.format("%s?", CONNECTION_NAME);
+    SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
+    assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
+        CONNECTION_NAME);
+    assertThat(socketFactory.props.get("ipTypes")).isEqualTo(
+        null);
+  }
+
+  @Test
+  public void checkConnectionStringWithUrlEncodedParam()
+      throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg = String.format("%s?token=%s", CONNECTION_NAME,
+        "abc%20def%20xyz%2F%26%3D");
+    SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
+    assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
+        CONNECTION_NAME);
+    assertThat(socketFactory.props.get("token")).isEqualTo(
+        "abc def xyz/&=");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void checkConnectionStringWithParamMissingKey()
+      throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg = String.format("%s?=%s", CONNECTION_NAME, "PRIVATE");
+    new SocketFactory(socketFactoryConstructorArg);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void checkConnectionStringWithParamMissingValue()
+      throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg = String.format("%s?enableIamAuth=true&%s", CONNECTION_NAME,
+        "ipTypes");
+    new SocketFactory(socketFactoryConstructorArg);
   }
 
 }
