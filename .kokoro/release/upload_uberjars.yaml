@@ -21,9 +21,6 @@ steps:
     name: maven:3-jdk-8
     entrypoint: mvn
     args: ["-P", "jar-with-driver-and-dependencies", "package", "-DskipTests",  "-Dmaven.repo.local=/workspace/.m2"]
-serviceAccount: "${_SERVICE_ACCOUNT_EMAIL}"
-options:
-  logging: CLOUD_LOGGING_ONLY
 artifacts:
   objects:
     location: "gs://${_BUCKET_NAME}/v${_VERSION}/"

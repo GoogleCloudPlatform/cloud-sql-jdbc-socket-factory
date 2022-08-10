@@ -15,11 +15,11 @@
 
 set -e # exit immediatly if any step fails
 
-GCLOUD_PROJECT_NAME="cloudsql-docker" 
+PROJECT_ID="cloud-sql-connector-testing" 
 BUCKET_NAME="cloud-sql-java-connector"
 PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. >/dev/null 2>&1 && pwd )"
 
-gcloud config set project "$GCLOUD_PROJECT_NAME"
+gcloud config set project "$PROJECT_ID"
 
 cd "$PROJ_ROOT"
 
@@ -34,16 +34,20 @@ fi
 # get the service account email
 export SERVICE_ACCOUNT_EMAIL=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
 
-if [ -z "$VERSION" ]; then
+if [ -z "$SERVICE_ACCOUNT_EMAIL" ]; then
   echo "error: No active authenticated service account"
   exit 1
+else
+  echo "Authenticated as: $SERVICE_ACCOUNT_EMAIL"
 fi
 
 echo "This will release new Cloud SQL Java Connector artifacts for \"$VERSION\", even if they already exist."
 
 
 # Build jars and upload to GCS
-gcloud builds submit --config .kokoro/release/upload_uberjars.yaml --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME",_SERVICE_ACCOUNT_EMAIL="$SERVICE_ACCOUNT_EMAIL"
+gcloud builds submit --config .kokoro/release/upload_uberjars.yaml \
+  --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
+
 # Cleanup
 gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
 
