@@ -18,8 +18,12 @@ package com.google.cloud.sql.sqlserver;
 
 import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -37,14 +41,15 @@ public class SocketFactory extends javax.net.SocketFactory {
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
    * connections to a Cloud SQL instance.
    */
-  public SocketFactory(String socketFactoryConstructorArg) {
-    String[] s = socketFactoryConstructorArg.split("\\?");
-    this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, s[0]);
-    if (s.length == 2) {
-      String[] queryParams = s[1].split("&");
+  public SocketFactory(String socketFactoryConstructorArg) throws UnsupportedEncodingException {
+    URI uri = URI.create(socketFactoryConstructorArg);
+    this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, uri.getPath());
+    if (uri.getQuery() != null) {
+      String[] queryParams = uri.getQuery().split("&");
       for (String param : queryParams) {
         String[] splitParam = param.split("=");
-        this.props.setProperty(splitParam[0], splitParam[1]);
+        this.props.setProperty(URLDecoder.decode(splitParam[0], StandardCharsets.UTF_8.name()),
+            URLDecoder.decode(splitParam[1], StandardCharsets.UTF_8.name()));
       }
     }
   }

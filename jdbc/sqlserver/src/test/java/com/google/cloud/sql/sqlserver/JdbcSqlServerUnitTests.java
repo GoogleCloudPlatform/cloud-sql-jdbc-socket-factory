@@ -19,6 +19,7 @@ package com.google.cloud.sql.sqlserver;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.sql.core.CoreSocketFactory;
+import java.io.UnsupportedEncodingException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -29,7 +30,7 @@ public class JdbcSqlServerUnitTests {
   private static final String CONNECTION_NAME = "my-project:my-region:my-instance";
 
   @Test
-  public void checkConnectionStringNoQueryParams() {
+  public void checkConnectionStringNoQueryParams() throws UnsupportedEncodingException {
     String socketFactoryConstructorArg = CONNECTION_NAME;
     SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
     assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
@@ -37,7 +38,7 @@ public class JdbcSqlServerUnitTests {
   }
 
   @Test
-  public void checkConnectionStringWithQueryParam() {
+  public void checkConnectionStringWithQueryParam() throws UnsupportedEncodingException {
     String socketFactoryConstructorArg = String.format("%s?%s=%s", CONNECTION_NAME, "ipTypes", "PRIVATE");
     SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
     assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
