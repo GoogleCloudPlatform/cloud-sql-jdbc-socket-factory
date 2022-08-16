@@ -106,6 +106,19 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>com.google.cloud.sql</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>3.1.0</version>
         <executions>
@@ -521,6 +534,11 @@
               <descriptorRefs>
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
+              <archive>
+                <manifestEntries>
+                  <Automatic-Module-Name>com.google.cloud.sql</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
             </configuration>
             <executions>
               <execution>
@@ -551,6 +569,11 @@
               </descriptorRefs>
               <finalName>${project.artifactId}-${project.version}-jar-with-driver-and-dependencies</finalName>
               <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifestEntries>
+                  <Automatic-Module-Name>com.google.cloud.sql</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
             </configuration>
             <executions>
               <execution>
