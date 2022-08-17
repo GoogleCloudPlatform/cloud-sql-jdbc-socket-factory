@@ -49,12 +49,12 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.4.21</version>
+        <version>3.4.22</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.0.21</version>
+        <version>1.0.22</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
