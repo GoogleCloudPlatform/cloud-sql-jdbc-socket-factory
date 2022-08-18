@@ -269,7 +269,7 @@ public final class CoreSocketFactory {
   }
 
   /**
-   * Returns default ip address that can be used to establish Cloud SQL connection.
+   * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
   public static String getHostIp(String csqlInstanceName, boolean enableIamAuth, String ipTypes)
       throws IOException {
