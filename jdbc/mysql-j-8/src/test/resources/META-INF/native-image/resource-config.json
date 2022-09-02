@@ -1,0 +1,8 @@
+{
+  "resources":{
+    "includes":[
+      {
+        "pattern":"\\Qcom/mysql/cj/util/TimeZoneMapping.properties\\E"
+      }
+    ]}
+}
