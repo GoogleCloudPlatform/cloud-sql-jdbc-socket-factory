@@ -44,7 +44,7 @@ declare -i return_code=0
 # jdbc/mysql-j-5 jdbc/mysql-j-8  jdbc/sqlserver r2dbc/sqlserver r2dbc/sqlserver
 # r2dbc/mysql
 # https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/824
-for test_directory in jdbc/mysql-j-5; do
+for test_directory in jdbc/mysql-j-8; do
   pushd ${test_directory}
   echo -e "******************** Running tests in ${test_directory} ********************\n"
   # Dependency convergence enforcer rule would fail with the junit dependencies
