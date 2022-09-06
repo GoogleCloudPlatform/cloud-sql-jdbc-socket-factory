@@ -83,6 +83,7 @@ final class CloudSqlFeature implements Feature {
 
       NativeImageUtils.registerConstructorsForReflection(
           access, "com.mysql.cj.conf.url.SingleConnectionUrl");
+      resourcesRegistry.addResources(ConfigurationCondition.alwaysTrue(), "\\Qcom/mysql/cj/util/TimeZoneMapping.properties\\E");
 
       // for mysql-j-5
       NativeImageUtils.registerConstructorsForReflection(
