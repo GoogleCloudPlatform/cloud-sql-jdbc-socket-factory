@@ -23,15 +23,12 @@ For examples of this library being used in the context of an application, check 
 
 ### Authentication
 
-This library uses [Application Default Credentials](
-https://developers.google.com/identity/protocols/application-default-credentials) to authenticate
-the connection to the Cloud SQL server. For more details, see the previously mentioned link.
+This library uses the [Application Default Credentials (ADC)][adc] strategy for
+resolving credentials. Please see [these instructions for how to set your ADC][set-adc]
+(Google Cloud Application vs Local Development, IAM user vs service account credentials).
 
-To activate credentials locally, use the following [gcloud](https://cloud.google.com/sdk/gcloud/) 
-command: 
-```bash
-gcloud auth application-default login
-```
+[adc]: https://cloud.google.com/docs/authentication#adc
+[set-adc]: https://cloud.google.com/docs/authentication/provide-credentials-adc
 ---
 
 ### Building the Drivers
