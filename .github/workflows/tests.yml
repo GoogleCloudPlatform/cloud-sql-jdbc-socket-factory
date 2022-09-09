@@ -13,7 +13,15 @@
 # limitations under the License.
 
 name: tests
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  pull_request_target:
+    types: [labeled]
+  schedule:
+  - cron:  '0 2 * * *'
 
 jobs:
   lint:
