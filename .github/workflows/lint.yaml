@@ -18,7 +18,7 @@ on: [pull_request]
 jobs:
   lint:
     if: "${{ github.event.action != 'labeled' || github.event.label.name == 'tests: run' }}"
-    name: Run lint
+    name: checkstyle
     runs-on: ubuntu-latest
     steps:
       - name: Remove PR Label
