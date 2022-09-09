@@ -15,3 +15,5 @@
 annotations:
   - type: label
     text: "kokoro:force-run"
+  - type: label
+    text: "tests: run"
