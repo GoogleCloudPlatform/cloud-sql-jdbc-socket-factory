@@ -16,15 +16,6 @@
 # `-e` enables the script to automatically fail when a command fails
 set -e
 
-# Kokoro setup
-if [ -n "$KOKORO_GFILE_DIR" ]; then
-  # Move into project directory
-  cd github/cloud-sql-jdbc-socket-factory
-  # source secrets
-  source "${KOKORO_GFILE_DIR}/TEST_SECRETS.sh"
-  export GOOGLE_APPLICATION_CREDENTIALS="${KOKORO_GFILE_DIR}/testing-service-account.json"
-fi
-
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x
