@@ -17,9 +17,26 @@ on: [pull_request]
 
 jobs:
   lint:
-    name: lint
+    if: "${{ github.event.action != 'labeled' || github.event.label.name == 'tests: run' }}"
+    name: Run lint
     runs-on: ubuntu-latest
     steps:
+      - name: Remove PR Label
+        if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                name: 'tests: run',
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number
+              });
+            } catch (e) {
+              console.log('Failed to remove label. Another job may have already removed it!');
+            }
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Set up JDK 17
