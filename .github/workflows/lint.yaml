@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Code Coverage
+name: lint
 on:
   pull_request:
   pull_request_target:
     types: [labeled]
 
 jobs:
-  build:
-    name: Coverage check
+  lint:
+    if: "${{ github.event.action != 'labeled' || github.event.label.name == 'tests: run' }}"
+    name: checkstyle
     runs-on: ubuntu-latest
     steps:
       - name: Remove PR Label
@@ -39,34 +40,12 @@ jobs:
             } catch (e) {
               console.log('Failed to remove label. Another job may have already removed it!');
             }
-      - name: Setup Java
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
-      
-      - name: Checkout base branch
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.base_ref }}
-      - name: Calculate base code coverage
-        run: |
-          mvn clean verify -P coverage
-          export CUR_COVER=$(cat core/target/site/jacoco/index.html | grep -o 'Total[^%]*' | sed 's/<.*>//; s/Total//')
-          echo "CUR_COVER=$CUR_COVER" >> $GITHUB_ENV
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v3
-      - name: Calculate PR code coverage
-        run: |
-          mvn clean verify -P coverage
-          export PR_COVER=$(cat core/target/site/jacoco/index.html | grep -o 'Total[^%]*' | sed 's/<.*>//; s/Total//')
-          echo "PR_COVER=$PR_COVER" >> $GITHUB_ENV
-
-      - name: Verify code coverage. If your reading this and the step has failed, please add tests to cover your changes.
-        run: |
-          echo "BASE BRANCH CODE COVERAGE is ${{ env.CUR_COVER }}%"
-          echo "PULL REQUEST CODE COVERAGE is ${{ env.PR_COVER }}%"
-          if [ "${{ env.PR_COVER }}" -lt "${{ env.CUR_COVER }}"  ]; then
-            exit 1;
-          fi
+      - name: lint
+        run: mvn -B compile -Plint
