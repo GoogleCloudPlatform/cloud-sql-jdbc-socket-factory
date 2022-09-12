@@ -47,7 +47,7 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 
 ### IAM Authentication
-*Note:* This feature is currently only supported for Postgres drivers.
+*Note:* This feature is currently only supported for MySQL j8 and Postgres drivers.
 Connections using 
 [IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins) 
 are supported when connecting to Postgres instances.
