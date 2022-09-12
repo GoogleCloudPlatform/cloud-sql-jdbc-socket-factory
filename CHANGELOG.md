@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.6.3...v1.7.0) (2022-09-09)
+
+
+### Features
+
+* **jdbc/mysql-j-8:** Add native image support for jdbc/mysql-j-8 ([#966](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/966)) ([15e01f4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/15e01f41e4802ff49090cd7cd62dec7b6b2c6a57))
+
+
+### Bug Fixes
+
+* Add Automatic-Module-Name to MANIFEST.MF for JDK9+ module compatibility ([#953](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/953)) ([1dfceaf](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/1dfceafc01ea0d02778485ba1d25ed3746995d45))
+* default to using TLSv1.3 ([#939](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/939)) ([3b1c713](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3b1c7132959b7b24657246da03cdb1a92bdb5764))
+
 ## [1.6.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.6.2...v1.6.3) (2022-08-02)
 
 
