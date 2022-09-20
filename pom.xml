@@ -85,6 +85,7 @@
     <module>jdbc/postgres</module>
     <module>jdbc/sqlserver</module>
     <module>r2dbc/core</module>
+    <module>r2dbc/mariadb</module>
     <module>r2dbc/mysql</module>
     <module>r2dbc/postgres</module>
     <module>r2dbc/sqlserver</module>
