@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.7.0</version>
+    <version>1.7.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
@@ -49,7 +49,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.4.22</version>
+        <version>3.4.23</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -59,37 +59,37 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-unix-common</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-codec</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-resolver</artifactId>
-        <version>4.1.81.Final</version>
+        <version>4.1.82.Final</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
