@@ -47,7 +47,6 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
         (ConnectionFactoryOptions options) ->
             new MariadbConnectionFactoryProvider().create(options),
         optionBuilder
-            .option(MariadbConnectionFactoryProvider.SSL_MODE, SslMode.VERIFY_CA.name())
             .option(MariadbConnectionFactoryProvider.TCP_KEEP_ALIVE, true),
         csqlHostName);
   }
