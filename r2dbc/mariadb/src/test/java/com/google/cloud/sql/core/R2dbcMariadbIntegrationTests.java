@@ -42,10 +42,16 @@ public class R2dbcMariadbIntegrationTests {
   private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
 
-  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
-  private static final String DB_NAME = System.getenv("MYSQL_DB");
-  private static final String DB_USER = System.getenv("MYSQL_USER");
-  private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
+  // private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
+  // private static final String DB_NAME = System.getenv("MYSQL_DB");
+  // private static final String DB_USER = System.getenv("MYSQL_USER");
+  // private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
+
+  // TODO, change to env before merging the PR.
+  private static final String CONNECTION_NAME = "joe-experimental-project:us-central1:demo-mysql";
+  private static final String DB_NAME = "mytestdb";
+  private static final String DB_USER = "root";
+  private static final String DB_PASSWORD = "mysql";
 
   @Rule
   public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
@@ -56,11 +62,11 @@ public class R2dbcMariadbIntegrationTests {
   @Before
   public void setUpPool() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    // requiredEnvVars.forEach((varName) -> {
+    //   assertWithMessage(
+    //       String.format("Environment variable '%s' must be set to perform these tests.", varName))
+    //       .that(System.getenv(varName)).isNotEmpty();
+    // });
 
     // Set up URL parameters
     String r2dbcURL = String
