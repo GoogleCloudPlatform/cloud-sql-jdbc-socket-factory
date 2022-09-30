@@ -25,6 +25,7 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.CharMatcher;
@@ -81,6 +82,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  */
 class CloudSqlInstance {
 
+  private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
@@ -526,7 +528,17 @@ class CloudSqlInstance {
     if (enableIamAuth) {
       try {
         credentials.get().refresh();
-        String token = credentials.get().getAccessToken().getTokenValue();
+        GoogleCredentials downscoped;
+        try {
+          GoogleCredentials oldCredentials = (GoogleCredentials) credentials.get();
+          downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+        } catch (ClassCastException ex) {
+          throw new RuntimeException(
+              "Failed to downscope credentials:",
+              ex);
+        }
+        downscoped.refresh();
+        String token = downscoped.getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
         // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
         request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
