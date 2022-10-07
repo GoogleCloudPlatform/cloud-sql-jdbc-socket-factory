@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
@@ -43,7 +44,9 @@ public class CloudSqlInstanceTest {
 
   @Before
   public void setup() throws IOException {
-    when(googleCredentials.createScoped()).thenReturn(scopedCredentials);
+    MockitoAnnotations.openMocks(this);
+    when(googleCredentials.createScoped(
+        "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
   }
 
   @Test
