@@ -528,15 +528,7 @@ class CloudSqlInstance {
     if (enableIamAuth) {
       try {
         credentials.get().refresh();
-        GoogleCredentials downscoped;
-        try {
-          GoogleCredentials oldCredentials = (GoogleCredentials) credentials.get();
-          downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
-        } catch (ClassCastException ex) {
-          throw new RuntimeException(
-              "Failed to downscope credentials:",
-              ex);
-        }
+        GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
         downscoped.refresh();
         String token = downscoped.getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
@@ -575,6 +567,19 @@ class CloudSqlInstance {
     return ephemeralCertificate;
   }
 
+  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+    GoogleCredentials downscoped;
+    try {
+      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
+      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+    } catch (ClassCastException ex) {
+      throw new RuntimeException(
+          "Failed to downscope credentials for IAM Authentication:",
+          ex);
+    }
+    return downscoped;
+  }
+  
   private Date getTokenExpirationTime() {
     return credentials.get().getAccessToken().getExpirationTime();
   }
