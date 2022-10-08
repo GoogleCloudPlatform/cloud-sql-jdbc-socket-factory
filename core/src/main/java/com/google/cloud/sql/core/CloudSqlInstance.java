@@ -527,7 +527,6 @@ class CloudSqlInstance {
 
     if (enableIamAuth) {
       try {
-        credentials.get().refresh();
         GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
         downscoped.refresh();
         String token = downscoped.getAccessToken().getTokenValue();
