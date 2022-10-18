@@ -6,6 +6,7 @@
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
+  "rebaseWhen": "never",
   "dependencyDashboard": true,
   "semanticCommits": true,
   "packageRules": [
@@ -29,10 +30,5 @@
       "packageNames": ["com.google.apis:google-api-services-sqladmin"],
       "allowedVersions": "/v1beta4-.*/"
     }
-  ],
-  "timezone": "America/Los_Angeles",
-  "schedule": [
-    "after 8am on Friday",
-    "before 12pm on Friday"
   ]
 }
