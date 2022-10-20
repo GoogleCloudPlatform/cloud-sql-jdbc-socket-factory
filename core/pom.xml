@@ -193,7 +193,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20220922-2.0.0</version>
+      <version>v1beta4-rev20221017-2.0.0</version>
     </dependency>
 
     <dependency>
@@ -222,7 +222,7 @@
     <dependency>
       <groupId>com.google.api</groupId>
       <artifactId>gax</artifactId>
-      <version>2.19.2</version>
+      <version>2.19.4</version>
       <exclusions>
         <!-- Native image users only need GAX's native-image metadata. GAX's
         dependencies are unnecessary for normal users and native image users -->
