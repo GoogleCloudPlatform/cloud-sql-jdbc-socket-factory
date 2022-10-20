@@ -27,6 +27,9 @@ import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
+/**
+ *  * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol.
+ */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
 
   private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
