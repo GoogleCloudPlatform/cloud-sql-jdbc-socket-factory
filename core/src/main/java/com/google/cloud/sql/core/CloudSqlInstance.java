@@ -527,7 +527,9 @@ class CloudSqlInstance {
 
     if (enableIamAuth) {
       try {
-        GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
+        OAuth2Credentials creds = credentials.get();
+        creds.refresh();
+        GoogleCredentials downscoped = getDownscopedCredentials(creds);
         downscoped.refresh();
         String token = downscoped.getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
