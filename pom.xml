@@ -430,6 +430,13 @@
                 <include>**/*IntegrationTests</include>
               </includes>
             </configuration>
+              <dependencies>
+                <dependency>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                    <version>5.9.1</version>
+                </dependency>
+            </dependencies>
           </plugin>
 
           <plugin>
@@ -454,7 +461,6 @@
                 <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.configure=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=org.graalvm.sdk/org.graalvm.nativeimage.impl=ALL-UNNAMED</arg>
-                <arg>-J--add-exports=org.graalvm.sdk/org.graalvm.util=ALL-UNNAMED</arg>
                 <buildArg>--no-fallback</buildArg>
                 <buildArg>--no-server</buildArg>
               </buildArgs>
