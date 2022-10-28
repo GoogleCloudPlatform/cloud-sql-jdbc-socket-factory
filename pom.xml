@@ -447,6 +447,9 @@
               </execution>
             </executions>
             <configuration>
+              <agent>
+                    <enabled>true</enabled>
+              </agent>
               <buildArgs>
                 <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.configure=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED</arg>
