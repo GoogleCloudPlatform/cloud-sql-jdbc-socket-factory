@@ -133,7 +133,7 @@ class CloudSqlInstance {
       boolean enableIamAuth,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) throws IOException {
+      ListenableFuture<KeyPair> keyPair)  {
 
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(

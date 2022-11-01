@@ -106,9 +106,10 @@ public final class CoreSocketFactory {
       SQLAdmin adminApi,
       CredentialFactory credentialFactory,
       int serverProxyPort,
-      ListeningScheduledExecutorService executor) {
+      ListeningScheduledExecutorService executor) throws IOException {
     this.adminApi = adminApi;
     this.credentialFactory = credentialFactory;
+    ((HttpCredentialsAdapter) credentialFactory.create()).getCredentials().refresh();
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -156,12 +157,8 @@ public final class CoreSocketFactory {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
-          try {
-            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-                localKeyPair);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+              localKeyPair);
         });
   }
 
@@ -169,12 +166,8 @@ public final class CoreSocketFactory {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
-          try {
-            return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
-                localKeyPair);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
+              localKeyPair);
         });
   }
 
@@ -382,7 +375,7 @@ public final class CoreSocketFactory {
   private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
 
     @Override
-    public HttpRequestInitializer create() throws IOException {
+    public HttpRequestInitializer create() {
       GoogleCredentials credentials;
       try {
         credentials = GoogleCredentials.getApplicationDefault();
@@ -396,7 +389,6 @@ public final class CoreSocketFactory {
                 SQLAdminScopes.SQLSERVICE_ADMIN,
                 SQLAdminScopes.CLOUD_PLATFORM)
             );
-        credentials.refresh();
       }
       return new HttpCredentialsAdapter(credentials);
     }

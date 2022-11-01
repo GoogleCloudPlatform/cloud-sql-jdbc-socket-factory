@@ -30,5 +30,5 @@ public interface CredentialFactory {
    */
   String CREDENTIAL_FACTORY_PROPERTY = "cloudSql.socketFactory.credentialFactory";
 
-  HttpRequestInitializer create() throws IOException;
+  HttpRequestInitializer create();
 }
