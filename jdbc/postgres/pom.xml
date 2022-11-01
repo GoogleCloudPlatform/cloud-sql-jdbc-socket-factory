@@ -163,6 +163,16 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>native</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.5.0</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 
 </project>
