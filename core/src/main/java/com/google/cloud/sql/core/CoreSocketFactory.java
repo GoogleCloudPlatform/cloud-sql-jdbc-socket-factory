@@ -106,10 +106,9 @@ public final class CoreSocketFactory {
       SQLAdmin adminApi,
       CredentialFactory credentialFactory,
       int serverProxyPort,
-      ListeningScheduledExecutorService executor) throws IOException {
+      ListeningScheduledExecutorService executor) {
     this.adminApi = adminApi;
     this.credentialFactory = credentialFactory;
-    ((HttpCredentialsAdapter) credentialFactory.create()).getCredentials().refresh();
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -139,6 +138,7 @@ public final class CoreSocketFactory {
       }
 
       HttpRequestInitializer credential = credentialFactory.create();
+      ((HttpCredentialsAdapter) credential).getCredentials().refresh();
       SQLAdmin adminApi = createAdminApiClient(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
