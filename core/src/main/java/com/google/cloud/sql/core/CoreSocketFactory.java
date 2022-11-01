@@ -138,7 +138,6 @@ public final class CoreSocketFactory {
       }
 
       HttpRequestInitializer credential = credentialFactory.create();
-      ((HttpCredentialsAdapter) credential).getCredentials().refresh();
       SQLAdmin adminApi = createAdminApiClient(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
@@ -157,8 +156,12 @@ public final class CoreSocketFactory {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
-          return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-              localKeyPair);
+          try {
+            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+                localKeyPair);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
         });
   }
 
@@ -166,8 +169,12 @@ public final class CoreSocketFactory {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
-          return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
-              localKeyPair);
+          try {
+            return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
+                localKeyPair);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
         });
   }
 

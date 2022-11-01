@@ -133,7 +133,7 @@ class CloudSqlInstance {
       boolean enableIamAuth,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)  {
+      ListenableFuture<KeyPair> keyPair) throws IOException {
 
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
@@ -157,6 +157,7 @@ class CloudSqlInstance {
       HttpCredentialsAdapter credentialsAdapter = (HttpCredentialsAdapter) tokenSourceFactory
           .create();
       this.credentials = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
+      this.credentials.get().refresh();
     } else {
       this.credentials = Optional.empty();
     }
