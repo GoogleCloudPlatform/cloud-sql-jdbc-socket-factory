@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.1...v1.7.2) (2022-11-02)
+
+
+### Bug Fixes
+
+* downscope credentials used for IAM AuthN login ([#999](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/999)) ([acb57cb](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/acb57cb9ce803062651a4b4764e9181237d84a23))
+
 ## [1.7.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.0...v1.7.1) (2022-10-20)
 
 
