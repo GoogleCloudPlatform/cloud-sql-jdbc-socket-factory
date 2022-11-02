@@ -26,6 +26,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
+import java.io.IOException;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -45,7 +46,13 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
         sslContextBuilder -> {
           // Execute in a default scheduler to prevent it from blocking event loop
           SslData sslData = Mono
-              .fromSupplier(() -> CoreSocketFactory.getSslData(connectionName, enableIamAuth))
+              .fromSupplier(() -> {
+                try {
+                  return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              })
               .subscribeOn(Schedulers.boundedElastic())
               .share()
               .block();
@@ -93,11 +100,15 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
           "Cannot create ConnectionFactory: unsupported protocol (" + protocol + ")");
     }
 
-    return createFactory(connectionFactoryOptions);
+    try {
+      return createFactory(connectionFactoryOptions);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private ConnectionFactory createFactory(
-      ConnectionFactoryOptions connectionFactoryOptions) {
+      ConnectionFactoryOptions connectionFactoryOptions) throws IOException {
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
     String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
 

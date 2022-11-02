@@ -24,11 +24,12 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
+import java.io.IOException;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
 /**
- *  * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol.
+ * * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol.
  */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
 
@@ -50,15 +51,23 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
 
   @Override
   public Publisher<? extends Connection> create() {
-    return getConnectionFactory().create();
+    try {
+      return getConnectionFactory().create();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public ConnectionFactoryMetadata getMetadata() {
-    return getConnectionFactory().getMetadata();
+    try {
+      return getConnectionFactory().getMetadata();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  private ConnectionFactory getConnectionFactory() {
+  private ConnectionFactory getConnectionFactory() throws IOException {
     String hostIp = CoreSocketFactory.getHostIp(csqlHostName);
     builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
     return connectionFactoryFactory.apply(builder.build());

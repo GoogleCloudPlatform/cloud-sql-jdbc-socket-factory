@@ -70,7 +70,7 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   *             programmatically.
+   *     programmatically.
    */
 
   @Deprecated
@@ -117,7 +117,7 @@ public final class CoreSocketFactory {
   /**
    * Returns the {@link CoreSocketFactory} singleton.
    */
-  public static synchronized CoreSocketFactory getInstance() {
+  public static synchronized CoreSocketFactory getInstance() throws IOException {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
@@ -155,14 +155,27 @@ public final class CoreSocketFactory {
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
         instanceName,
-        k -> new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-            localKeyPair));
+        k -> {
+          try {
+            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+                localKeyPair);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   private CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return instances.computeIfAbsent(
         instanceName,
-        k -> new CloudSqlInstance(k, adminApi, false, credentialFactory, executor, localKeyPair));
+        k -> {
+          try {
+            return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
+                localKeyPair);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   static int getDefaultServerProxyPort() {
@@ -215,7 +228,7 @@ public final class CoreSocketFactory {
    *
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
-   * @param props          Properties used to configure the connection.
+   * @param props Properties used to configure the connection.
    * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
@@ -255,18 +268,19 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth) {
+  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth)
+      throws IOException {
     return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
   }
 
-  public static SslData getSslData(String csqlInstanceName) {
+  public static SslData getSslData(String csqlInstanceName) throws IOException {
     return getSslData(csqlInstanceName, false);
   }
 
   /**
    * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName) {
+  public static String getHostIp(String csqlInstanceName) throws IOException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
@@ -280,7 +294,7 @@ public final class CoreSocketFactory {
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
    * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes      Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
