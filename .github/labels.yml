@@ -15,6 +15,12 @@
 - name: duplicate
   color: ededed
   description: ""
+- name: 'status: blocked'
+  color: f9d0c4
+  description: Resolving the issue is dependent on other work.
+- name: 'status: in progress'
+  color: fef2c0
+  description: The issue is actively being worked on.
 
 - name: 'type: bug'
   color: db4437
