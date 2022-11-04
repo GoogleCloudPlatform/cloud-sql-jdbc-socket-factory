@@ -76,6 +76,10 @@
   color: 3DED97
   description: Label to trigger Github Action tests.
 
+- name: 'kokoro:force-run'
+  color: C1FFB2
+  description: Add this label to force Kokoro to re-run the tests.
+
 - name: 'flakybot: flaky'
   color: 86d9d7
   description: Tells the Flaky Bot not to close or comment on this issue.
