@@ -448,9 +448,9 @@
             </executions>
             <configuration>
               <buildArgs>
-                <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.configure=ALL-UNNAMED</arg>
-                <arg>-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED</arg>
-                <arg>-J--add-exports=org.graalvm.sdk/org.graalvm.nativeimage.impl=ALL-UNNAMED</arg>
+<!--                <arg>-J&#45;&#45;add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.configure=ALL-UNNAMED</arg>-->
+<!--                <arg>-J&#45;&#45;add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED</arg>-->
+<!--                <arg>-J&#45;&#45;add-exports=org.graalvm.sdk/org.graalvm.nativeimage.impl=ALL-UNNAMED</arg>-->
                 <buildArg>--no-fallback</buildArg>
                 <buildArg>--no-server</buildArg>
               </buildArgs>

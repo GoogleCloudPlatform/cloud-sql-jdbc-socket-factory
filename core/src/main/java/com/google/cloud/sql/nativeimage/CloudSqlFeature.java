@@ -17,13 +17,9 @@
 package com.google.cloud.sql.nativeimage;
 
 import com.google.api.gax.nativeimage.NativeImageUtils;
-import com.oracle.svm.core.annotate.AutomaticFeature;
-import com.oracle.svm.core.configure.ResourcesRegistry;
-import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 /**
  * Registers GraalVM configuration for the Cloud SQL libraries.
@@ -32,7 +28,7 @@ import org.graalvm.nativeimage.impl.ConfigurationCondition;
  * href="https://www.graalvm.org/22.0/reference-manual/native-image/">GraalVM native image</a>
  * compilation.
  */
-@AutomaticFeature
+
 final class CloudSqlFeature implements Feature {
 
   private static final String CLOUD_SQL_SOCKET_CLASS =
@@ -51,12 +47,6 @@ final class CloudSqlFeature implements Feature {
     // The Core Cloud SQL Socket
     NativeImageUtils.registerClassForReflection(access, CLOUD_SQL_SOCKET_CLASS);
 
-    // Resources for Cloud SQL
-    ResourcesRegistry resourcesRegistry = ImageSingletons.lookup(ResourcesRegistry.class);
-    resourcesRegistry.addResources(
-        ConfigurationCondition.alwaysTrue(), "\\Qcom.google.cloud.sql/project.properties\\E");
-    resourcesRegistry.addResources(
-        ConfigurationCondition.alwaysTrue(), "\\QMETA-INF/services/java.sql.Driver\\E");
 
     // Register Hikari configs if used with Cloud SQL.
     if (access.findClassByName("com.zaxxer.hikari.HikariConfig") != null) {
@@ -83,8 +73,6 @@ final class CloudSqlFeature implements Feature {
 
       NativeImageUtils.registerConstructorsForReflection(
           access, "com.mysql.cj.conf.url.SingleConnectionUrl");
-      resourcesRegistry.addResources(ConfigurationCondition.alwaysTrue(),
-              "\\Qcom/mysql/cj/util/TimeZoneMapping.properties\\E");
 
       // for mysql-j-5
       NativeImageUtils.registerConstructorsForReflection(
@@ -118,14 +106,7 @@ final class CloudSqlFeature implements Feature {
 
       // JDBC classes create socket connections which must be initialized at run time.
       RuntimeClassInitialization.initializeAtRunTime("com.mysql.cj.jdbc");
-
-      // Additional MySQL resources.
-      resourcesRegistry.addResourceBundles(
-          ConfigurationCondition.alwaysTrue(), "com.mysql.cj.LocalizedErrorMessages");
-      resourcesRegistry.addResourceBundles(
-          ConfigurationCondition.alwaysTrue(), "com.mysql.jdbc.LocalizedErrorMessages");
     }
-
     // This Netty class should be initialized at runtime
     // https://github.com/netty/netty/issues/11638
     Class<?> bouncyCastleAlpnSslUtils =
