@@ -21,12 +21,6 @@ function setJava() {
   export PATH=${JAVA_HOME}/bin:$PATH
 }
 
-
-
-
-
-
-
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x
