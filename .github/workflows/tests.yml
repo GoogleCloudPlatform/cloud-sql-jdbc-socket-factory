@@ -153,7 +153,7 @@ jobs:
           distribution: 'zulu'
           java-version: '8'
       - run: echo "JAVA8_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          shell: bash
+        shell: bash
 
       # Set up Java 11 for compilation
       - name: Set up JDK 11
@@ -162,7 +162,7 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
       - run: echo "JAVA11_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          shell: bash
+        shell: bash
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
