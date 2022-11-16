@@ -47,7 +47,6 @@ final class CloudSqlFeature implements Feature {
     // The Core Cloud SQL Socket
     NativeImageUtils.registerClassForReflection(access, CLOUD_SQL_SOCKET_CLASS);
 
-
     // Register Hikari configs if used with Cloud SQL.
     if (access.findClassByName("com.zaxxer.hikari.HikariConfig") != null) {
       NativeImageUtils.registerClassForReflection(access, "com.zaxxer.hikari.HikariConfig");
