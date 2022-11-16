@@ -2,8 +2,10 @@
   "resources":[
     {"pattern":"\\Qcom.google.cloud.sql/project.properties\\E"},
     {"pattern":"\\QMETA-INF/services/java.sql.Driver\\E"},
-    {"pattern":"\\Qcom/mysql/cj/util/TimeZoneMapping.properties\\E"},
-    {"pattern":"com.mysql.cj.LocalizedErrorMessages"},
-    {"pattern":"com.mysql.jdbc.LocalizedErrorMessages"}
+    {"pattern":"\\Qcom/mysql/cj/util/TimeZoneMapping.properties\\E"}
+  ],
+  "bundles": [
+    {"name":"com.mysql.cj.LocalizedErrorMessages"},
+    {"name":"com.mysql.jdbc.LocalizedErrorMessages"}
   ]
 }
