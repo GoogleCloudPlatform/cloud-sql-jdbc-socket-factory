@@ -16,6 +16,17 @@
 # `-e` enables the script to automatically fail when a command fails
 set -e
 
+function setJava() {
+  export JAVA_HOME=$1
+  export PATH=${JAVA_HOME}/bin:$PATH
+}
+
+
+
+
+
+
+
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x
@@ -23,6 +34,35 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 fi
 
 echo -e "******************** Running tests... ********************\n"
+# unit-e2e-java8 uses both JDK 11 and JDK 8. GraalVM dependencies require JDK 11 to
+# compile the classes touching GraalVM classes.
+if [ ! -z "${JAVA11_HOME}" ]; then
+  setJava "${JAVA11_HOME}"
+fi
+
+echo "Compiling using Java:"
+java -version
+echo
+
+mvn clean install -e -B  -ntp -DskipTests -Dcheckstyle.skip
+
+# We ensure the generated class files are compatible with Java 8
+if [ ! -z "${JAVA8_HOME}" ]; then
+  setJava "${JAVA8_HOME}"
+fi
+
+if [ "${GITHUB_JOB}" == "units-java8" ]; then
+  java -version 2>&1 | grep -q 'openjdk version "1.8.'
+  MATCH=$? # 0 if the output has the match
+  if [ "$MATCH" != "0" ]; then
+    echo "Please specify JDK 8 for Java 8 tests"
+    exit 1
+  fi
+fi
+
+echo "Running tests using Java:"
+java -version
+
 echo "Maven version: $(mvn --version)"
-mvn -e -B clean verify -P e2e -Dcheckstyle.skip
+mvn -e -B  -ntp  test -P e2e -Dcheckstyle.skip
 echo -e "******************** Tests complete.  ********************\n"
