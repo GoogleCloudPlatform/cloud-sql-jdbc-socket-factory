@@ -143,7 +143,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.17</version>
+      <version>0.38.19</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
