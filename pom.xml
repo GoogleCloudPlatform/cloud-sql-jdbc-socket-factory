@@ -74,7 +74,6 @@
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.9.16</native-image.version>
     <graal-sdk.version>21.3.4</graal-sdk.version>
-    <graal-svm.version>22.0.0.2</graal-svm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
