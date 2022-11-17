@@ -102,13 +102,6 @@
         <version>1.42.3</version>
       </dependency>
       <dependency>
-        <!-- This dependency is "provided" scope. It doesn't affect library
-        users' class paths -->
-        <groupId>org.graalvm.nativeimage</groupId>
-        <artifactId>svm</artifactId>
-        <version>${graal-svm.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.graalvm.sdk</groupId>
         <artifactId>graal-sdk</artifactId>
         <version>${graal-sdk.version}</version>
@@ -155,6 +148,20 @@
   <profiles>
     <profile>
       <id>jar-with-driver-and-dependencies</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.5.0</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <!-- Upgrading to v0.9.12 of the native maven plugin leaves 
+        provided scope dependencies out of the classpath, so adding these
+        drivers back in for the native profile is a workaround.
+    -->
+    <profile>
+      <id>native</id>
       <dependencies>
         <dependency>
           <groupId>org.postgresql</groupId>

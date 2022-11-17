@@ -111,13 +111,6 @@
         <version>2.2.13</version>
       </dependency>
       <dependency>
-        <!-- This dependency is "provided" scope. It doesn't affect library
-        users' class paths -->
-        <groupId>org.graalvm.nativeimage</groupId>
-        <artifactId>svm</artifactId>
-        <version>${graal-svm.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.graalvm.sdk</groupId>
         <artifactId>graal-sdk</artifactId>
         <version>${graal-sdk.version}</version>
@@ -205,11 +198,7 @@
     <!-- com.google.cloud.sql.nativeimage.CloudSqlFeature needs the GraalVM
       dependencies for compilation. The provided-scope dependencies do not add
       additional dependencies to library users. -->
-    <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-      <scope>provided</scope>
-    </dependency>
+
     <dependency>
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>graal-sdk</artifactId>
