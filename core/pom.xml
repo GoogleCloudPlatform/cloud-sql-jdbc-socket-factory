@@ -136,7 +136,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.17</version>
+      <version>0.38.19</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
@@ -186,13 +186,13 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20221104-2.0.0</version>
+      <version>v1beta4-rev20221113-2.0.0</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>1.12.1</version>
+      <version>1.13.0</version>
     </dependency>
 
     <!-- com.google.cloud.sql.nativeimage.CloudSqlFeature needs the GraalVM
@@ -257,7 +257,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.8.1</version>
+      <version>4.9.0</version>
       <scope>test</scope>
     </dependency>
 
