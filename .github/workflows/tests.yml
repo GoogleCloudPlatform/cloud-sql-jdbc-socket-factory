@@ -68,7 +68,7 @@ jobs:
       
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v0.8.3'
+        uses: 'google-github-actions/auth@v1.0.0'
         with:
           workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
           service_account: ${{ secrets.SERVICE_ACCOUNT }}
@@ -76,7 +76,7 @@ jobs:
 
       - id: 'secrets'
         name: Get secrets
-        uses: 'google-github-actions/get-secretmanager-secrets@v0.5.3'
+        uses: 'google-github-actions/get-secretmanager-secrets@v1.0.0'
         with:
           secrets: |-
             MYSQL_CONNECTION_NAME:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_CONNECTION_NAME
