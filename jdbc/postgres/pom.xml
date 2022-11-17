@@ -156,6 +156,10 @@
         </dependency>
       </dependencies>
     </profile>
+    <!-- Upgrading to v0.9.12 of the native maven plugin leaves 
+        provided scope dependencies out of the classpath, so adding these
+        drivers back in for the native profile is a workaround.
+    -->
     <profile>
       <id>native</id>
       <dependencies>
