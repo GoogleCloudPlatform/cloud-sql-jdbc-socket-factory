@@ -25,6 +25,7 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.CharMatcher;
@@ -81,6 +82,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  */
 class CloudSqlInstance {
 
+  private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
@@ -131,7 +133,7 @@ class CloudSqlInstance {
       boolean enableIamAuth,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
+      ListenableFuture<KeyPair> keyPair) throws IOException {
 
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
@@ -155,6 +157,7 @@ class CloudSqlInstance {
       HttpCredentialsAdapter credentialsAdapter = (HttpCredentialsAdapter) tokenSourceFactory
           .create();
       this.credentials = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
+      this.credentials.get().refresh();
     } else {
       this.credentials = Optional.empty();
     }
@@ -277,10 +280,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *                       "Private".
+   *     "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   *                                  preferences.
+   *     preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -525,8 +528,9 @@ class CloudSqlInstance {
 
     if (enableIamAuth) {
       try {
-        credentials.get().refresh();
-        String token = credentials.get().getAccessToken().getTokenValue();
+        GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
+        downscoped.refresh();
+        String token = downscoped.getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
         // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
         request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
@@ -563,6 +567,19 @@ class CloudSqlInstance {
     return ephemeralCertificate;
   }
 
+  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+    GoogleCredentials downscoped;
+    try {
+      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
+      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+    } catch (ClassCastException ex) {
+      throw new RuntimeException(
+          "Failed to downscope credentials for IAM Authentication:",
+          ex);
+    }
+    return downscoped;
+  }
+
   private Date getTokenExpirationTime() {
     return credentials.get().getAccessToken().getExpirationTime();
   }
@@ -590,7 +607,7 @@ class CloudSqlInstance {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   *                     provided to the user
+   *     provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc

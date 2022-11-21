@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.7.1-SNAPSHOT</version>
+  <version>1.7.3-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -72,9 +72,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <native-image.version>0.9.11</native-image.version>
-    <graal-sdk.version>21.3.3</graal-sdk.version>
-    <graal-svm.version>22.0.0.2</graal-svm.version>
+    <native-image.version>0.9.17</native-image.version>
+    <graal-sdk.version>22.3.0</graal-sdk.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -101,7 +100,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.12.0</version>
+        <version>2.13.0</version>
       </plugin>
 
       <plugin>
@@ -232,7 +231,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>3.1.2</version>
+            <version>3.2.0</version>
             <configuration>
               <configLocation>google_checks.xml</configLocation>
               <logViolationsToConsole>true</logViolationsToConsole>
@@ -391,12 +390,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.9.0</version>
+            <version>1.9.1</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.9.0</version>
+            <version>1.9.1</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -406,7 +405,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.9.0</version>
+          <version>5.9.1</version>
           <scope>test</scope>
         </dependency>
 
