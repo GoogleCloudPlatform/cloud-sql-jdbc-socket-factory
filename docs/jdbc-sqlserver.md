@@ -21,7 +21,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.7.2'
 ```
 *Note*: Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
 
-### Creating theJDBC URL
+### Creating the JDBC URL
 
 Base JDBC URL: `jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>`
 
@@ -41,6 +41,18 @@ jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.g
 ```
 
 Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg. 
+
+### Specifying IP Types
+ 
+"The `ipTypes` argument is used to specify a preferred order of IP types used to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE` will use the instance's Public IP if it exists, otherwise private. The value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via it's private IP. If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`. 
+
+IP types can be specified by appending the ipTypes argument to `socketFactoryConstructorArg` using query syntax, such as:
+
+```
+jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE;user=<USER_NAME>;password=<PASSWORD>
+```
+
+For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 
 ## Examples
 
