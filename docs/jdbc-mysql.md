@@ -54,6 +54,40 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 
+### IAM Authentication
+*Note:* This feature is currently only supported for MySQL j8 and Postgres drivers.
+Connections using 
+[IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins) 
+are supported when connecting to Postgres instances.
+This feature is unsupported for other drivers. First, make sure to
+[configure your Cloud SQL Instance to allow IAM authentication](https://cloud.google.com/sql/docs/mysql/create-edit-iam-instances#configure-iam-db-instance)
+and
+[add an IAM database user](https://cloud.google.com/sql/docs/mysql/create-manage-iam-users#creating-a-database-user).
+Now, you can connect using user or service
+account credentials instead of a password. 
+When setting up the connection, set the `enableIamAuth` connection property to `"true"` and `user`
+to the part of the email address associated with your IAM user before the @ symbol. For a service account, this is the service account's email address without the @project-id.iam.gserviceaccount.com suffix
+
+Example:
+```java
+    // Set up URL parameters
+    String jdbcURL = String.format("jdbc:mysql:///%s", DB_NAME);
+    Properties connProps = new Properties();
+    connProps.setProperty("user", "iam-user"); // iam-user@gmail.com
+    connProps.setProperty("sslmode", "disable");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("cloudSqlInstance", "project:region:instance");
+    connProps.setProperty("enableIamAuth", "true");
+
+    // Initialize connection pool
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(jdbcURL);
+    config.setDataSourceProperties(connProps);
+    config.setConnectionTimeout(10000); // 10s
+
+    HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
 ### Connection via Unix Sockets
 
 To connect using a Unix domain socket (such as the one created by the Cloud SQL 
