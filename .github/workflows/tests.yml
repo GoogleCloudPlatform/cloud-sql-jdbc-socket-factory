@@ -185,6 +185,8 @@ jobs:
             MYSQL_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER
             MYSQL_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_PASS
             MYSQL_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
+            MYSQL_IAM_CONNECTION_NAME:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_IAM_CONNECTION_NAME
+            MYSQL_IAM_USER_JAVA:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
             POSTGRES_CONNECTION_NAME:${{ secrets.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
             POSTGRES_IAM_CONNECTION_NAME:${{ secrets.GOOGLE_CLOUD_PROJECT }}/POSTGRES_IAM_CONNECTION_NAME
             POSTGRES_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
@@ -201,6 +203,8 @@ jobs:
           MYSQL_USER: '${{ steps.secrets.outputs.MYSQL_USER }}'
           MYSQL_PASS: '${{ steps.secrets.outputs.MYSQL_PASS }}'
           MYSQL_DB: '${{ steps.secrets.outputs.MYSQL_DB }}'
+          MYSQL_IAM_CONNECTION_NAME: '${{ steps.secrets.outputs.MYSQL_IAM_CONNECTION_NAME }}'
+          MYSQL_IAM_USER: '${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}'
           POSTGRES_CONNECTION_NAME: '${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}'
           POSTGRES_IAM_CONNECTION_NAME: '${{ steps.secrets.outputs.POSTGRES_IAM_CONNECTION_NAME }}'
           POSTGRES_USER: '${{ steps.secrets.outputs.POSTGRES_USER }}'
