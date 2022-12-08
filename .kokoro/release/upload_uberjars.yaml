@@ -14,11 +14,11 @@
 
 steps:
   - id: jar-with-dependencies
-    name: maven:3-jdk-8
+    name: maven:3-jdk-11
     entrypoint: mvn
     args: ["-P", "jar-with-dependencies", "package", "-DskipTests", "-Dmaven.repo.local=/workspace/.m2"]
   - id: driver-and-dependencies
-    name: maven:3-jdk-8
+    name: maven:3-jdk-11
     entrypoint: mvn
     args: ["-P", "jar-with-driver-and-dependencies", "package", "-DskipTests",  "-Dmaven.repo.local=/workspace/.m2"]
 artifacts:
