@@ -15,7 +15,7 @@
 
 set -e # exit immediatly if any step fails
 
-PROJECT_ID="cloud-sql-connector-testing" 
+PROJECT_ID="cloudsql-docker" 
 BUCKET_NAME="cloud-sql-java-connector"
 PROJ_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. >/dev/null 2>&1 && pwd )"
 
@@ -31,14 +31,14 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-# get the service account email
-export SERVICE_ACCOUNT_EMAIL=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
+# get the service account or user email
+export AUTH_EMAIL=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
 
-if [ -z "$SERVICE_ACCOUNT_EMAIL" ]; then
-  echo "error: No active authenticated service account"
+if [ -z "$AUTH_EMAIL" ]; then
+  echo "error: No active authenticated user or service account"
   exit 1
 else
-  echo "Authenticated as: $SERVICE_ACCOUNT_EMAIL"
+  echo "Authenticated as: $AUTH_EMAIL"
 fi
 
 echo "This will release new Cloud SQL Java Connector artifacts for \"$VERSION\", even if they already exist."
