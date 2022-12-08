@@ -78,7 +78,6 @@ jobs:
         name: Get secrets
         uses: 'google-github-actions/get-secretmanager-secrets@v1.0.0'
         with:
-          min_mask_length: 25
           secrets: |-
             MYSQL_CONNECTION_NAME:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_CONNECTION_NAME
             MYSQL_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER
