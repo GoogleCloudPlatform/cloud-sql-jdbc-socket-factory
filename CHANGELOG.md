@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.2...v1.8.0) (2022-12-08)
+
+
+### Features
+
+* enable setting ipType configuration option for SQL Server connector ([#936](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/936)) ([e76518d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e76518dbe4896d674d042ffc77233f462587d4cf))
+* support MySQL Automatic IAM Authentication ([#981](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/981)) ([dc7d7ba](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/dc7d7babf807fa9029fa72b8f884f1e0eecf22bd))
+
+
+### Bug Fixes
+
+* add compatibility for GraalVM 22.2.0 ([#1025](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1025)) ([bd153cd](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/bd153cda0e82cbd1ea9d290c9123d510bdca9d22))
+
 ## [1.7.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.1...v1.7.2) (2022-11-02)
 
 
