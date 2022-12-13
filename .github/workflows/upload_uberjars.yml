@@ -1,0 +1,83 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: upload uberjars
+
+on:
+  release:
+    types: [published]
+    branches: [main]
+
+jobs:
+  upload_uberjars:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1.0.0'
+      with:
+        workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
+        service_account: ${{ secrets.SERVICE_ACCOUNT }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+
+    - name: Cloud Build
+      id: cloudbuild
+      env:
+        RELEASE_PROJECT: '${{ secrets.RELEASE_PROJECT }}'
+        BUCKET_NAME: '${{ secrets.RELEASE_BUCKET_NAME }}'
+      run: |
+        export VERSION=$(cat version.txt)
+        gcloud config set project $RELEASE_PROJECT
+        gcloud builds submit --config .release/cloudbuild.yaml \
+          --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
+    
+    - name: Cleanup Bucket
+      run: |
+        gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true
+    
+    - name: Generate SHA
+      id: generate_sha
+      run: |
+        touch release_table.md
+        types=("mysql-socket-factory" "postgres-socket-factory" "jdbc-sqlserver" "r2dbc-mysql" "r2dbc-postgres" "r2dbc-sqlserver")
+        for t in "${types[@]}"; do
+            echo "### $t" >> release_table.md
+            echo "| filename | sha256 hash |" >> release_table.md
+            echo "|----------|-------------|" >> release_table.md
+            for f in $(gsutil ls "gs://$BUCKET_NAME/v$VERSION/*$t*"); do
+                file=$(basename "$f")
+                sha=$(gsutil cat "$f" | sha256sum --binary | head -c 64)
+                echo "| [$file](https://storage.googleapis.com/$BUCKET_NAME/v$VERSION/$file) | $sha |" >> release_table.md
+            done
+            echo -e "\n\n" >> release_table.md
+        done
+    
+    - name: Update Release Notes
+      uses: irongut/EditRelease@v1.2.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        id: ${{ github.event.release.id }}
+        files: release_table.md
+        replace_body: false
+      
+
+
+    
