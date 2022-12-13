@@ -16,7 +16,6 @@ name: upload uberjars
 on:
   release:
     types: [published]
-    branches: [main]
 
 jobs:
   upload_uberjars:
