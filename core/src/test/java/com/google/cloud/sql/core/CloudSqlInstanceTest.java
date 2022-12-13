@@ -50,6 +50,11 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
+  public void testFlakybot() {
+    throw new RuntimeException("This error is to test that Flakybot is working");
+  }
+
+  @Test
   public void downscopesGoogleCredentials() {
     GoogleCredentials downscoped = CloudSqlInstance.getDownscopedCredentials(googleCredentials);
     assertThat(downscoped).isEqualTo(scopedCredentials);
