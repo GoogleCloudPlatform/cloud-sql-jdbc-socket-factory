@@ -184,6 +184,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M7</version>
         <configuration>
+          <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
           <excludes>
             <exclude>**/*IntegrationTests</exclude>
@@ -304,6 +305,7 @@
                   <goal>test</goal>
                 </goals>
                 <configuration>
+                  <reportNameSuffix>sponge_log</reportNameSuffix>
                   <trimStackTrace>false</trimStackTrace>
                   <excludes>
                     <exclude>none</exclude>
