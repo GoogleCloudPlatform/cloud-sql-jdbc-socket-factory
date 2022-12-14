@@ -20,9 +20,26 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.release-please.outputs.pr }}
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v3.5.0
+        id: release-please
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: simple
           package-name: cloud-sql-java-connector
+  update-pom-files:
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.pr }}
+    needs: release-please
+    steps:
+      - name: update pom.xml files
+        run: ./.release/update_versions.sh
+      - name: push commit
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "update versions in pom.xml files and READMEs"
+          ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+          
+
