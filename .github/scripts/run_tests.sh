@@ -30,9 +30,7 @@ fi
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$( arch )"
-if [[ $ARCH = 'i386' ]]; then
-  ARCH='386'
-elif [[ $ARCH = 'x86_64' ]]; then
+if [[ $ARCH != 'arm' ]] && [[ $ARCH != 'arm64' ]]; then
   ARCH='amd64'
 fi
 # Start proxies for unix socket tests
