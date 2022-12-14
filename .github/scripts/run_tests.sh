@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # `-e` enables the script to automatically fail when a command fails
-set -e
+set -ex
 
 function setJava() {
   export JAVA_HOME=$1
