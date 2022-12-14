@@ -280,10 +280,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   * "Private".
+   *    "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   * preferences.
+   *    preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -490,13 +490,6 @@ class CloudSqlInstance {
                 connectionName));
       }
 
-      if (enableIamAuth && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
-        throw new IllegalArgumentException(
-            String.format(
-                "[%s] IAM Authentication is not currently supported for SQL Server instances .",
-                connectionName));
-      }
-
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (instanceMetadata.getIpAddresses().isEmpty()) {
         throw new IllegalStateException(
@@ -621,7 +614,7 @@ class CloudSqlInstance {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   * provided to the user
+   *    provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
