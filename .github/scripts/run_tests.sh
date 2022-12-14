@@ -30,6 +30,11 @@ fi
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$( arch )"
+if [[ $ARCH = 'i386' ]]; then
+  ARCH='386'
+elif [[ $ARCH = 'x86_64' ]]; then
+  ARCH='amd64'
+fi
 # Start proxies for unix socket tests
 if [[ $OS == 'darwin' ]] || [[ $OS == 'linux' ]]; then
   curl -o cloud_sql_proxy "https://dl.google.com/cloudsql/cloud_sql_proxy.${OS}.${ARCH}"
