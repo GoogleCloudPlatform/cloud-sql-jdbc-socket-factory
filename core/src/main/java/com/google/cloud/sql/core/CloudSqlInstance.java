@@ -490,6 +490,13 @@ class CloudSqlInstance {
                 connectionName));
       }
 
+      if (enableIamAuth && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
+        throw new IllegalArgumentException(
+            String.format(
+                "[%s] IAM Authentication is not currently supported for SQL Server instances .",
+                connectionName));
+      }
+
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (instanceMetadata.getIpAddresses().isEmpty()) {
         throw new IllegalStateException(
