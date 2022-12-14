@@ -54,21 +54,8 @@ jobs:
     
     - name: Generate SHA
       id: generate_sha
-      run: |
-        touch release_table.md
-        types=("mysql-socket-factory" "postgres-socket-factory" "jdbc-sqlserver" "r2dbc-mysql" "r2dbc-postgres" "r2dbc-sqlserver")
-        for t in "${types[@]}"; do
-            echo "### $t" >> release_table.md
-            echo "| filename | sha256 hash |" >> release_table.md
-            echo "|----------|-------------|" >> release_table.md
-            for f in $(gsutil ls "gs://$BUCKET_NAME/v$VERSION/*$t*"); do
-                file=$(basename "$f")
-                sha=$(gsutil cat "$f" | sha256sum --binary | head -c 64)
-                echo "| [$file](https://storage.googleapis.com/$BUCKET_NAME/v$VERSION/$file) | $sha |" >> release_table.md
-            done
-            echo -e "\n\n" >> release_table.md
-        done
-    
+      run: ./.release/generate_sha.sh
+
     - name: Update Release Notes
       uses: irongut/EditRelease@v1.2.0
       with:
@@ -94,7 +81,6 @@ jobs:
       run: ./.release/update_versions.sh
     - name: create pull request
       uses: peter-evans/create-pull-request@v4
-
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         title: 'chore: update to latest SNAPSHOT version'
