@@ -68,7 +68,7 @@ public class R2dbcMysqlIamAuthIntegrationTests {
           .that(System.getenv(varName)).isNotEmpty();
     });
 
-    // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
+    // [START cloud_sql_connector_mysql_r2dbc_iam_auth]
     // Set up ConnectionFactoryOptions
     ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
         .option(DRIVER, "gcp")
@@ -86,7 +86,7 @@ public class R2dbcMysqlIamAuthIntegrationTests {
         .build();
 
     this.connectionPool = new ConnectionPool(configuration);
-    // [END cloud_sql_connector_postgres_r2dbc_iam_auth]
+    // [END cloud_sql_connector_mysql_r2dbc_iam_auth]
 
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
