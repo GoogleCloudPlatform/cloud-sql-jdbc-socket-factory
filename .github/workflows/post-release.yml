@@ -45,7 +45,7 @@ jobs:
       run: |
         export VERSION=$(cat version.txt)
         gcloud config set project $RELEASE_PROJECT
-        gcloud builds submit --config .release/cloudbuild.yaml \
+        gcloud builds submit --config .release/upload_uberjars.yaml \
           --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
     
     - name: Cleanup Bucket
