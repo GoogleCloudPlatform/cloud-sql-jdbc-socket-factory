@@ -22,8 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pr: ${{ steps.release-please.outputs.pr }}
-      releases_created: steps.release-please.outputs.releases_created
-      release_tag: steps.release-please.outputs.tag_name
+      releases_created: ${{ steps.release-please.outputs.releases_created }}
+      release_tag: ${{ steps.release-please.outputs.tag_name }}
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v3.5.0
         id: release-please
