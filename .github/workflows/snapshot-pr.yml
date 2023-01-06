@@ -46,5 +46,6 @@ jobs:
             kokoro:force-run
             automerge
         branch: update-version-snapshot
+        base: ${{ github.head_ref }}
         delete-branch: true
         draft: false
