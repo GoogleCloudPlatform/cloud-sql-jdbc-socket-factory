@@ -122,7 +122,3 @@ jobs:
         branch: update-version-snapshot
         delete-branch: true
         draft: false
-      
-
-
-    
