@@ -30,4 +30,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "update versions in pom.xml files and READMEs"
-          ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}   
+          ref: ${{ github.head_ref }}   
