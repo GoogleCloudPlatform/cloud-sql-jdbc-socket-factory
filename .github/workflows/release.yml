@@ -37,6 +37,8 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: update pom.xml files
         run: ./.release/update_versions.sh
       - name: push commit
