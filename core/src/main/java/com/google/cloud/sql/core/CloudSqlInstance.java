@@ -18,13 +18,16 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
@@ -154,9 +157,9 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     if (enableIamAuth) {
-      HttpCredentialsAdapter credentialsAdapter = (HttpCredentialsAdapter) tokenSourceFactory
-          .create();
-      this.credentials = Optional.of((OAuth2Credentials) credentialsAdapter.getCredentials());
+      HttpRequestInitializer source = tokenSourceFactory.create();
+
+      this.credentials = Optional.of(parseCredentials(source));
       this.credentials.get().refresh();
     } else {
       this.credentials = Optional.empty();
@@ -167,6 +170,36 @@ class CloudSqlInstance {
       this.currentInstanceData = performRefresh();
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
+  }
+
+  private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
+    if (source instanceof HttpCredentialsAdapter) {
+      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
+      return (OAuth2Credentials) adapter.getCredentials();
+    }
+
+    if (source instanceof Credential) {
+      Credential credential = (Credential) source;
+      AccessToken accessToken = new AccessToken(
+          credential.getAccessToken(),
+          new Date(credential.getExpirationTimeMilliseconds())
+      );
+      GoogleCredentials googleCredentials = new GoogleCredentials(accessToken) {
+
+        @Override
+        public AccessToken refreshAccessToken() throws IOException {
+          credential.refreshToken();
+
+          return new AccessToken(
+              credential.getAccessToken(),
+              new Date(credential.getExpirationTimeMilliseconds()));
+        }
+      };
+
+      return googleCredentials;
+    }
+
+    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
   }
 
   /**
@@ -326,7 +359,7 @@ class CloudSqlInstance {
    * would expire.
    */
   private ListenableFuture<InstanceData> performRefresh() {
-    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage. 
+    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquire(1);
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
@@ -492,7 +525,7 @@ class CloudSqlInstance {
                     + "instance.",
                 connectionName));
       }
-      
+
       checkDatabaseCompatibility(instanceMetadata, enableIamAuth, connectionName);
 
 
