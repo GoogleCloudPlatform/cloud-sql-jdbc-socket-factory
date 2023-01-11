@@ -45,7 +45,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "update versions in pom.xml files and READMEs"
-          ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}   
+          branch: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}   
 
   upload_uberjars:
     runs-on: ubuntu-latest
