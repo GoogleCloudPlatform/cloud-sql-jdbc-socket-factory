@@ -40,8 +40,8 @@ This will create a *target* sub-folder within each of the module directories. Wi
 
 Example:
 ```
-mysql-socket-factory-connector-j-8–1.2.1-jar-with-dependencies.jar
-postgres-socket-factory-1.2.1-jar-with-dependencies.jar
+mysql-socket-factory-connector-j-8–1.8.0-jar-with-dependencies.jar
+postgres-socket-factory-1.8.0-jar-with-dependencies.jar
 ```
 
 ---
