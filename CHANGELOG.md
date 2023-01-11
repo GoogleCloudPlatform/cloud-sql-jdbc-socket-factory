@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.0...v1.8.1) (2023-01-11)
+
+
+### Bug Fixes
+
+* throw exception on invalid IAM Authn config ([#1082](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1082)) ([2100d24](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2100d2424bae696dba857e57235bb2e374938614))
+* trigger release-please ([#1107](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1107)) ([291ac91](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/291ac91d5161e708b10c8bad1b2e0c1a3dbe226f))
+* update dependencies to latest versions ([#1105](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1105)) ([683fb97](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/683fb971c16aeebee64b43357146144b2e1282b8))
+
 ## [1.8.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.2...v1.8.0) (2022-12-08)
 
 
