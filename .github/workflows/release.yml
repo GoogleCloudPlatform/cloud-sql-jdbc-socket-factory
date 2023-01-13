@@ -77,11 +77,17 @@ jobs:
         gcloud builds submit --config .release/upload_uberjars.yaml \
           --substitutions=_VERSION="$VERSION",_BUCKET_NAME="$BUCKET_NAME"
     - name: Cleanup Bucket
+      env:
+        BUCKET_NAME: '${{ secrets.RELEASE_BUCKET_NAME }}'
       run: |
+        export VERSION=$(cat version.txt)
         gsutil rm -f gs://"$BUCKET_NAME"/v"$VERSION"/*.json 2> /dev/null || true 
     - name: Generate SHA
       id: generate_sha
+      env:
+        BUCKET_NAME: '${{ secrets.RELEASE_BUCKET_NAME }}'
       run: |
+        export VERSION=$(cat version.txt)
         ./.release/generate_sha.sh
         echo "RELEASE_TABLE=$(cat release_table.md)" >> $GITHUB_ENV
     - name: Update Release Notes
