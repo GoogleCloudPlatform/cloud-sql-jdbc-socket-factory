@@ -18,24 +18,18 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpStatusCodes;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.LowLevelHttpRequest;
+import com.google.api.client.http.*;
 import com.google.api.client.json.GenericJson;
 import com.google.api.client.json.Json;
 import com.google.api.client.json.JsonFactory;
@@ -122,8 +116,6 @@ public class CoreSocketFactoryTest {
   @Mock
   private CredentialFactory credentialFactory;
   @Mock
-  private GoogleCredential credential;
-  @Mock
   private SQLAdmin adminApi;
   @Mock
   private SQLAdmin.Connect adminApiConnect;
@@ -191,6 +183,7 @@ public class CoreSocketFactoryTest {
                         new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                         new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                .setDatabaseVersion("POSTGRES14")
                 .setRegion("myRegion"));
     when(adminApiConnectGenerateEphemeralCert.execute())
         .thenReturn(generateEphemeralCertResponse);
@@ -253,10 +246,7 @@ public class CoreSocketFactoryTest {
         .generateEphemeralCert(
             eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
 
-    BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
-    String line = bufferedReader.readLine();
-    assertThat(line).isEqualTo(SERVER_MESSAGE);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
@@ -275,10 +265,7 @@ public class CoreSocketFactoryTest {
         .generateEphemeralCert(
             eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
 
-    BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
-    String line = bufferedReader.readLine();
-    assertThat(line).isEqualTo(SERVER_MESSAGE);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
@@ -298,10 +285,7 @@ public class CoreSocketFactoryTest {
             eq("example.com:myProject"), eq("myRegion~myInstance"),
             isA(GenerateEphemeralCertRequest.class));
 
-    BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
-    String line = bufferedReader.readLine();
-    assertThat(line).isEqualTo(SERVER_MESSAGE);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
@@ -332,10 +316,7 @@ public class CoreSocketFactoryTest {
         .generateEphemeralCert(
             eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
 
-    BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
-    String line = bufferedReader.readLine();
-    assertThat(line).isEqualTo(SERVER_MESSAGE);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
@@ -394,6 +375,47 @@ public class CoreSocketFactoryTest {
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
                   "myProject:myRegion:NotMyInstance"));
     }
+  }
+
+  @Test
+  public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
+    GoogleCredential customCredential = mock(GoogleCredential.class);
+    when(credentialFactory.create()).thenReturn(customCredential);
+
+    when(customCredential.getAccessToken()).thenReturn("foo");
+    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(new Date().getTime());
+
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start();
+
+    CoreSocketFactory coreSocketFactory =
+        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+    Socket socket =
+        coreSocketFactory.createSslSocket(
+            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException, IOException {
+    BasicAuthentication nonGoogleCredential = mock(BasicAuthentication.class);
+    when(credentialFactory.create()).thenReturn(nonGoogleCredential);
+
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start();
+
+    CoreSocketFactory coreSocketFactory =
+        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+    assertThrows(RuntimeException.class, () -> {
+      coreSocketFactory.createSslSocket(
+          "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+    });
+  }
+
+  private String readLine(Socket socket) throws IOException {
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
+    return bufferedReader.readLine();
   }
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
