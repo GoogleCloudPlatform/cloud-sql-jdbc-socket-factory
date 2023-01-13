@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.1...v1.8.2) (2023-01-13)
+
+
+### Bug Fixes
+
+* support credentials from Google OAuth Client ([#1097](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1097)) ([cf024eb](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/cf024eb609cb79f4e819ecf25b74f1787885616a))
+
 ## [1.8.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.0...v1.8.1) (2023-01-11)
 
 
