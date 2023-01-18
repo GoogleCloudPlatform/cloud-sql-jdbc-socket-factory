@@ -89,7 +89,9 @@ jobs:
         BUCKET_NAME: '${{ secrets.RELEASE_BUCKET_NAME }}'
       run: |
         ./.release/generate_sha.sh
-        echo "RELEASE_TABLE=$(cat release_table.md)" >> $GITHUB_ENV
+        echo 'RELEASE_TABLE<<EOF' >> $GITHUB_ENV
+        cat release_table.md >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
     - name: Update Release Notes
       id: update_release
       uses: tubone24/update_release@v1.0
