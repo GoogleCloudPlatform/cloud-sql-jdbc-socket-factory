@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.2...v1.8.3) (2023-01-18)
+
+
+### Bug Fixes
+
+* support Google OAuth Client credentials without expiration time ([#1117](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1117)) ([7b2aff4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7b2aff4c5d4ef17c4ffb46abefa5ab5a3c1160c7))
+
 ## [1.8.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.1...v1.8.2) (2023-01-13)
 
 
