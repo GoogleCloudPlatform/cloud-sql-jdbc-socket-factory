@@ -182,7 +182,7 @@ class CloudSqlInstance {
       Credential credential = (Credential) source;
       AccessToken accessToken = new AccessToken(
           credential.getAccessToken(),
-          new Date(credential.getExpirationTimeMilliseconds())
+          getTokenExpirationTime(credential).orElse(null)
       );
       GoogleCredentials googleCredentials = new GoogleCredentials(accessToken) {
 
@@ -192,7 +192,8 @@ class CloudSqlInstance {
 
           return new AccessToken(
               credential.getAccessToken(),
-              new Date(credential.getExpirationTimeMilliseconds()));
+              getTokenExpirationTime(credential).orElse(null)
+          );
         }
       };
 
@@ -389,10 +390,9 @@ class CloudSqlInstance {
               Date expiration = x509Certificate.getNotAfter();
 
               if (enableIamAuth) {
-                Date tokenExpiration = getTokenExpirationTime();
-                if (expiration.after(tokenExpiration)) {
-                  expiration = tokenExpiration;
-                }
+                expiration = getTokenExpirationTime(credentials.get())
+                    .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
+                    .orElse(x509Certificate.getNotAfter());
               }
 
               return new InstanceData(
@@ -626,8 +626,13 @@ class CloudSqlInstance {
     return downscoped;
   }
 
-  private Date getTokenExpirationTime() {
-    return credentials.get().getAccessToken().getExpirationTime();
+  private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
+    return Optional.ofNullable(credentials.getAccessToken().getExpirationTime());
+  }
+
+  private Optional<Date> getTokenExpirationTime(Credential credentials) {
+    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds())
+        .map(expirationTime -> new Date(expirationTime));
   }
 
   private long secondsUntilRefresh() {
