@@ -383,7 +383,27 @@ public class CoreSocketFactoryTest {
     when(credentialFactory.create()).thenReturn(customCredential);
 
     when(customCredential.getAccessToken()).thenReturn("foo");
-    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(new Date().getTime());
+    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(null);
+
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start();
+
+    CoreSocketFactory coreSocketFactory =
+        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+    Socket socket =
+        coreSocketFactory.createSslSocket(
+            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void supportsCustomCredentialFactoryWithNoExpirationTime() throws InterruptedException, IOException {
+    GoogleCredential customCredential = mock(GoogleCredential.class);
+    when(credentialFactory.create()).thenReturn(customCredential);
+
+    when(customCredential.getAccessToken()).thenReturn("foo");
+    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(null);
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
