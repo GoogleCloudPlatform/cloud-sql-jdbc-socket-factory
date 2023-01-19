@@ -47,6 +47,9 @@ declare -i return_code=0
 for test_directory in jdbc/postgres jdbc/mysql-j-8; do
   pushd ${test_directory}
   echo -e "******************** Running tests in ${test_directory} ********************\n"
+  mvn -e -B clean verify -P e2e "-DargLine=\"-agentlib:native-image-agent=config-output-dir=native-image-config,experimental-class-define-support\""
+  cat native-image-config/reflect-config.json
+
   # Dependency convergence enforcer rule would fail with the junit dependencies
   # specified in "native" profile. The test-scope dependencies do not have any
   # effect to library users' class path.
