@@ -14,17 +14,36 @@
 # limitations under the License.
 
 # `-e` enables the script to automatically fail when a command fails
-set -e
+set -ex
 
 function setJava() {
   export JAVA_HOME=$1
   export PATH=${JAVA_HOME}/bin:$PATH
 }
 
+
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x
   sudo ifconfig lo0 alias 127.0.0.2 up
+fi
+
+OS="$(uname | tr '[:upper:]' '[:lower:]')"
+ARCH="$( arch )"
+if [[ $ARCH != 'arm' ]] && [[ $ARCH != 'arm64' ]]; then
+  ARCH='amd64'
+fi
+# Start proxies for unix socket tests
+if [[ $OS == 'darwin' ]] || [[ $OS == 'linux' ]]; then
+  curl -o cloud_sql_proxy "https://dl.google.com/cloudsql/cloud_sql_proxy.${OS}.${ARCH}"
+  chmod +x cloud_sql_proxy
+  mkdir cloudsql; chmod 777 cloudsql
+
+  ./cloud_sql_proxy -dir=cloudsql -instances=${MYSQL_CONNECTION_NAME} &
+  export MYSQL_UNIX_SOCKET_PATH="${PWD}/cloudsql/${MYSQL_CONNECTION_NAME}"
+
+  ./cloud_sql_proxy -dir=cloudsql -instances=${POSTGRES_CONNECTION_NAME} &
+  export POSTGRES_UNIX_SOCKET_PATH="${PWD}/cloudsql/${POSTGRES_CONNECTION_NAME}"
 fi
 
 echo -e "******************** Running tests... ********************\n"
