@@ -1,0 +1,1120 @@
+[
+  {
+    "name": "[B"
+  },
+  {
+    "name": "[Lcom.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry;"
+  },
+  {
+    "name": "[Ljava.lang.String;"
+  },
+  {
+    "name": "[Ljava.sql.Statement;"
+  },
+  {
+    "name": "[Lsun.security.pkcs.SignerInfo;"
+  },
+  {
+    "name": "com.google.api.client.googleapis.services.AbstractGoogleClientRequest",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.google.api.client.googleapis.services.json.AbstractGoogleJsonClientRequest",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.google.api.client.http.GenericUrl",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.google.api.client.http.HttpHeaders",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "setAccept",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setAcceptEncoding",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setAge",
+        "parameterTypes": [
+          "java.lang.Long"
+        ]
+      },
+      {
+        "name": "setAuthenticate",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setAuthorization",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setAuthorization",
+        "parameterTypes": [
+          "java.util.List"
+        ]
+      },
+      {
+        "name": "setCacheControl",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setContentEncoding",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setContentLength",
+        "parameterTypes": [
+          "java.lang.Long"
+        ]
+      },
+      {
+        "name": "setContentMD5",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setContentRange",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setContentType",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setCookie",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setDate",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setETag",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setExpires",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIfMatch",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIfModifiedSince",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIfNoneMatch",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIfRange",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIfUnmodifiedSince",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setLastModified",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setLocation",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setMimeVersion",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setRange",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setRetryAfter",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setUserAgent",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.client.json.GenericJson",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.client.json.webtoken.JsonWebSignature$Header",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.client.json.webtoken.JsonWebToken$Header",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.client.json.webtoken.JsonWebToken$Payload",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.client.util.GenericData",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.services.sqladmin.SQLAdmin$Connect$GenerateEphemeralCert",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.services.sqladmin.SQLAdmin$Connect$Get",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.services.sqladmin.SQLAdminRequest",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.services.sqladmin.model.ConnectSettings",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setBackendType",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setDatabaseVersion",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setIpAddresses",
+        "parameterTypes": [
+          "java.util.List"
+        ]
+      },
+      {
+        "name": "setKind",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setRegion",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setServerCaCert",
+        "parameterTypes": [
+          "com.google.api.services.sqladmin.model.SslCert"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setEphemeralCert",
+        "parameterTypes": [
+          "com.google.api.services.sqladmin.model.SslCert"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.services.sqladmin.model.IpMapping",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setIpAddress",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setType",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.api.services.sqladmin.model.SslCert",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setCert",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setCertSerialNumber",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setCommonName",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setCreateTime",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setExpirationTime",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setInstance",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setKind",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "setSha1Fingerprint",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.cloud.sql.postgres.JdbcPostgresIamAuthIntegrationTests",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllPublicConstructors": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "checkEnvVars",
+        "parameterTypes": []
+      },
+      {
+        "name": "dropTableIfPresent",
+        "parameterTypes": []
+      },
+      {
+        "name": "pooledConnectionTest",
+        "parameterTypes": []
+      },
+      {
+        "name": "setUpPool",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.google.cloud.sql.postgres.JdbcPostgresIntegrationTests",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllPublicConstructors": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "checkEnvVars",
+        "parameterTypes": []
+      },
+      {
+        "name": "dropTableIfPresent",
+        "parameterTypes": []
+      },
+      {
+        "name": "pooledConnectionTest",
+        "parameterTypes": []
+      },
+      {
+        "name": "setUpPool",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.google.cloud.sql.postgres.SocketFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.util.Properties"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.google.common.util.concurrent.AbstractFuture",
+    "fields": [
+      {
+        "name": "listeners"
+      },
+      {
+        "name": "value"
+      },
+      {
+        "name": "waiters"
+      }
+    ]
+  },
+  {
+    "name": "com.google.common.util.concurrent.AbstractFuture$Waiter",
+    "fields": [
+      {
+        "name": "next"
+      },
+      {
+        "name": "thread"
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.AESCipher$General",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.DHParameters",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.HmacCore$HmacSHA256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.HmacCore$HmacSHA384",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.HmacPKCS12PBECore$HmacPKCS12PBE_SHA1",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndDES",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PBEParameters",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PBES2Core$HmacSHA256AndAES_256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PBES2Parameters$General",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PBES2Parameters$HmacSHA256AndAES_256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.PKCS12PBECipherCore$PBEWithSHA1AndRC2_40",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.crypto.provider.TlsMasterSecretGenerator",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.zaxxer.hikari.HikariConfig",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "java.lang.Object",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "java.lang.SecurityManager",
+    "methods": [
+      {
+        "name": "checkPermission",
+        "parameterTypes": [
+          "java.security.Permission"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.String"
+  },
+  {
+    "name": "java.lang.System",
+    "methods": [
+      {
+        "name": "getSecurityManager",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.security.AccessController",
+    "methods": [
+      {
+        "name": "doPrivileged",
+        "parameterTypes": [
+          "java.security.PrivilegedExceptionAction"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.AlgorithmParametersSpi"
+  },
+  {
+    "name": "java.security.KeyStoreSpi"
+  },
+  {
+    "name": "java.security.MessageDigestSpi"
+  },
+  {
+    "name": "java.security.SecureRandomParameters"
+  },
+  {
+    "name": "java.security.interfaces.ECPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.ECPublicKey"
+  },
+  {
+    "name": "java.security.interfaces.RSAPrivateKey"
+  },
+  {
+    "name": "java.security.interfaces.RSAPublicKey"
+  },
+  {
+    "name": "java.util.AbstractMap",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "java.util.Date"
+  },
+  {
+    "name": "javax.security.auth.x500.X500Principal",
+    "fields": [
+      {
+        "name": "thisX500Name"
+      }
+    ],
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "sun.security.x509.X500Name"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "junit.framework.Test"
+  },
+  {
+    "name": "org.apache.maven.surefire.junit4.JUnit4Provider",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "org.apache.maven.surefire.api.provider.ProviderParameters"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.junit.runner.Description",
+    "methods": [
+      {
+        "name": "createSuiteDescription",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.annotation.Annotation[]"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.junit.runner.RunWith"
+  },
+  {
+    "name": "org.junit.runners.JUnit4",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.postgresql.Driver"
+  },
+  {
+    "name": "sun.misc.Unsafe",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "sun.security.pkcs12.PKCS12KeyStore",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.pkcs12.PKCS12KeyStore$DualFormatPKCS12",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.DSA$SHA224withDSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.DSA$SHA256withDSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.JavaKeyStore$DualFormatJKS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.JavaKeyStore$JKS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.MD5",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.NativePRNG",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA2$SHA224",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA2$SHA256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA5$SHA384",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA5$SHA512",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.X509Factory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.certpath.PKIXCertPathValidator",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.PSSParameters",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSAKeyFactory$Legacy",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSAKeyPairGenerator$Legacy",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSAPSSSignature",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA224withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.rsa.RSASignature$SHA256withRSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.SSLContextImpl$TLS13Context",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.SSLContextImpl$TLSContext",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.util.ObjectIdentifier"
+  },
+  {
+    "name": "sun.security.x509.AuthorityInfoAccessExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.AuthorityKeyIdentifierExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.BasicConstraintsExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.CRLDistributionPointsExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.CertificateExtensions"
+  },
+  {
+    "name": "sun.security.x509.CertificatePoliciesExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.ExtendedKeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.IssuerAlternativeNameExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.KeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.NetscapeCertTypeExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.PrivateKeyUsageExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.SubjectAlternativeNameExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.x509.SubjectKeyIdentifierExtension",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.Boolean",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  }
+]
