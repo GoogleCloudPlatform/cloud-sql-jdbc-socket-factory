@@ -150,6 +150,12 @@
       <version>1.70</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.apis</groupId>
+      <artifactId>google-api-services-sqladmin</artifactId>
+      <version>v1beta4-rev20230111-2.0.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
  <build>
    <plugins>
