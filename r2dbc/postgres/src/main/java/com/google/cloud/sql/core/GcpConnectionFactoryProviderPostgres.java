@@ -66,7 +66,6 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) ->
             new PostgresqlConnectionFactoryProvider().create(options),
-        enableIamAuth,
         ipTypes,
         optionBuilder,
         csqlHostName);

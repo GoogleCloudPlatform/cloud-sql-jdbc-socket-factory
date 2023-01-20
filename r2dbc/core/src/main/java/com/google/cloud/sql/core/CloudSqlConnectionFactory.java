@@ -36,7 +36,6 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
   private ConnectionFactoryOptions.Builder builder;
   private String csqlHostName;
-  private boolean enableIamAuth;
   private String ipTypes;
 
   /**
@@ -44,12 +43,10 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
    */
   public CloudSqlConnectionFactory(
       Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory,
-      boolean enableIamAuth,
       String ipTypes,
       Builder builder,
       String csqlHostName) {
     this.connectionFactoryFactory = connectionFactoryFactory;
-    this.enableIamAuth = enableIamAuth;
     this.ipTypes = ipTypes;
     this.builder = builder;
     this.csqlHostName = csqlHostName;
@@ -74,7 +71,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   }
 
   private ConnectionFactory getConnectionFactory() throws IOException {
-    String hostIp = CoreSocketFactory.getHostIp(csqlHostName, enableIamAuth, ipTypes);
+    String hostIp = CoreSocketFactory.getHostIp(csqlHostName, ipTypes);
     builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
     return connectionFactoryFactory.apply(builder.build());
   }

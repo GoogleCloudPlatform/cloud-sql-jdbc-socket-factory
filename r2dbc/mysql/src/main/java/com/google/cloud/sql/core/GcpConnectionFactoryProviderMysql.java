@@ -60,7 +60,6 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) -> new MySqlConnectionFactoryProvider().create(options),
-        enableIamAuth,
         ipTypes,
         optionBuilder,
         csqlHostName);

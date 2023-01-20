@@ -59,7 +59,6 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
 
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) -> new MssqlConnectionFactoryProvider().create(options),
-        enableIamAuth,
         ipTypes,
         optionBuilder,
         csqlHostName);

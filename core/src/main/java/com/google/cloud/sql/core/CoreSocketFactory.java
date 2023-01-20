@@ -152,6 +152,10 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
+  private CloudSqlInstance getCloudSqlInstance(String instanceName) {
+    return getCloudSqlInstance(instanceName, false);
+  }
+
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
         instanceName,
@@ -261,23 +265,30 @@ public final class CoreSocketFactory {
   }
 
   /**
+   * Returns data that can be used to establish Cloud SQL SSL connection.
+   */
+  public static SslData getSslData(String csqlInstanceName) throws IOException {
+    return getSslData(csqlInstanceName, false);
+  }
+
+  /**
    * Returns default ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName, boolean enableIamAuth) 
+  public static String getHostIp(String csqlInstanceName)
       throws IOException {
-    return getInstance().getHostIp(csqlInstanceName, enableIamAuth, listIpTypes(DEFAULT_IP_TYPES));
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
   /**
    * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName, boolean enableIamAuth, String ipTypes)
+  public static String getHostIp(String csqlInstanceName, String ipTypes)
       throws IOException {
-    return getInstance().getHostIp(csqlInstanceName, enableIamAuth, listIpTypes(ipTypes));
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
-  private String getHostIp(String instanceName, boolean enableIamAuth, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
+  private String getHostIp(String instanceName,  List<String> ipTypes) {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }
 
