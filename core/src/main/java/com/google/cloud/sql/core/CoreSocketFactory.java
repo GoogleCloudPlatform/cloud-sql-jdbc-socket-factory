@@ -152,7 +152,8 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
-  private CloudSqlInstance getCloudSqlInstance(String instanceName) {
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return getCloudSqlInstance(instanceName, false);
   }
 
