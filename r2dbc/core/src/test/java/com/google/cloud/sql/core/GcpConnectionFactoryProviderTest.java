@@ -54,12 +54,12 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class GcpConnectionFactoryProviderTest {
+
   static final String PUBLIC_IP = "127.0.0.1";
   static final String PRIVATE_IP = "127.0.0.2";
 
@@ -86,6 +86,10 @@ public class GcpConnectionFactoryProviderTest {
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
 
+  private static byte[] decodeBase64StripWhitespace(String b64) {
+    return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
+  }
+
   private String createEphemeralCert(Duration shiftIntoPast)
       throws GeneralSecurityException, ExecutionException, OperatorCreationException {
     Duration validFor = Duration.ofHours(1);
@@ -93,42 +97,30 @@ public class GcpConnectionFactoryProviderTest {
     ZonedDateTime notAfter = notBefore.plus(validFor);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
-    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
-        .build(signingKey);
+    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
 
     X500Principal issuer = new X500Principal(
         "C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
     X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
 
-    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
-        issuer,
-        BigInteger.ONE,
-        Date.from(notBefore.toInstant()),
-        Date.from(notAfter.toInstant()),
-        subject,
-        Futures.getDone(clientKeyPair).getPublic()
-    );
+    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(issuer,
+        BigInteger.ONE, Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()), subject,
+        Futures.getDone(clientKeyPair).getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
-    Certificate cert = new JcaX509CertificateConverter()
-        .getCertificate(certificateHolder);
+    Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
 
     StringBuilder sb = new StringBuilder();
     sb.append("-----BEGIN CERTIFICATE-----\n");
-    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded())
-        .replaceAll("(.{64})", "$1\n"));
+    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
     sb.append("\n");
     sb.append("-----END CERTIFICATE-----\n");
     return sb.toString();
-  }
-
-  private static byte[] decodeBase64StripWhitespace(String b64) {
-    return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
   }
 
   @BeforeClass
@@ -137,12 +129,12 @@ public class GcpConnectionFactoryProviderTest {
     MockitoAnnotations.openMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
@@ -153,30 +145,22 @@ public class GcpConnectionFactoryProviderTest {
     when(adminApi.connect()).thenReturn(adminApiConnect);
 
     // Stub when correct instance
-    when(adminApiConnect.get(eq("myProject"), eq("myRegion~myInstance"))).thenReturn(adminApiConnectGet);
+    when(adminApiConnect.get(eq("myProject"), eq("myRegion~myInstance"))).thenReturn(
+        adminApiConnectGet);
 
+    when(adminApiConnect.generateEphemeralCert(anyString(), anyString(),
+        isA(GenerateEphemeralCertRequest.class))).thenReturn(adminApiConnectGenerateEphemeralCert);
 
-    when(adminApiConnect.generateEphemeralCert(
-        anyString(), anyString(), isA(GenerateEphemeralCertRequest.class)))
-        .thenReturn(adminApiConnectGenerateEphemeralCert);
+    when(adminApiConnectGet.execute()).thenReturn(new ConnectSettings().setBackendType("SECOND_GEN")
+        .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+            new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+        .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT)).setRegion("myRegion"));
+    when(adminApiConnectGenerateEphemeralCert.execute()).thenReturn(generateEphemeralCertResponse);
+    when(generateEphemeralCertResponse.getEphemeralCert()).thenReturn(
+        new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
 
-    when(adminApiConnectGet.execute())
-        .thenReturn(
-            new ConnectSettings()
-                .setBackendType("SECOND_GEN")
-                .setIpAddresses(
-                    ImmutableList.of(
-                        new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                        new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                .setRegion("myRegion"));
-    when(adminApiConnectGenerateEphemeralCert.execute())
-        .thenReturn(generateEphemeralCertResponse);
-    when(generateEphemeralCertResponse.getEphemeralCert())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
-
-    coreSocketFactoryStub =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307, defaultExecutor);
+    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307,
+        defaultExecutor);
   }
 
 }

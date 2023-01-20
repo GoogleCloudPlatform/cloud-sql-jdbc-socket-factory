@@ -35,7 +35,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 
-
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryProviderTest {
 
@@ -47,14 +46,9 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
   public void setupOptions() {
 
     // Set up ConnectionFactoryOptions
-    privateIpOptions = ConnectionFactoryOptions.builder()
-        .option(DRIVER, "gcp")
-        .option(PROTOCOL, "mysql")
-        .option(USER, "fake_user")
-        .option(DATABASE, "fake_db")
-        .option(HOST, fakeInstanceName)
-        .option(IP_TYPES, "PRIVATE")
-        .build();
+    privateIpOptions = ConnectionFactoryOptions.builder().option(DRIVER, "gcp")
+        .option(PROTOCOL, "mysql").option(USER, "fake_user").option(DATABASE, "fake_db")
+        .option(HOST, fakeInstanceName).option(IP_TYPES, "PRIVATE").build();
 
     publicIpOptions = privateIpOptions.mutate().option(IP_TYPES, "PUBLIC").build();
   }
@@ -66,19 +60,15 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
       mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PRIVATE"))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getPreferredIp(
-                  Arrays.asList("PRIVATE")));
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
+              .getPreferredIp(Arrays.asList("PRIVATE")));
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PUBLIC"))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getPreferredIp(
-                  Arrays.asList("PRIMARY")));
-
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
+              .getPreferredIp(Arrays.asList("PRIMARY")));
 
       GcpConnectionFactoryProviderMysql mysqlProvider = new GcpConnectionFactoryProviderMysql();
 
@@ -89,8 +79,7 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
       // Check that Driver, Host, and Port are set properly
       ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPrivate.getBuilder().build();
-      assertThat(
-          mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
+      assertThat(mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
       assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(PRIVATE_IP);
       assertThat((int) mysqlOptions.getValue(PORT)).isEqualTo(
           CoreSocketFactory.getDefaultServerProxyPort());
@@ -108,19 +97,15 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
       mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PRIVATE"))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getPreferredIp(
-                  Arrays.asList("PRIVATE")));
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
+              .getPreferredIp(Arrays.asList("PRIVATE")));
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PUBLIC"))
-          .thenReturn(
-              coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getPreferredIp(
-                  Arrays.asList("PRIMARY")));
-
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
+              .getPreferredIp(Arrays.asList("PRIMARY")));
 
       GcpConnectionFactoryProviderMysql mysqlProvider = new GcpConnectionFactoryProviderMysql();
 
@@ -131,8 +116,7 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
       // Check that Driver, Host, and Port are set properly
       ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPublic.getBuilder().build();
-      assertThat(
-          mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
+      assertThat(mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
       assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(PUBLIC_IP);
       assertThat((int) mysqlOptions.getValue(PORT)).isEqualTo(
           CoreSocketFactory.getDefaultServerProxyPort());
