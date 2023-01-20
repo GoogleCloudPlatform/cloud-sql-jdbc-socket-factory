@@ -73,7 +73,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    */
   abstract ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
-      boolean enableIamAuth,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName);
@@ -139,7 +138,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       return socketConnectionFactory(optionBuilder, socket);
     }
 
-    return tcpConnectionFactory(optionBuilder, enableIamAuth, ipTypes,
+    return tcpConnectionFactory(optionBuilder, ipTypes,
         createSslCustomizer(connectionName, enableIamAuth),
         connectionName);
   }

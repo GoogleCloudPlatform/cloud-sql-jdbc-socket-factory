@@ -48,7 +48,6 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
   @Override
   ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
-      boolean enableIamAuth,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
