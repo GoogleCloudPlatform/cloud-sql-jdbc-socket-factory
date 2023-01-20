@@ -54,7 +54,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -123,7 +123,7 @@ public class GcpConnectionFactoryProviderTest {
     return sb.toString();
   }
 
-  @BeforeClass
+  @Before
   public void setup()
       throws IOException, GeneralSecurityException, ExecutionException, OperatorCreationException {
     MockitoAnnotations.openMocks(this);
