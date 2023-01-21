@@ -85,6 +85,8 @@ public class JdbcMysqlJ8UnixSocketIntegrationTests {
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("unixSocketPath", UNIX_SOCKET_PATH);
 
+    System.out.println(String.format("unixSocketPath: %s", UNIX_SOCKET_PATH));
+
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
     config.setJdbcUrl(jdbcURL);
