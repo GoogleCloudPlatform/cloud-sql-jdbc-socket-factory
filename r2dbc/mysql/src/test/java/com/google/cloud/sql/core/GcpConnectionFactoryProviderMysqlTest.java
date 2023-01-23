@@ -27,6 +27,8 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,8 +40,11 @@ import org.mockito.Mockito;
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryProviderTest {
 
-  private static String PRIVATE_IP_LABEL = "PRIVATE";
-  private static String PUBLIC_IP_LABEL = "PRIMARY";
+  private static Map<String, String> IP_LABEL = new HashMap<String,String>() {{
+    put("PUBLIC", "PRIMARY");
+    put("PRIVATE", "PRIVATE");
+  }};
+
   private ConnectionFactoryOptions privateIpOptions;
   private ConnectionFactoryOptions publicIpOptions;
 
@@ -62,14 +67,10 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
       mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
-
-      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PRIVATE"))
+      
+      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList("PRIVATE")));
-
-      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PUBLIC"))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList(ipType)));
+              .getPreferredIp(Arrays.asList(IP_LABEL.get(ipType))));
 
       GcpConnectionFactoryProviderMysql mysqlProvider = new GcpConnectionFactoryProviderMysql();
 
@@ -93,11 +94,11 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
   @Test
   public void setsCorrectOptionsForDriverHostAndPortPrivate() {
-    setsCorrectOptionsForDriverHostAndPort(PRIVATE_IP_LABEL, privateIpOptions, PRIVATE_IP);
+    setsCorrectOptionsForDriverHostAndPort("PRIVATE", privateIpOptions, PRIVATE_IP);
   }
 
   @Test
   public void setsCorrectOptionsForDriverHostAndPortPublic() {
-    setsCorrectOptionsForDriverHostAndPort(PUBLIC_IP_LABEL, publicIpOptions, PUBLIC_IP);
+    setsCorrectOptionsForDriverHostAndPort("PUBLIC", publicIpOptions, PUBLIC_IP);
   }
 }
