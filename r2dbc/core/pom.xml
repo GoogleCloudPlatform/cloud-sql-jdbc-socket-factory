@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.8.4-SNAPSHOT</version>
+    <version>1.9.0</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>

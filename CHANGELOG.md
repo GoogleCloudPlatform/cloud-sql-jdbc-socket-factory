@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.3...v1.9.0) (2023-01-23)
+
+
+### Features
+
+* enable setting ipType connection option for r2dbc drivers ([#937](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/937)) ([559952f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/559952f8246112c4d328d0cc620f0eb3806bbbc5))
+
 ## [1.8.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.2...v1.8.3) (2023-01-18)
 
 
