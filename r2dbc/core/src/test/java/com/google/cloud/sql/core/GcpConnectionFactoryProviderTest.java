@@ -61,7 +61,7 @@ import org.mockito.MockitoAnnotations;
 public class GcpConnectionFactoryProviderTest {
 
   static final String PUBLIC_IP = "127.0.0.1";
-  static final String PRIVATE_IP = "127.0.0.2";
+  static final String PRIVATE_IP = "10.0.0.1";
 
   ListeningScheduledExecutorService defaultExecutor;
   @Mock

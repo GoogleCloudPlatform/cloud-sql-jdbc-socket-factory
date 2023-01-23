@@ -38,8 +38,9 @@ import org.mockito.Mockito;
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryProviderTest {
 
+  private static String PRIVATE_IP_LABEL = "PRIVATE";
+  private static String PUBLIC_IP_LABEL = "PRIMARY";
   private ConnectionFactoryOptions privateIpOptions;
-
   private ConnectionFactoryOptions publicIpOptions;
 
   @Before
@@ -53,8 +54,8 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
     publicIpOptions = privateIpOptions.mutate().option(IP_TYPES, "PUBLIC").build();
   }
 
-  @Test
-  public void setsCorrectOptionsForDriverHostAndPortPrivate() {
+  public void setsCorrectOptionsForDriverHostAndPort(String ipType,
+      ConnectionFactoryOptions options, String expectedIp) {
     try (MockedStatic<CoreSocketFactory> mockSocketFactory = Mockito.mockStatic(
         CoreSocketFactory.class)) {
 
@@ -68,19 +69,19 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PUBLIC"))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList("PRIMARY")));
+              .getPreferredIp(Arrays.asList(ipType)));
 
       GcpConnectionFactoryProviderMysql mysqlProvider = new GcpConnectionFactoryProviderMysql();
 
       // Use the PrivateIP options to make a Cloud SQL Connection Factory
       CloudSqlConnectionFactory csqlConnFactoryPrivate = (CloudSqlConnectionFactory) mysqlProvider.create(
-          privateIpOptions);
+          options);
       csqlConnFactoryPrivate.setBuilderHostAndPort();
 
       // Check that Driver, Host, and Port are set properly
       ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPrivate.getBuilder().build();
       assertThat(mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
-      assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(PRIVATE_IP);
+      assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(expectedIp);
       assertThat((int) mysqlOptions.getValue(PORT)).isEqualTo(
           CoreSocketFactory.getDefaultServerProxyPort());
 
@@ -91,41 +92,12 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
   }
 
   @Test
-  public void setsCorrectOptionsForDriverHostAndPortPublic() {
-    try (MockedStatic<CoreSocketFactory> mockSocketFactory = Mockito.mockStatic(
-        CoreSocketFactory.class)) {
-
-      mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
-      mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
-
-      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PRIVATE"))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList("PRIVATE")));
-
-      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, "PUBLIC"))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList("PRIMARY")));
-
-      GcpConnectionFactoryProviderMysql mysqlProvider = new GcpConnectionFactoryProviderMysql();
-
-      // Use the PublicIP options to make a Cloud SQL Connection Factory
-      CloudSqlConnectionFactory csqlConnFactoryPublic = (CloudSqlConnectionFactory) mysqlProvider.create(
-          publicIpOptions);
-      csqlConnFactoryPublic.setBuilderHostAndPort();
-
-      // Check that Driver, Host, and Port are set properly
-      ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPublic.getBuilder().build();
-      assertThat(mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
-      assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(PUBLIC_IP);
-      assertThat((int) mysqlOptions.getValue(PORT)).isEqualTo(
-          CoreSocketFactory.getDefaultServerProxyPort());
-
-
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public void setsCorrectOptionsForDriverHostAndPortPrivate() {
+    setsCorrectOptionsForDriverHostAndPort(PRIVATE_IP_LABEL, privateIpOptions, PRIVATE_IP);
   }
 
-
+  @Test
+  public void setsCorrectOptionsForDriverHostAndPortPublic() {
+    setsCorrectOptionsForDriverHostAndPort(PUBLIC_IP_LABEL, publicIpOptions, PUBLIC_IP);
+  }
 }

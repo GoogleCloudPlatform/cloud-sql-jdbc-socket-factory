@@ -275,16 +275,14 @@ public final class CoreSocketFactory {
   /**
    * Returns default ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName)
-      throws IOException {
+  public static String getHostIp(String csqlInstanceName) throws IOException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
   /**
    * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName, String ipTypes)
-      throws IOException {
+  public static String getHostIp(String csqlInstanceName, String ipTypes) throws IOException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 

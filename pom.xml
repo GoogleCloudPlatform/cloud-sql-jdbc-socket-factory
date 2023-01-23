@@ -272,8 +272,8 @@
                 Necessary to allow guava into the assembly jars
                 com.google.guava:guava
 
-                Global test dependencies unused in r2dbc core (no tests currently):
-                junit:junit,com.google.truth:truth, org.bouncycastle:bcpkix-jdk15on
+                Global test dependencies unused in r2dbc core:
+                junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 -->
                 org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on
               </ignoredDependencies>
