@@ -54,6 +54,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   @Override
   ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
+      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
     optionBuilder
@@ -64,6 +65,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
     return new CloudSqlConnectionFactory(
         (ConnectionFactoryOptions options) ->
             new PostgresqlConnectionFactoryProvider().create(options),
+        ipTypes,
         optionBuilder,
         csqlHostName);
   }

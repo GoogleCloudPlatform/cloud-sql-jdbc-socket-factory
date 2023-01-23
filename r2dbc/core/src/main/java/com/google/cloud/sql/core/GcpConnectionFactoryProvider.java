@@ -37,6 +37,7 @@ import reactor.core.scheduler.Schedulers;
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
 
   public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
+  public static final Option<String> IP_TYPES = Option.valueOf("IP_TYPES");
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
 
   private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
@@ -72,6 +73,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    */
   abstract ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
+      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName);
 
@@ -110,7 +112,12 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   private ConnectionFactory createFactory(
       ConnectionFactoryOptions connectionFactoryOptions) throws IOException {
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
-    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
+
+    String ipTypes = CoreSocketFactory.DEFAULT_IP_TYPES;
+    Object ipTypesObj = connectionFactoryOptions.getValue(IP_TYPES);
+    if (ipTypesObj != null) {
+      ipTypes = (String) ipTypesObj;
+    }
 
     Object iamAuthObj = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
     Boolean enableIamAuth = false;
@@ -122,15 +129,17 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
 
-
     // Precompute SSL Data to trigger the initial refresh to happen immediately,
     // and ensure enableIAMAuth is set correctly.
     CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
+    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectionFactory(optionBuilder, createSslCustomizer(connectionName, enableIamAuth),
+
+    return tcpConnectionFactory(optionBuilder, ipTypes,
+        createSslCustomizer(connectionName, enableIamAuth),
         connectionName);
   }
 
