@@ -47,7 +47,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   }
 
   @Override
-  ConnectionFactory tcpConnectonFactory(
+  ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
