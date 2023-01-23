@@ -70,7 +70,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    * Creates a ConnectionFactory that creates an SSL connection over TCP, using driver-specific
    * options.
    */
-  abstract ConnectionFactory tcpConnectonFactory(
+  abstract ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName);
@@ -130,7 +130,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     if (socket != null) {
       return socketConnectionFactory(optionBuilder, socket);
     }
-    return tcpConnectonFactory(optionBuilder, createSslCustomizer(connectionName, enableIamAuth),
+    return tcpConnectionFactory(optionBuilder, createSslCustomizer(connectionName, enableIamAuth),
         connectionName);
   }
 

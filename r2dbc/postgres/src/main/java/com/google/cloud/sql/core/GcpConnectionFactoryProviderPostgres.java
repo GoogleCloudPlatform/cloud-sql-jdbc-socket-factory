@@ -52,7 +52,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   }
 
   @Override
-  ConnectionFactory tcpConnectonFactory(
+  ConnectionFactory tcpConnectionFactory(
       Builder optionBuilder,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
