@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.8.1-SNAPSHOT</version>
+    <version>1.9.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
@@ -44,7 +44,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.5.1</version>
+        <version>3.5.2</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -129,7 +129,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.28.0</version>
+        <version>3.29.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
@@ -235,6 +235,25 @@
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-pool</artifactId>
       <version>1.0.0.RELEASE</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>4.11.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>1.70</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
   </dependencies>

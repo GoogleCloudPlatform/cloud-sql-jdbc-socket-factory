@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.9.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.3...v1.9.0) (2023-01-23)
+
+
+### Features
+
+* enable setting ipType connection option for r2dbc drivers ([#937](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/937)) ([559952f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/559952f8246112c4d328d0cc620f0eb3806bbbc5))
+
+## [1.8.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.2...v1.8.3) (2023-01-18)
+
+
+### Bug Fixes
+
+* support Google OAuth Client credentials without expiration time ([#1117](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1117)) ([7b2aff4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7b2aff4c5d4ef17c4ffb46abefa5ab5a3c1160c7))
+
+## [1.8.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.1...v1.8.2) (2023-01-13)
+
+
+### Bug Fixes
+
+* support credentials from Google OAuth Client ([#1097](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1097)) ([cf024eb](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/cf024eb609cb79f4e819ecf25b74f1787885616a))
+
+## [1.8.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.0...v1.8.1) (2023-01-11)
+
+
+### Bug Fixes
+
+* throw exception on invalid IAM Authn config ([#1082](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1082)) ([2100d24](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2100d2424bae696dba857e57235bb2e374938614))
+
+
 ## [1.8.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.7.2...v1.8.0) (2022-12-08)
 
 

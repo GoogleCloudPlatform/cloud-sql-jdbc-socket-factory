@@ -78,7 +78,7 @@ public final class CoreSocketFactory {
 
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
-  private static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
+  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
 
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
@@ -152,25 +152,17 @@ public final class CoreSocketFactory {
     return coreSocketFactory;
   }
 
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName) {
+    return getCloudSqlInstance(instanceName, false);
+  }
+
   private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
           try {
             return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-                localKeyPair);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  private CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return instances.computeIfAbsent(
-        instanceName,
-        k -> {
-          try {
-            return new CloudSqlInstance(k, adminApi, false, credentialFactory, executor,
                 localKeyPair);
           } catch (IOException e) {
             throw new RuntimeException(e);
@@ -273,18 +265,28 @@ public final class CoreSocketFactory {
     return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
   }
 
+  /**
+   * Returns data that can be used to establish Cloud SQL SSL connection.
+   */
   public static SslData getSslData(String csqlInstanceName) throws IOException {
     return getSslData(csqlInstanceName, false);
   }
 
   /**
-   * Returns preferred ip address that can be used to establish Cloud SQL connection.
+   * Returns default ip address that can be used to establish Cloud SQL connection.
    */
   public static String getHostIp(String csqlInstanceName) throws IOException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
-  private String getHostIp(String instanceName, List<String> ipTypes) {
+  /**
+   * Returns preferred ip address that can be used to establish Cloud SQL connection.
+   */
+  public static String getHostIp(String csqlInstanceName, String ipTypes) throws IOException {
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
+  }
+
+  private String getHostIp(String instanceName,  List<String> ipTypes) {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }

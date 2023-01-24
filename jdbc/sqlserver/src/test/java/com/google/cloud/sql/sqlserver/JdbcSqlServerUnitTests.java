@@ -27,7 +27,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class JdbcSqlServerUnitTests {
 
-  private static final String CONNECTION_NAME = "my-projectmy-regionmy-instance";
+  private static final String CONNECTION_NAME = "my-project:my-region:my-instance";
 
   @Test
   public void checkConnectionStringNoQueryParams()

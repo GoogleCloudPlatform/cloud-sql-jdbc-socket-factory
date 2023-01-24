@@ -23,7 +23,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.8.1-SNAPSHOT</version>
+    <version>1.9.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -76,7 +76,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.28.0</version>
+        <version>3.29.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>

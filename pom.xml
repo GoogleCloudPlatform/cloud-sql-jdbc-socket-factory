@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.8.1-SNAPSHOT</version>
+  <version>1.9.1-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -73,7 +73,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.9.19</native-image.version>
-    <graal-sdk.version>22.3.0</graal-sdk.version>
+    <graal-sdk.version>22.3.1</graal-sdk.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -100,7 +100,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.13.0</version>
+        <version>2.14.1</version>
       </plugin>
 
       <plugin>
@@ -182,7 +182,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M7</version>
+        <version>3.0.0-M8</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -256,7 +256,7 @@
             <!--  There's a bug in the plugin that prevents us from failing on warning in the latest version (3.2.0).
                   Once a new version (> 3.2.0) is released, we can upgrade the plugin to latest.
                   See https://issues.apache.org/jira/browse/MDEP-753 -->
-            <version>3.4.0</version>
+            <version>3.5.0</version>
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredDependencies>
@@ -272,10 +272,10 @@
                 Necessary to allow guava into the assembly jars
                 com.google.guava:guava
 
-                Global test dependencies unused in r2dbc core (no tests currently):
-                junit:junit,com.google.truth:truth
+                Global test dependencies unused in r2dbc core:
+                junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -297,7 +297,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.0.0-M7</version>
+            <version>3.0.0-M8</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -392,12 +392,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.9.1</version>
+            <version>1.9.2</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.9.1</version>
+            <version>1.9.2</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -407,7 +407,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.9.1</version>
+          <version>5.9.2</version>
           <scope>test</scope>
         </dependency>
 

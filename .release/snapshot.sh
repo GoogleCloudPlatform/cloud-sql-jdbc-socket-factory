@@ -1,4 +1,5 @@
-# Copyright 2021 Google LLC
+#! /bin/bash
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: release-please
-on:
-  push:
-    branches:
-      - main
-jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: GoogleCloudPlatform/release-please-action@v3.5.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: simple
-          package-name: cloud-sql-java-connector
+VERSION=$(cat version.txt)
+regex="([0-9]+).([0-9]+).([0-9]+)"
+
+if [[ $VERSION =~ $regex ]]; then
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+  build="${BASH_REMATCH[3]}"
+fi
+
+build="$(echo $build + 1 | bc)"
+
+echo "${major}.${minor}.${build}-SNAPSHOT" > version.txt

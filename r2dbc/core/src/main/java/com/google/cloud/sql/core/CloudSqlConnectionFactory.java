@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
@@ -36,15 +37,18 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
   private ConnectionFactoryOptions.Builder builder;
   private String csqlHostName;
+  private String ipTypes;
 
   /**
    * Creates an instance of ConnectionFactory that pulls and sets host ip before delegating.
    */
   public CloudSqlConnectionFactory(
       Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory,
+      String ipTypes,
       Builder builder,
       String csqlHostName) {
     this.connectionFactoryFactory = connectionFactoryFactory;
+    this.ipTypes = ipTypes;
     this.builder = builder;
     this.csqlHostName = csqlHostName;
   }
@@ -67,9 +71,20 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
     }
   }
 
-  private ConnectionFactory getConnectionFactory() throws IOException {
-    String hostIp = CoreSocketFactory.getHostIp(csqlHostName);
+  @VisibleForTesting
+  void setBuilderHostAndPort() throws IOException {
+    String hostIp = CoreSocketFactory.getHostIp(csqlHostName, ipTypes);
     builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
+  }
+
+  @VisibleForTesting
+  ConnectionFactoryOptions.Builder getBuilder() throws IOException {
+    return builder;
+  }
+
+
+  private ConnectionFactory getConnectionFactory() throws IOException {
+    setBuilderHostAndPort();
     return connectionFactoryFactory.apply(builder.build());
   }
 }
