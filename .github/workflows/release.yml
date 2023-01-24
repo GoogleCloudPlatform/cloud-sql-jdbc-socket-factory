@@ -98,7 +98,7 @@ jobs:
       uses: tubone24/update_release@v1.0
       env:
         GITHUB_TOKEN: ${{ secrets.RELEASE_BOT_PAT }}
-        RELEASE_TAG: ${{ needs.release-please.outputs.release_tag }}
+        TAG_NAME: ${{ needs.release-please.outputs.release_tag }}
       with:
         body: ${{ env.RELEASE_TABLE }}
   
