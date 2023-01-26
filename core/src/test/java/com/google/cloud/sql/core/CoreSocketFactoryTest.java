@@ -429,7 +429,7 @@ public class CoreSocketFactoryTest {
 
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
-    assertThrows(RuntimeException.class, () -> {
+    assertThrows("Not supporting credentials of type ", RuntimeException.class, () -> {
       coreSocketFactory.createSslSocket(
           "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
     });
