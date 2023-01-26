@@ -29,6 +29,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential;
 import com.google.api.client.http.*;
 import com.google.api.client.json.GenericJson;
 import com.google.api.client.json.Json;
@@ -125,8 +126,9 @@ public class CoreSocketFactoryTest {
   @Mock
   private SQLAdmin.Connect.GenerateEphemeralCert adminApiConnectGenerateEphemeralCert;
 
-  @Mock
-  private GenerateEphemeralCertResponse generateEphemeralCertResponse;
+
+  private GenerateEphemeralCertResponse generateEphemeralCertResponse = new GenerateEphemeralCertResponse();
+
 
   private ListenableFuture<KeyPair> clientKeyPair;
 
@@ -185,10 +187,11 @@ public class CoreSocketFactoryTest {
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                 .setDatabaseVersion("POSTGRES14")
                 .setRegion("myRegion"));
+
     when(adminApiConnectGenerateEphemeralCert.execute())
         .thenReturn(generateEphemeralCertResponse);
-    when(generateEphemeralCertResponse.getEphemeralCert())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+    generateEphemeralCertResponse.setEphemeralCert(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+
   }
 
   @Test
@@ -379,11 +382,11 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
-    GoogleCredential customCredential = mock(GoogleCredential.class);
+    MockGoogleCredential customCredential = new MockGoogleCredential.Builder().build();
     when(credentialFactory.create()).thenReturn(customCredential);
 
-    when(customCredential.getAccessToken()).thenReturn("foo");
-    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(null);
+    customCredential.setAccessToken("foo");
+    customCredential.setExpirationTimeMilliseconds(60000L);
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
@@ -399,11 +402,11 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void supportsCustomCredentialFactoryWithNoExpirationTime() throws InterruptedException, IOException {
-    GoogleCredential customCredential = mock(GoogleCredential.class);
+    MockGoogleCredential customCredential = new MockGoogleCredential.Builder().build();
     when(credentialFactory.create()).thenReturn(customCredential);
 
-    when(customCredential.getAccessToken()).thenReturn("foo");
-    when(customCredential.getExpirationTimeMilliseconds()).thenReturn(null);
+    customCredential.setAccessToken("foo");
+    customCredential.setExpirationTimeMilliseconds(null);
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
@@ -419,7 +422,7 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException, IOException {
-    BasicAuthentication nonGoogleCredential = mock(BasicAuthentication.class);
+    BasicAuthentication nonGoogleCredential = new BasicAuthentication("user", "password");
     when(credentialFactory.create()).thenReturn(nonGoogleCredential);
 
     FakeSslServer sslServer = new FakeSslServer();
