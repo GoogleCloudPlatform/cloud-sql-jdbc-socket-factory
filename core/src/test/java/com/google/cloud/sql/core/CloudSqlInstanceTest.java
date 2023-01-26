@@ -43,15 +43,14 @@ public class CloudSqlInstanceTest {
   @Mock
   private OAuth2Credentials oAuth2Credentials;
 
-  @Mock
-  private ConnectSettings instanceData;
+  private ConnectSettings instanceData = new ConnectSettings();
 
   @Before
   public void setup() throws IOException {
     MockitoAnnotations.openMocks(this);
     when(googleCredentials.createScoped(
         "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
-    when(instanceData.getDatabaseVersion()).thenReturn("SQLSERVER_2019_STANDARD");
+    instanceData.setDatabaseVersion("SQLSERVER_2019_STANDARD");
   }
 
   @Test

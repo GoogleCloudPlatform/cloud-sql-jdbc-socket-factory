@@ -125,8 +125,9 @@ public class CoreSocketFactoryTest {
   @Mock
   private SQLAdmin.Connect.GenerateEphemeralCert adminApiConnectGenerateEphemeralCert;
 
-  @Mock
-  private GenerateEphemeralCertResponse generateEphemeralCertResponse;
+
+  private GenerateEphemeralCertResponse generateEphemeralCertResponse = new GenerateEphemeralCertResponse();
+
 
   private ListenableFuture<KeyPair> clientKeyPair;
 
@@ -185,10 +186,11 @@ public class CoreSocketFactoryTest {
                 .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                 .setDatabaseVersion("POSTGRES14")
                 .setRegion("myRegion"));
+
     when(adminApiConnectGenerateEphemeralCert.execute())
         .thenReturn(generateEphemeralCertResponse);
-    when(generateEphemeralCertResponse.getEphemeralCert())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+    generateEphemeralCertResponse.setEphemeralCert(new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+
   }
 
   @Test
