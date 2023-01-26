@@ -16,15 +16,6 @@
 # `-e` enables the script to automatically fail when a command fails
 set -e
 
-# Kokoro setup
-if [ -n "$KOKORO_GFILE_DIR" ]; then
-  # Move into project directory
-  cd github/cloud-sql-jdbc-socket-factory
-  # source secrets
-  source "${KOKORO_GFILE_DIR}/TEST_SECRETS.sh"
-  export GOOGLE_APPLICATION_CREDENTIALS="${KOKORO_GFILE_DIR}/testing-service-account.json"
-fi
-
 echo -e "******************** Installing modules... ********************\n"
 mvn -e -B install -DskipTests
 echo -e "******************** Installation complete.  ********************\n"
