@@ -258,6 +258,7 @@
     </dependency>
   </dependencies>
 
+
   <profiles>
     <profile>
       <id>jar-with-driver-and-dependencies</id>
@@ -266,6 +267,23 @@
           <groupId>org.mariadb</groupId>
           <artifactId>r2dbc-mariadb</artifactId>
           <version>1.1.3</version>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>macos-m1</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-resolver-dns-native-macos</artifactId>
+          <classifier>osx-x86_64</classifier>
+          <version>4.1.82.Final</version>
         </dependency>
       </dependencies>
     </profile>
