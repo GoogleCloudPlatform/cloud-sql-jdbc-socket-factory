@@ -421,7 +421,7 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException, IOException {
-    BasicAuthentication nonGoogleCredential = mock(BasicAuthentication.class);
+    BasicAuthentication nonGoogleCredential = new BasicAuthentication("user", "password");
     when(credentialFactory.create()).thenReturn(nonGoogleCredential);
 
     FakeSslServer sslServer = new FakeSslServer();
