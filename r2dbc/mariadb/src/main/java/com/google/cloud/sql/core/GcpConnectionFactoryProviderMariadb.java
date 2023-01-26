@@ -24,11 +24,14 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
-import org.mariadb.r2dbc.SslMode;
 
-/** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
+/**
+ * {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances.
+ */
 public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryProvider {
+
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mariadb");
   }
@@ -41,13 +44,25 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
   @Override
   ConnectionFactory tcpConnectionFactory(
       ConnectionFactoryOptions.Builder optionBuilder,
+      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName) {
+
+    // The MariaDB driver accepts the UnaryOperator interface so we need to adapt the customizer
+    // function passed in
+    UnaryOperator<SslContextBuilder> unaryCustomizer = (sslContextBuilder) -> customizer.apply(
+        sslContextBuilder);
+
+    optionBuilder
+        .option(MariadbConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, unaryCustomizer)
+        .option(MariadbConnectionFactoryProvider.TCP_KEEP_ALIVE, true)
+        .option(MariadbConnectionFactoryProvider.SSL_MODE, "tunnel");
+
     return new CloudSqlConnectionFactory(
-        (ConnectionFactoryOptions options) ->
-            new MariadbConnectionFactoryProvider().create(options),
-        optionBuilder
-            .option(MariadbConnectionFactoryProvider.TCP_KEEP_ALIVE, true),
+        (ConnectionFactoryOptions options) -> new MariadbConnectionFactoryProvider().create(
+            options),
+        ipTypes,
+        optionBuilder,
         csqlHostName);
   }
 
