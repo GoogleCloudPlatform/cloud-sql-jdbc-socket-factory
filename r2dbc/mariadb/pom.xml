@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2021 Google LLC
+ Copyright 2023 Google LLC
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
   <artifactId>cloud-sql-connector-r2dbc-mariadb</artifactId>
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory for Mariadb</name>
+  <name>Cloud SQL R2DBC Connection Factory for MariaDB</name>
   <description>
     R2DBC ConnectionFactory to connect to a Cloud SQL MySQL database without having to deal with IP allowlisting or SSL
     certificates manually.
