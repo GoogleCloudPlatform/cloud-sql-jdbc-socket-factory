@@ -73,7 +73,11 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
+    try {
+      return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

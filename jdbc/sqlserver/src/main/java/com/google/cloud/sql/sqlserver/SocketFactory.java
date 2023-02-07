@@ -71,7 +71,11 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   @Override
   public Socket createSocket() throws IOException {
-    return CoreSocketFactory.connect(props);
+    try {
+      return CoreSocketFactory.connect(props);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

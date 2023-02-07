@@ -38,10 +38,10 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import dev.failsafe.RateLimiter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -95,12 +95,7 @@ class CloudSqlInstance {
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
-  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(5);
-  // iamAuthRefreshBuffer is the minimum amount of time for which a
-  // certificate holding an Access Token must be valid. Because some token
-  // sources are refreshed with only ~60 seconds before expiration, this value
-  // must be smaller than the defaultRefreshBuffer.
-  private static final Duration IAM_AUTH_REFRESH_BUFFER = Duration.ofSeconds(55);
+  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
   private final boolean enableIamAuth;
@@ -113,7 +108,8 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
+  private final RateLimiter<Object> forcedRenewRateLimiter = RateLimiter.burstyBuilder(2,
+      Duration.ofSeconds(30)).build();
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
   @GuardedBy("instanceDataGuard")
@@ -123,7 +119,11 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format
+<<<<<<< HEAD
    *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+=======
+   * "PROJECT_ID:REGION_ID:INSTANCE_ID"
+>>>>>>> 8adaf5d (feat: update refresh calculation algorithm to support 24-hour ephemeral certs)
    * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
@@ -134,7 +134,7 @@ class CloudSqlInstance {
       boolean enableIamAuth,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) throws IOException {
+      ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
 
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
@@ -335,10 +335,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *     "Private".
+   * "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   *     preferences.
+   * preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -361,7 +361,7 @@ class CloudSqlInstance {
    *
    * @return {@code true} if successfully scheduled, or {@code false} otherwise.
    */
-  boolean forceRefresh() {
+  boolean forceRefresh() throws InterruptedException {
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
@@ -380,9 +380,9 @@ class CloudSqlInstance {
    * value of currentInstanceData and schedules the next refresh shortly before the information
    * would expire.
    */
-  private ListenableFuture<InstanceData> performRefresh() {
+  private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
-    forcedRenewRateLimiter.acquire(1);
+    forcedRenewRateLimiter.acquirePermit();
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(this::fetchMetadata);
     ListenableFuture<Certificate> ephemeralCertificateFuture =
@@ -432,7 +432,7 @@ class CloudSqlInstance {
               // schedule a replacement before the SSLContext expires;
               nextInstanceData = executor
                   .schedule(() -> performRefresh(),
-                      secondsUntilRefresh(),
+                      secondsUntilRefresh(getInstanceData().getExpiration()),
                       TimeUnit.SECONDS);
             }
           }
@@ -452,7 +452,11 @@ class CloudSqlInstance {
                 // replace current if it is expired or invalid
                 currentInstanceData = refreshFuture;
               }
-              nextInstanceData = Futures.immediateFuture(performRefresh());
+              try {
+                nextInstanceData = Futures.immediateFuture(performRefresh());
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
             }
           }
         }, executor);
@@ -632,21 +636,20 @@ class CloudSqlInstance {
         .map(expirationTime -> new Date(expirationTime));
   }
 
-  private long secondsUntilRefresh() {
-    Duration refreshBuffer = enableIamAuth ? IAM_AUTH_REFRESH_BUFFER : DEFAULT_REFRESH_BUFFER;
+  static long secondsUntilRefresh(Date expiration) {
+    Duration timeUntilExp = Duration.between(Instant.now(), expiration.toInstant());
 
-    Date expiration = getInstanceData().getExpiration();
-
-    Duration timeUntilRefresh = Duration.between(Instant.now(), expiration.toInstant())
-        .minus(refreshBuffer);
-
-    if (timeUntilRefresh.isNegative()) {
-      // If the time until the certificate expires is less than the buffer, schedule the refresh
-      // closer to the expiration time
-      timeUntilRefresh = Duration.between(Instant.now(), expiration.toInstant())
-          .minus(Duration.ofSeconds(5));
+    if (timeUntilExp.compareTo(Duration.ofHours(1)) < 0) {
+      if (timeUntilExp.compareTo(DEFAULT_REFRESH_BUFFER) < 0) {
+        // If the time until the certificate expires is less the refresh buffer, schedule the refresh
+        // immediately
+        return 0;
+      }
+      // Otherwise schedule a refresh in (timeUntilExp - buffer) seconds
+      return timeUntilExp.minus(DEFAULT_REFRESH_BUFFER).getSeconds();
     }
-    return timeUntilRefresh.getSeconds();
+    // If the time until the certificate expires is longer than an hour, return timeUntilExp//2
+    return timeUntilExp.dividedBy(2).getSeconds();
   }
 
   /**
@@ -655,7 +658,7 @@ class CloudSqlInstance {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   *     provided to the user
+   * provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
