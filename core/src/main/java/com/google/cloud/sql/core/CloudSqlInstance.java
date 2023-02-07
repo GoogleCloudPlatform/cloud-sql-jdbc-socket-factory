@@ -112,20 +112,18 @@ class CloudSqlInstance {
   private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
-
-  @GuardedBy("instanceDataGuard")
-  private ListenableFuture<InstanceData> currentInstanceData;
-
-  @GuardedBy("instanceDataGuard")
-  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
-
   // Limit forced refreshes to 1 every minute.
   private final RateLimiter forcedRenewRateLimiter = RateLimiter.create(1.0 / 60.0);
+  @GuardedBy("instanceDataGuard")
+  private ListenableFuture<InstanceData> currentInstanceData;
+  @GuardedBy("instanceDataGuard")
+  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param connectionName instance connection name in the format
+   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
@@ -170,37 +168,6 @@ class CloudSqlInstance {
       this.currentInstanceData = performRefresh();
       this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
     }
-  }
-
-  private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
-    if (source instanceof HttpCredentialsAdapter) {
-      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
-      return (OAuth2Credentials) adapter.getCredentials();
-    }
-
-    if (source instanceof Credential) {
-      Credential credential = (Credential) source;
-      AccessToken accessToken = new AccessToken(
-          credential.getAccessToken(),
-          getTokenExpirationTime(credential).orElse(null)
-      );
-      GoogleCredentials googleCredentials = new GoogleCredentials(accessToken) {
-
-        @Override
-        public AccessToken refreshAccessToken() throws IOException {
-          credential.refreshToken();
-
-          return new AccessToken(
-              credential.getAccessToken(),
-              getTokenExpirationTime(credential).orElse(null)
-          );
-        }
-      };
-
-      return googleCredentials;
-    }
-
-    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
   }
 
   /**
@@ -280,6 +247,60 @@ class CloudSqlInstance {
     byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
     ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
     return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
+  }
+
+  static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, boolean iamAuth,
+      String connectionName) {
+    if (iamAuth && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
+      throw new IllegalArgumentException(
+          String.format(
+              "[%s] IAM Authentication is not supported for SQL Server instances.",
+              connectionName));
+    }
+  }
+
+  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+    GoogleCredentials downscoped;
+    try {
+      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
+      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+    } catch (ClassCastException ex) {
+      throw new RuntimeException(
+          "Failed to downscope credentials for IAM Authentication:",
+          ex);
+    }
+    return downscoped;
+  }
+
+  private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
+    if (source instanceof HttpCredentialsAdapter) {
+      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
+      return (OAuth2Credentials) adapter.getCredentials();
+    }
+
+    if (source instanceof Credential) {
+      Credential credential = (Credential) source;
+      AccessToken accessToken = new AccessToken(
+          credential.getAccessToken(),
+          getTokenExpirationTime(credential).orElse(null)
+      );
+      GoogleCredentials googleCredentials = new GoogleCredentials(accessToken) {
+
+        @Override
+        public AccessToken refreshAccessToken() throws IOException {
+          credential.refreshToken();
+
+          return new AccessToken(
+              credential.getAccessToken(),
+              getTokenExpirationTime(credential).orElse(null)
+          );
+        }
+      };
+
+      return googleCredentials;
+    }
+
+    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
   }
 
   /**
@@ -492,16 +513,6 @@ class CloudSqlInstance {
     }
   }
 
-  static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, boolean iamAuth,
-      String connectionName) {
-    if (iamAuth && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
-      throw new IllegalArgumentException(
-          String.format(
-              "[%s] IAM Authentication is not supported for SQL Server instances.",
-              connectionName));
-    }
-  }
-
   /**
    * Fetches the latest version of the instance's metadata using the Cloud SQL Admin API.
    */
@@ -527,7 +538,6 @@ class CloudSqlInstance {
       }
 
       checkDatabaseCompatibility(instanceMetadata, enableIamAuth, connectionName);
-
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (instanceMetadata.getIpAddresses().isEmpty()) {
@@ -611,19 +621,6 @@ class CloudSqlInstance {
     }
 
     return ephemeralCertificate;
-  }
-
-  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
-    GoogleCredentials downscoped;
-    try {
-      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
-      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
-    } catch (ClassCastException ex) {
-      throw new RuntimeException(
-          "Failed to downscope credentials for IAM Authentication:",
-          ex);
-    }
-    return downscoped;
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
