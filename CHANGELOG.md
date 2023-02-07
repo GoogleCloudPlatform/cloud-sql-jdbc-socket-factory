@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.9.0...v1.10.0) (2023-02-07)
+
+
+### Features
+
+* improve reliability of refresh operations ([#1147](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1147)) ([e7c7bdd](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e7c7bdd669001373b5f2775816aa5ed1c52bb1d6))
+
 ## [1.9.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.8.3...v1.9.0) (2023-01-23)
 
 
