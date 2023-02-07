@@ -100,7 +100,8 @@ public class CloudSqlInstanceTest {
   @Test
   public void timeUntilRefresh1Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(59)));
-    assertThat(CloudSqlInstance.secondsUntilRefresh(expiration)).isEqualTo(55L);
+    Long expected = Duration.ofMinutes(59).minus(Duration.ofMinutes(4)).getSeconds();
+    assertThat(CloudSqlInstance.secondsUntilRefresh(expiration)).isEqualTo(expected);
   }
 
   @Test
