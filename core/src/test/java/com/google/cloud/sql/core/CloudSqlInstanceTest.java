@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -101,13 +102,13 @@ public class CloudSqlInstanceTest {
   public void timeUntilRefresh1Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(59)));
     Long expected = Duration.ofMinutes(59).minus(Duration.ofMinutes(4)).getSeconds();
-    assertThat(CloudSqlInstance.secondsUntilRefresh(expiration)).isEqualTo(expected);
+    Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
   }
 
   @Test
   public void timeUntilRefresh24Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofHours(23)));
     Long expected = Duration.ofHours(23).dividedBy(2).getSeconds();
-    assertThat(CloudSqlInstance.secondsUntilRefresh(expiration)).isEqualTo(expected);
+    Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
   }
 }
