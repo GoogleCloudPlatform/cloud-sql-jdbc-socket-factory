@@ -268,6 +268,22 @@ class CloudSqlInstance {
     return downscoped;
   }
 
+  static long secondsUntilRefresh(Date expiration) {
+    Duration timeUntilExp = Duration.between(Instant.now(), expiration.toInstant());
+
+    if (timeUntilExp.compareTo(Duration.ofHours(1)) < 0) {
+      if (timeUntilExp.compareTo(DEFAULT_REFRESH_BUFFER) < 0) {
+        // If the time until the certificate expires is less the refresh buffer, schedule the
+        // refresh immediately
+        return 0;
+      }
+      // Otherwise schedule a refresh in (timeUntilExp - buffer) seconds
+      return timeUntilExp.minus(DEFAULT_REFRESH_BUFFER).getSeconds();
+    }
+    // If the time until the certificate expires is longer than an hour, return timeUntilExp//2
+    return timeUntilExp.dividedBy(2).getSeconds();
+  }
+
   private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
     if (source instanceof HttpCredentialsAdapter) {
       HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
@@ -630,22 +646,6 @@ class CloudSqlInstance {
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
     return Optional.ofNullable(credentials.getExpirationTimeMilliseconds())
         .map(expirationTime -> new Date(expirationTime));
-  }
-
-  static long secondsUntilRefresh(Date expiration) {
-    Duration timeUntilExp = Duration.between(Instant.now(), expiration.toInstant());
-
-    if (timeUntilExp.compareTo(Duration.ofHours(1)) < 0) {
-      if (timeUntilExp.compareTo(DEFAULT_REFRESH_BUFFER) < 0) {
-        // If the time until the certificate expires is less the refresh buffer, schedule the
-        // refresh immediately
-        return 0;
-      }
-      // Otherwise schedule a refresh in (timeUntilExp - buffer) seconds
-      return timeUntilExp.minus(DEFAULT_REFRESH_BUFFER).getSeconds();
-    }
-    // If the time until the certificate expires is longer than an hour, return timeUntilExp//2
-    return timeUntilExp.dividedBy(2).getSeconds();
   }
 
   /**
