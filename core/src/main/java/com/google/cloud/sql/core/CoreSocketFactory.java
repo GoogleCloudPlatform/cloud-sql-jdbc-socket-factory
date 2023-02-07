@@ -164,7 +164,7 @@ public final class CoreSocketFactory {
           try {
             return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
                 localKeyPair);
-          } catch (IOException e) {
+          } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
           }
         });
@@ -211,7 +211,7 @@ public final class CoreSocketFactory {
   /**
    * Creates a socket representing a connection to a Cloud SQL instance.
    */
-  public static Socket connect(Properties props) throws IOException {
+  public static Socket connect(Properties props) throws IOException, InterruptedException {
     return connect(props, null);
   }
 
@@ -225,7 +225,8 @@ public final class CoreSocketFactory {
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public static Socket connect(Properties props, String unixPathSuffix) throws IOException {
+  public static Socket connect(Properties props, String unixPathSuffix)
+      throws IOException, InterruptedException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
@@ -303,7 +304,7 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
-      throws IOException {
+      throws IOException, InterruptedException {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
 
     try {
@@ -327,7 +328,8 @@ public final class CoreSocketFactory {
     }
   }
 
-  Socket createSslSocket(String instanceName, List<String> ipTypes) throws IOException {
+  Socket createSslSocket(String instanceName, List<String> ipTypes)
+      throws IOException, InterruptedException {
     return createSslSocket(instanceName, ipTypes, false);
   }
 

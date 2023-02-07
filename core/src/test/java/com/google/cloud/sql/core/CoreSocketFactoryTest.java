@@ -201,7 +201,7 @@ public class CoreSocketFactoryTest {
     try {
       coreSocketFactory.createSslSocket("myProject", Arrays.asList("PRIMARY"));
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException | InterruptedException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
@@ -210,6 +210,8 @@ public class CoreSocketFactoryTest {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -225,6 +227,8 @@ public class CoreSocketFactoryTest {
       assertThat(e)
           .hasMessageThat()
           .contains("The region specified for the Cloud SQL instance is incorrect");
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -350,7 +354,7 @@ public class CoreSocketFactoryTest {
       coreSocketFactory.createSslSocket(
           "NotMyProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | InterruptedException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
       assertThat(e)
           .hasMessageThat()
@@ -377,6 +381,8 @@ public class CoreSocketFactoryTest {
               String.format(
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
                   "myProject:myRegion:NotMyInstance"));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 

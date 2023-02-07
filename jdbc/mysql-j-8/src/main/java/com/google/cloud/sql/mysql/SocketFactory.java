@@ -39,7 +39,11 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   @Override
   public <T extends Closeable> T connect(
       String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
-    return connect(host, portNumber, props.exposeAsProperties(), loginTimeout);
+    try {
+      return connect(host, portNumber, props.exposeAsProperties(), loginTimeout);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -47,7 +51,8 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    * to version 8.0.13. This change is required for backwards compatibility.
    */
   public <T extends Closeable> T connect(
-      String host, int portNumber, Properties props, int loginTimeout) throws IOException {
+      String host, int portNumber, Properties props, int loginTimeout)
+      throws IOException, InterruptedException {
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;
