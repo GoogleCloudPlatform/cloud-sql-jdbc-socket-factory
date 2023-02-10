@@ -1,8 +1,5 @@
 ## Cloud SQL Connector for Java
 
-![CI Java 8][ci-badge-java-8]
-![CI Java 11][ci-badge-java-11]
-
 [![CI][ci-badge]][ci-build]
 
 [ci-badge]: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/actions/workflows/tests.yaml/badge.svg
