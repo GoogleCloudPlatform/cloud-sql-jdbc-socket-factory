@@ -1,7 +1,9 @@
 ## Cloud SQL Connector for Java
 
-![CI Java 8][ci-badge-java-8]
-![CI Java 11][ci-badge-java-11]
+[![CI][ci-badge]][ci-build]
+
+[ci-badge]: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/actions/workflows/tests.yml/badge.svg?event=push
+[ci-build]: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/actions/workflows/tests.yml?query=event%3Apush+branch%3Amain
 
 The Cloud SQL Connector for Java is a library that provides IAM-based authorization and encryption when connecting to a Cloud SQL instance. It can *not* provide a network path to a Cloud SQL instance if one is not already present.  See the [Connecting Overview](https://cloud.google.com/sql/docs/mysql/connect-overview) page for more information on connecting to a Cloud SQL instance.
 
@@ -67,9 +69,6 @@ Here are some troubleshooting tips to resolve common issues that come up when us
 
 1. Make sure you are using the latest version of the Cloud SQL Connector and your database driver to avoid incompatibilities. Some older versions of drivers are not supported
 1. The Java connector provides authorization for connections, but it does not provide new paths to connectivity. For example, in order to connect to a Cloud SQL instance using a Private IP address, your application must already have VPC access. 
-
-[ci-badge-java-8]: https://storage.googleapis.com/cloud-devrel-public/cloud-sql-connectors/java/java8_linux.svg
-[ci-badge-java-11]: https://storage.googleapis.com/cloud-devrel-public/cloud-sql-connectors/java/java11_linux.svg
 
 ## Support policy
 
