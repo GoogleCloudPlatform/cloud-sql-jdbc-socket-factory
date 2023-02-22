@@ -79,6 +79,7 @@
 
   <modules>
     <module>core</module>
+    <module>jdbc/mariadb</module>
     <module>jdbc/mysql-j-5</module>
     <module>jdbc/mysql-j-8</module>
     <module>jdbc/postgres</module>
