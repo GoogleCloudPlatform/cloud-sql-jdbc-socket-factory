@@ -48,7 +48,7 @@ public class JdbcMariaDBIamAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
   private static ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("MYSQL_CONNECTION_NAME", "MYSQL_DB", "MYSQL_IAM_USER");
+      .of("MYSQL_IAM_CONNECTION_NAME", "MYSQL_DB", "MYSQL_IAM_USER");
   @Rule
   public Timeout globalTimeout = new Timeout(60, TimeUnit.SECONDS);
 
