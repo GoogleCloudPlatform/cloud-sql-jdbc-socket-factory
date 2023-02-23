@@ -531,7 +531,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.4.2</version>
+            <version>3.5.0</version>
             <configuration>
               <!-- get all project dependencies -->
               <descriptorRefs>
@@ -564,7 +564,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.4.2</version>
+            <version>3.5.0</version>
             <configuration>
               <!-- get all project dependencies -->
               <descriptorRefs>
