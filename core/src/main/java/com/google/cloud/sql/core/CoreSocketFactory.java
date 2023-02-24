@@ -253,7 +253,7 @@ public final class CoreSocketFactory {
     }
 
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-    logger.info(
+    logger.fine(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
     return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
   }
