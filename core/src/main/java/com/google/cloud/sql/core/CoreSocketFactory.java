@@ -28,7 +28,9 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -42,12 +44,14 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -64,6 +68,8 @@ import jnr.unixsocket.UnixSocketChannel;
 public final class CoreSocketFactory {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+
+  public static final String SERVICE_ACCOUNT_IMPERSONATION_PROPERTY = "serviceAccounts";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
 
   /**
@@ -117,7 +123,7 @@ public final class CoreSocketFactory {
   /**
    * Returns the {@link CoreSocketFactory} singleton.
    */
-  public static synchronized CoreSocketFactory getInstance() throws IOException {
+  public static synchronized CoreSocketFactory getInstance(@Nullable Properties props) {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
@@ -134,7 +140,7 @@ public final class CoreSocketFactory {
           throw new RuntimeException(err);
         }
       } else {
-        credentialFactory = new ApplicationDefaultCredentialFactory();
+        credentialFactory = new ApplicationDefaultCredentialFactory(props);
       }
 
       HttpRequestInitializer credential = credentialFactory.create();
@@ -154,16 +160,16 @@ public final class CoreSocketFactory {
 
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(instanceName, false);
+    return getCloudSqlInstance(instanceName, false, Collections.emptyList());
   }
 
-  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
+  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth, List<String> serviceAccounts) {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
           try {
             return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-                localKeyPair);
+                localKeyPair, serviceAccounts);
           } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
           }
@@ -230,6 +236,7 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
+    final List<String> serviceAccounts = Splitter.on(",").splitToList(props.getProperty(SERVICE_ACCOUNT_IMPERSONATION_PROPERTY, ""));
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -255,36 +262,42 @@ public final class CoreSocketFactory {
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     logger.info(
         String.format("Connecting to Cloud SQL instance [%s] via SSL socket.", csqlInstanceName));
-    return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    return getInstance(props).createSslSocket(csqlInstanceName, ipTypes, enableIamAuth, serviceAccounts);
   }
 
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth)
+  public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth, @Nullable List<String> serviceAccounts)
       throws IOException {
-    return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
+    return getInstance(createPropertyForServiceImpersonation(serviceAccounts)).getCloudSqlInstance(csqlInstanceName, enableIamAuth, serviceAccounts).getSslData();
+  }
+
+  private static Properties createPropertyForServiceImpersonation(List<String> accounts) {
+    Properties props = new Properties();
+    props.setProperty(SERVICE_ACCOUNT_IMPERSONATION_PROPERTY, Joiner.on(",").join(accounts));
+    return props;
   }
 
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
   public static SslData getSslData(String csqlInstanceName) throws IOException {
-    return getSslData(csqlInstanceName, false);
+    return getSslData(csqlInstanceName, false, Collections.emptyList());
   }
 
   /**
    * Returns default ip address that can be used to establish Cloud SQL connection.
    */
   public static String getHostIp(String csqlInstanceName) throws IOException {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
+    return getInstance(null).getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
   /**
    * Returns preferred ip address that can be used to establish Cloud SQL connection.
    */
   public static String getHostIp(String csqlInstanceName, String ipTypes) throws IOException {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
+    return getInstance(null).getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
   private String getHostIp(String instanceName,  List<String> ipTypes) {
@@ -303,9 +316,9 @@ public final class CoreSocketFactory {
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
-  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
+  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth, List<String> serviceAccounts)
       throws IOException, InterruptedException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth, serviceAccounts);
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -330,7 +343,7 @@ public final class CoreSocketFactory {
 
   Socket createSslSocket(String instanceName, List<String> ipTypes)
       throws IOException, InterruptedException {
-    return createSslSocket(instanceName, ipTypes, false);
+    return createSslSocket(instanceName, ipTypes, false, Collections.emptyList());
   }
 
   private static void logTestPropertyWarning(String property) {
@@ -384,6 +397,12 @@ public final class CoreSocketFactory {
   }
 
   private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+
+    private final Properties props;
+
+    public ApplicationDefaultCredentialFactory(Properties props) {
+      this.props = props;
+    }
 
     @Override
     public HttpRequestInitializer create() {
