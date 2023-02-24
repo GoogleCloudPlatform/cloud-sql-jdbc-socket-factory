@@ -104,7 +104,6 @@ class CloudSqlInstance {
   private final String projectId;
   private final String regionId;
   private final String instanceId;
-  private final String regionalizedInstanceId;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
@@ -143,8 +142,6 @@ class CloudSqlInstance {
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
-    this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
-
     this.apiClient = apiClient;
     this.enableIamAuth = enableIamAuth;
     this.executor = executor;
@@ -535,7 +532,7 @@ class CloudSqlInstance {
   private Metadata fetchMetadata() {
     try {
       ConnectSettings instanceMetadata =
-          apiClient.connect().get(projectId, regionalizedInstanceId).execute();
+          apiClient.connect().get(projectId, instanceId).execute();
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(regionId)) {
@@ -615,7 +612,7 @@ class CloudSqlInstance {
     GenerateEphemeralCertResponse response;
     try {
       response = apiClient.connect()
-          .generateEphemeralCert(projectId, regionalizedInstanceId, request).execute();
+          .generateEphemeralCert(projectId, instanceId, request).execute();
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
