@@ -145,7 +145,7 @@ public class GcpConnectionFactoryProviderTest {
     when(adminApi.connect()).thenReturn(adminApiConnect);
 
     // Stub when correct instance
-    when(adminApiConnect.get(eq("myProject"), eq("myRegion~myInstance"))).thenReturn(
+    when(adminApiConnect.get(eq("myProject"), eq("myInstance"))).thenReturn(
         adminApiConnectGet);
 
     when(adminApiConnect.generateEphemeralCert(anyString(), anyString(),

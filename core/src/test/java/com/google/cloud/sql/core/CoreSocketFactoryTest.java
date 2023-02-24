@@ -164,12 +164,9 @@ public class CoreSocketFactoryTest {
     when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance")))
         .thenReturn(adminApiConnectGet);
 
-    // Prefixing the region to the instance name is considered valid
-    when(adminApiConnect.get(eq("myProject"), eq("myRegion~myInstance")))
+    when(adminApiConnect.get(eq("myProject"), eq("myInstance")))
         .thenReturn(adminApiConnectGet);
-    when(adminApiConnect.get(eq("myProject"), eq("notMyRegion~myInstance")))
-        .thenReturn(adminApiConnectGet);
-    when(adminApiConnect.get(eq("example.com:myProject"), eq("myRegion~myInstance")))
+    when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance")))
         .thenReturn(adminApiConnectGet);
 
     when(adminApiConnect.generateEphemeralCert(
@@ -248,10 +245,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIVATE"));
 
-    verify(adminApiConnect).get("myProject", "myRegion~myInstance");
+    verify(adminApiConnect).get("myProject", "myInstance");
     verify(adminApiConnect)
         .generateEphemeralCert(
-            eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
+            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -267,10 +264,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiConnect).get("myProject", "myRegion~myInstance");
+    verify(adminApiConnect).get("myProject", "myInstance");
     verify(adminApiConnect)
         .generateEphemeralCert(
-            eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
+            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -286,10 +283,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "example.com:myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiConnect).get("example.com:myProject", "myRegion~myInstance");
+    verify(adminApiConnect).get("example.com:myProject", "myInstance");
     verify(adminApiConnect)
         .generateEphemeralCert(
-            eq("example.com:myProject"), eq("myRegion~myInstance"),
+            eq("example.com:myProject"), eq("myInstance"),
             isA(GenerateEphemeralCertRequest.class));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
@@ -318,10 +315,10 @@ public class CoreSocketFactoryTest {
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiConnect, times(2)).get("myProject", "myRegion~myInstance");
+    verify(adminApiConnect, times(2)).get("myProject", "myInstance");
     verify(adminApiConnect, times(2))
         .generateEphemeralCert(
-            eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
+            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -335,10 +332,10 @@ public class CoreSocketFactoryTest {
         new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
-    verify(adminApiConnect).get("myProject", "myRegion~myInstance");
+    verify(adminApiConnect).get("myProject", "myInstance");
     verify(adminApiConnect)
         .generateEphemeralCert(
-            eq("myProject"), eq("myRegion~myInstance"), isA(GenerateEphemeralCertRequest.class));
+            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
 
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
