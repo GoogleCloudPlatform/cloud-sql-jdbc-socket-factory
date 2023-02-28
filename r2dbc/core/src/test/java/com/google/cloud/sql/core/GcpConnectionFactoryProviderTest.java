@@ -163,9 +163,9 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    SQLAdmin adminApi = apiClientFactory.create(credentialFactory.create());
+    SqlAdminApiService adminApiService= new SqlAdminApiService(apiClientFactory, credentialFactory.create());
 
-    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307,
+    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApiService, credentialFactory, 3307,
         defaultExecutor);
   }
 

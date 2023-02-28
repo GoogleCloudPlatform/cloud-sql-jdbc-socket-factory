@@ -57,7 +57,6 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
       throw new RuntimeException("Unable to initialize HTTP transport", err);
     }
 
-
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder = new SQLAdmin.Builder(httpTransport, jsonFactory,
         requestInitializer).setApplicationName(userAgents);

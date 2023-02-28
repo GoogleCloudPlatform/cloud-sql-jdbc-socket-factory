@@ -23,7 +23,6 @@ import static org.junit.Assert.fail;
 
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -52,8 +51,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, 3307, defaultExecutor);
     try {
@@ -75,8 +74,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, 3307, defaultExecutor);
     try {
@@ -100,8 +99,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PRIVATE_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -116,8 +115,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -132,8 +131,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -144,8 +143,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeNotConfiguredException()).create(
-        credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeNotConfiguredException()), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, 3307, defaultExecutor);
     try {
@@ -162,8 +161,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_notAuthorized() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeNotAuthorizedException()).create(
-        credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeNotAuthorizedException()), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         credentialFactory, 3307, defaultExecutor);
     try {
@@ -187,8 +186,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
@@ -206,8 +205,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
@@ -232,8 +231,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SQLAdmin apiClient = new StubApiClientFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiService apiClient = new SqlAdminApiService(new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))), credentialFactory.create());
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         stubCredentialFactory, port, defaultExecutor);
     assertThrows(RuntimeException.class, () -> coreSocketFactory.createSslSocket(

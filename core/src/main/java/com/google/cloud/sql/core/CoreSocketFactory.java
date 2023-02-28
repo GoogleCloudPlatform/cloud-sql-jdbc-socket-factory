@@ -16,13 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.SqlAdminApiClientFactory;
@@ -35,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -66,7 +59,7 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   *     programmatically.
+   * programmatically.
    */
 
   @Deprecated
@@ -74,9 +67,6 @@ public final class CoreSocketFactory {
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
-  // Test properties, not for end-user use. May be changed or removed without notice.
-  private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
-  private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
 
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
@@ -87,18 +77,18 @@ public final class CoreSocketFactory {
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
-  private final SQLAdmin adminApi;
   private final int serverProxyPort;
+  private final SqlAdminApiService adminApiService;
 
 
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      SQLAdmin adminApi,
+      SqlAdminApiService adminApi,
       CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.adminApi = adminApi;
+    this.adminApiService = adminApi;
     this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
@@ -115,14 +105,14 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = new SqlAdminApiClientFactory(
-          getUserAgents()).create(credential);
+      SqlAdminApiService adminApiService = new SqlAdminApiService(new SqlAdminApiClientFactory(
+          getUserAgents()), credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              adminApi,
+              adminApiService,
               credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
@@ -233,8 +223,7 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  static SslData getSslData(String csqlInstanceName, AuthType authType)
-      throws IOException {
+  static SslData getSslData(String csqlInstanceName, AuthType authType) {
     return getInstance().getCloudSqlInstance(csqlInstanceName, authType).getSslData();
   }
 
@@ -264,14 +253,6 @@ public final class CoreSocketFactory {
     return instance.getPreferredIp(ipTypes);
   }
 
-  private static void logTestPropertyWarning(String property) {
-    logger.warning(
-        String.format(
-            "%s is a test property and may be changed or removed in a future version without "
-                + "notice.",
-            property));
-  }
-
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
@@ -286,33 +267,6 @@ public final class CoreSocketFactory {
       }
     }
     return result;
-  }
-
-  private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
-    HttpTransport httpTransport;
-    try {
-      httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-    } catch (GeneralSecurityException | IOException err) {
-      throw new RuntimeException("Unable to initialize HTTP transport", err);
-    }
-
-    String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
-    String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
-
-    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-    SQLAdmin.Builder adminApiBuilder =
-        new Builder(httpTransport, jsonFactory, requestInitializer)
-            .setApplicationName(getUserAgents());
-    if (rootUrl != null) {
-      logTestPropertyWarning(API_ROOT_URL_PROPERTY);
-      adminApiBuilder.setRootUrl(rootUrl);
-    }
-    if (servicePath != null) {
-      logTestPropertyWarning(API_SERVICE_PATH_PROPERTY);
-      adminApiBuilder.setServicePath(servicePath);
-    }
-    return adminApiBuilder.build();
-
   }
 
   private static KeyPair generateRsaKeyPair() {
@@ -361,7 +315,7 @@ public final class CoreSocketFactory {
    */
   public static String getApplicationName() {
     if (coreSocketFactory != null) {
-      return coreSocketFactory.adminApi.getApplicationName();
+      return coreSocketFactory.adminApiService.getApplicationName();
     }
     return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
   }
@@ -377,24 +331,6 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-  }
-
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
-  }
-
-  private CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
-    return instances.computeIfAbsent(
-        instanceName,
-        k -> {
-          try {
-            return new CloudSqlInstance(k, adminApi, authType, credentialFactory, executor,
-                localKeyPair);
-          } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        });
   }
 
   /**
@@ -436,4 +372,36 @@ public final class CoreSocketFactory {
       throws IOException, InterruptedException {
     return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD);
   }
+
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName) {
+    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
+  }
+
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
+    if (enableIamAuth) {
+      return getCloudSqlInstance(instanceName, AuthType.IAM);
+    }
+    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
+  }
+
+
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
+      return instances.computeIfAbsent(
+          instanceName,
+          k -> {
+            try {
+              return new CloudSqlInstance(k, adminApiService, authType, credentialFactory,
+                  executor,
+                  localKeyPair);
+            } catch (IOException | InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          });
+  }
+
+
+
 }
