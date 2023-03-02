@@ -28,6 +28,7 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.ApplicationDefaultCredentialFactory;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.SqlAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -44,6 +45,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -119,7 +121,8 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = createAdminApiClient(credential);
+      SQLAdmin adminApi = new SqlAdminApiClientFactory(
+          Optional.of(getUserAgents())).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
@@ -276,7 +279,7 @@ public final class CoreSocketFactory {
     }
     return result;
   }
-
+  
   private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
@@ -301,6 +304,7 @@ public final class CoreSocketFactory {
       adminApiBuilder.setServicePath(servicePath);
     }
     return adminApiBuilder.build();
+
   }
 
   private static KeyPair generateRsaKeyPair() {
