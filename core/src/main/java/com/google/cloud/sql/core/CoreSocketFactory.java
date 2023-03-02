@@ -438,26 +438,4 @@ public final class CoreSocketFactory {
       throws IOException, InterruptedException {
     return createSslSocket(instanceName, ipTypes, false);
   }
-
-  private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
-
-    @Override
-    public HttpRequestInitializer create() {
-      GoogleCredentials credentials;
-      try {
-        credentials = GoogleCredentials.getApplicationDefault();
-      } catch (IOException err) {
-        throw new RuntimeException(
-            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
-      }
-      if (credentials.createScopedRequired()) {
-        credentials =
-            credentials.createScoped(Arrays.asList(
-                SQLAdminScopes.SQLSERVICE_ADMIN,
-                SQLAdminScopes.CLOUD_PLATFORM)
-            );
-      }
-      return new HttpCredentialsAdapter(credentials);
-    }
-  }
 }
