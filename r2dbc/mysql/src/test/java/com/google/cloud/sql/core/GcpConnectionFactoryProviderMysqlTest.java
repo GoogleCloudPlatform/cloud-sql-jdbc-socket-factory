@@ -40,7 +40,7 @@ import org.mockito.Mockito;
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryProviderTest {
 
-  private static Map<String, String> IP_LABEL = new HashMap<String,String>() {{
+  private static final Map<String, String> IP_LABEL = new HashMap<String, String>() {{
     put("PUBLIC", "PRIMARY");
     put("PRIVATE", "PRIVATE");
   }};
@@ -67,7 +67,7 @@ public class GcpConnectionFactoryProviderMysqlTest extends GcpConnectionFactoryP
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
       mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
-      
+
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
               .getPreferredIp(Arrays.asList(IP_LABEL.get(ipType))));

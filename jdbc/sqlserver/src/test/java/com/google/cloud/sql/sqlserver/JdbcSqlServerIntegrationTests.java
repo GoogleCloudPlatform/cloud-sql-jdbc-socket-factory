@@ -48,7 +48,7 @@ public class JdbcSqlServerIntegrationTests {
   private static final String DB_NAME = System.getenv("SQLSERVER_DB");
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
   @Rule
   public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);

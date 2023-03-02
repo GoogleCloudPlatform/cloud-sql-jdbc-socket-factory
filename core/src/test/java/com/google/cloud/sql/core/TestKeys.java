@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 class TestKeys {
+
   static final String SIGNING_CA_PRIVATE_KEY =
       "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDSd6WlH1OH+qBx\n"
           + "wxPcZCbhktN1cL8q/bszvcqLsiuhnbMrYLojbL/qZ8agS6lqM7rGwmCrbZIZtati\n"

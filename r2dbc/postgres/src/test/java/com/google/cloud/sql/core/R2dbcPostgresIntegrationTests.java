@@ -81,10 +81,10 @@ public class R2dbcPostgresIntegrationTests {
         .flatMapMany(
             c ->
                 c.createStatement(
-                    String.format("CREATE TABLE %s (", this.tableName)
-                        + "  ID CHAR(20) NOT NULL,"
-                        + "  TITLE TEXT NOT NULL"
-                        + ")")
+                        String.format("CREATE TABLE %s (", this.tableName)
+                            + "  ID CHAR(20) NOT NULL,"
+                            + "  TITLE TEXT NOT NULL"
+                            + ")")
                     .execute())
         .blockLast();
   }
