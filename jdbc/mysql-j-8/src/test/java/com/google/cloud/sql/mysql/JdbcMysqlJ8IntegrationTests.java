@@ -83,7 +83,7 @@ public class JdbcMysqlJ8IntegrationTests {
     config.setConnectionTimeout(10000); // 10s
 
     this.connectionPool = new HikariDataSource(config);
-      this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
+    this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
     // Create table
     try (Connection conn = connectionPool.getConnection()) {

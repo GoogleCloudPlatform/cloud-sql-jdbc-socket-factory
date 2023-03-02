@@ -81,10 +81,10 @@ public class R2dbcSqlserverIntegrationTests {
         .flatMapMany(
             c ->
                 c.createStatement(
-                    String.format("CREATE TABLE %s (", this.tableName)
-                        + "  ID CHAR(20) NOT NULL,"
-                        + "  TITLE TEXT NOT NULL"
-                        + ")")
+                        String.format("CREATE TABLE %s (", this.tableName)
+                            + "  ID CHAR(20) NOT NULL,"
+                            + "  TITLE TEXT NOT NULL"
+                            + ")")
                     .execute())
         .blockLast();
   }
@@ -99,7 +99,8 @@ public class R2dbcSqlserverIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)", this.tableName);
+    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)",
+        this.tableName);
     Mono.from(this.connectionPool.create())
         .flatMapMany(
             c ->

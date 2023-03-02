@@ -40,7 +40,7 @@ import org.mockito.Mockito;
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFactoryProviderTest {
 
-  private static Map<String, String> IP_LABEL = new HashMap<String,String>() {{
+  private static final Map<String, String> IP_LABEL = new HashMap<String, String>() {{
     put("PUBLIC", "PRIMARY");
     put("PRIVATE", "PRIVATE");
   }};

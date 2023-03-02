@@ -36,7 +36,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
-  private Properties props;
+  private final Properties props;
 
   static {
     CoreSocketFactory.addArtifactId("postgres-socket-factory");

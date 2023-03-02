@@ -34,10 +34,10 @@ import org.reactivestreams.Publisher;
  */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
 
-  private Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
-  private ConnectionFactoryOptions.Builder builder;
-  private String csqlHostName;
-  private String ipTypes;
+  private final Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
+  private final ConnectionFactoryOptions.Builder builder;
+  private final String csqlHostName;
+  private final String ipTypes;
 
   /**
    * Creates an instance of ConnectionFactory that pulls and sets host ip before delegating.
