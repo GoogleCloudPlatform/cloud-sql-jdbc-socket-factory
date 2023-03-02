@@ -33,10 +33,10 @@ public class CloudSqlInstanceNameTest {
 
     CloudSqlInstanceName instanceName = new CloudSqlInstanceName(connectionName);
 
-    Assert.assertEquals(instanceName.getConnectionName(), connectionName);
-    Assert.assertEquals(instanceName.getProjectId(), "my-project");
-    Assert.assertEquals(instanceName.getRegionId(), "my-region");
-    Assert.assertEquals(instanceName.getInstanceId(), "my-instance");
+    Assert.assertEquals(connectionName, instanceName.getConnectionName());
+    Assert.assertEquals("my-project", instanceName.getProjectId());
+    Assert.assertEquals("my-region", instanceName.getRegionId());
+    Assert.assertEquals("my-instance", instanceName.getInstanceId());
   }
 
   @Test
@@ -46,9 +46,9 @@ public class CloudSqlInstanceNameTest {
     CloudSqlInstanceName instanceName = new CloudSqlInstanceName(connectionName);
 
     Assert.assertEquals(instanceName.getConnectionName(), connectionName);
-    Assert.assertEquals(instanceName.getProjectId(), "my-project");
-    Assert.assertEquals(instanceName.getRegionId(), "my-region");
-    Assert.assertEquals(instanceName.getInstanceId(), "my-instance");
+    Assert.assertEquals("google.com:my-project", instanceName.getProjectId());
+    Assert.assertEquals("my-region", instanceName.getRegionId());
+    Assert.assertEquals("my-instance", instanceName.getInstanceId());
   }
 
   @Test
