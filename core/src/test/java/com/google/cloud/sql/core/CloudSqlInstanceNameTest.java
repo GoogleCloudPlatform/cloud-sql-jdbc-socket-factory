@@ -17,6 +17,8 @@
 
 package com.google.cloud.sql.core;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +49,19 @@ public class CloudSqlInstanceNameTest {
     Assert.assertEquals(instanceName.getProjectId(), "my-project");
     Assert.assertEquals(instanceName.getRegionId(), "my-region");
     Assert.assertEquals(instanceName.getInstanceId(), "my-instance");
+  }
+
+  @Test
+  public void parseBadConnectionName() {
+    String connectionName = "my-project:my-instance";
+
+    try {
+      new CloudSqlInstanceName(connectionName);
+    } catch (IllegalArgumentException ex) {
+      assertThat(ex)
+          .hasMessageThat()
+          .contains("Cloud SQL connection name is invalid");
+    }
   }
 
 }
