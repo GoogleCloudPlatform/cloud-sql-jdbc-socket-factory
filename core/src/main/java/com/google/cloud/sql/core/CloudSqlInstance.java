@@ -100,11 +100,8 @@ class CloudSqlInstance {
   private final SQLAdmin apiClient;
   private final boolean enableIamAuth;
   private final Optional<OAuth2Credentials> credentials;
-  private final String connectionName;
-  private final String projectId;
-  private final String regionId;
-  private final String instanceId;
-  private final String regionalizedInstanceId;
+
+  private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
@@ -139,11 +136,7 @@ class CloudSqlInstance {
             "[%s] Cloud SQL connection name is invalid, expected string in the form of"
                 + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
             connectionName));
-    this.connectionName = connectionName;
-    this.projectId = matcher.group(1);
-    this.regionId = matcher.group(3);
-    this.instanceId = matcher.group(4);
-    this.regionalizedInstanceId = String.format("%s~%s", this.regionId, this.instanceId);
+    this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiClient = apiClient;
     this.enableIamAuth = enableIamAuth;
@@ -363,7 +356,7 @@ class CloudSqlInstance {
     throw new IllegalArgumentException(
         String.format(
             "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
-            connectionName, String.join(", ", preferredTypes)));
+            instanceName.getConnectionName(), String.join(", ", preferredTypes)));
   }
 
   /**
@@ -508,7 +501,7 @@ class CloudSqlInstance {
           throw new RuntimeException(
               String.format(
                   "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
-                  connectionName)
+                  instanceName.getConnectionName())
                   + " TLSv1.3 is not supported for your Java version and is required to connect"
                   + " using IAM authentication",
               ex);
@@ -524,7 +517,8 @@ class CloudSqlInstance {
     } catch (GeneralSecurityException | IOException ex) {
       throw new RuntimeException(
           String.format(
-              "[%s] Unable to create a SSLContext for the Cloud SQL instance.", connectionName),
+              "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
+              instanceName.getConnectionName()),
           ex);
     }
   }
@@ -535,25 +529,26 @@ class CloudSqlInstance {
   private Metadata fetchMetadata() {
     try {
       ConnectSettings instanceMetadata =
-          apiClient.connect().get(projectId, regionalizedInstanceId).execute();
+          apiClient.connect().get(
+              instanceName.getProjectId(), instanceName.getInstanceId()).execute();
 
       // Validate the instance will support the authenticated connection.
-      if (!instanceMetadata.getRegion().equals(regionId)) {
+      if (!instanceMetadata.getRegion().equals(instanceName.getRegionId())) {
         throw new IllegalArgumentException(
             String.format(
                 "[%s] The region specified for the Cloud SQL instance is"
                     + " incorrect. Please verify the instance connection name.",
-                connectionName));
+                instanceName.getConnectionName()));
       }
       if (!instanceMetadata.getBackendType().equals("SECOND_GEN")) {
         throw new IllegalArgumentException(
             String.format(
                 "[%s] Connections to Cloud SQL instance not supported - not a Second Generation "
                     + "instance.",
-                connectionName));
+                instanceName.getConnectionName()));
       }
 
-      checkDatabaseCompatibility(instanceMetadata, enableIamAuth, connectionName);
+      checkDatabaseCompatibility(instanceMetadata, enableIamAuth, instanceName.getConnectionName());
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (instanceMetadata.getIpAddresses().isEmpty()) {
@@ -561,7 +556,7 @@ class CloudSqlInstance {
             String.format(
                 "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
                     + "IP address.",
-                connectionName));
+                instanceName.getConnectionName()));
       }
       // Update the IP addresses and types need to connect with the instance.
       Map<String, String> ipAddrs = new HashMap<>();
@@ -578,13 +573,14 @@ class CloudSqlInstance {
         throw new RuntimeException(
             String.format(
                 "[%s] Unable to parse the server CA certificate for the Cloud SQL instance.",
-                connectionName),
+                instanceName.getConnectionName()),
             ex);
       }
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
-          String.format("[%s] Failed to update metadata for Cloud SQL instance.", connectionName));
+          String.format("[%s] Failed to update metadata for Cloud SQL instance.",
+              instanceName.getConnectionName()));
     }
   }
 
@@ -615,13 +611,14 @@ class CloudSqlInstance {
     GenerateEphemeralCertResponse response;
     try {
       response = apiClient.connect()
-          .generateEphemeralCert(projectId, regionalizedInstanceId, request).execute();
+          .generateEphemeralCert(
+              instanceName.getProjectId(), instanceName.getInstanceId(), request).execute();
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
           String.format(
               "[%s] Failed to create ephemeral certificate for the Cloud SQL instance.",
-              connectionName));
+              instanceName.getConnectionName()));
     }
 
     // Parse the certificate from the response.
@@ -632,7 +629,7 @@ class CloudSqlInstance {
       throw new RuntimeException(
           String.format(
               "[%s] Unable to parse the ephemeral certificate for the Cloud SQL instance.",
-              connectionName),
+              instanceName.getConnectionName()),
           ex);
     }
 
@@ -671,12 +668,13 @@ class CloudSqlInstance {
     if ("accessNotConfigured".equals(reason)) {
       // This error occurs when the project doesn't have the "Cloud SQL Admin API" enabled
       String apiLink =
-          "https://console.cloud.google.com/apis/api/sqladmin/overview?project=" + projectId;
+          "https://console.cloud.google.com/apis/api/sqladmin/overview?project=" +
+              instanceName.getProjectId();
       return new RuntimeException(
           String.format(
               "[%s] The Google Cloud SQL Admin API is not enabled for the project \"%s\". Please "
                   + "use the Google Developers Console to enable it: %s",
-              connectionName, projectId, apiLink),
+              instanceName.getConnectionName(), instanceName.getProjectId(), apiLink),
           ex);
     } else if ("notAuthorized".equals(reason)) {
       // This error occurs if the instance doesn't exist or the account isn't authorized
@@ -686,7 +684,7 @@ class CloudSqlInstance {
               "[%s] The Cloud SQL Instance does not exist or your account is not authorized to "
                   + "access it. Please verify the instance connection name and check the IAM "
                   + "permissions for project \"%s\" ",
-              connectionName, projectId),
+              instanceName.getConnectionName(), instanceName.getProjectId()),
           ex);
     }
     // Fallback to the generic description
