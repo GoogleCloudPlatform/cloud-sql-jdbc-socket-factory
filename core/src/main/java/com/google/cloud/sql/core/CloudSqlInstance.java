@@ -123,7 +123,7 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
-    
+
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiClient = apiClient;
