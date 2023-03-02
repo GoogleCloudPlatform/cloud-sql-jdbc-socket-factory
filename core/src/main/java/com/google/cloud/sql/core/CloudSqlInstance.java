@@ -16,8 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequestInitializer;
@@ -70,8 +68,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -88,10 +84,7 @@ class CloudSqlInstance {
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
-  // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
-  // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
-  private static final Pattern CONNECTION_NAME =
-      Pattern.compile("([^:]+(:[^:]+)?):([^:]+):([^:]+)");
+
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
@@ -118,7 +111,7 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format
-   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiClient Cloud SQL Admin API client for interacting with the Cloud SQL instance
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
@@ -130,15 +123,7 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
-
-    Matcher matcher = CONNECTION_NAME.matcher(connectionName);
-    checkArgument(
-        matcher.matches(),
-        String.format(
-            "[%s] Cloud SQL connection name is invalid, expected string in the form of"
-                + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
-            connectionName));
-            
+    
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiClient = apiClient;
@@ -343,10 +328,10 @@ class CloudSqlInstance {
    * preferredTypes.
    *
    * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *     "Private".
+   * "Private".
    * @return returns a string representing the IP address for the instance
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
-   *     preferences.
+   * preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
@@ -532,8 +517,8 @@ class CloudSqlInstance {
   private Metadata fetchMetadata() {
     try {
       ConnectSettings instanceMetadata =
-          apiClient.connect().get(
-              instanceName.getProjectId(), instanceName.getInstanceId()).execute();
+          apiClient.connect().get(instanceName.getProjectId(), instanceName.getInstanceId())
+              .execute();
 
 
       // Validate the instance will support the authenticated connection.
@@ -548,8 +533,7 @@ class CloudSqlInstance {
         throw new IllegalArgumentException(
             String.format(
                 "[%s] Connections to Cloud SQL instance not supported - not a Second Generation "
-                    + "instance.",
-                instanceName.getConnectionName()));
+                    + "instance.", instanceName.getConnectionName()));
       }
 
       checkDatabaseCompatibility(instanceMetadata, enableIamAuth, instanceName.getConnectionName());
@@ -656,7 +640,7 @@ class CloudSqlInstance {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   *     provided to the user
+   * provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc) {
     // Verify we are able to extract a reason from an exception, or fallback to a generic desc
