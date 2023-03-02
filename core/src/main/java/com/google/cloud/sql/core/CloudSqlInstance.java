@@ -101,7 +101,9 @@ class CloudSqlInstance {
   private final boolean enableIamAuth;
   private final Optional<OAuth2Credentials> credentials;
 
+
   private final CloudSqlInstanceName instanceName;
+
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
@@ -136,6 +138,7 @@ class CloudSqlInstance {
             "[%s] Cloud SQL connection name is invalid, expected string in the form of"
                 + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
             connectionName));
+            
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiClient = apiClient;
@@ -532,6 +535,7 @@ class CloudSqlInstance {
           apiClient.connect().get(
               instanceName.getProjectId(), instanceName.getInstanceId()).execute();
 
+
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(instanceName.getRegionId())) {
         throw new IllegalArgumentException(
@@ -613,6 +617,7 @@ class CloudSqlInstance {
       response = apiClient.connect()
           .generateEphemeralCert(
               instanceName.getProjectId(), instanceName.getInstanceId(), request).execute();
+
     } catch (IOException ex) {
       throw addExceptionContext(
           ex,
