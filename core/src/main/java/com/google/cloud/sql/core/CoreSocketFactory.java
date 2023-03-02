@@ -68,7 +68,7 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   * programmatically.
+   *     programmatically.
    */
 
   @Deprecated
@@ -261,6 +261,11 @@ public final class CoreSocketFactory {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
+  private String getHostIp(String instanceName, List<String> ipTypes) {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
+    return instance.getPreferredIp(ipTypes);
+  }
+  
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(
@@ -391,11 +396,6 @@ public final class CoreSocketFactory {
             throw new RuntimeException(e);
           }
         });
-  }
-
-  private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
-    return instance.getPreferredIp(ipTypes);
   }
 
   /**
