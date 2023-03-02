@@ -84,7 +84,6 @@ class CloudSqlInstance {
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
-
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
@@ -519,7 +518,6 @@ class CloudSqlInstance {
       ConnectSettings instanceMetadata =
           apiClient.connect().get(instanceName.getProjectId(), instanceName.getInstanceId())
               .execute();
-
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(instanceName.getRegionId())) {

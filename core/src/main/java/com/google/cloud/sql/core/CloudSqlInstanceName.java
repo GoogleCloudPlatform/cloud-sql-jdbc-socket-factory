@@ -25,12 +25,12 @@ public class CloudSqlInstanceName {
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
   // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
-  private static final Pattern CONNECTION_NAME =
-      Pattern.compile("([^:]+(:[^:]+)?):([^:]+):([^:]+)");
-  private String projectId;
-  private String regionId;
-  private String instanceId;
-  private String connectionName;
+  private static final Pattern CONNECTION_NAME = Pattern.compile(
+      "([^:]+(:[^:]+)?):([^:]+):([^:]+)");
+  private final String projectId;
+  private final String regionId;
+  private final String instanceId;
+  private final String connectionName;
 
   public CloudSqlInstanceName(String connectionName) {
     this.connectionName = connectionName;
@@ -41,7 +41,6 @@ public class CloudSqlInstanceName {
             "[%s] Cloud SQL connection name is invalid, expected string in the form of"
                 + " \"<PROJECT_ID>:<REGION_ID>:<INSTANCE_ID>\".",
             connectionName));
-    this.connectionName = connectionName;
     this.projectId = matcher.group(1);
     this.regionId = matcher.group(3);
     this.instanceId = matcher.group(4);
@@ -63,4 +62,3 @@ public class CloudSqlInstanceName {
     return instanceId;
   }
 }
-
