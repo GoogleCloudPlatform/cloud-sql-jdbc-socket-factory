@@ -58,13 +58,13 @@ public class SocketFactory extends ConfigurableSocketFactory {
   }
 
   @Override
-  public Socket createSocket(String s, int i) throws IOException, UnknownHostException {
+  public Socket createSocket(String s, int i) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public Socket createSocket(String s, int i, InetAddress inetAddress, int i1)
-      throws IOException, UnknownHostException {
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
