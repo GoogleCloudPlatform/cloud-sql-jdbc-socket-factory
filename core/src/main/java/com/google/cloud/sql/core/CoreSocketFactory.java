@@ -65,8 +65,6 @@ import jnr.unixsocket.UnixSocketChannel;
 public final class CoreSocketFactory {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
-
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
    *
@@ -76,11 +74,9 @@ public final class CoreSocketFactory {
 
   @Deprecated
   public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
-
-  private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
-
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
-
+  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
+  private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
@@ -89,16 +85,14 @@ public final class CoreSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
 
   private static CoreSocketFactory coreSocketFactory;
-
+  private static List<String> userAgents = new ArrayList<String>();
+  private static String version = getVersion();
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final SQLAdmin adminApi;
   private final int serverProxyPort;
-
-  private static List<String> userAgents = new ArrayList<String>();
-  private static String version = getVersion();
 
 
   @VisibleForTesting
@@ -151,24 +145,6 @@ public final class CoreSocketFactory {
               executor);
     }
     return coreSocketFactory;
-  }
-
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(instanceName, false);
-  }
-
-  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
-    return instances.computeIfAbsent(
-        instanceName,
-        k -> {
-          try {
-            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
-                localKeyPair);
-          } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        });
   }
 
   static int getDefaultServerProxyPort() {
@@ -286,52 +262,11 @@ public final class CoreSocketFactory {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
-  private String getHostIp(String instanceName,  List<String> ipTypes) {
+  private String getHostIp(String instanceName, List<String> ipTypes) {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }
-
-
-  /**
-   * Creates a secure socket representing a connection to a Cloud SQL instance.
-   *
-   * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
-   * @return the newly created Socket.
-   * @throws IOException if error occurs during socket creation.
-   */
-  // TODO(berezv): separate creating socket and performing connection to make it easier to test
-  @VisibleForTesting
-  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
-      throws IOException, InterruptedException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
-
-    try {
-      SSLSocket socket = instance.createSslSocket();
-
-      // TODO(kvg): Support all socket related options listed here:
-      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
-      socket.setKeepAlive(true);
-      socket.setTcpNoDelay(true);
-
-      String instanceIp = instance.getPreferredIp(ipTypes);
-
-      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-      socket.startHandshake();
-
-      return socket;
-    } catch (Exception ex) {
-      // TODO(kvg): Let user know about the rate limit
-      instance.forceRefresh();
-      throw ex;
-    }
-  }
-
-  Socket createSslSocket(String instanceName, List<String> ipTypes)
-      throws IOException, InterruptedException {
-    return createSslSocket(instanceName, ipTypes, false);
-  }
-
+  
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(
@@ -416,7 +351,6 @@ public final class CoreSocketFactory {
     }
   }
 
-
   /**
    * Returns the default string which is appended to the SQLAdmin API client User-Agent header.
    */
@@ -445,5 +379,85 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
+  }
+
+  @VisibleForTesting
+  CloudSqlInstance getCloudSqlInstance(String instanceName) {
+    return getCloudSqlInstance(instanceName, false);
+  }
+
+  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
+    return instances.computeIfAbsent(
+        instanceName,
+        k -> {
+          try {
+            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+                localKeyPair);
+          } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  /**
+   * Creates a secure socket representing a connection to a Cloud SQL instance.
+   *
+   * @param instanceName Name of the Cloud SQL instance.
+   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @return the newly created Socket.
+   * @throws IOException if error occurs during socket creation.
+   */
+  // TODO(berezv): separate creating socket and performing connection to make it easier to test
+  @VisibleForTesting
+  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
+      throws IOException, InterruptedException {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
+
+    try {
+      SSLSocket socket = instance.createSslSocket();
+
+      // TODO(kvg): Support all socket related options listed here:
+      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
+      socket.setKeepAlive(true);
+      socket.setTcpNoDelay(true);
+
+      String instanceIp = instance.getPreferredIp(ipTypes);
+
+      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
+      socket.startHandshake();
+
+      return socket;
+    } catch (Exception ex) {
+      // TODO(kvg): Let user know about the rate limit
+      instance.forceRefresh();
+      throw ex;
+    }
+  }
+
+  Socket createSslSocket(String instanceName, List<String> ipTypes)
+      throws IOException, InterruptedException {
+    return createSslSocket(instanceName, ipTypes, false);
+  }
+
+  private static class ApplicationDefaultCredentialFactory implements CredentialFactory {
+
+    @Override
+    public HttpRequestInitializer create() {
+      GoogleCredentials credentials;
+      try {
+        credentials = GoogleCredentials.getApplicationDefault();
+      } catch (IOException err) {
+        throw new RuntimeException(
+            "Unable to obtain credentials to communicate with the Cloud SQL API", err);
+      }
+      if (credentials.createScopedRequired()) {
+        credentials =
+            credentials.createScoped(Arrays.asList(
+                SQLAdminScopes.SQLSERVICE_ADMIN,
+                SQLAdminScopes.CLOUD_PLATFORM)
+            );
+      }
+      return new HttpCredentialsAdapter(credentials);
+    }
   }
 }

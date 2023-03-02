@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.10.1-SNAPSHOT</version>
+    <version>1.11.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>postgres-socket-factory</artifactId>
@@ -99,7 +99,7 @@
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>1.42.3</version>
+        <version>1.43.0</version>
       </dependency>
       <dependency>
         <groupId>org.graalvm.sdk</groupId>

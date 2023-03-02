@@ -48,6 +48,7 @@ import reactor.core.publisher.Mono;
 
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIamAuthIntegrationTests {
+
   // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
@@ -98,10 +99,10 @@ public class R2dbcPostgresIamAuthIntegrationTests {
         .flatMapMany(
             c ->
                 c.createStatement(
-                    String.format("CREATE TABLE %s (", this.tableName)
-                        + "  ID CHAR(20) NOT NULL,"
-                        + "  TITLE TEXT NOT NULL"
-                        + ")")
+                        String.format("CREATE TABLE %s (", this.tableName)
+                            + "  ID CHAR(20) NOT NULL,"
+                            + "  TITLE TEXT NOT NULL"
+                            + ")")
                     .execute())
         .blockLast();
   }
@@ -151,7 +152,8 @@ public class R2dbcPostgresIamAuthIntegrationTests {
   // This test verifies the "enable_iam_authn" parameter works when a URL is used
   @Test
   public void urlPooledConnectionTest() {
-    String url = String.format("r2dbc:gcp:postgres://%s:%s@%s/%s?ENABLE_IAM_AUTH=true", DB_USER, "password", CONNECTION_NAME, DB_NAME);
+    String url = String.format("r2dbc:gcp:postgres://%s:%s@%s/%s?ENABLE_IAM_AUTH=true", DB_USER,
+        "password", CONNECTION_NAME, DB_NAME);
     ConnectionFactory connectionPool = ConnectionFactories.get(url);
     String insertStmt = String
         .format("INSERT INTO  %s (ID, TITLE) VALUES ($1, $2)", this.tableName);
