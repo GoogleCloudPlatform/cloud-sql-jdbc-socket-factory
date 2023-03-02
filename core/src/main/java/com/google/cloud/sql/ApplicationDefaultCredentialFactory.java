@@ -23,6 +23,9 @@ import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * This class creates a HttpRequestInitializer from Application Default Credentials.
+ */
 public class ApplicationDefaultCredentialFactory implements CredentialFactory {
 
   @Override
