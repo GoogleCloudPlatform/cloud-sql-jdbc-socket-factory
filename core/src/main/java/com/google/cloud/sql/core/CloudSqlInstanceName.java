@@ -21,6 +21,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * This class parses the different parts of a Cloud SQL Connection Name to allow users to easily
+ * fetch the projectId, regionId, and instanceId.
+ */
 public class CloudSqlInstanceName {
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
@@ -31,7 +35,12 @@ public class CloudSqlInstanceName {
   private final String regionId;
   private final String instanceId;
   private final String connectionName;
-
+  /**
+   * Initializes a new CloudSqlInstanceName class.
+   *
+   * @param connectionName instance connection name in the format
+   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   */
   public CloudSqlInstanceName(String connectionName) {
     this.connectionName = connectionName;
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
