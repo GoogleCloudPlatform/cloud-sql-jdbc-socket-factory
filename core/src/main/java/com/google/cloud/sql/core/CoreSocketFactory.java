@@ -23,10 +23,6 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
-import com.google.api.services.sqladmin.SQLAdminScopes;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.sql.ApplicationDefaultCredentialFactory;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.SqlAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -43,7 +39,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -255,7 +250,7 @@ public final class CoreSocketFactory {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }
-  
+
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(
@@ -279,7 +274,7 @@ public final class CoreSocketFactory {
     }
     return result;
   }
-  
+
   private static SQLAdmin createAdminApiClient(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
@@ -370,7 +365,7 @@ public final class CoreSocketFactory {
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
-
+  
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return getCloudSqlInstance(instanceName, false);
