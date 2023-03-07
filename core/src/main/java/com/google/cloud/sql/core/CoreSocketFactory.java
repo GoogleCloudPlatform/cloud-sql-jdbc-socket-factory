@@ -116,21 +116,7 @@ public final class CoreSocketFactory {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
-      String userCredentialFactoryClassName = System.getProperty(
-          CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
-
-      CredentialFactory credentialFactory;
-      if (userCredentialFactoryClassName != null) {
-        try {
-          credentialFactory =
-              (CredentialFactory)
-                  Class.forName(userCredentialFactoryClassName).newInstance();
-        } catch (Exception err) {
-          throw new RuntimeException(err);
-        }
-      } else {
-        credentialFactory = new ApplicationDefaultCredentialFactory();
-      }
+      CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
       SQLAdmin adminApi = createAdminApiClient(credential);
