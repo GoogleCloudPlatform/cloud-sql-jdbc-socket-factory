@@ -123,7 +123,7 @@ public class CoreSocketFactoryTest {
   // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
   private ListeningScheduledExecutorService defaultExecutor;
 
-  private CredentialFactory credentialFactory = new StubCredentialFactory();
+  private final CredentialFactory credentialFactory = new StubCredentialFactory();
   @Mock
   private SQLAdmin adminApi;
   @Mock
@@ -492,7 +492,7 @@ public class CoreSocketFactoryTest {
   }
 
   @Test
-  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException, IOException {
+  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException {
     class BasicAuthStubCredentialFactory implements CredentialFactory {
 
       @Override

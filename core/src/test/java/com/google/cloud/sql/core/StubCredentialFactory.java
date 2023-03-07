@@ -23,13 +23,13 @@ import com.google.cloud.sql.CredentialFactory;
 class StubCredentialFactory implements CredentialFactory {
 
   String accessToken;
-  long expTime;
+  long expirationTimeInMilliseconds;
 
   StubCredentialFactory() {}
 
-  StubCredentialFactory(String accessToken, long expTime) {
+  StubCredentialFactory(String accessToken, long expirationTimeInMilliseconds) {
     this.accessToken = accessToken;
-    this.expTime = expTime;
+    this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;
   }
 
   StubCredentialFactory(String accessToken) {
@@ -40,7 +40,7 @@ class StubCredentialFactory implements CredentialFactory {
   public HttpRequestInitializer create() {
     MockGoogleCredential testCredential = new MockGoogleCredential.Builder().build();
     testCredential.setAccessToken(accessToken);
-    testCredential.setExpirationTimeMilliseconds(expTime);
+    testCredential.setExpirationTimeMilliseconds(expirationTimeInMilliseconds);
     return testCredential;
   }
 }
