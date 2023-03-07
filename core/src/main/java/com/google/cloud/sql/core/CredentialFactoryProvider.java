@@ -24,6 +24,10 @@ import com.google.cloud.sql.CredentialFactory;
  * CREDENTIAL_FACTORY_PROPERTY is set.
  */
 public class CredentialFactoryProvider {
+
+  /**
+   * Checks whether CREDENTIAL_FACTORY_PROPERTY is set and returns a CredentialFactory instance.
+   */
   public static CredentialFactory getCredentialFactory() {
     String userCredentialFactoryClassName = System.getProperty(
         CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
