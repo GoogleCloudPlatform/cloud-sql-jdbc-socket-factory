@@ -34,6 +34,7 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential;
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
@@ -121,8 +122,8 @@ public class CoreSocketFactoryTest {
 
   // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
   private ListeningScheduledExecutorService defaultExecutor;
-  @Mock
-  private CredentialFactory credentialFactory;
+
+  private CredentialFactory credentialFactory = new StubCredentialFactory();
   @Mock
   private SQLAdmin adminApi;
   @Mock
@@ -457,17 +458,14 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
-    MockGoogleCredential customCredential = new MockGoogleCredential.Builder().build();
-    when(credentialFactory.create()).thenReturn(customCredential);
-
-    customCredential.setAccessToken("foo");
-    customCredential.setExpirationTimeMilliseconds(60000L);
+    CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", 6000L);
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+            defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
@@ -478,17 +476,14 @@ public class CoreSocketFactoryTest {
   @Test
   public void supportsCustomCredentialFactoryWithNoExpirationTime()
       throws InterruptedException, IOException {
-    MockGoogleCredential customCredential = new MockGoogleCredential.Builder().build();
-    when(credentialFactory.create()).thenReturn(customCredential);
+    CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo");
 
-    customCredential.setAccessToken("foo");
-    customCredential.setExpirationTimeMilliseconds(null);
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
@@ -498,14 +493,22 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException, IOException {
-    BasicAuthentication nonGoogleCredential = new BasicAuthentication("user", "password");
-    when(credentialFactory.create()).thenReturn(nonGoogleCredential);
+    class BasicAuthStubCredentialFactory implements CredentialFactory {
+
+      @Override
+      public HttpRequestInitializer create() {
+        return new BasicAuthentication("user", "password");
+      }
+    }
+
+    CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
+
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port, defaultExecutor);
     assertThrows(RuntimeException.class, () -> {
       coreSocketFactory.createSslSocket(
           "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
