@@ -24,7 +24,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.cloud.sql.CredentialFactory;
-import com.google.cloud.sql.SqlAdminApiClientFactory;
+import com.google.cloud.sql.SQLAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -40,7 +40,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -82,7 +81,7 @@ public final class CoreSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
 
   private static CoreSocketFactory coreSocketFactory;
-  private static List<String> userAgents = new ArrayList<String>();
+  private static List<String> userAgents = new ArrayList();
   private static String version = getVersion();
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
@@ -116,8 +115,8 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = new SqlAdminApiClientFactory(
-          Optional.of(getUserAgents())).create(credential);
+      SQLAdmin adminApi = new SQLAdminApiClientFactory(
+          getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
@@ -365,7 +364,7 @@ public final class CoreSocketFactory {
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
-  
+
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName) {
     return getCloudSqlInstance(instanceName, false);

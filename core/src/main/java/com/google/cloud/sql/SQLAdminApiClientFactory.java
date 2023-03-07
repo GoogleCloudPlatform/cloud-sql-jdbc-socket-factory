@@ -24,26 +24,38 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.Optional;
 import java.util.logging.Logger;
 
-public class SqlAdminApiClientFactory implements ApiClientFactory {
+public class SQLAdminApiClientFactory implements ApiClientFactory {
 
-  private static final Logger logger = Logger.getLogger(SqlAdminApiClientFactory.class.getName());
+  private static final Logger logger = Logger.getLogger(SQLAdminApiClientFactory.class.getName());
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
-  Optional<String> userAgents;
+  private static final String DEFAULT_USER_AGENT = "Cloud SQL Java Connector";
 
-  public SqlAdminApiClientFactory(Optional<String> userAgents) {
+  private String rootUrl;
+  private String servicePath;
+  private String userAgents;
+
+  public SQLAdminApiClientFactory() {
+    this.userAgents = DEFAULT_USER_AGENT;
+    this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
+    this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
+  }
+
+  public SQLAdminApiClientFactory(String userAgents) {
     this.userAgents = userAgents;
+    this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
+    this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
-  private static void logTestPropertyWarning(String property) {
-    logger.warning(String.format(
-        "%s is a test property and may be changed or removed in a future version without "
-            + "notice.", property));
+  public SQLAdminApiClientFactory(String userAgents, String apiRootUrl, String apiServicePath) {
+    this.userAgents = userAgents;
+    this.rootUrl = apiRootUrl;
+    this.servicePath = apiServicePath;
   }
+
 
   @Override
   public SQLAdmin create(HttpRequestInitializer requestInitializer) {
@@ -54,18 +66,14 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
       throw new RuntimeException("Unable to initialize HTTP transport", err);
     }
 
-    String rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
-    String servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
 
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder = new SQLAdmin.Builder(httpTransport, jsonFactory,
-        requestInitializer).setApplicationName(userAgents.get());
+        requestInitializer).setApplicationName(userAgents);
     if (rootUrl != null) {
-      logTestPropertyWarning(API_ROOT_URL_PROPERTY);
       adminApiBuilder.setRootUrl(rootUrl);
     }
     if (servicePath != null) {
-      logTestPropertyWarning(API_SERVICE_PATH_PROPERTY);
       adminApiBuilder.setServicePath(servicePath);
     }
     return adminApiBuilder.build();

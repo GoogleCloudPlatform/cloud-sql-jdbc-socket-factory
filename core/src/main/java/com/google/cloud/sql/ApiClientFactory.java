@@ -20,6 +20,5 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdmin;
 
 public interface ApiClientFactory {
-
   SQLAdmin create(HttpRequestInitializer credentials);
 }
