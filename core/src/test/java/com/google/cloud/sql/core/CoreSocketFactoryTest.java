@@ -35,10 +35,11 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.LowLevelHttpRequest;
+import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.json.GenericJson;
 import com.google.api.client.json.Json;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
@@ -164,7 +165,7 @@ public class CoreSocketFactoryTest {
 
   private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
       int status, ErrorInfo errorInfo, String message) throws IOException {
-    final JsonFactory jsonFactory = new JacksonFactory();
+    final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
       public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
@@ -189,6 +190,54 @@ public class CoreSocketFactoryTest {
 
   private static byte[] decodeBase64StripWhitespace(String b64) {
     return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
+  }
+
+  private HttpTransport fakeSuccessHttpTransport() {
+    final JsonFactory jsonFactory = new GsonFactory();
+    return new MockHttpTransport() {
+      @Override
+      public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+        return new MockLowLevelHttpRequest() {
+          public LowLevelHttpResponse execute() throws IOException {
+            MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
+            if (method.equals("GET") && url.contains("connectSettings")) {
+              ConnectSettings settings = new ConnectSettings()
+                  .setBackendType("SECOND_GEN")
+                  .setIpAddresses(
+                      ImmutableList.of(
+                          new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                          new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+                  .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                  .setDatabaseVersion("POSTGRES14")
+                  .setRegion("myRegion");
+              settings.setFactory(jsonFactory);
+              response
+                  .setContent(settings.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
+                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+            } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
+              GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
+              try {
+                certResponse.setEphemeralCert(
+                    new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+                certResponse.setFactory(jsonFactory);
+              } catch (GeneralSecurityException e) {
+                throw new RuntimeException(e);
+              } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+              } catch (OperatorCreationException e) {
+                throw new RuntimeException(e);
+              }
+              response
+                  .setContent(certResponse.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
+                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+            }
+            return response;
+          }
+        };
+      }
+    };
   }
 
   @Before
@@ -247,7 +296,8 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory().create(credentialFactory.create());
+    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -269,8 +319,10 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
+    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
           "myProject:notMyRegion:myInstance", Arrays.asList("PRIMARY"));
@@ -399,7 +451,8 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeNotConfiguredException()).create(credentialFactory.create());
+    SQLAdmin apiClient = new StubApiClientFactory(fakeNotConfiguredException()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -420,7 +473,8 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_notAuthorized() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeNotAuthorizedException()).create(credentialFactory.create());
+    SQLAdmin apiClient = new StubApiClientFactory(fakeNotAuthorizedException()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -447,8 +501,10 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
+    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
             defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
@@ -465,8 +521,10 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
+    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
             defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
@@ -490,8 +548,10 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
+    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
+        credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
             defaultExecutor);
     assertThrows(RuntimeException.class, () -> {
       coreSocketFactory.createSslSocket(
