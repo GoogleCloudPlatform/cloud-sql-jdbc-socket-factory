@@ -24,7 +24,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.cloud.sql.CredentialFactory;
-import com.google.cloud.sql.SQLAdminApiClientFactory;
+import com.google.cloud.sql.SqlAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -115,7 +115,7 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = new SQLAdminApiClientFactory(
+      SQLAdmin adminApi = new SqlAdminApiClientFactory(
           getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 

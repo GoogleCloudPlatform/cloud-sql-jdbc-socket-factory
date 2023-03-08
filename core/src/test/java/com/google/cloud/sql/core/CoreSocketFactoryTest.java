@@ -116,6 +116,7 @@ public class CoreSocketFactoryTest {
   // If running tests on Mac, need to run "ifconfig lo0 alias 127.0.0.2 up" first
   private static final String PRIVATE_IP = "127.0.0.2";
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
+  private final GenerateEphemeralCertResponse generateEphemeralCertResponse = new GenerateEphemeralCertResponse();
   // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
   private ListeningScheduledExecutorService defaultExecutor;
   @Mock
@@ -124,20 +125,13 @@ public class CoreSocketFactoryTest {
   private SQLAdmin.Connect adminApiConnect;
   @Mock
   private SQLAdmin.Connect.Get adminApiConnectGet;
-
   @Mock
   private SQLAdmin.Connect.GenerateEphemeralCert adminApiConnectGenerateEphemeralCert;
-
-
-  private GenerateEphemeralCertResponse generateEphemeralCertResponse = new GenerateEphemeralCertResponse();
-
-
   private ListenableFuture<KeyPair> clientKeyPair;
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
   private static HttpTransport fakeNotConfiguredException() throws IOException {
-    return fakeGoogleJsonResponseException(
-        HttpStatusCodes.STATUS_CODE_FORBIDDEN,
+    return fakeGoogleJsonResponseException(HttpStatusCodes.STATUS_CODE_FORBIDDEN,
         "accessNotConfigured",
         "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
             + " it by visiting "
@@ -148,23 +142,21 @@ public class CoreSocketFactoryTest {
 
   // Creates a fake "notAuthorized" exception that can be used for testing.
   private static HttpTransport fakeNotAuthorizedException() throws IOException {
-    return fakeGoogleJsonResponseException(
-        HttpStatusCodes.STATUS_CODE_FORBIDDEN,
-        "notAuthorized",
+    return fakeGoogleJsonResponseException(HttpStatusCodes.STATUS_CODE_FORBIDDEN, "notAuthorized",
         "The client is not authorized to make this request");
   }
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static HttpTransport fakeGoogleJsonResponseException(
-      int httpStatus, String reason, String message) throws IOException {
+  private static HttpTransport fakeGoogleJsonResponseException(int httpStatus, String reason,
+      String message) throws IOException {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
     errorInfo.setMessage(message);
     return fakeGoogleJsonResponseExceptionTransport(httpStatus, errorInfo, message);
   }
 
-  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
-      int status, ErrorInfo errorInfo, String message) throws IOException {
+  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(int status,
+      ErrorInfo errorInfo, String message) throws IOException {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -178,12 +170,9 @@ public class CoreSocketFactoryTest {
         GenericJson errorResponse = new GenericJson();
         errorResponse.set("error", jsonError);
         errorResponse.setFactory(jsonFactory);
-        return new MockLowLevelHttpRequest()
-            .setResponse(
-                new MockLowLevelHttpResponse()
-                    .setContent(errorResponse.toPrettyString())
-                    .setContentType(Json.MEDIA_TYPE)
-                    .setStatusCode(status));
+        return new MockLowLevelHttpRequest().setResponse(
+            new MockLowLevelHttpResponse().setContent(errorResponse.toPrettyString())
+                .setContentType(Json.MEDIA_TYPE).setStatusCode(status));
       }
     };
   }
@@ -192,7 +181,7 @@ public class CoreSocketFactoryTest {
     return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
   }
 
-  private HttpTransport fakeSuccessHttpTransport() {
+  private HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -201,25 +190,20 @@ public class CoreSocketFactoryTest {
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
             if (method.equals("GET") && url.contains("connectSettings")) {
-              ConnectSettings settings = new ConnectSettings()
-                  .setBackendType("SECOND_GEN")
+              ConnectSettings settings = new ConnectSettings().setBackendType("SECOND_GEN")
                   .setIpAddresses(
-                      ImmutableList.of(
-                          new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                      ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                           new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
                   .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                  .setDatabaseVersion("POSTGRES14")
-                  .setRegion("myRegion");
+                  .setDatabaseVersion("POSTGRES14").setRegion("myRegion");
               settings.setFactory(jsonFactory);
-              response
-                  .setContent(settings.toPrettyString())
-                  .setContentType(Json.MEDIA_TYPE)
+              response.setContent(settings.toPrettyString()).setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
               GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
               try {
                 certResponse.setEphemeralCert(
-                    new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
+                    new SslCert().setCert(createEphemeralCert(certDuration)));
                 certResponse.setFactory(jsonFactory);
               } catch (GeneralSecurityException e) {
                 throw new RuntimeException(e);
@@ -228,9 +212,7 @@ public class CoreSocketFactoryTest {
               } catch (OperatorCreationException e) {
                 throw new RuntimeException(e);
               }
-              response
-                  .setContent(certResponse.toPrettyString())
-                  .setContentType(Json.MEDIA_TYPE)
+              response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             }
             return response;
@@ -246,12 +228,12 @@ public class CoreSocketFactoryTest {
     MockitoAnnotations.openMocks(this);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
@@ -263,32 +245,23 @@ public class CoreSocketFactoryTest {
 
     // Stub when correct instance
     when(adminApiConnect.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiConnectGet);
-    when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance")))
-        .thenReturn(adminApiConnectGet);
+    when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance"))).thenReturn(
+        adminApiConnectGet);
 
-    when(adminApiConnect.get(eq("myProject"), eq("myInstance")))
-        .thenReturn(adminApiConnectGet);
-    when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance")))
-        .thenReturn(adminApiConnectGet);
+    when(adminApiConnect.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiConnectGet);
+    when(adminApiConnect.get(eq("example.com:myProject"), eq("myInstance"))).thenReturn(
+        adminApiConnectGet);
 
-    when(adminApiConnect.generateEphemeralCert(
-        anyString(), anyString(), isA(GenerateEphemeralCertRequest.class)))
-        .thenReturn(adminApiConnectGenerateEphemeralCert);
+    when(adminApiConnect.generateEphemeralCert(anyString(), anyString(),
+        isA(GenerateEphemeralCertRequest.class))).thenReturn(adminApiConnectGenerateEphemeralCert);
 
-    when(adminApiConnectGet.execute())
-        .thenReturn(
-            new ConnectSettings()
-                .setBackendType("SECOND_GEN")
-                .setIpAddresses(
-                    ImmutableList.of(
-                        new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                        new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                .setDatabaseVersion("POSTGRES14")
-                .setRegion("myRegion"));
+    when(adminApiConnectGet.execute()).thenReturn(new ConnectSettings().setBackendType("SECOND_GEN")
+        .setIpAddresses(ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+            new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+        .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+        .setDatabaseVersion("POSTGRES14").setRegion("myRegion"));
 
-    when(adminApiConnectGenerateEphemeralCert.execute())
-        .thenReturn(generateEphemeralCertResponse);
+    when(adminApiConnectGenerateEphemeralCert.execute()).thenReturn(generateEphemeralCertResponse);
     generateEphemeralCertResponse.setEphemeralCert(
         new SslCert().setCert(createEphemeralCert(Duration.ofSeconds(0))));
 
@@ -296,10 +269,10 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
-        credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket("myProject", Arrays.asList("PRIMARY"));
       fail();
@@ -319,17 +292,16 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
-        credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(
-          "myProject:notMyRegion:myInstance", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:notMyRegion:myInstance",
+          Arrays.asList("PRIMARY"));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e)
-          .hasMessageThat()
+      assertThat(e).hasMessageThat()
           .contains("The region specified for the Cloud SQL instance is incorrect");
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
@@ -341,21 +313,17 @@ public class CoreSocketFactoryTest {
    * results in a connection to the private IP.
    */
   @Test
-  public void create_successfulPrivateConnection()
-      throws IOException, GeneralSecurityException, InterruptedException {
+  public void create_successfulPrivateConnection() throws IOException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PRIVATE_IP);
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Arrays.asList("PRIVATE"));
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, port, defaultExecutor);
 
-    verify(adminApiConnect).get("myProject", "myInstance");
-    verify(adminApiConnect)
-        .generateEphemeralCert(
-            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
+    Socket socket = coreSocketFactory.createSslSocket("myProject:myRegion:myInstance",
+        Arrays.asList("PRIVATE"));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -365,16 +333,12 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
-
-    verify(adminApiConnect).get("myProject", "myInstance");
-    verify(adminApiConnect)
-        .generateEphemeralCert(
-            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, port, defaultExecutor);
+    Socket socket = coreSocketFactory.createSslSocket("myProject:myRegion:myInstance",
+        Arrays.asList("PRIMARY"));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -384,17 +348,12 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "example.com:myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
-
-    verify(adminApiConnect).get("example.com:myProject", "myInstance");
-    verify(adminApiConnect)
-        .generateEphemeralCert(
-            eq("example.com:myProject"), eq("myInstance"),
-            isA(GenerateEphemeralCertRequest.class));
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, port, defaultExecutor);
+    Socket socket = coreSocketFactory.createSslSocket("example.com:myProject:myRegion:myInstance",
+        Arrays.asList("PRIMARY"));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -411,21 +370,18 @@ public class CoreSocketFactoryTest {
     int port = sslServer.start();
 
     // Certificate already expired.
-    when(adminApiConnectGenerateEphemeralCert.execute())
-        .thenReturn(generateEphemeralCertResponse);
-    when(generateEphemeralCertResponse.getEphemeralCert())
-        .thenReturn(new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
+    when(adminApiConnectGenerateEphemeralCert.execute()).thenReturn(generateEphemeralCertResponse);
+    when(generateEphemeralCertResponse.getEphemeralCert()).thenReturn(
+        new SslCert().setCert(createEphemeralCert(Duration.ofMinutes(65))));
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, adminApi,
+        credentialFactory, port, defaultExecutor);
+    Socket socket = coreSocketFactory.createSslSocket("myProject:myRegion:myInstance",
+        Arrays.asList("PRIMARY"));
 
     verify(adminApiConnect, times(2)).get("myProject", "myInstance");
-    verify(adminApiConnect, times(2))
-        .generateEphemeralCert(
-            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
+    verify(adminApiConnect, times(2)).generateEphemeralCert(eq("myProject"), eq("myInstance"),
+        isA(GenerateEphemeralCertRequest.class));
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -435,14 +391,13 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, port, defaultExecutor);
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, adminApi,
+        credentialFactory, port, defaultExecutor);
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
     verify(adminApiConnect).get("myProject", "myInstance");
-    verify(adminApiConnect)
-        .generateEphemeralCert(
-            eq("myProject"), eq("myInstance"), isA(GenerateEphemeralCertRequest.class));
+    verify(adminApiConnect).generateEphemeralCert(eq("myProject"), eq("myInstance"),
+        isA(GenerateEphemeralCertRequest.class));
 
     coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
 
@@ -453,21 +408,18 @@ public class CoreSocketFactoryTest {
   public void create_adminApiNotEnabled() throws IOException {
     SQLAdmin apiClient = new StubApiClientFactory(fakeNotConfiguredException()).create(
         credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, 3307, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
-      coreSocketFactory.createSslSocket(
-          "NotMyProject:myRegion:myInstance", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("NotMyProject:myRegion:myInstance",
+          Arrays.asList("PRIMARY"));
       fail("Expected RuntimeException");
     } catch (RuntimeException | InterruptedException e) {
       // TODO(berezv): should we throw something more specific than RuntimeException?
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              String.format(
-                  "[%s] The Google Cloud SQL Admin API is not enabled for the project",
-                  "NotMyProject:myRegion:myInstance"));
+      assertThat(e).hasMessageThat().contains(
+          String.format("[%s] The Google Cloud SQL Admin API is not enabled for the project",
+              "NotMyProject:myRegion:myInstance"));
     }
   }
 
@@ -475,20 +427,17 @@ public class CoreSocketFactoryTest {
   public void create_notAuthorized() throws IOException {
     SQLAdmin apiClient = new StubApiClientFactory(fakeNotAuthorizedException()).create(
         credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        credentialFactory, 3307, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
-      coreSocketFactory.createSslSocket(
-          "myProject:myRegion:NotMyInstance", Arrays.asList("PRIMARY"));
+      coreSocketFactory.createSslSocket("myProject:myRegion:NotMyInstance",
+          Arrays.asList("PRIMARY"));
       fail();
     } catch (RuntimeException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              String.format(
-                  "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
-                  "myProject:myRegion:NotMyInstance"));
+      assertThat(e).hasMessageThat().contains(String.format(
+          "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
+          "myProject:myRegion:NotMyInstance"));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -501,14 +450,12 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
-        credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
-            defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        stubCredentialFactory, port, defaultExecutor);
+    Socket socket = coreSocketFactory.createSslSocket("myProject:myRegion:myInstance",
+        Arrays.asList("PRIMARY"), true);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -521,14 +468,12 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
-        credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
-            defaultExecutor);
-    Socket socket =
-        coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        stubCredentialFactory, port, defaultExecutor);
+    Socket socket = coreSocketFactory.createSslSocket("myProject:myRegion:myInstance",
+        Arrays.asList("PRIMARY"), true);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -548,14 +493,13 @@ public class CoreSocketFactoryTest {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
-    SQLAdmin apiClient = new StubApiClientFactory(fakeSuccessHttpTransport()).create(
-        credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, apiClient, stubCredentialFactory, port,
-            defaultExecutor);
+    SQLAdmin apiClient = new StubApiClientFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
+        stubCredentialFactory, port, defaultExecutor);
     assertThrows(RuntimeException.class, () -> {
-      coreSocketFactory.createSslSocket(
-          "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
+      coreSocketFactory.createSslSocket("myProject:myRegion:myInstance", Arrays.asList("PRIMARY"),
+          true);
     });
   }
 
@@ -566,41 +510,33 @@ public class CoreSocketFactoryTest {
   }
 
   private String createEphemeralCert(Duration shiftIntoPast)
-      throws GeneralSecurityException, ExecutionException, IOException, OperatorCreationException {
+      throws GeneralSecurityException, ExecutionException, OperatorCreationException {
     Duration validFor = Duration.ofHours(1);
     ZonedDateTime notBefore = ZonedDateTime.now().minus(shiftIntoPast);
     ZonedDateTime notAfter = notBefore.plus(validFor);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
-    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA")
-        .build(signingKey);
+    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
 
     X500Principal issuer = new X500Principal(
         "C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
     X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
 
-    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
-        issuer,
-        BigInteger.ONE,
-        Date.from(notBefore.toInstant()),
-        Date.from(notAfter.toInstant()),
-        subject,
-        Futures.getDone(clientKeyPair).getPublic()
-    );
+    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(issuer,
+        BigInteger.ONE, Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()), subject,
+        Futures.getDone(clientKeyPair).getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
-    Certificate cert = new JcaX509CertificateConverter()
-        .getCertificate(certificateHolder);
+    Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
 
     StringBuilder sb = new StringBuilder();
     sb.append("-----BEGIN CERTIFICATE-----\n");
-    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded())
-        .replaceAll("(.{64})", "$1\n"));
+    sb.append(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
     sb.append("\n");
     sb.append("-----END CERTIFICATE-----\n");
     return sb.toString();
@@ -625,28 +561,20 @@ public class CoreSocketFactoryTest {
             KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             authKeyStore.load(null, null);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PKCS8EncodedKeySpec keySpec =
-                new PKCS8EncodedKeySpec(
-                    decodeBase64StripWhitespace(TestKeys.SERVER_CERT_PRIVATE_KEY));
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(
+                decodeBase64StripWhitespace(TestKeys.SERVER_CERT_PRIVATE_KEY));
             PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-            PrivateKeyEntry serverCert =
-                new PrivateKeyEntry(
-                    privateKey,
-                    new Certificate[]{
-                        certFactory.generateCertificate(
-                            new ByteArrayInputStream(
-                                TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))
-                    });
+            PrivateKeyEntry serverCert = new PrivateKeyEntry(privateKey, new Certificate[]{
+                certFactory.generateCertificate(new ByteArrayInputStream(
+                    TestKeys.SERVER_CERT.getBytes(StandardCharsets.UTF_8)))});
             authKeyStore.setEntry("serverCert", serverCert, new PasswordProtection(new char[0]));
-            KeyManagerFactory keyManagerFactory =
-                KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(authKeyStore, new char[0]);
 
-            final X509Certificate signingCaCert =
-                (X509Certificate)
-                    certFactory.generateCertificate(
-                        new ByteArrayInputStream(
-                            TestKeys.SIGNING_CA_CERT.getBytes(StandardCharsets.UTF_8)));
+            final X509Certificate signingCaCert = (X509Certificate) certFactory.generateCertificate(
+                new ByteArrayInputStream(
+                    TestKeys.SIGNING_CA_CERT.getBytes(StandardCharsets.UTF_8)));
 
             KeyStore trustKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             trustKeyStore.load(null, null);
@@ -655,12 +583,11 @@ public class CoreSocketFactoryTest {
             tmf.init(trustKeyStore);
 
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-            sslContext.init(
-                keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+            sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(),
+                new SecureRandom());
             SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-            SSLServerSocket sslServerSocket =
-                (SSLServerSocket)
-                    sslServerSocketFactory.createServerSocket(0, 5, InetAddress.getByName(ip));
+            SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(
+                0, 5, InetAddress.getByName(ip));
             sslServerSocket.setNeedClientAuth(true);
 
             pickedPort.set(sslServerSocket.getLocalPort());

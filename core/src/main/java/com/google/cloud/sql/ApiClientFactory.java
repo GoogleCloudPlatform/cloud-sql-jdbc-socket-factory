@@ -16,9 +16,13 @@
 
 package com.google.cloud.sql;
 
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdmin;
 
+/**
+ * Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API.
+ */
 public interface ApiClientFactory {
   SQLAdmin create(HttpRequestInitializer credentials);
 }

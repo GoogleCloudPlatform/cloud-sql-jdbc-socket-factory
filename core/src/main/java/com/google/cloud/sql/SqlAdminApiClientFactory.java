@@ -24,12 +24,11 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.logging.Logger;
 
-public class SQLAdminApiClientFactory implements ApiClientFactory {
-
-  private static final Logger logger = Logger.getLogger(SQLAdminApiClientFactory.class.getName());
-  // Test properties, not for end-user use. May be changed or removed without notice.
+/**
+ * Factory for creating a SQLAdmin client that interacts with the real SQL Admin API.
+ */
+public class SqlAdminApiClientFactory implements ApiClientFactory {
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
   private static final String DEFAULT_USER_AGENT = "Cloud SQL Java Connector";
@@ -38,19 +37,33 @@ public class SQLAdminApiClientFactory implements ApiClientFactory {
   private String servicePath;
   private String userAgents;
 
-  public SQLAdminApiClientFactory() {
+  /**
+   * Initializes a new SQLAdminApiClientFactory class from defaults
+   */
+  public SqlAdminApiClientFactory() {
     this.userAgents = DEFAULT_USER_AGENT;
     this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
-  public SQLAdminApiClientFactory(String userAgents) {
+  /**
+   * Initializes a new SQLAdminApiClientFactory class from defaults and provided userAgents
+   * @param userAgents string representing userAgents for the admin API client
+   */
+  public SqlAdminApiClientFactory(String userAgents) {
     this.userAgents = userAgents;
     this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
-  public SQLAdminApiClientFactory(String userAgents, String apiRootUrl, String apiServicePath) {
+  /**
+   * Initializes a new SQLAdminApiClientFactory class with custom API root url and service path
+   * and provided userAgents
+   * @param userAgents string representing userAgents for the admin API client
+   * @param apiRootUrl root URL to override default API endpoint
+   * @param apiServicePath servicePath to override default API service path
+   */
+  public SqlAdminApiClientFactory(String userAgents, String apiRootUrl, String apiServicePath) {
     this.userAgents = userAgents;
     this.rootUrl = apiRootUrl;
     this.servicePath = apiServicePath;
