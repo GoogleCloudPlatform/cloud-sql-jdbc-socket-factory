@@ -30,12 +30,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential;
 import com.google.api.client.http.BasicAuthentication;
-import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.LowLevelHttpRequest;
@@ -43,7 +39,6 @@ import com.google.api.client.json.GenericJson;
 import com.google.api.client.json.Json;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.testing.http.HttpTesting;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
@@ -119,11 +114,9 @@ public class CoreSocketFactoryTest {
   private static final String PUBLIC_IP = "127.0.0.1";
   // If running tests on Mac, need to run "ifconfig lo0 alias 127.0.0.2 up" first
   private static final String PRIVATE_IP = "127.0.0.2";
-
+  private final CredentialFactory credentialFactory = new StubCredentialFactory();
   // TODO(kvg): Remove this when updating tests to use single CoreSocketFactory
   private ListeningScheduledExecutorService defaultExecutor;
-
-  private final CredentialFactory credentialFactory = new StubCredentialFactory();
   @Mock
   private SQLAdmin adminApi;
   @Mock
@@ -141,7 +134,7 @@ public class CoreSocketFactoryTest {
   private ListenableFuture<KeyPair> clientKeyPair;
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
-  private static GoogleJsonResponseException fakeNotConfiguredException() throws IOException {
+  private static HttpTransport fakeNotConfiguredException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
         "accessNotConfigured",
@@ -153,7 +146,7 @@ public class CoreSocketFactoryTest {
   }
 
   // Creates a fake "notAuthorized" exception that can be used for testing.
-  private static GoogleJsonResponseException fakeNotAuthorizedException() throws IOException {
+  private static HttpTransport fakeNotAuthorizedException() throws IOException {
     return fakeGoogleJsonResponseException(
         HttpStatusCodes.STATUS_CODE_FORBIDDEN,
         "notAuthorized",
@@ -161,43 +154,37 @@ public class CoreSocketFactoryTest {
   }
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static GoogleJsonResponseException fakeGoogleJsonResponseException(
+  private static HttpTransport fakeGoogleJsonResponseException(
       int httpStatus, String reason, String message) throws IOException {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
     errorInfo.setMessage(message);
-    return fakeGoogleJsonResponseException(httpStatus, errorInfo, message);
+    return fakeGoogleJsonResponseExceptionTransport(httpStatus, errorInfo, message);
   }
 
-  private static GoogleJsonResponseException fakeGoogleJsonResponseException(
+  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
       int status, ErrorInfo errorInfo, String message) throws IOException {
     final JsonFactory jsonFactory = new JacksonFactory();
-    HttpTransport transport =
-        new MockHttpTransport() {
-          @Override
-          public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
-            errorInfo.setFactory(jsonFactory);
-            GoogleJsonError jsonError = new GoogleJsonError();
-            jsonError.setCode(status);
-            jsonError.setErrors(Collections.singletonList(errorInfo));
-            jsonError.setMessage(message);
-            jsonError.setFactory(jsonFactory);
-            GenericJson errorResponse = new GenericJson();
-            errorResponse.set("error", jsonError);
-            errorResponse.setFactory(jsonFactory);
-            return new MockLowLevelHttpRequest()
-                .setResponse(
-                    new MockLowLevelHttpResponse()
-                        .setContent(errorResponse.toPrettyString())
-                        .setContentType(Json.MEDIA_TYPE)
-                        .setStatusCode(status));
-          }
-        };
-    HttpRequest request =
-        transport.createRequestFactory().buildGetRequest(HttpTesting.SIMPLE_GENERIC_URL);
-    request.setThrowExceptionOnExecuteError(false);
-    HttpResponse response = request.execute();
-    return GoogleJsonResponseException.from(jsonFactory, response);
+    return new MockHttpTransport() {
+      @Override
+      public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+        errorInfo.setFactory(jsonFactory);
+        GoogleJsonError jsonError = new GoogleJsonError();
+        jsonError.setCode(status);
+        jsonError.setErrors(Collections.singletonList(errorInfo));
+        jsonError.setMessage(message);
+        jsonError.setFactory(jsonFactory);
+        GenericJson errorResponse = new GenericJson();
+        errorResponse.set("error", jsonError);
+        errorResponse.setFactory(jsonFactory);
+        return new MockLowLevelHttpRequest()
+            .setResponse(
+                new MockLowLevelHttpResponse()
+                    .setContent(errorResponse.toPrettyString())
+                    .setContentType(Json.MEDIA_TYPE)
+                    .setStatusCode(status));
+      }
+    };
   }
 
   private static byte[] decodeBase64StripWhitespace(String b64) {
@@ -224,12 +211,6 @@ public class CoreSocketFactoryTest {
 
     // Stub the API client for testing
     when(adminApi.connect()).thenReturn(adminApiConnect);
-
-    // Stub when generic cases for project/instance
-    when(adminApiConnect.get(anyString(), anyString())).thenThrow(fakeNotConfiguredException());
-    // Stub when correct project, but generic instance
-    when(adminApiConnect.get(eq("myProject"), anyString()))
-        .thenThrow(fakeNotAuthorizedException());
 
     // Stub when correct instance
     when(adminApiConnect.get(eq("myProject"), eq("myInstance"))).thenReturn(adminApiConnectGet);
@@ -266,8 +247,9 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
+    SQLAdmin apiClient = new StubApiClientFactory().create(credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket("myProject", Arrays.asList("PRIMARY"));
       fail();
@@ -417,8 +399,9 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
+    SQLAdmin apiClient = new StubApiClientFactory(fakeNotConfiguredException()).create(credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
       coreSocketFactory.createSslSocket(
@@ -437,8 +420,9 @@ public class CoreSocketFactoryTest {
 
   @Test
   public void create_notAuthorized() throws IOException {
+    SQLAdmin apiClient = new StubApiClientFactory(fakeNotAuthorizedException()).create(credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
       coreSocketFactory.createSslSocket(
@@ -478,12 +462,12 @@ public class CoreSocketFactoryTest {
       throws InterruptedException, IOException {
     CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo");
 
-
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+            defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
@@ -503,12 +487,12 @@ public class CoreSocketFactoryTest {
 
     CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
 
-
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start();
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(clientKeyPair, adminApi, stubCredentialFactory, port,
+            defaultExecutor);
     assertThrows(RuntimeException.class, () -> {
       coreSocketFactory.createSslSocket(
           "myProject:myRegion:myInstance", Arrays.asList("PRIMARY"), true);
