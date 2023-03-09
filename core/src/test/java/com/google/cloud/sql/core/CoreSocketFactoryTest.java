@@ -107,7 +107,7 @@ public class CoreSocketFactoryTest {
   private ListenableFuture<KeyPair> clientKeyPair;
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
-  private static HttpTransport fakeNotConfiguredException() throws IOException {
+  private static HttpTransport fakeNotConfiguredException() {
     return fakeGoogleJsonResponseException(
         "accessNotConfigured",
         "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
@@ -118,7 +118,7 @@ public class CoreSocketFactoryTest {
   }
 
   // Creates a fake "notAuthorized" exception that can be used for testing.
-  private static HttpTransport fakeNotAuthorizedException() throws IOException {
+  private static HttpTransport fakeNotAuthorizedException() {
     return fakeGoogleJsonResponseException(
         "notAuthorized",
         "The client is not authorized to make this request");
@@ -126,7 +126,7 @@ public class CoreSocketFactoryTest {
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
   private static HttpTransport fakeGoogleJsonResponseException(
-      String reason, String message) throws IOException {
+      String reason, String message) {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
     errorInfo.setMessage(message);
@@ -164,7 +164,7 @@ public class CoreSocketFactoryTest {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
-      public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
+      public LowLevelHttpRequest buildRequest(String method, String url) {
         return new MockLowLevelHttpRequest() {
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
@@ -184,11 +184,7 @@ public class CoreSocketFactoryTest {
                 certResponse.setEphemeralCert(
                     new SslCert().setCert(createEphemeralCert(certDuration)));
                 certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException e) {
-                throw new RuntimeException(e);
-              } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-              } catch (OperatorCreationException e) {
+              } catch (GeneralSecurityException | OperatorCreationException | ExecutionException e) {
                 throw new RuntimeException(e);
               }
               response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
