@@ -20,7 +20,7 @@ import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.CredentialFactory;
 
-class StubCredentialFactory implements CredentialFactory {
+public class StubCredentialFactory implements CredentialFactory {
 
   String accessToken;
   long expirationTimeInMilliseconds;
