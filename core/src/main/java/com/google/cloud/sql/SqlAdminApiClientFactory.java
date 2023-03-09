@@ -39,7 +39,7 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
 
   /**
    * Initializes a new SQLAdminApiClientFactory class from defaults and provided userAgents.
-   * 
+
    * @param userAgents string representing userAgents for the admin API client
    */
   public SqlAdminApiClientFactory(String userAgents) {
