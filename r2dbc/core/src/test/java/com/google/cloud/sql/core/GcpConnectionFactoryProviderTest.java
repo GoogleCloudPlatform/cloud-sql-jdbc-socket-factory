@@ -102,7 +102,7 @@ public class GcpConnectionFactoryProviderTest {
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
     Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
-
+    
     return "-----BEGIN CERTIFICATE-----\n"
         + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
         + "\n"
