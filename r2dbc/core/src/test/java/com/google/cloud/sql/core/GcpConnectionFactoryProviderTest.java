@@ -108,7 +108,7 @@ public class GcpConnectionFactoryProviderTest {
         + "\n"
         + "-----END CERTIFICATE-----\n";
   }
-  
+
   private HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
