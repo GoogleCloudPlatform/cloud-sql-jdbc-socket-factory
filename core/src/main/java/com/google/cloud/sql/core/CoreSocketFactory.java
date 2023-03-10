@@ -243,6 +243,11 @@ public final class CoreSocketFactory {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
+  private String getHostIp(String instanceName, List<String> ipTypes) {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
+    return instance.getPreferredIp(ipTypes);
+  }
+
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(
@@ -355,11 +360,6 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
-  }
-
-  private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
-    return instance.getPreferredIp(ipTypes);
   }
 
   @VisibleForTesting
