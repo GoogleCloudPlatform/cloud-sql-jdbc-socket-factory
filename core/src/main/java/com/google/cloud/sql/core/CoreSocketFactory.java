@@ -23,10 +23,6 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
-import com.google.api.services.sqladmin.SQLAdminScopes;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.sql.ApplicationDefaultCredentialFactory;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -42,7 +38,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,8 +80,8 @@ public final class CoreSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
 
   private static CoreSocketFactory coreSocketFactory;
-  private static List<String> userAgents = new ArrayList<String>();
-  private static String version = getVersion();
+  private static final List<String> userAgents = new ArrayList<>();
+  private static final String version = getVersion();
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
@@ -112,7 +107,7 @@ public final class CoreSocketFactory {
   /**
    * Returns the {@link CoreSocketFactory} singleton.
    */
-  public static synchronized CoreSocketFactory getInstance() throws IOException {
+  public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
@@ -237,7 +232,7 @@ public final class CoreSocketFactory {
   /**
    * Returns default ip address that can be used to establish Cloud SQL connection.
    */
-  public static String getHostIp(String csqlInstanceName) throws IOException {
+  public static String getHostIp(String csqlInstanceName) {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
@@ -252,7 +247,7 @@ public final class CoreSocketFactory {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName);
     return instance.getPreferredIp(ipTypes);
   }
-  
+
   private static void logTestPropertyWarning(String property) {
     logger.warning(
         String.format(

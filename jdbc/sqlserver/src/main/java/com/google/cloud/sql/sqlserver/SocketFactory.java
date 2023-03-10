@@ -36,13 +36,14 @@ import java.util.logging.Logger;
 public class SocketFactory extends javax.net.SocketFactory {
 
   private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
-  // props are protected, not private, so that they can be accessed from unit tests
-  @VisibleForTesting
-  protected Properties props = new Properties();
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-jdbc-sqlserver");
   }
+
+  // props are protected, not private, so that they can be accessed from unit tests
+  @VisibleForTesting
+  protected Properties props = new Properties();
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
@@ -79,24 +80,23 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
   @Override
-  public Socket createSocket(String host, int port) throws IOException {
+  public Socket createSocket(String host, int port) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(String host, int port, InetAddress localHost, int localPort)
-      throws IOException {
+  public Socket createSocket(String host, int port, InetAddress localHost, int localPort) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(InetAddress host, int port) throws IOException {
+  public Socket createSocket(InetAddress host, int port) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort)
-      throws IOException {
+  public Socket createSocket(InetAddress address, int port, InetAddress localAddress,
+      int localPort) {
     throw new UnsupportedOperationException();
   }
 }

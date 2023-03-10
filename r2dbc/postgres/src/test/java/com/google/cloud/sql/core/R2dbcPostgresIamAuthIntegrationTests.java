@@ -65,11 +65,9 @@ public class R2dbcPostgresIamAuthIntegrationTests {
   @Before
   public void setUpPool() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
 
     // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
     // Set up ConnectionFactoryOptions

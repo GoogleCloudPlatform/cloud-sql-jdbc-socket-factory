@@ -83,28 +83,6 @@ class TestKeys {
           + "RCk7yv+CNAjdIAn9Q2eVY2pY9XABgKuY+gBS87/hK/lmyD22yhSKjcyYOn8pNCvp\n"
           + "BbHwmDjF6MtFsAkKnLfI8A==";
 
-  static final String SIGNING_CA_CERT =
-      "-----BEGIN CERTIFICATE-----\n"
-          + "MIIDNTCCAh2gAwIBAgIBADANBgkqhkiG9w0BAQUFADBRMSwwKgYDVQQDEyNHb29n\n"
-          + "bGUgQ2xvdWQgU1FMIFNpZ25pbmcgQ0EgZm9vOmJhejEUMBIGA1UEChMLR29vZ2xl\n"
-          + "LCBJbmMxCzAJBgNVBAYTAlVTMCAXDTE2MDMxMzA2MTYxNVoYDzIxMTYwMjE4MDYx\n"
-          + "NzE1WjBRMSwwKgYDVQQDEyNHb29nbGUgQ2xvdWQgU1FMIFNpZ25pbmcgQ0EgZm9v\n"
-          + "OmJhejEUMBIGA1UEChMLR29vZ2xlLCBJbmMxCzAJBgNVBAYTAlVTMIIBIjANBgkq\n"
-          + "hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0nelpR9Th/qgccMT3GQm4ZLTdXC/Kv27\n"
-          + "M73Ki7IroZ2zK2C6I2y/6mfGoEupajO6xsJgq22SGbWrYqwRYsRhoOoXt6A++uEq\n"
-          + "o9dm5ZNgx4opUXFhLTor7hgX5AsKZNvAuaBua/7CkX0CoREH1jhIEJzeFDHNOd6y\n"
-          + "SUtB5pVHDuglUuPP7o/kVGw85Wi3hXyB8e7p4L6FfjtSWembyRoXLSJCi5+2uqNG\n"
-          + "u6zlXQdxqmA+70+g7nqwA3PLLDn4lkvrXGS3mPc3AenmelyzZ9zkfQlA6i6qrSMM\n"
-          + "LKjNtb1ffPXliYIwhNCY1L7oACrOusRsyJF6Fa2KDVvYde9WE4NBSQIDAQABoxYw\n"
-          + "FDASBgNVHRMBAf8ECDAGAQH/AgEAMA0GCSqGSIb3DQEBBQUAA4IBAQA8UA4l5ens\n"
-          + "dw3pgHIEIOel5oL+aEo9UGwqgRFtrW3K6qE+DK95BrhOi7oFkzWbfiKAqxmbXj5d\n"
-          + "Rjs5EvU75qAg0tMA0iBBJ3jQyVRWVTD1uU07HhJBT/4AZgAIp95Pyn0w8x/3T4Xz\n"
-          + "nV5ib/mc9bgPKRE0ukG4U5ZKD0lzqrcdK6ZaXnzENWN/C1NamKgkETgFypb2dScS\n"
-          + "wzxJVk74noD9AtZyXuWxt1Zr7F0j8Atc7Vcy4sWAiNLIAG4iyCrDeGrRRRRN5EHw\n"
-          + "4ptfP/7xZYEPpcbPTMzl4A7Eyi5yrox3sRLHhINmyeVqIvGz6udXsG1NrCZgTTOd\n"
-          + "xw4ubc7zoGs2\n"
-          + "-----END CERTIFICATE-----";
-
   static final String SERVER_CA_CERT =
       "-----BEGIN CERTIFICATE-----\n"
           + "MIIDIzCCAgugAwIBAgIBADANBgkqhkiG9w0BAQUFADBIMSMwIQYDVQQDExpHb29n\n"
@@ -126,52 +104,4 @@ class TestKeys {
           + "83dHBDTEiWkAxW6kEtjI0R6+32rBvgqhElwTI9icEJgwRPd+pBol\n"
           + "-----END CERTIFICATE-----";
 
-  static final String SERVER_CERT =
-      "-----BEGIN CERTIFICATE-----\n"
-          + "MIIC/zCCAeegAwIBAgIEd/w5zjANBgkqhkiG9w0BAQUFADBIMSMwIQYDVQQDExpH\n"
-          + "b29nbGUgQ2xvdWQgU1FMIFNlcnZlciBDQTEUMBIGA1UEChMLR29vZ2xlLCBJbmMx\n"
-          + "CzAJBgNVBAYTAlVTMCAXDTE2MDMxMzA2MTYxNloYDzIxMTYwMjE4MDYxNzE2WjA1\n"
-          + "MRAwDgYDVQQDEwdmb286YmF6MRQwEgYDVQQKEwtHb29nbGUsIEluYzELMAkGA1UE\n"
-          + "BhMCVVMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCgOl1rxWsS3MC0\n"
-          + "wZ4R0yYzGNumwMeuU9o0H9KXeOQ4Pfx1tZDlHNrl2N+sY6o0CojHIvlMulykw/c9\n"
-          + "0duT6Kbv/XO7neBZYXbIdMa3LFOCNQJt4JLy4Cke8j3+Jv+RMr7vWFGBJo3v+M9q\n"
-          + "0fiHgJ8fZOxUhxe3tZ5tgB6D+M6EVv36w4AVw73kg9lJldIjWC8TSNpPjusdhgyB\n"
-          + "mYNg476yC7iSz0vQ8DcKu0740ljEYkqCCm5QzycW+iz8HH16fLsLjgF1iJG85Ylu\n"
-          + "7uLNkK+ijTC2P4vVDaM1LzR4O9ILjZPiQ/NgFB4T6gf4hL3EnIuOiQrkWswC5ouT\n"
-          + "Gw5HXqEVAgMBAAGjAjAAMA0GCSqGSIb3DQEBBQUAA4IBAQAgbxjlZrhJSG7Pij+4\n"
-          + "r60IkoJtbckLzG3RGJshXwjW53D25wp/bSnpJK4EzJ3BjZCYSCF3jW6Cfqwr43mQ\n"
-          + "DCBuYa7HH30pHqXxaiZplbUE3o008qfV7mDChEcYm3avVVfpTD28h3ousZ4bL/hd\n"
-          + "8amFE7/K/jpDbakTSLIMnMfJMyHpaTH24Wmg2wdFwPYrZeOwn7zsHaRm+x7gQrsV\n"
-          + "V+lg9d4e7XmUmG2+hJ1FDBLzfJpQcSMjLGaX3OWGG+W5sIOpLPxA3P5v8sG0dGZu\n"
-          + "eJtxixrexVu6ULPplrsBN+6Ga843SCywkfIJf2nmpOOOSVqr5jnCIGQ5yHR17TlE\n"
-          + "12Jk\n"
-          + "-----END CERTIFICATE-----";
-
-  static final String SERVER_CERT_PRIVATE_KEY =
-      "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCgOl1rxWsS3MC0\n"
-          + "wZ4R0yYzGNumwMeuU9o0H9KXeOQ4Pfx1tZDlHNrl2N+sY6o0CojHIvlMulykw/c9\n"
-          + "0duT6Kbv/XO7neBZYXbIdMa3LFOCNQJt4JLy4Cke8j3+Jv+RMr7vWFGBJo3v+M9q\n"
-          + "0fiHgJ8fZOxUhxe3tZ5tgB6D+M6EVv36w4AVw73kg9lJldIjWC8TSNpPjusdhgyB\n"
-          + "mYNg476yC7iSz0vQ8DcKu0740ljEYkqCCm5QzycW+iz8HH16fLsLjgF1iJG85Ylu\n"
-          + "7uLNkK+ijTC2P4vVDaM1LzR4O9ILjZPiQ/NgFB4T6gf4hL3EnIuOiQrkWswC5ouT\n"
-          + "Gw5HXqEVAgMBAAECggEAN6gufVolOHcgJWnAK7bp5QP0gLckZaTQ/hwzvdQLipHV\n"
-          + "mVnJjBx62S59e9de7xbdrjay3Hk75yv/PSUhnf5JxsGGqxxLKyEU7srJoCUwmOEr\n"
-          + "B9njkaRWBF7nM9p+GgTDmEZYgYFP+pS2EAgByaffHjujcDVBAtp+vtCrSPJrYkJ7\n"
-          + "cYRADSRNBZmYi83hxCC3VFQ3nlxMEPMIv0lKLbF/5zOrVZ3mJrAi2Qqf2TT5z+G2\n"
-          + "QySgcvssyHwOftv3gxfcggQiX6egkNwMyKhhKXD0lIdkqz8veODc2Z/KpDxaiE3u\n"
-          + "jW1AC/0wtJMCa2t4LdcX98/gZPufld5L7vwaVGizgQKBgQDplMfCidp+FbPwXoqf\n"
-          + "coE+NoJ8qkXnl2lDuU/XwcC0Eeob7av+dVRbCbKTNbMFjJ16O587NZ1H4O28XfEo\n"
-          + "yPiEgOJE4ELjIoirDf2JGM8SSNyopyhrbOHUtULXdy5gQQ9SRW2vCNYjz7FXfeyG\n"
-          + "ZOaHDOYpTNZaXvtva+khZgOZ4QKBgQCvm0GFxsmoxd17NyW4Jni7y5A4WYD8/NEp\n"
-          + "sOiHKhldIsjNLTzPJ/ePHiG4yLl50x3/qh8Bfwj8jdTavbIrYJ0DdJyNEu1y3L+P\n"
-          + "zLGXZmXDNTuFhYQ+QzcWuRZck5RKNhVT5L3qXTuyv7LKkC/XdX16bQ8df1E0KvQk\n"
-          + "Z22OR191tQKBgQDif9ENBZwHc4ge565IW0KUT0tNE9fhcOM0NrgDoe/5LP30ww1r\n"
-          + "G98GwGqXcRT9ppL1+ma3hY/UKXqelAHL6MWDx26iF00E73HTXSejD5mMQ3clW6JI\n"
-          + "OTbrijEcuocP80amIojvmAP+ieGP053N3H3mK03scoPQ8hWiv+M67a9EQQKBgEBe\n"
-          + "odL+vjbuaLRcz6fD+mekQ7ZUILMbnTQyE9pP9UItmPuUxICO/vDoM6Y/dbWRTKLF\n"
-          + "4l2zCkFBYC/aby/1VzjICwavVHjRMCru9n4v28eFgM791S7Zhpz+tZKzyhy13HWH\n"
-          + "GJKLIHHyUQBtgAvzlk5FIdBHNiXwRNP/UapgwT4tAoGAW91PH2YXPMIg71iIYTvm\n"
-          + "ngT8fznmvGO0D/28ItgvQzfd22P0CHNr/EHC4N3H2LkLWjYERb6Msn95zqt4b0dY\n"
-          + "P6VXe8hp4ObDka+D9mI6IfkYUuJzFlySXZxq/V2WWVIVAW6hl6VD13t/GfjGwbr6\n"
-          + "6g41F14dftbtendj7EJqi2Y=";
 }

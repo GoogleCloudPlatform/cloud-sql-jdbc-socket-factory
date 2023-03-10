@@ -59,11 +59,9 @@ public class JdbcSqlServerIntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
   }
 
   @Before
