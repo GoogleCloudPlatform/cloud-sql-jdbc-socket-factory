@@ -190,6 +190,7 @@ public class SqlAdminApiFetcher {
   /**
    * Fetches the latest version of the instance's metadata using the Cloud SQL Admin API.
    */
+
   Metadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
     try {
       ConnectSettings instanceMetadata = apiClient.connect()
@@ -243,6 +244,7 @@ public class SqlAdminApiFetcher {
    * Uses the Cloud SQL Admin API to create an ephemeral SSL certificate that is authenticated to
    * connect the Cloud SQL instance for up to 60 minutes.
    */
+
   Certificate fetchEphemeralCertificate(KeyPair keyPair, CloudSqlInstanceName instanceName,
       OAuth2Credentials credentials, AuthType authType) {
 

@@ -20,14 +20,22 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.cloud.sql.AuthType;
+
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import javax.net.ssl.SSLContext;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
-  private final ConnectSettings instanceData = new ConnectSettings();
+  private final ConnectSettings connectSettings = new ConnectSettings();
+
+  ListeningScheduledExecutorService defaultExecutor;
 
   private final SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(fakeSuccessHttpTransport(
       Duration.ofSeconds(0))).create(credentialFactory.create());
@@ -35,7 +43,26 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
   @Before
   public void setup() throws GeneralSecurityException {
     super.setup();
-    instanceData.setDatabaseVersion("SQLSERVER_2019_STANDARD");
+    connectSettings.setDatabaseVersion("SQLSERVER_2019_STANDARD");
+  }
+
+  @Test
+  public void fetchesInstanceData() throws ExecutionException, InterruptedException {
+    ListenableFuture<InstanceData> instanceDataFuture = fetcher.getInstanceData(
+        new CloudSqlInstanceName("myProject:myRegion:myInstance"),
+        null,
+        AuthType.PASSWORD,
+        defaultExecutor,
+        clientKeyPair
+    );
+
+    InstanceData instanceData = instanceDataFuture.get();
+
+    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<String, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get("PRIMARY")).isEqualTo(PUBLIC_IP);
+    assertThat(ipAddrs.get("PRIVATE")).isEqualTo(PRIVATE_IP);
   }
 
   @Test
@@ -43,7 +70,7 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
     String connName = "my-project:region:my-instance";
 
     try {
-      fetcher.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
+      fetcher.checkDatabaseCompatibility(connectSettings, AuthType.IAM, connName);
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()
