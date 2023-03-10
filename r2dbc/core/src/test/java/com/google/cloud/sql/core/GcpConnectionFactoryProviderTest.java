@@ -147,44 +147,6 @@ public class GcpConnectionFactoryProviderTest {
     };
   }
 
-  private HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
-    final JsonFactory jsonFactory = new GsonFactory();
-    return new MockHttpTransport() {
-      @Override
-      public LowLevelHttpRequest buildRequest(String method, String url) {
-        return new MockLowLevelHttpRequest() {
-          public LowLevelHttpResponse execute() throws IOException {
-            MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-            if (method.equals("GET") && url.contains("connectSettings")) {
-              ConnectSettings settings = new ConnectSettings().setBackendType("SECOND_GEN")
-                  .setIpAddresses(
-                      ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                          new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                  .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                  .setDatabaseVersion("POSTGRES14").setRegion("myRegion");
-              settings.setFactory(jsonFactory);
-              response.setContent(settings.toPrettyString()).setContentType(Json.MEDIA_TYPE)
-                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-            } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
-              GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
-              try {
-                certResponse.setEphemeralCert(
-                    new SslCert().setCert(createEphemeralCert(certDuration)));
-                certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException | ExecutionException |
-                       OperatorCreationException e) {
-                throw new RuntimeException(e);
-              }
-              response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
-                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-            }
-            return response;
-          }
-        };
-      }
-    };
-  }
-
   @Before
   public void setup() throws GeneralSecurityException {
 

@@ -245,5 +245,4 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new InputStreamReader(socket.getInputStream(), UTF_8));
     return bufferedReader.readLine();
   }
-  
 }
