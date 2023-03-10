@@ -276,7 +276,8 @@ class CloudSqlInstance {
           credential.getAccessToken(),
           getTokenExpirationTime(credential).orElse(null)
       );
-      GoogleCredentials googleCredentials = new GoogleCredentials(accessToken) {
+
+      return new GoogleCredentials(accessToken) {
 
         @Override
         public AccessToken refreshAccessToken() throws IOException {
@@ -288,8 +289,6 @@ class CloudSqlInstance {
           );
         }
       };
-
-      return googleCredentials;
     }
 
     throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
@@ -629,7 +628,7 @@ class CloudSqlInstance {
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
     return Optional.ofNullable(credentials.getExpirationTimeMilliseconds())
-        .map(expirationTime -> new Date(expirationTime));
+        .map(Date::new);
   }
 
   /**
