@@ -25,6 +25,7 @@ import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.cloud.sql.ApiClientFactory;
 
 public class StubApiClientFactory implements ApiClientFactory {
+
   HttpTransport httpTransport;
 
   StubApiClientFactory(HttpTransport transport) {

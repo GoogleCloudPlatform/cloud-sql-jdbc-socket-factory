@@ -79,10 +79,9 @@ public final class CoreSocketFactory {
 
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
-
-  private static CoreSocketFactory coreSocketFactory;
   private static final List<String> userAgents = new ArrayList<>();
   private static final String version = getVersion();
+  private static CoreSocketFactory coreSocketFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
