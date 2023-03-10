@@ -26,9 +26,10 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +71,7 @@ public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFacto
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
           .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
-              .getPreferredIp(Arrays.asList(IP_LABEL.get(ipType))));
+              .getPreferredIp(Collections.singletonList(IP_LABEL.get(ipType))));
 
       GcpConnectionFactoryProviderPostgres mysqlProvider = new GcpConnectionFactoryProviderPostgres();
 
@@ -81,9 +82,11 @@ public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFacto
 
       // Check that Driver, Host, and Port are set properly
       ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPrivate.getBuilder().build();
-      assertThat(mysqlProvider.supportedProtocol((String) mysqlOptions.getValue(DRIVER))).isTrue();
-      assertThat((String) mysqlOptions.getValue(HOST)).isEqualTo(expectedIp);
-      assertThat((int) mysqlOptions.getValue(PORT)).isEqualTo(
+      assertThat(mysqlProvider.supportedProtocol((String) Objects.requireNonNull(
+          mysqlOptions.getValue(DRIVER)))).isTrue();
+      assertThat((String) Objects.requireNonNull(mysqlOptions.getValue(HOST))).isEqualTo(
+          expectedIp);
+      assertThat((int) Objects.requireNonNull(mysqlOptions.getValue(PORT))).isEqualTo(
           CoreSocketFactory.getDefaultServerProxyPort());
 
 

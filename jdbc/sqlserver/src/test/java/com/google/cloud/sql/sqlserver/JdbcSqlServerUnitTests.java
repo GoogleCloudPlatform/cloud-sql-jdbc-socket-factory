@@ -32,8 +32,7 @@ public class JdbcSqlServerUnitTests {
   @Test
   public void checkConnectionStringNoQueryParams()
       throws UnsupportedEncodingException {
-    String socketFactoryConstructorArg = CONNECTION_NAME;
-    SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
+    SocketFactory socketFactory = new SocketFactory(CONNECTION_NAME);
     assertThat(socketFactory.props.get(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY)).isEqualTo(
         CONNECTION_NAME);
   }
