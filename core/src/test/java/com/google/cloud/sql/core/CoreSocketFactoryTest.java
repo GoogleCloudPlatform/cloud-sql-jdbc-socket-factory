@@ -184,7 +184,8 @@ public class CoreSocketFactoryTest {
                 certResponse.setEphemeralCert(
                     new SslCert().setCert(createEphemeralCert(certDuration)));
                 certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException | OperatorCreationException | ExecutionException e) {
+              } catch (GeneralSecurityException | ExecutionException |
+                       OperatorCreationException e) {
                 throw new RuntimeException(e);
               }
               response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
