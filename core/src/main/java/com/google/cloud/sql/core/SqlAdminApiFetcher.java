@@ -17,7 +17,6 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
@@ -25,7 +24,6 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
-import com.google.cloud.sql.ApiClientFactory;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
@@ -40,12 +38,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class SqlAdminApiService {
+public class SqlAdminApiFetcher {
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   SQLAdmin apiClient;
 
-  public SqlAdminApiService(SQLAdmin apiClient) {
+  public SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
 

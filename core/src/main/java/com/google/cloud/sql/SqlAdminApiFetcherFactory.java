@@ -22,14 +22,14 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.cloud.sql.core.SqlAdminApiService;
+import com.google.cloud.sql.core.SqlAdminApiFetcher;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 /**
  * Factory for creating a SQLAdmin client that interacts with the real SQL Admin API.
  */
-public class SqlAdminApiClientFactory implements ApiClientFactory {
+public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
@@ -43,14 +43,14 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
 
    * @param userAgents string representing userAgents for the admin API client
    */
-  public SqlAdminApiClientFactory(String userAgents) {
+  public SqlAdminApiFetcherFactory(String userAgents) {
     this.userAgents = userAgents;
     this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
   @Override
-  public SqlAdminApiService create(HttpRequestInitializer requestInitializer) {
+  public SqlAdminApiFetcher create(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -68,7 +68,7 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
     if (servicePath != null) {
       adminApiBuilder.setServicePath(servicePath);
     }
-    return new SqlAdminApiService(adminApiBuilder.build());
+    return new SqlAdminApiFetcher(adminApiBuilder.build());
   }
 
 }

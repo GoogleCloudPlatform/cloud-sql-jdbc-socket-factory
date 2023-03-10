@@ -76,9 +76,8 @@ class CloudSqlInstance {
   // time to complete.
   private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
   private final ListeningScheduledExecutorService executor;
-  private final SqlAdminApiService apiService;
+  private final SqlAdminApiFetcher apiFetcher;
   private final AuthType authType;
-
   private final Optional<OAuth2Credentials> credentials;
 
   private final CloudSqlInstanceName instanceName;
@@ -98,13 +97,13 @@ class CloudSqlInstance {
    *
    * @param connectionName instance connection name in the format
    * "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiService Service class for interacting with the Cloud SQL Admin API
+   * @param apiFetcher Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
-      SqlAdminApiService apiService,
+      SqlAdminApiFetcher apiFetcher,
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
@@ -112,7 +111,7 @@ class CloudSqlInstance {
 
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
-    this.apiService = apiService;
+    this.apiFetcher = apiFetcher;
     this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
@@ -326,10 +325,10 @@ class CloudSqlInstance {
     forcedRenewRateLimiter.acquirePermit();
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(
-        () -> apiService.fetchMetadata(instanceName, authType));
+        () -> apiFetcher.fetchMetadata(instanceName, authType));
     ListenableFuture<Certificate> ephemeralCertificateFuture =
         whenAllSucceed(
-            () -> apiService.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
+            () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
                 credentials, authType), executor, keyPair);
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =

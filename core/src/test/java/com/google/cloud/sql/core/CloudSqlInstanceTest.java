@@ -56,7 +56,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void downscopesGoogleCredentials() {
-    GoogleCredentials downscoped = SqlAdminApiService.getDownscopedCredentials(googleCredentials);
+    GoogleCredentials downscoped = SqlAdminApiFetcher.getDownscopedCredentials(googleCredentials);
     assertThat(downscoped).isEqualTo(scopedCredentials);
     verify(googleCredentials, times(1)).createScoped(
         "https://www.googleapis.com/auth/sqlservice.login");
@@ -66,7 +66,7 @@ public class CloudSqlInstanceTest {
   @Test
   public void throwsErrorForWrongCredentialType() {
     try {
-      SqlAdminApiService.getDownscopedCredentials(oAuth2Credentials);
+      SqlAdminApiFetcher.getDownscopedCredentials(oAuth2Credentials);
     } catch (RuntimeException ex) {
       assertThat(ex)
           .hasMessageThat()
@@ -79,7 +79,7 @@ public class CloudSqlInstanceTest {
     String connName = "my-project:region:my-instance";
 
     try {
-      SqlAdminApiService.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
+      SqlAdminApiFetcher.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()

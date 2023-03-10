@@ -26,12 +26,11 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
-import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.cloud.sql.ApiClientFactory;
+import com.google.cloud.sql.ApiFetcherFactory;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -68,7 +67,7 @@ public class GcpConnectionFactoryProviderTest {
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
-  private final ApiClientFactory apiClientFactory = new StubApiClientFactory(
+  private final ApiFetcherFactory apiFetcherFactory = new StubApiFetcherFactory(
       fakeSuccessHttpTransport(Duration.ofSeconds(0)));
   CoreSocketFactory coreSocketFactoryStub;
 
@@ -102,7 +101,7 @@ public class GcpConnectionFactoryProviderTest {
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
     Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
-    
+
     return "-----BEGIN CERTIFICATE-----\n"
         + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
         + "\n"
@@ -163,9 +162,11 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    SqlAdminApiService adminApiService= new SqlAdminApiService(apiClientFactory, credentialFactory.create());
+    SqlAdminApiFetcher adminApiService = new StubApiFetcherFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
 
-    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApiService, credentialFactory, 3307,
+    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApiService, credentialFactory,
+        3307,
         defaultExecutor);
   }
 

@@ -19,7 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
-import com.google.cloud.sql.SqlAdminApiClientFactory;
+import com.google.cloud.sql.SqlAdminApiFetcherFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -78,13 +78,13 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
-  private final SqlAdminApiService adminApiService;
+  private final SqlAdminApiFetcher adminApiService;
 
 
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      SqlAdminApiService adminApi,
+      SqlAdminApiFetcher adminApi,
       CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
@@ -105,7 +105,7 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SqlAdminApiService adminApiService = new SqlAdminApiClientFactory(
+      SqlAdminApiFetcher adminApiService = new SqlAdminApiFetcherFactory(
           getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
