@@ -96,7 +96,8 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
   @Override
-  public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) {
+  public Socket createSocket(
+      InetAddress address, int port, InetAddress localAddress, int localPort) {
     throw new UnsupportedOperationException();
   }
 }
