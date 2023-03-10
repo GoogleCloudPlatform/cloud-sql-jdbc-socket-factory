@@ -105,8 +105,8 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SqlAdminApiService adminApiService = new SqlAdminApiService(new SqlAdminApiClientFactory(
-          getUserAgents()), credential);
+      SqlAdminApiService adminApiService = new SqlAdminApiClientFactory(
+          getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =

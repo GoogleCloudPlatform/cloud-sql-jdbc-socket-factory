@@ -33,11 +33,13 @@ public class StubApiClientFactory implements ApiClientFactory {
   }
 
   @Override
-  public SQLAdmin create(HttpRequestInitializer credentials) {
+  public SqlAdminApiService create(HttpRequestInitializer credentials) {
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     if (httpTransport != null) {
-      return new SQLAdmin.Builder(httpTransport, jsonFactory, credentials).build();
+      return new SqlAdminApiService(
+          new SQLAdmin.Builder(httpTransport, jsonFactory, credentials).build());
     }
-    return new SQLAdmin.Builder(new MockHttpTransport(), jsonFactory, credentials).build();
+    return new SqlAdminApiService(
+        new SQLAdmin.Builder(new MockHttpTransport(), jsonFactory, credentials).build());
   }
 }

@@ -22,6 +22,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.cloud.sql.core.SqlAdminApiService;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
@@ -49,7 +50,7 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
   }
 
   @Override
-  public SQLAdmin create(HttpRequestInitializer requestInitializer) {
+  public SqlAdminApiService create(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -67,7 +68,7 @@ public class SqlAdminApiClientFactory implements ApiClientFactory {
     if (servicePath != null) {
       adminApiBuilder.setServicePath(servicePath);
     }
-    return adminApiBuilder.build();
+    return new SqlAdminApiService(adminApiBuilder.build());
   }
 
 }

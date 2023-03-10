@@ -45,9 +45,8 @@ public class SqlAdminApiService {
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   SQLAdmin apiClient;
 
-  public SqlAdminApiService(ApiClientFactory sqlAdminApiFactory,
-      HttpRequestInitializer credential) {
-    apiClient = (SQLAdmin) sqlAdminApiFactory.create(credential);
+  public SqlAdminApiService(SQLAdmin apiClient) {
+    this.apiClient = apiClient;
   }
 
   static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
