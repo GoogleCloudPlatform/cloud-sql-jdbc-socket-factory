@@ -27,7 +27,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
-  
+
   @Test
   public void timeUntilRefreshImmediate() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(3)));

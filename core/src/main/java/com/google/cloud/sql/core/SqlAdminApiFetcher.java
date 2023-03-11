@@ -46,8 +46,8 @@ public class SqlAdminApiFetcher {
   public SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
-
-  static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
+  
+  void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
       String connectionName) {
     if (authType == AuthType.IAM && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
       throw new IllegalArgumentException(
@@ -57,13 +57,13 @@ public class SqlAdminApiFetcher {
   }
 
   // Creates a Certificate object from a provided string.
-  private static Certificate createCertificate(String cert) throws CertificateException {
+  private Certificate createCertificate(String cert) throws CertificateException {
     byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
     ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
     return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
   }
 
-  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+  GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
     GoogleCredentials downscoped;
     try {
       GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
@@ -74,7 +74,7 @@ public class SqlAdminApiFetcher {
     return downscoped;
   }
 
-  private static String generatePublicKeyCert(KeyPair keyPair) {
+  private String generatePublicKeyCert(KeyPair keyPair) {
     // Format the public key into a PEM encoded Certificate.
     return "-----BEGIN RSA PUBLIC KEY-----\n"
         + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())

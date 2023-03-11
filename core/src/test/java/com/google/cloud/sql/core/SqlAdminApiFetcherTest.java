@@ -24,13 +24,17 @@ import static org.mockito.Mockito.when;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class SqlAdminApiFetcherTest {
+public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase{
   private final ConnectSettings instanceData = new ConnectSettings();
+
+  private final SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(fakeSuccessHttpTransport(
+      Duration.ofSeconds(0))).create(credentialFactory.create());
   @Mock
   private GoogleCredentials googleCredentials;
   @Mock
@@ -48,7 +52,7 @@ public class SqlAdminApiFetcherTest {
 
   @Test
   public void downscopesGoogleCredentials() {
-    GoogleCredentials downscoped = SqlAdminApiFetcher.getDownscopedCredentials(googleCredentials);
+    GoogleCredentials downscoped = fetcher.getDownscopedCredentials(googleCredentials);
     assertThat(downscoped).isEqualTo(scopedCredentials);
     verify(googleCredentials, times(1)).createScoped(
         "https://www.googleapis.com/auth/sqlservice.login");
@@ -58,7 +62,7 @@ public class SqlAdminApiFetcherTest {
   @Test
   public void throwsErrorForWrongCredentialType() {
     try {
-      SqlAdminApiFetcher.getDownscopedCredentials(oAuth2Credentials);
+      fetcher.getDownscopedCredentials(oAuth2Credentials);
     } catch (RuntimeException ex) {
       assertThat(ex)
           .hasMessageThat()
@@ -72,7 +76,7 @@ public class SqlAdminApiFetcherTest {
     String connName = "my-project:region:my-instance";
 
     try {
-      SqlAdminApiFetcher.checkDatabaseCompatibility(instanceData, enableIamAuth, connName);
+      fetcher.checkDatabaseCompatibility(instanceData, enableIamAuth, connName);
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()
