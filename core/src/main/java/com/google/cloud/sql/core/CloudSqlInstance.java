@@ -228,7 +228,7 @@ class CloudSqlInstance {
 
   static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
       String connectionName) {
-    if (authType == AuthType.PASSWORD && instanceMetadata.getDatabaseVersion()
+    if (authType == AuthType.IAM && instanceMetadata.getDatabaseVersion()
         .contains("SQLSERVER")) {
       throw new IllegalArgumentException(
           String.format(
