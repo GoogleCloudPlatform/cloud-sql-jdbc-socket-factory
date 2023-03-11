@@ -38,6 +38,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Class that encapsulates all logic for interacting with SQLAdmin API.
+ */
 public class SqlAdminApiFetcher {
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
@@ -192,7 +195,7 @@ public class SqlAdminApiFetcher {
    *
    * @param ex exception thrown by the Admin API request
    * @param fallbackDesc generic description used as a fallback if no additional information can be
-   * provided to the user
+   *     provided to the user
    */
   private RuntimeException addExceptionContext(IOException ex, String fallbackDesc,
       CloudSqlInstanceName instanceName) {

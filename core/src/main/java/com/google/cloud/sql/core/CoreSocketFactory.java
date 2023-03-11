@@ -59,7 +59,7 @@ public final class CoreSocketFactory {
    * Property used to set the application name for the underlying SQLAdmin client.
    *
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
-   * programmatically.
+   *     programmatically.
    */
 
   @Deprecated
