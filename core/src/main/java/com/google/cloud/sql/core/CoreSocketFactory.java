@@ -24,6 +24,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.SqlAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -78,10 +79,9 @@ public final class CoreSocketFactory {
 
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
-
-  private static CoreSocketFactory coreSocketFactory;
   private static final List<String> userAgents = new ArrayList<>();
   private static final String version = getVersion();
+  private static CoreSocketFactory coreSocketFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
@@ -114,7 +114,8 @@ public final class CoreSocketFactory {
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
-      SQLAdmin adminApi = createAdminApiClient(credential);
+      SQLAdmin adminApi = new SqlAdminApiClientFactory(
+          getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
@@ -296,6 +297,7 @@ public final class CoreSocketFactory {
       adminApiBuilder.setServicePath(servicePath);
     }
     return adminApiBuilder.build();
+
   }
 
   private static KeyPair generateRsaKeyPair() {
