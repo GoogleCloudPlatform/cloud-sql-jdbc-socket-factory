@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.AuthType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -75,11 +76,10 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void throwsErrorIamAuthNotSupported() {
-    boolean enableIamAuth = true;
     String connName = "my-project:region:my-instance";
 
     try {
-      CloudSqlInstance.checkDatabaseCompatibility(instanceData, enableIamAuth, connName);
+      CloudSqlInstance.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()

@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
@@ -192,7 +193,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true);
+            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -211,7 +212,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true);
+            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -236,7 +237,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         stubCredentialFactory, port, defaultExecutor);
     assertThrows(RuntimeException.class, () -> coreSocketFactory.createSslSocket(
-        "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true));
+        "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM));
   }
 
   private String readLine(Socket socket) throws IOException {

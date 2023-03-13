@@ -23,6 +23,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.SqlAdminApiClientFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -212,7 +213,10 @@ public final class CoreSocketFactory {
     }
 
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-    return getInstance().createSslSocket(csqlInstanceName, ipTypes, enableIamAuth);
+    if (enableIamAuth) {
+      return getInstance().createSslSocket(csqlInstanceName, ipTypes, AuthType.IAM);
+    }
+    return getInstance().createSslSocket(csqlInstanceName, ipTypes, AuthType.PASSWORD);
   }
 
   /**
@@ -220,7 +224,18 @@ public final class CoreSocketFactory {
    */
   public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth)
       throws IOException {
-    return getInstance().getCloudSqlInstance(csqlInstanceName, enableIamAuth).getSslData();
+    if (enableIamAuth) {
+      return getInstance().getCloudSqlInstance(csqlInstanceName, AuthType.IAM).getSslData();
+    }
+    return getInstance().getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD).getSslData();
+  }
+
+  /**
+   * Returns data that can be used to establish Cloud SQL SSL connection.
+   */
+  static SslData getSslData(String csqlInstanceName, AuthType authType)
+      throws IOException {
+    return getInstance().getCloudSqlInstance(csqlInstanceName, authType).getSslData();
   }
 
   /**
@@ -366,15 +381,15 @@ public final class CoreSocketFactory {
 
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(instanceName, false);
+    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
   }
 
-  private CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
+  private CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
     return instances.computeIfAbsent(
         instanceName,
         k -> {
           try {
-            return new CloudSqlInstance(k, adminApi, enableIamAuth, credentialFactory, executor,
+            return new CloudSqlInstance(k, adminApi, authType, credentialFactory, executor,
                 localKeyPair);
           } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
@@ -392,9 +407,9 @@ public final class CoreSocketFactory {
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
-  Socket createSslSocket(String instanceName, List<String> ipTypes, boolean enableIamAuth)
+  Socket createSslSocket(String instanceName, List<String> ipTypes, AuthType authType)
       throws IOException, InterruptedException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, enableIamAuth);
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, authType);
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -419,6 +434,6 @@ public final class CoreSocketFactory {
 
   Socket createSslSocket(String instanceName, List<String> ipTypes)
       throws IOException, InterruptedException {
-    return createSslSocket(instanceName, ipTypes, false);
+    return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD);
   }
 }
