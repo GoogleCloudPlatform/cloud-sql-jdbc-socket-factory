@@ -41,6 +41,7 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -358,7 +359,7 @@ public class CoreSocketFactoryTest {
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true);
+            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -377,7 +378,7 @@ public class CoreSocketFactoryTest {
         stubCredentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true);
+            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -402,7 +403,7 @@ public class CoreSocketFactoryTest {
     CoreSocketFactory coreSocketFactory = new CoreSocketFactory(clientKeyPair, apiClient,
         stubCredentialFactory, port, defaultExecutor);
     assertThrows(RuntimeException.class, () -> coreSocketFactory.createSslSocket(
-        "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), true));
+        "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM));
   }
 
   private String readLine(Socket socket) throws IOException {

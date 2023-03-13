@@ -28,6 +28,7 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Throwables;
@@ -90,7 +91,7 @@ class CloudSqlInstance {
   private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
   private final ListeningScheduledExecutorService executor;
   private final SQLAdmin apiClient;
-  private final boolean enableIamAuth;
+  private final AuthType authType;
   private final Optional<OAuth2Credentials> credentials;
 
 
@@ -118,7 +119,7 @@ class CloudSqlInstance {
   CloudSqlInstance(
       String connectionName,
       SQLAdmin apiClient,
-      boolean enableIamAuth,
+      AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
@@ -126,11 +127,11 @@ class CloudSqlInstance {
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiClient = apiClient;
-    this.enableIamAuth = enableIamAuth;
+    this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
 
-    if (enableIamAuth) {
+    if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
 
       this.credentials = Optional.of(parseCredentials(source));
@@ -225,9 +226,10 @@ class CloudSqlInstance {
     return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
   }
 
-  static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, boolean iamAuth,
+  static void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
       String connectionName) {
-    if (iamAuth && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {
+    if (authType == AuthType.IAM && instanceMetadata.getDatabaseVersion()
+        .contains("SQLSERVER")) {
       throw new IllegalArgumentException(
           String.format(
               "[%s] IAM Authentication is not supported for SQL Server instances.",
@@ -401,7 +403,7 @@ class CloudSqlInstance {
               X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
               Date expiration = x509Certificate.getNotAfter();
 
-              if (enableIamAuth) {
+              if (authType == AuthType.IAM) {
                 expiration = getTokenExpirationTime(credentials.get())
                     .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
                     .orElse(x509Certificate.getNotAfter());
@@ -483,7 +485,7 @@ class CloudSqlInstance {
       try {
         sslContext = SSLContext.getInstance("TLSv1.3");
       } catch (NoSuchAlgorithmException ex) {
-        if (enableIamAuth) {
+        if (authType == AuthType.IAM) {
           throw new RuntimeException(
               String.format(
                   "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
@@ -533,7 +535,7 @@ class CloudSqlInstance {
                     + "instance.", instanceName.getConnectionName()));
       }
 
-      checkDatabaseCompatibility(instanceMetadata, enableIamAuth, instanceName.getConnectionName());
+      checkDatabaseCompatibility(instanceMetadata, authType, instanceName.getConnectionName());
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (instanceMetadata.getIpAddresses().isEmpty()) {
@@ -579,7 +581,7 @@ class CloudSqlInstance {
     GenerateEphemeralCertRequest request =
         new GenerateEphemeralCertRequest().setPublicKey(generatePublicKeyCert(keyPair));
 
-    if (enableIamAuth) {
+    if (authType == AuthType.IAM) {
       try {
         GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
         downscoped.refresh();
