@@ -232,7 +232,7 @@ public final class CoreSocketFactory {
   /**
    * Returns data that can be used to establish Cloud SQL SSL connection.
    */
-  public static SslData getSslData(String csqlInstanceName, AuthType authType)
+  static SslData getSslData(String csqlInstanceName, AuthType authType)
       throws IOException {
     return getInstance().getCloudSqlInstance(csqlInstanceName, authType).getSslData();
   }
