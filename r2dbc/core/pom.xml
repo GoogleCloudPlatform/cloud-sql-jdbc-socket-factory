@@ -139,15 +139,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>4.11.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>1.70</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -156,7 +157,18 @@
       <version>v1beta4-rev20230111-2.0.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client-gson</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
  <build>
    <plugins>
      <plugin>
@@ -172,7 +184,6 @@
        </executions>
      </plugin>
    </plugins>
-
  </build>
 
   <repositories>
