@@ -23,17 +23,13 @@ import com.google.cloud.sql.CredentialFactory;
 class StubCredentialFactory implements CredentialFactory {
 
   String accessToken;
-  long expirationTimeInMilliseconds;
+  Long expirationTimeInMilliseconds;
 
   StubCredentialFactory() {}
 
-  StubCredentialFactory(String accessToken, long expirationTimeInMilliseconds) {
+  StubCredentialFactory(String accessToken, Long expirationTimeInMilliseconds) {
     this.accessToken = accessToken;
     this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;
-  }
-
-  StubCredentialFactory(String accessToken) {
-    this.accessToken = accessToken;
   }
 
   @Override

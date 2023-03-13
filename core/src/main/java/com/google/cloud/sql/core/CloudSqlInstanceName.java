@@ -35,7 +35,7 @@ public class CloudSqlInstanceName {
   private final String regionId;
   private final String instanceId;
   private final String connectionName;
-  
+
   /**
    * Initializes a new CloudSqlInstanceName class.
    *
