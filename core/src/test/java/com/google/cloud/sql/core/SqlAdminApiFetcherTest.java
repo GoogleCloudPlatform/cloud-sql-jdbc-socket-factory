@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.AuthType;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,11 +73,10 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase{
 
   @Test
   public void throwsErrorIamAuthNotSupported() {
-    boolean enableIamAuth = true;
     String connName = "my-project:region:my-instance";
 
     try {
-      fetcher.checkDatabaseCompatibility(instanceData, enableIamAuth, connName);
+      fetcher.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()
