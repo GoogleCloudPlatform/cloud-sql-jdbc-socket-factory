@@ -389,19 +389,16 @@ public final class CoreSocketFactory {
 
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
-      return instances.computeIfAbsent(
-          instanceName,
-          k -> {
-            try {
-              return new CloudSqlInstance(k, adminApiService, authType, credentialFactory,
-                  executor,
-                  localKeyPair);
-            } catch (IOException | InterruptedException e) {
-              throw new RuntimeException(e);
-            }
-          });
+    return instances.computeIfAbsent(
+        instanceName,
+        k -> {
+          try {
+            return new CloudSqlInstance(k, adminApiService, authType, credentialFactory,
+                executor,
+                localKeyPair);
+          } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
-
-
-
 }
