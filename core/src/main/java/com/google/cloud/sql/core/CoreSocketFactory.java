@@ -378,14 +378,6 @@ public final class CoreSocketFactory {
     return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
   }
 
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(String instanceName, boolean enableIamAuth) {
-    if (enableIamAuth) {
-      return getCloudSqlInstance(instanceName, AuthType.IAM);
-    }
-    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
-  }
-
 
   @VisibleForTesting
   CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {

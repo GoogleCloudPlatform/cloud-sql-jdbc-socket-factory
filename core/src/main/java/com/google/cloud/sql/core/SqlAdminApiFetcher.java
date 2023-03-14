@@ -44,7 +44,7 @@ import java.util.Optional;
 public class SqlAdminApiFetcher {
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
-  SQLAdmin apiClient;
+  private final SQLAdmin apiClient;
 
   public SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
