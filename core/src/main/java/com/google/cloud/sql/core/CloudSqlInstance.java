@@ -336,14 +336,21 @@ class CloudSqlInstance {
   private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
-    GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(
         () -> apiFetcher.fetchMetadata(instanceName, authType));
-    ListenableFuture<Certificate> ephemeralCertificateFuture =
-        whenAllSucceed(
-            () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
-                downscopedCredentials, authType), executor, keyPair);
+    ListenableFuture<Certificate> ephemeralCertificateFuture;
+    if (authType == AuthType.IAM && credentials.isPresent()) {
+      GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
+      ephemeralCertificateFuture = whenAllSucceed(
+          () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
+              downscopedCredentials, authType), executor, keyPair);
+    } else {
+      ephemeralCertificateFuture = whenAllSucceed(
+          () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
+              null, authType), executor, keyPair);
+    }
+
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
         whenAllSucceed(
