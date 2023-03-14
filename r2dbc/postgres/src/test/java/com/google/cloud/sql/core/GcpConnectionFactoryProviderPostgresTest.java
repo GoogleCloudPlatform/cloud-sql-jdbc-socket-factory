@@ -24,6 +24,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 
+import com.google.cloud.sql.AuthType;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import java.io.IOException;
 import java.util.Collections;
@@ -67,10 +68,11 @@ public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFacto
 
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
       mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName).getSslData());
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
+              .getSslData());
 
       mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName)
+          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
               .getPreferredIp(Collections.singletonList(IP_LABEL.get(ipType))));
 
       GcpConnectionFactoryProviderPostgres mysqlProvider = new GcpConnectionFactoryProviderPostgres();

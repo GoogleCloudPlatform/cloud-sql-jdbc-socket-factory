@@ -249,7 +249,7 @@ public final class CoreSocketFactory {
   }
 
   private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName);
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
     return instance.getPreferredIp(ipTypes);
   }
 
@@ -371,11 +371,6 @@ public final class CoreSocketFactory {
   Socket createSslSocket(String instanceName, List<String> ipTypes)
       throws IOException, InterruptedException {
     return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD);
-  }
-
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(String instanceName) {
-    return getCloudSqlInstance(instanceName, AuthType.PASSWORD);
   }
 
 
