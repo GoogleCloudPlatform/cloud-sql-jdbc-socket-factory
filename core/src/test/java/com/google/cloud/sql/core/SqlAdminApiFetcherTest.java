@@ -17,22 +17,16 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.api.services.sqladmin.model.ConnectSettings;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase{
+public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
+
   private final ConnectSettings instanceData = new ConnectSettings();
 
   private final SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(fakeSuccessHttpTransport(

@@ -35,6 +35,7 @@ import org.mockito.MockitoAnnotations;
 
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
+
   @Mock
   private GoogleCredentials googleCredentials;
   @Mock
@@ -68,6 +69,7 @@ public class CloudSqlInstanceTest {
           .contains("Failed to downscope credentials for IAM Authentication");
     }
   }
+
   @Test
   public void timeUntilRefreshImmediate() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(3)));

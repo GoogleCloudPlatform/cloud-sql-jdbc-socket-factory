@@ -22,7 +22,6 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
@@ -36,18 +35,18 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Class that encapsulates all logic for interacting with SQLAdmin API.
  */
 public class SqlAdminApiFetcher {
+
   private final SQLAdmin apiClient;
 
   public SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
-  
+
   void checkDatabaseCompatibility(ConnectSettings instanceMetadata, AuthType authType,
       String connectionName) {
     if (authType == AuthType.IAM && instanceMetadata.getDatabaseVersion().contains("SQLSERVER")) {

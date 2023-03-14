@@ -215,6 +215,17 @@ class CloudSqlInstance {
     return timeUntilExp.dividedBy(2).getSeconds();
   }
 
+  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+    GoogleCredentials downscoped;
+    try {
+      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
+      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+    } catch (ClassCastException ex) {
+      throw new RuntimeException("Failed to downscope credentials for IAM Authentication:", ex);
+    }
+    return downscoped;
+  }
+
   private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
     if (source instanceof HttpCredentialsAdapter) {
       HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
@@ -243,17 +254,6 @@ class CloudSqlInstance {
     }
 
     throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
-  }
-
-  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
-    GoogleCredentials downscoped;
-    try {
-      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
-      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
-    } catch (ClassCastException ex) {
-      throw new RuntimeException("Failed to downscope credentials for IAM Authentication:", ex);
-    }
-    return downscoped;
   }
 
   /**
