@@ -73,18 +73,19 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter = RateLimiter.burstyBuilder(2,
-      Duration.ofSeconds(30)).build();
+  private final RateLimiter<Object> forcedRenewRateLimiter =
+      RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName instance connection name in the format
-   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiFetcher Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
@@ -95,7 +96,8 @@ class CloudSqlInstance {
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair)
+      throws IOException, InterruptedException {
 
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
@@ -120,9 +122,7 @@ class CloudSqlInstance {
     }
   }
 
-  /**
-   * Returns a future that blocks until the result of a nested future is complete.
-   */
+  /** Returns a future that blocks until the result of a nested future is complete. */
   private static <T> ListenableFuture<T> blockOnNestedFuture(
       ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
     SettableFuture<T> blockedFuture = SettableFuture.create();
@@ -179,10 +179,9 @@ class CloudSqlInstance {
 
     if (source instanceof Credential) {
       Credential credential = (Credential) source;
-      AccessToken accessToken = new AccessToken(
-          credential.getAccessToken(),
-          getTokenExpirationTime(credential).orElse(null)
-      );
+      AccessToken accessToken =
+          new AccessToken(
+              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
 
       return new GoogleCredentials(accessToken) {
         @Override
@@ -190,9 +189,7 @@ class CloudSqlInstance {
           credential.refreshToken();
 
           return new AccessToken(
-              credential.getAccessToken(),
-              getTokenExpirationTime(credential).orElse(null)
-          );
+              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
         }
       };
     }
@@ -282,34 +279,41 @@ class CloudSqlInstance {
     if (authType == AuthType.IAM) {
       if (credentials.isPresent()) {
         GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
-        refreshFuture = apiFetcher.getInstanceData(instanceName, downscopedCredentials, AuthType.IAM, executor,
-            keyPair);
+        refreshFuture =
+            apiFetcher.getInstanceData(
+                instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
       } else {
-        throw new RuntimeException(String.format(
-            "[%s] Unable to connect via automatic IAM authentication: Missing credentials.",
-            instanceName.getConnectionName()));
+        throw new RuntimeException(
+            String.format(
+                "[%s] Unable to connect via automatic IAM authentication: Missing credentials.",
+                instanceName.getConnectionName()));
       }
 
     } else {
-      refreshFuture = apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
+      refreshFuture =
+          apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
     }
-    Futures.addCallback(refreshFuture,
+    Futures.addCallback(
+        refreshFuture,
         new FutureCallback<InstanceData>() {
           public void onSuccess(InstanceData instanceData) {
             synchronized (instanceDataGuard) {
               // update currentInstanceData with the most recent results
               currentInstanceData = refreshFuture;
               // schedule a replacement before the SSLContext expires;
-              nextInstanceData = executor
-                  .schedule(() -> performRefresh(),
+              nextInstanceData =
+                  executor.schedule(
+                      () -> performRefresh(),
                       secondsUntilRefresh(getInstanceData().getExpiration()),
                       TimeUnit.SECONDS);
             }
           }
 
           public void onFailure(Throwable t) {
-            logger.log(Level.WARNING,
-                "An error occurred while performing refresh. Retrying immediately.", t);
+            logger.log(
+                Level.WARNING,
+                "An error occurred while performing refresh. Retrying immediately.",
+                t);
             synchronized (instanceDataGuard) {
               InstanceData instanceData = null;
               try {
@@ -317,8 +321,8 @@ class CloudSqlInstance {
               } catch (Exception e) {
                 // this means the result was invalid
               }
-              if (instanceData == null || instanceData.getExpiration().toInstant()
-                  .isBefore(Instant.now())) {
+              if (instanceData == null
+                  || instanceData.getExpiration().toInstant().isBefore(Instant.now())) {
                 // replace current if it is expired or invalid
                 currentInstanceData = refreshFuture;
               }
@@ -329,14 +333,14 @@ class CloudSqlInstance {
               }
             }
           }
-        }, executor);
+        },
+        executor);
 
     return refreshFuture;
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
-    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds())
-        .map(Date::new);
+    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds()).map(Date::new);
   }
 
   SslData getSslData() {
