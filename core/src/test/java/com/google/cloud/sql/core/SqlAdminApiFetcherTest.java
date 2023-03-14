@@ -25,6 +25,7 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,39 +37,11 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase{
 
   private final SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(fakeSuccessHttpTransport(
       Duration.ofSeconds(0))).create(credentialFactory.create());
-  @Mock
-  private GoogleCredentials googleCredentials;
-  @Mock
-  private GoogleCredentials scopedCredentials;
-  @Mock
-  private OAuth2Credentials oAuth2Credentials;
 
   @Before
-  public void setup() {
-    MockitoAnnotations.openMocks(this);
-    when(googleCredentials.createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
+  public void setup() throws GeneralSecurityException {
+    super.setup();
     instanceData.setDatabaseVersion("SQLSERVER_2019_STANDARD");
-  }
-
-  @Test
-  public void downscopesGoogleCredentials() {
-    GoogleCredentials downscoped = fetcher.getDownscopedCredentials(googleCredentials);
-    assertThat(downscoped).isEqualTo(scopedCredentials);
-    verify(googleCredentials, times(1)).createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login");
-  }
-
-
-  @Test
-  public void throwsErrorForWrongCredentialType() {
-    try {
-      fetcher.getDownscopedCredentials(oAuth2Credentials);
-    } catch (RuntimeException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("Failed to downscope credentials for IAM Authentication");
-    }
   }
 
   @Test

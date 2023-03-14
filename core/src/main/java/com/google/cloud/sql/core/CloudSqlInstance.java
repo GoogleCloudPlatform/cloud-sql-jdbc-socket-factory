@@ -71,6 +71,8 @@ class CloudSqlInstance {
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
+  private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
+
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
@@ -243,6 +245,17 @@ class CloudSqlInstance {
     throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
   }
 
+  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+    GoogleCredentials downscoped;
+    try {
+      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
+      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+    } catch (ClassCastException ex) {
+      throw new RuntimeException("Failed to downscope credentials for IAM Authentication:", ex);
+    }
+    return downscoped;
+  }
+
   /**
    * Returns the current data related to the instance from {@link #performRefresh()}. May block if
    * no valid data is currently available.
@@ -323,13 +336,14 @@ class CloudSqlInstance {
   private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
+    GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
     // Use the Cloud SQL Admin API to return the Metadata and Certificate
     ListenableFuture<Metadata> metadataFuture = executor.submit(
         () -> apiFetcher.fetchMetadata(instanceName, authType));
     ListenableFuture<Certificate> ephemeralCertificateFuture =
         whenAllSucceed(
             () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
-                credentials, authType), executor, keyPair);
+                downscopedCredentials, authType), executor, keyPair);
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
         whenAllSucceed(

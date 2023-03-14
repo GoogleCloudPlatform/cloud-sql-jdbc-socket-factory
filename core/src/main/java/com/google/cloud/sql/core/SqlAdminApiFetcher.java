@@ -42,8 +42,6 @@ import java.util.Optional;
  * Class that encapsulates all logic for interacting with SQLAdmin API.
  */
 public class SqlAdminApiFetcher {
-
-  private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
   private final SQLAdmin apiClient;
 
   public SqlAdminApiFetcher(SQLAdmin apiClient) {
@@ -64,17 +62,6 @@ public class SqlAdminApiFetcher {
     byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
     ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
     return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
-  }
-
-  GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
-    GoogleCredentials downscoped;
-    try {
-      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
-      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
-    } catch (ClassCastException ex) {
-      throw new RuntimeException("Failed to downscope credentials for IAM Authentication:", ex);
-    }
-    return downscoped;
   }
 
   private String generatePublicKeyCert(KeyPair keyPair) {
@@ -146,7 +133,7 @@ public class SqlAdminApiFetcher {
    * connect the Cloud SQL instance for up to 60 minutes.
    */
   Certificate fetchEphemeralCertificate(KeyPair keyPair, CloudSqlInstanceName instanceName,
-      Optional<OAuth2Credentials> credentials, AuthType authType) {
+      OAuth2Credentials credentials, AuthType authType) {
 
     // Use the SQL Admin API to create a new ephemeral certificate.
     GenerateEphemeralCertRequest request = new GenerateEphemeralCertRequest().setPublicKey(
@@ -154,9 +141,8 @@ public class SqlAdminApiFetcher {
 
     if (authType == AuthType.IAM) {
       try {
-        GoogleCredentials downscoped = getDownscopedCredentials(credentials.get());
-        downscoped.refresh();
-        String token = downscoped.getAccessToken().getTokenValue();
+        credentials.refresh();
+        String token = credentials.getAccessToken().getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
         // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
         request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
