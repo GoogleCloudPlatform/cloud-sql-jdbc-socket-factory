@@ -16,8 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
 import com.google.api.client.http.HttpStatusCodes;
@@ -39,23 +37,14 @@ import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStore.PasswordProtection;
-import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
@@ -63,15 +52,7 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -82,6 +63,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Before;
 
 public class CloudSqlCoreTestingBase {
+
   static final String PUBLIC_IP = "127.0.0.1";
   // If running tests on Mac, need to run "ifconfig lo0 alias 127.0.0.2 up" first
   static final String PRIVATE_IP = "127.0.0.2";
@@ -91,23 +73,6 @@ public class CloudSqlCoreTestingBase {
   final CredentialFactory credentialFactory = new StubCredentialFactory();
 
   ListenableFuture<KeyPair> clientKeyPair;
-
-
-  @Before
-  public void setup() throws GeneralSecurityException {
-
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
-    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-
-    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
-    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
-  }
-
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
   static HttpTransport fakeNotConfiguredException() {
@@ -163,6 +128,20 @@ public class CloudSqlCoreTestingBase {
     return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
   }
 
+  @Before
+  public void setup() throws GeneralSecurityException {
+
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+
+    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
+        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+
+    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
+  }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
     final JsonFactory jsonFactory = new GsonFactory();
@@ -233,5 +212,4 @@ public class CloudSqlCoreTestingBase {
         + "\n"
         + "-----END CERTIFICATE-----\n";
   }
-
 }

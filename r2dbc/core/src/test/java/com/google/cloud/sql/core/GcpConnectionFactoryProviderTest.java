@@ -26,12 +26,10 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
-import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.cloud.sql.ApiClientFactory;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
@@ -68,8 +66,6 @@ public class GcpConnectionFactoryProviderTest {
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
-  private final ApiClientFactory apiClientFactory = new StubApiClientFactory(
-      fakeSuccessHttpTransport(Duration.ofSeconds(0)));
   CoreSocketFactory coreSocketFactoryStub;
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
@@ -163,9 +159,11 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    SQLAdmin adminApi = apiClientFactory.create(credentialFactory.create());
+    SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(
+        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
 
-    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, adminApi, credentialFactory, 3307,
+    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory,
+        3307,
         defaultExecutor);
   }
 

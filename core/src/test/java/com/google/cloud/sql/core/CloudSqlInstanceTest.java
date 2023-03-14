@@ -20,10 +20,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
-import com.google.cloud.sql.AuthType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -38,7 +36,6 @@ import org.mockito.MockitoAnnotations;
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  private final ConnectSettings instanceData = new ConnectSettings();
   @Mock
   private GoogleCredentials googleCredentials;
   @Mock
@@ -51,7 +48,6 @@ public class CloudSqlInstanceTest {
     MockitoAnnotations.openMocks(this);
     when(googleCredentials.createScoped(
         "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
-    instanceData.setDatabaseVersion("SQLSERVER_2019_STANDARD");
   }
 
   @Test
@@ -71,20 +67,6 @@ public class CloudSqlInstanceTest {
       assertThat(ex)
           .hasMessageThat()
           .contains("Failed to downscope credentials for IAM Authentication");
-    }
-  }
-
-  @Test
-  public void throwsErrorIamAuthNotSupported() {
-    String connName = "my-project:region:my-instance";
-
-    try {
-      CloudSqlInstance.checkDatabaseCompatibility(instanceData, AuthType.IAM, connName);
-    } catch (IllegalArgumentException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("[my-project:region:my-instance] " +
-              "IAM Authentication is not supported for SQL Server instances");
     }
   }
 

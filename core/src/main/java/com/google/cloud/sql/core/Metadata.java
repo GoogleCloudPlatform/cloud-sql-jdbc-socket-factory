@@ -14,14 +14,29 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
+package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.services.sqladmin.SQLAdmin;
+import java.security.cert.Certificate;
+import java.util.Map;
 
 /**
- * Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API.
+ * Represents the results of @link #fetchMetadata().
  */
-public interface ApiClientFactory {
-  SQLAdmin create(HttpRequestInitializer credentials);
+class Metadata {
+
+  private final Map<String, String> ipAddrs;
+  private final Certificate instanceCaCertificate;
+
+  Metadata(Map<String, String> ipAddrs, Certificate instanceCaCertificate) {
+    this.ipAddrs = ipAddrs;
+    this.instanceCaCertificate = instanceCaCertificate;
+  }
+
+  Map<String, String> getIpAddrs() {
+    return ipAddrs;
+  }
+
+  Certificate getInstanceCaCertificate() {
+    return instanceCaCertificate;
+  }
 }

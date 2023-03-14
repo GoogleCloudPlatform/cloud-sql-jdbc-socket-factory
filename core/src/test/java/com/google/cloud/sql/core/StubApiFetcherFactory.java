@@ -22,22 +22,24 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.cloud.sql.ApiClientFactory;
+import com.google.cloud.sql.ApiFetcherFactory;
 
-public class StubApiClientFactory implements ApiClientFactory {
+public class StubApiFetcherFactory implements ApiFetcherFactory {
 
   HttpTransport httpTransport;
 
-  StubApiClientFactory(HttpTransport transport) {
+  StubApiFetcherFactory(HttpTransport transport) {
     this.httpTransport = transport;
   }
 
   @Override
-  public SQLAdmin create(HttpRequestInitializer credentials) {
+  public SqlAdminApiFetcher create(HttpRequestInitializer credentials) {
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     if (httpTransport != null) {
-      return new SQLAdmin.Builder(httpTransport, jsonFactory, credentials).build();
+      return new SqlAdminApiFetcher(
+          new SQLAdmin.Builder(httpTransport, jsonFactory, credentials).build());
     }
-    return new SQLAdmin.Builder(new MockHttpTransport(), jsonFactory, credentials).build();
+    return new SqlAdminApiFetcher(
+        new SQLAdmin.Builder(new MockHttpTransport(), jsonFactory, credentials).build());
   }
 }
