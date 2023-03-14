@@ -88,40 +88,35 @@ public class SqlAdminApiFetcher {
 
   private String generatePublicKeyCert(KeyPair keyPair) {
     // Format the public key into a PEM encoded Certificate.
-    return "-----BEGIN RSA PUBLIC KEY-----\n"
-        + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
-        + "\n"
-        + "-----END RSA PUBLIC KEY-----\n";
+    return "-----BEGIN RSA PUBLIC KEY-----\n" + BaseEncoding.base64().withSeparator("\n", 64)
+        .encode(keyPair.getPublic().getEncoded()) + "\n" + "-----END RSA PUBLIC KEY-----\n";
   }
 
   // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenAllSucceed(
-      Callable<T> task,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<?>... futures) {
+  private <T> ListenableFuture<T> whenAllSucceed(Callable<T> task,
+      ListeningScheduledExecutorService executor, ListenableFuture<?>... futures) {
     SettableFuture<T> taskFuture = SettableFuture.create();
 
     // Create a countDown for all Futures to complete.
     AtomicInteger countDown = new AtomicInteger(futures.length);
 
     // Trigger the task when all futures are complete.
-    FutureCallback<Object> runWhenInputAreComplete =
-        new FutureCallback<Object>() {
-          @Override
-          public void onSuccess(@NullableDecl Object o) {
-            if (countDown.decrementAndGet() == 0) {
-              taskFuture.setFuture(executor.submit(task));
-            }
-          }
+    FutureCallback<Object> runWhenInputAreComplete = new FutureCallback<Object>() {
+      @Override
+      public void onSuccess(@NullableDecl Object o) {
+        if (countDown.decrementAndGet() == 0) {
+          taskFuture.setFuture(executor.submit(task));
+        }
+      }
 
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (!taskFuture.setException(throwable)) {
-              String msg = "Got more than one input failure. Logging failures after the first";
-              logger.log(Level.SEVERE, msg, throwable);
-            }
-          }
-        };
+      @Override
+      public void onFailure(Throwable throwable) {
+        if (!taskFuture.setException(throwable)) {
+          String msg = "Got more than one input failure. Logging failures after the first";
+          logger.log(Level.SEVERE, msg, throwable);
+        }
+      }
+    };
     for (ListenableFuture<?> future : futures) {
       Futures.addCallback(future, runWhenInputAreComplete, executor);
     }
@@ -129,54 +124,36 @@ public class SqlAdminApiFetcher {
     return taskFuture;
   }
 
-  ListenableFuture<InstanceData> getInstanceData(
-      CloudSqlInstanceName instanceName,
-      OAuth2Credentials credentials,
-      AuthType authType,
-      ListeningScheduledExecutorService executor,
+  ListenableFuture<InstanceData> getInstanceData(CloudSqlInstanceName instanceName,
+      OAuth2Credentials credentials, AuthType authType, ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
     ListenableFuture<Metadata> metadataFuture = executor.submit(
         () -> fetchMetadata(instanceName, authType));
-    ListenableFuture<Certificate> ephemeralCertificateFuture =
-        whenAllSucceed(
-            () -> fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
-                credentials, authType), executor, keyPair);
+    ListenableFuture<Certificate> ephemeralCertificateFuture = whenAllSucceed(
+        () -> fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName, credentials,
+            authType), executor, keyPair);
     // Once the API calls are complete, construct the SSLContext for the sockets
-    ListenableFuture<SslData> sslContextFuture =
-        whenAllSucceed(
-            () ->
-                createSslData(
-                    Futures.getDone(keyPair),
-                    Futures.getDone(metadataFuture),
-                    Futures.getDone(ephemeralCertificateFuture),
-                    instanceName,
-                    authType),
-            executor,
-            keyPair,
-            metadataFuture,
-            ephemeralCertificateFuture);
+    ListenableFuture<SslData> sslContextFuture = whenAllSucceed(
+        () -> createSslData(Futures.getDone(keyPair), Futures.getDone(metadataFuture),
+            Futures.getDone(ephemeralCertificateFuture), instanceName, authType), executor, keyPair,
+        metadataFuture, ephemeralCertificateFuture);
     // Once both the SSLContext and Metadata are complete, return the results
-    return whenAllSucceed(
-        () -> {
+    return whenAllSucceed(() -> {
 
-          // Get expiration value for new cert
-          Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
-          X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-          Date expiration = x509Certificate.getNotAfter();
+      // Get expiration value for new cert
+      Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
+      X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+      Date expiration = x509Certificate.getNotAfter();
 
-          if (authType == AuthType.IAM) {
-            expiration = getTokenExpirationTime(credentials)
-                .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
-                .orElse(x509Certificate.getNotAfter());
-          }
+      if (authType == AuthType.IAM) {
+        expiration = getTokenExpirationTime(credentials).filter(
+                tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
+            .orElse(x509Certificate.getNotAfter());
+      }
 
-          return new InstanceData(
-              Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture),
-              expiration);
-        },
-        executor,
-        metadataFuture,
-        sslContextFuture);
+      return new InstanceData(Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture),
+          expiration);
+    }, executor, metadataFuture, sslContextFuture);
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
@@ -191,7 +168,7 @@ public class SqlAdminApiFetcher {
    * Fetches the latest version of the instance's metadata using the Cloud SQL Admin API.
    */
 
-  Metadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
+  private Metadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
     try {
       ConnectSettings instanceMetadata = apiClient.connect()
           .get(instanceName.getProjectId(), instanceName.getInstanceId()).execute();
@@ -245,7 +222,7 @@ public class SqlAdminApiFetcher {
    * connect the Cloud SQL instance for up to 60 minutes.
    */
 
-  Certificate fetchEphemeralCertificate(KeyPair keyPair, CloudSqlInstanceName instanceName,
+  private Certificate fetchEphemeralCertificate(KeyPair keyPair, CloudSqlInstanceName instanceName,
       OAuth2Credentials credentials, AuthType authType) {
 
     // Use the SQL Admin API to create a new ephemeral certificate.
@@ -294,17 +271,16 @@ public class SqlAdminApiFetcher {
    * a KeyManagerFactory and a TrustManagerFactory that can be used by drivers to establish an SSL
    * tunnel.
    */
-  SslData createSslData(
-      KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate,
-      CloudSqlInstanceName instanceName, AuthType authType) {
+  private SslData createSslData(KeyPair keyPair, Metadata metadata,
+      Certificate ephemeralCertificate, CloudSqlInstanceName instanceName, AuthType authType) {
     try {
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
-      KeyStore.PrivateKeyEntry privateKey =
-          new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{ephemeralCertificate});
+      KeyStore.PrivateKeyEntry privateKey = new PrivateKeyEntry(keyPair.getPrivate(),
+          new Certificate[]{ephemeralCertificate});
       authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
-      KeyManagerFactory kmf =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+          KeyManagerFactory.getDefaultAlgorithm());
       kmf.init(authKeyStore, new char[0]);
 
       KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -319,12 +295,10 @@ public class SqlAdminApiFetcher {
       } catch (NoSuchAlgorithmException ex) {
         if (authType == AuthType.IAM) {
           throw new RuntimeException(
-              String.format(
-                  "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
+              String.format("[%s] Unable to create a SSLContext for the Cloud SQL instance.",
                   instanceName.getConnectionName())
                   + " TLSv1.3 is not supported for your Java version and is required to connect"
-                  + " using IAM authentication",
-              ex);
+                  + " using IAM authentication", ex);
         } else {
           logger.warning("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
           sslContext = SSLContext.getInstance("TLSv1.2");
@@ -336,10 +310,8 @@ public class SqlAdminApiFetcher {
       return new SslData(sslContext, kmf, tmf);
     } catch (GeneralSecurityException | IOException ex) {
       throw new RuntimeException(
-          String.format(
-              "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
-              instanceName.getConnectionName()),
-          ex);
+          String.format("[%s] Unable to create a SSLContext for the Cloud SQL instance.",
+              instanceName.getConnectionName()), ex);
     }
   }
 
