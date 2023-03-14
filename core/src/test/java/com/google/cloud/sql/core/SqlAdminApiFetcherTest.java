@@ -44,6 +44,7 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
   public void setup() throws GeneralSecurityException {
     super.setup();
     connectSettings.setDatabaseVersion("SQLSERVER_2019_STANDARD");
+    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
   }
 
   @Test
