@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.10.1-SNAPSHOT</version>
+  <version>1.11.1-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -183,7 +183,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M9</version>
+        <version>3.0.0</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -275,8 +275,9 @@
 
                 Global test dependencies unused in r2dbc core:
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
+                com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -298,7 +299,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.0.0-M9</version>
+            <version>3.0.0</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>

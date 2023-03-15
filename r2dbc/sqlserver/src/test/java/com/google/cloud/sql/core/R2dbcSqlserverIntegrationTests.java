@@ -56,11 +56,9 @@ public class R2dbcSqlserverIntegrationTests {
   @Before
   public void setUpPool() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
 
     // Set up URL parameters
     String r2dbcURL = String
@@ -81,10 +79,10 @@ public class R2dbcSqlserverIntegrationTests {
         .flatMapMany(
             c ->
                 c.createStatement(
-                    String.format("CREATE TABLE %s (", this.tableName)
-                        + "  ID CHAR(20) NOT NULL,"
-                        + "  TITLE TEXT NOT NULL"
-                        + ")")
+                        String.format("CREATE TABLE %s (", this.tableName)
+                            + "  ID CHAR(20) NOT NULL,"
+                            + "  TITLE TEXT NOT NULL"
+                            + ")")
                     .execute())
         .blockLast();
   }
@@ -99,7 +97,8 @@ public class R2dbcSqlserverIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)", this.tableName);
+    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)",
+        this.tableName);
     Mono.from(this.connectionPool.create())
         .flatMapMany(
             c ->

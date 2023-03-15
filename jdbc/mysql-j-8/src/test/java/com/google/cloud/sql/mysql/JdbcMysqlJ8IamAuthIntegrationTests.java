@@ -49,7 +49,7 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
 
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("MYSQL_IAM_USER", "MYSQL_DB", "MYSQL_IAM_CONNECTION_NAME");
   @Rule
   public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
@@ -59,11 +59,9 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
   }
 
   @Before
@@ -84,7 +82,7 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
     config.setConnectionTimeout(10000); // 10s
 
     this.connectionPool = new HikariDataSource(config);
-      this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
+    this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
 
     // Create table
     try (Connection conn = connectionPool.getConnection()) {

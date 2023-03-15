@@ -29,12 +29,11 @@ import java.util.Properties;
  */
 public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
-  private Socket socket;
-
   static {
     CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-5");
   }
 
+  private Socket socket;
 
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {

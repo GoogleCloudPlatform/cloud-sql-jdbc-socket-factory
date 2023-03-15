@@ -49,7 +49,7 @@ public class JdbcMysqlJ5IntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
 
   private String tableName;
@@ -62,11 +62,9 @@ public class JdbcMysqlJ5IntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
   }
 
   @Before

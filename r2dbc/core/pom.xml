@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.10.1-SNAPSHOT</version>
+    <version>1.11.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
@@ -130,7 +130,7 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -144,15 +144,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>4.11.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>1.70</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -161,7 +162,18 @@
       <version>v1beta4-rev20230111-2.0.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client-gson</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
  <build>
    <plugins>
      <plugin>
@@ -177,7 +189,6 @@
        </executions>
      </plugin>
    </plugins>
-
  </build>
 
   <repositories>

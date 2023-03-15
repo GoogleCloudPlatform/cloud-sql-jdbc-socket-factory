@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.10.1-SNAPSHOT</version>
+    <version>1.11.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
@@ -44,7 +44,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.5.3</version>
+        <version>3.5.4</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -134,7 +134,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.31.0</version>
+        <version>3.32.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
@@ -257,6 +257,13 @@
     <dependency>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
       <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

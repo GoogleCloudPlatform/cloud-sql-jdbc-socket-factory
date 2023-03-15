@@ -43,28 +43,25 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
       String connectionName, boolean enableIamAuth) {
 
-    Function<SslContextBuilder, SslContextBuilder> customizer =
-        sslContextBuilder -> {
-          // Execute in a default scheduler to prevent it from blocking event loop
-          SslData sslData = Mono
-              .fromSupplier(() -> {
-                try {
-                  return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              })
-              .subscribeOn(Schedulers.boundedElastic())
-              .share()
-              .block();
-          sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
-          sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
-          sslContextBuilder.protocols("TLSv1.2");
+    return sslContextBuilder -> {
+      // Execute in a default scheduler to prevent it from blocking event loop
+      SslData sslData = Mono
+          .fromSupplier(() -> {
+            try {
+              return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          })
+          .subscribeOn(Schedulers.boundedElastic())
+          .share()
+          .block();
+      sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
+      sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
+      sslContextBuilder.protocols("TLSv1.2");
 
-          return sslContextBuilder;
-        };
-
-    return customizer;
+      return sslContextBuilder;
+    };
   }
 
   /**
@@ -120,7 +117,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     }
 
     Object iamAuthObj = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
-    Boolean enableIamAuth = false;
+    boolean enableIamAuth = false;
     if (iamAuthObj instanceof Boolean) {
       enableIamAuth = (Boolean) iamAuthObj;
     } else if (iamAuthObj instanceof String) {

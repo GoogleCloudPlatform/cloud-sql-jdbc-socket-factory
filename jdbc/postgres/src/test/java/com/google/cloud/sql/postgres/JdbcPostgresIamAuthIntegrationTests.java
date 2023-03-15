@@ -44,13 +44,13 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class JdbcPostgresIamAuthIntegrationTests {
+
   // [START cloud_sql_connector_postgres_jdbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   // [END cloud_sql_connector_postgres_jdbc_iam_auth]
-  ;
-  private static ImmutableList<String> requiredEnvVars = ImmutableList
+  private static final ImmutableList<String> requiredEnvVars = ImmutableList
       .of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule
   public Timeout globalTimeout = new Timeout(60, TimeUnit.SECONDS);
@@ -61,11 +61,9 @@ public class JdbcPostgresIamAuthIntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.stream().forEach((varName) -> {
-      assertWithMessage(
-          String.format("Environment variable '%s' must be set to perform these tests.", varName))
-          .that(System.getenv(varName)).isNotEmpty();
-    });
+    requiredEnvVars.forEach((varName) -> assertWithMessage(
+        String.format("Environment variable '%s' must be set to perform these tests.", varName))
+        .that(System.getenv(varName)).isNotEmpty());
   }
 
   @Before

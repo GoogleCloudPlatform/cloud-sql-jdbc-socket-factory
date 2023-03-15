@@ -20,10 +20,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -40,21 +38,16 @@ public class CloudSqlInstanceTest {
 
   @Mock
   private GoogleCredentials googleCredentials;
-
   @Mock
   private GoogleCredentials scopedCredentials;
-
   @Mock
   private OAuth2Credentials oAuth2Credentials;
 
-  private ConnectSettings instanceData = new ConnectSettings();
-
   @Before
-  public void setup() throws IOException {
+  public void setup() {
     MockitoAnnotations.openMocks(this);
     when(googleCredentials.createScoped(
         "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
-    instanceData.setDatabaseVersion("SQLSERVER_2019_STANDARD");
   }
 
   @Test
@@ -78,21 +71,6 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void throwsErrorIamAuthNotSupported() {
-    Boolean enableIamAuth = true;
-    String connName = "my-project:region:my-instance";
-
-    try {
-      CloudSqlInstance.checkDatabaseCompatibility(instanceData, enableIamAuth, connName);
-    } catch (IllegalArgumentException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("[my-project:region:my-instance] " +
-              "IAM Authentication is not supported for SQL Server instances");
-    }
-  }
-
-  @Test
   public void timeUntilRefreshImmediate() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(3)));
     assertThat(CloudSqlInstance.secondsUntilRefresh(expiration)).isEqualTo(0L);
@@ -101,14 +79,14 @@ public class CloudSqlInstanceTest {
   @Test
   public void timeUntilRefresh1Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(59)));
-    Long expected = Duration.ofMinutes(59).minus(Duration.ofMinutes(4)).getSeconds();
+    long expected = Duration.ofMinutes(59).minus(Duration.ofMinutes(4)).getSeconds();
     Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
   }
 
   @Test
   public void timeUntilRefresh24Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofHours(23)));
-    Long expected = Duration.ofHours(23).dividedBy(2).getSeconds();
+    long expected = Duration.ofHours(23).dividedBy(2).getSeconds();
     Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
   }
 }

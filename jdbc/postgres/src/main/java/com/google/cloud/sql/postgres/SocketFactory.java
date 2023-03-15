@@ -36,7 +36,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
-  private Properties props;
+  private final Properties props;
 
   static {
     CoreSocketFactory.addArtifactId("postgres-socket-factory");
@@ -81,24 +81,23 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
   @Override
-  public Socket createSocket(String host, int port) throws IOException {
+  public Socket createSocket(String host, int port) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(String host, int port, InetAddress localHost, int localPort)
-      throws IOException {
+  public Socket createSocket(String host, int port, InetAddress localHost, int localPort) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(InetAddress host, int port) throws IOException {
+  public Socket createSocket(InetAddress host, int port) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort)
-      throws IOException {
+  public Socket createSocket(
+      InetAddress address, int port, InetAddress localAddress, int localPort) {
     throw new UnsupportedOperationException();
   }
 }
