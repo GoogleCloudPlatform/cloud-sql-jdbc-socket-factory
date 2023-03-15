@@ -34,33 +34,19 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStore.PasswordProtection;
-import java.security.KeyStore.PrivateKeyEntry;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManagerFactory;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /**
  * This class manages information on and creates connections to a Cloud SQL instance using the Cloud
@@ -87,18 +73,19 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter = RateLimiter.burstyBuilder(2,
-      Duration.ofSeconds(30)).build();
+  private final RateLimiter<Object> forcedRenewRateLimiter =
+      RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName instance connection name in the format
-   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param apiFetcher Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
@@ -109,7 +96,8 @@ class CloudSqlInstance {
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) throws IOException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair)
+      throws IOException, InterruptedException {
 
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
@@ -134,50 +122,7 @@ class CloudSqlInstance {
     }
   }
 
-  /**
-   * Generates public key certificate for which the instance has the matching private key.
-   *
-   * @return PEM encoded public key certificate
-   */
-
-  // Schedules task to be executed once the provided futures are complete.
-  private static <T> ListenableFuture<T> whenAllSucceed(
-      Callable<T> task,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<?>... futures) {
-    SettableFuture<T> taskFuture = SettableFuture.create();
-
-    // Create a countDown for all Futures to complete.
-    AtomicInteger countDown = new AtomicInteger(futures.length);
-
-    // Trigger the task when all futures are complete.
-    FutureCallback<Object> runWhenInputAreComplete =
-        new FutureCallback<Object>() {
-          @Override
-          public void onSuccess(@NullableDecl Object o) {
-            if (countDown.decrementAndGet() == 0) {
-              taskFuture.setFuture(executor.submit(task));
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (!taskFuture.setException(throwable)) {
-              String msg = "Got more than one input failure. Logging failures after the first";
-              logger.log(Level.SEVERE, msg, throwable);
-            }
-          }
-        };
-    for (ListenableFuture<?> future : futures) {
-      Futures.addCallback(future, runWhenInputAreComplete, executor);
-    }
-
-    return taskFuture;
-  }
-
-  /**
-   * Returns a future that blocks until the result of a nested future is complete.
-   */
+  /** Returns a future that blocks until the result of a nested future is complete. */
   private static <T> ListenableFuture<T> blockOnNestedFuture(
       ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
     SettableFuture<T> blockedFuture = SettableFuture.create();
@@ -234,21 +179,17 @@ class CloudSqlInstance {
 
     if (source instanceof Credential) {
       Credential credential = (Credential) source;
-      AccessToken accessToken = new AccessToken(
-          credential.getAccessToken(),
-          getTokenExpirationTime(credential).orElse(null)
-      );
+      AccessToken accessToken =
+          new AccessToken(
+              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
 
       return new GoogleCredentials(accessToken) {
-
         @Override
         public AccessToken refreshAccessToken() throws IOException {
           credential.refreshToken();
 
           return new AccessToken(
-              credential.getAccessToken(),
-              getTokenExpirationTime(credential).orElse(null)
-          );
+              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
         }
       };
     }
@@ -311,10 +252,8 @@ class CloudSqlInstance {
    * Attempts to force a new refresh of the instance data. May fail if called too frequently or if a
    * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
-   *
-   * @return {@code true} if successfully scheduled, or {@code false} otherwise.
    */
-  boolean forceRefresh() throws InterruptedException {
+  void forceRefresh() throws InterruptedException {
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
@@ -324,7 +263,6 @@ class CloudSqlInstance {
         // Otherwise it's already running, so just block on the results
         currentInstanceData = blockOnNestedFuture(nextInstanceData, executor);
       }
-      return true;
     }
   }
 
@@ -336,73 +274,46 @@ class CloudSqlInstance {
   private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
-    // Use the Cloud SQL Admin API to return the Metadata and Certificate
-    ListenableFuture<Metadata> metadataFuture = executor.submit(
-        () -> apiFetcher.fetchMetadata(instanceName, authType));
-    ListenableFuture<Certificate> ephemeralCertificateFuture;
-    if (authType == AuthType.IAM && credentials.isPresent()) {
-      GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
-      ephemeralCertificateFuture = whenAllSucceed(
-          () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
-              downscopedCredentials, authType), executor, keyPair);
+
+    ListenableFuture<InstanceData> refreshFuture;
+    if (authType == AuthType.IAM) {
+      if (credentials.isPresent()) {
+        GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
+        refreshFuture =
+            apiFetcher.getInstanceData(
+                instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
+      } else {
+        throw new RuntimeException(
+            String.format(
+                "[%s] Unable to connect via automatic IAM authentication: Missing credentials.",
+                instanceName.getConnectionName()));
+      }
+
     } else {
-      ephemeralCertificateFuture = whenAllSucceed(
-          () -> apiFetcher.fetchEphemeralCertificate(Futures.getDone(keyPair), instanceName,
-              null, authType), executor, keyPair);
+      refreshFuture =
+          apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
     }
-
-    // Once the API calls are complete, construct the SSLContext for the sockets
-    ListenableFuture<SslData> sslContextFuture =
-        whenAllSucceed(
-            () ->
-                createSslData(
-                    Futures.getDone(keyPair),
-                    Futures.getDone(metadataFuture),
-                    Futures.getDone(ephemeralCertificateFuture)),
-            executor,
-            keyPair,
-            metadataFuture,
-            ephemeralCertificateFuture);
-    // Once both the SSLContext and Metadata are complete, return the results
-    ListenableFuture<InstanceData> refreshFuture =
-        whenAllSucceed(
-            () -> {
-
-              // Get expiration value for new cert
-              Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
-              X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-              Date expiration = x509Certificate.getNotAfter();
-
-              if (authType == AuthType.IAM) {
-                expiration = getTokenExpirationTime(credentials.get())
-                    .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
-                    .orElse(x509Certificate.getNotAfter());
-              }
-
-              return new InstanceData(
-                  Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture),
-                  expiration);
-            },
-            executor,
-            metadataFuture,
-            sslContextFuture);
-    Futures.addCallback(refreshFuture,
+    Futures.addCallback(
+        refreshFuture,
         new FutureCallback<InstanceData>() {
           public void onSuccess(InstanceData instanceData) {
             synchronized (instanceDataGuard) {
               // update currentInstanceData with the most recent results
               currentInstanceData = refreshFuture;
               // schedule a replacement before the SSLContext expires;
-              nextInstanceData = executor
-                  .schedule(() -> performRefresh(),
+              nextInstanceData =
+                  executor.schedule(
+                      () -> performRefresh(),
                       secondsUntilRefresh(getInstanceData().getExpiration()),
                       TimeUnit.SECONDS);
             }
           }
 
           public void onFailure(Throwable t) {
-            logger.log(Level.WARNING,
-                "An error occurred while performing refresh. Retrying immediately.", t);
+            logger.log(
+                Level.WARNING,
+                "An error occurred while performing refresh. Retrying immediately.",
+                t);
             synchronized (instanceDataGuard) {
               InstanceData instanceData = null;
               try {
@@ -410,8 +321,8 @@ class CloudSqlInstance {
               } catch (Exception e) {
                 // this means the result was invalid
               }
-              if (instanceData == null || instanceData.getExpiration().toInstant()
-                  .isBefore(Instant.now())) {
+              if (instanceData == null
+                  || instanceData.getExpiration().toInstant().isBefore(Instant.now())) {
                 // replace current if it is expired or invalid
                 currentInstanceData = refreshFuture;
               }
@@ -422,111 +333,17 @@ class CloudSqlInstance {
               }
             }
           }
-        }, executor);
+        },
+        executor);
 
     return refreshFuture;
   }
 
-  /**
-   * Creates a new SslData based on the provided parameters. It contains a SSLContext that will be
-   * used to provide new SSLSockets authorized to connect to a Cloud SQL instance. It also contains
-   * a KeyManagerFactory and a TrustManagerFactory that can be used by drivers to establish an SSL
-   * tunnel.
-   */
-  private SslData createSslData(
-      KeyPair keyPair, Metadata metadata, Certificate ephemeralCertificate) {
-    try {
-      KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      authKeyStore.load(null, null);
-      KeyStore.PrivateKeyEntry privateKey =
-          new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{ephemeralCertificate});
-      authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
-      KeyManagerFactory kmf =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      kmf.init(authKeyStore, new char[0]);
-
-      KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      trustedKeyStore.load(null, null);
-      trustedKeyStore.setCertificateEntry("instance", metadata.getInstanceCaCertificate());
-      TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
-      tmf.init(trustedKeyStore);
-      SSLContext sslContext;
-
-      try {
-        sslContext = SSLContext.getInstance("TLSv1.3");
-      } catch (NoSuchAlgorithmException ex) {
-        if (authType == AuthType.IAM) {
-          throw new RuntimeException(
-              String.format(
-                  "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
-                  instanceName.getConnectionName())
-                  + " TLSv1.3 is not supported for your Java version and is required to connect"
-                  + " using IAM authentication",
-              ex);
-        } else {
-          logger.warning("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
-          sslContext = SSLContext.getInstance("TLSv1.2");
-        }
-      }
-
-      sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-      return new SslData(sslContext, kmf, tmf);
-    } catch (GeneralSecurityException | IOException ex) {
-      throw new RuntimeException(
-          String.format(
-              "[%s] Unable to create a SSLContext for the Cloud SQL instance.",
-              instanceName.getConnectionName()),
-          ex);
-    }
-  }
-
-
-  private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
-    return Optional.ofNullable(credentials.getAccessToken().getExpirationTime());
-  }
-
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
-    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds())
-        .map(Date::new);
+    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds()).map(Date::new);
   }
-
 
   SslData getSslData() {
     return getInstanceData().getSslData();
-  }
-
-  /**
-   * Represents the results of {@link #performRefresh()}.
-   */
-  private static class InstanceData {
-
-    private final Metadata metadata;
-    private final SSLContext sslContext;
-    private final SslData sslData;
-    private final Date expiration;
-
-    InstanceData(Metadata metadata, SslData sslData, Date expiration) {
-      this.metadata = metadata;
-      this.sslData = sslData;
-      this.sslContext = sslData.getSslContext();
-      this.expiration = expiration;
-    }
-
-    Date getExpiration() {
-      return expiration;
-    }
-
-    SSLContext getSslContext() {
-      return sslContext;
-    }
-
-    Map<String, String> getIpAddrs() {
-      return metadata.getIpAddrs();
-    }
-
-    SslData getSslData() {
-      return sslData;
-    }
   }
 }
