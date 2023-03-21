@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 /**
@@ -75,7 +76,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket() throws IOException {
     try {
       return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }

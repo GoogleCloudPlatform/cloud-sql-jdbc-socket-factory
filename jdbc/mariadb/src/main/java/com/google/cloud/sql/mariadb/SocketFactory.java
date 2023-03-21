@@ -20,6 +20,7 @@ import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 import org.mariadb.jdbc.Configuration;
 import org.mariadb.jdbc.util.ConfigurableSocketFactory;
 
@@ -49,7 +50,7 @@ public class SocketFactory extends ConfigurableSocketFactory {
   public Socket createSocket() throws IOException {
     try {
       return CoreSocketFactory.connect(conf.nonMappedOptions());
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }

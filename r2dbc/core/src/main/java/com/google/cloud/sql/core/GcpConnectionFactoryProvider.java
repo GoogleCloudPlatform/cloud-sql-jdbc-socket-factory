@@ -27,6 +27,7 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -48,7 +49,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                   () -> {
                     try {
                       return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
-                    } catch (IOException e) {
+                    } catch (IOException | ExecutionException e) {
                       throw new RuntimeException(e);
                     }
                   })
@@ -96,13 +97,13 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
     try {
       return createFactory(connectionFactoryOptions);
-    } catch (IOException e) {
+    } catch (IOException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
 
   private ConnectionFactory createFactory(ConnectionFactoryOptions connectionFactoryOptions)
-      throws IOException {
+      throws IOException, ExecutionException {
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
 
     String ipTypes = CoreSocketFactory.DEFAULT_IP_TYPES;

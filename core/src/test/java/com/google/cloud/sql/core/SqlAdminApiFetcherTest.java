@@ -20,12 +20,11 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.cloud.sql.AuthType;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLContext;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +33,7 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
   private final ConnectSettings connectSettings = new ConnectSettings();
 
-  ListeningScheduledExecutorService defaultExecutor;
+  ScheduledExecutorService defaultExecutor;
 
   private final SqlAdminApiFetcher fetcher =
       new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
@@ -49,15 +48,13 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void fetchesInstanceData() throws ExecutionException, InterruptedException {
-    ListenableFuture<InstanceData> instanceDataFuture =
+    InstanceData instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName("myProject:myRegion:myInstance"),
             null,
             AuthType.PASSWORD,
             defaultExecutor,
             clientKeyPair);
-
-    InstanceData instanceData = instanceDataFuture.get();
 
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 

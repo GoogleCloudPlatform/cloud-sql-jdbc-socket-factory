@@ -22,8 +22,6 @@ import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.SqlAdminApiFetcherFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.File;
 import java.io.IOException;
@@ -35,9 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
@@ -72,46 +68,45 @@ public final class CoreSocketFactory {
   private static final List<String> userAgents = new ArrayList<>();
   private static final String version = getVersion();
   private static CoreSocketFactory coreSocketFactory;
-  private final ListenableFuture<KeyPair> localKeyPair;
+  private final KeyPair keyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
-  private final ListeningScheduledExecutorService executor;
+  private final ScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
   private final SqlAdminApiFetcher adminApiService;
 
   @VisibleForTesting
   CoreSocketFactory(
-      ListenableFuture<KeyPair> localKeyPair,
+      KeyPair keyPair,
       SqlAdminApiFetcher adminApi,
       CredentialFactory credentialFactory,
       int serverProxyPort,
-      ListeningScheduledExecutorService executor) {
+      ScheduledExecutorService executor) {
     this.adminApiService = adminApi;
     this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
-    this.localKeyPair = localKeyPair;
+    this.keyPair = keyPair;
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
   public static synchronized CoreSocketFactory getInstance() {
     if (coreSocketFactory == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
-
+      KeyPair keyPair = generateRsaKeyPair();
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
       HttpRequestInitializer credential = credentialFactory.create();
       SqlAdminApiFetcher adminApiService =
           new SqlAdminApiFetcherFactory(getUserAgents()).create(credential);
-      ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
           new CoreSocketFactory(
-              executor.submit(CoreSocketFactory::generateRsaKeyPair),
+              keyPair,
               adminApiService,
               credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
-              executor);
+              getDefaultExecutor());
     }
     return coreSocketFactory;
   }
@@ -123,13 +118,12 @@ public final class CoreSocketFactory {
   // TODO(kvg): Figure out better executor to use for testing
   @VisibleForTesting
   // Returns a listenable, scheduled executor that exits upon shutdown.
-  static ListeningScheduledExecutorService getDefaultExecutor() {
-    // TODO(kvg): Figure out correct way to determine number of threads
+  static ScheduledExecutorService getDefaultExecutor() {
+    // TODO: Figure out correct way to determine number of threads
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    return MoreExecutors.listeningDecorator(
-        MoreExecutors.getExitingScheduledExecutorService(executor));
+    return MoreExecutors.getExitingScheduledExecutorService(executor);
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
@@ -153,7 +147,8 @@ public final class CoreSocketFactory {
   }
 
   /** Creates a socket representing a connection to a Cloud SQL instance. */
-  public static Socket connect(Properties props) throws IOException, InterruptedException {
+  public static Socket connect(Properties props)
+      throws IOException, InterruptedException, ExecutionException {
     return connect(props, null);
   }
 
@@ -168,7 +163,7 @@ public final class CoreSocketFactory {
    * @throws IOException if error occurs during socket creation.
    */
   public static Socket connect(Properties props, String unixPathSuffix)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ExecutionException {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
@@ -203,7 +198,7 @@ public final class CoreSocketFactory {
 
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
   public static SslData getSslData(String csqlInstanceName, boolean enableIamAuth)
-      throws IOException {
+      throws IOException, ExecutionException {
     if (enableIamAuth) {
       return getInstance().getCloudSqlInstance(csqlInstanceName, AuthType.IAM).getSslData();
     }
@@ -211,28 +206,24 @@ public final class CoreSocketFactory {
   }
 
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  static SslData getSslData(String csqlInstanceName, AuthType authType) {
+  static SslData getSslData(String csqlInstanceName, AuthType authType) throws ExecutionException {
     return getInstance().getCloudSqlInstance(csqlInstanceName, authType).getSslData();
   }
 
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  public static SslData getSslData(String csqlInstanceName) throws IOException {
+  public static SslData getSslData(String csqlInstanceName) throws IOException, ExecutionException {
     return getSslData(csqlInstanceName, false);
   }
 
   /** Returns default ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName) {
+  public static String getHostIp(String csqlInstanceName) throws ExecutionException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
   }
 
   /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName, String ipTypes) throws IOException {
+  public static String getHostIp(String csqlInstanceName, String ipTypes)
+      throws IOException, ExecutionException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
-  }
-
-  private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
-    return instance.getPreferredIp(ipTypes);
   }
 
   /**
@@ -311,6 +302,11 @@ public final class CoreSocketFactory {
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
 
+  private String getHostIp(String instanceName, List<String> ipTypes) {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
+    return instance.getPreferredIp(ipTypes);
+  }
+
   /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
@@ -322,7 +318,7 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(String instanceName, List<String> ipTypes, AuthType authType)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ExecutionException {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName, authType);
 
     try {
@@ -347,7 +343,7 @@ public final class CoreSocketFactory {
   }
 
   Socket createSslSocket(String instanceName, List<String> ipTypes)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ExecutionException {
     return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD);
   }
 
@@ -358,8 +354,8 @@ public final class CoreSocketFactory {
         k -> {
           try {
             return new CloudSqlInstance(
-                k, adminApiService, authType, credentialFactory, executor, localKeyPair);
-          } catch (IOException | InterruptedException e) {
+                k, adminApiService, authType, credentialFactory, executor, keyPair);
+          } catch (IOException | InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
           }
         });

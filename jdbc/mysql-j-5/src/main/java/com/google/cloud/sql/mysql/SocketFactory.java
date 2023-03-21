@@ -20,6 +20,7 @@ import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
@@ -39,7 +40,7 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
     try {
       socket = CoreSocketFactory.connect(props);
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
     return socket;

@@ -25,23 +25,23 @@ import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-// TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
 public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
-  ListeningScheduledExecutorService defaultExecutor;
+  ScheduledExecutorService defaultExecutor;
 
   @Before
   public void setUp() throws Exception {
@@ -59,7 +59,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
       coreSocketFactory.createSslSocket("myProject", Collections.singletonList("PRIMARY"));
       fail();
-    } catch (IllegalArgumentException | InterruptedException e) {
+    } catch (IllegalArgumentException | InterruptedException | ExecutionException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
@@ -68,7 +68,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
@@ -80,17 +80,16 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             .create(credentialFactory.create());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
-    try {
-      coreSocketFactory.createSslSocket(
-          "myProject:notMyRegion:myInstance", Collections.singletonList("PRIMARY"));
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains("The region specified for the Cloud SQL instance is incorrect");
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+
+    RuntimeException e =
+        assertThrows(
+            RuntimeException.class,
+            () ->
+                coreSocketFactory.createSslSocket(
+                    "myProject:notMyRegion:myInstance", Collections.singletonList("PRIMARY")));
+    assertThat(e)
+        .hasMessageThat()
+        .contains("The region specified for the Cloud SQL instance is incorrect");
   }
 
   /**
@@ -98,7 +97,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
    * results in a connection to the private IP.
    */
   @Test
-  public void create_successfulPrivateConnection() throws IOException, InterruptedException {
+  public void create_successfulPrivateConnection()
+      throws IOException, InterruptedException, ExecutionException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PRIVATE_IP);
 
@@ -115,7 +115,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
-  public void create_successfulConnection() throws IOException, InterruptedException {
+  public void create_successfulConnection()
+      throws IOException, InterruptedException, ExecutionException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
@@ -132,7 +133,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
-  public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
+  public void create_successfulDomainScopedConnection()
+      throws IOException, InterruptedException, ExecutionException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
@@ -158,7 +160,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
       coreSocketFactory.createSslSocket(
           "NotMyProject:myRegion:myInstance", Collections.singletonList("PRIMARY"));
       fail("Expected RuntimeException");
-    } catch (RuntimeException | InterruptedException e) {
+    } catch (RuntimeException | InterruptedException | ExecutionException e) {
       assertThat(e)
           .hasMessageThat()
           .contains(
@@ -186,13 +188,14 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
               String.format(
                   "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
                   "myProject:myRegion:NotMyInstance"));
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Test
-  public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
+  public void supportsCustomCredentialFactoryWithIAM()
+      throws InterruptedException, IOException, ExecutionException {
     CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", 6000L);
 
     FakeSslServer sslServer = new FakeSslServer();
@@ -213,7 +216,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void supportsCustomCredentialFactoryWithNoExpirationTime()
-      throws InterruptedException, IOException {
+      throws InterruptedException, IOException, ExecutionException {
     CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", null);
 
     FakeSslServer sslServer = new FakeSslServer();

@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,7 +109,7 @@ public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFacto
       assertThat((int) Objects.requireNonNull(mysqlOptions.getValue(PORT)))
           .isEqualTo(CoreSocketFactory.getDefaultServerProxyPort());
 
-    } catch (IOException e) {
+    } catch (IOException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }

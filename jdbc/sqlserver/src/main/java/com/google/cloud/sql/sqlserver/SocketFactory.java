@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 /**
@@ -73,7 +74,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket() throws IOException {
     try {
       return CoreSocketFactory.connect(props);
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }

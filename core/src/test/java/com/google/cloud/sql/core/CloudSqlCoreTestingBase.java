@@ -35,8 +35,6 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -72,7 +70,7 @@ public class CloudSqlCoreTestingBase {
 
   final CredentialFactory credentialFactory = new StubCredentialFactory();
 
-  ListenableFuture<KeyPair> clientKeyPair;
+  KeyPair clientKeyPair;
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
   static HttpTransport fakeNotConfiguredException() {
@@ -140,7 +138,7 @@ public class CloudSqlCoreTestingBase {
         new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
+    clientKeyPair = new KeyPair(publicKey, privateKey);
   }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
@@ -214,7 +212,7 @@ public class CloudSqlCoreTestingBase {
             Date.from(notBefore.toInstant()),
             Date.from(notAfter.toInstant()),
             subject,
-            Futures.getDone(clientKeyPair).getPublic());
+            clientKeyPair.getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 

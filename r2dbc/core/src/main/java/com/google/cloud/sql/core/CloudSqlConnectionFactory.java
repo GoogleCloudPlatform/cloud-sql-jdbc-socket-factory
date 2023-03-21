@@ -26,6 +26,7 @@ import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
@@ -53,7 +54,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public Publisher<? extends Connection> create() {
     try {
       return getConnectionFactory().create();
-    } catch (IOException e) {
+    } catch (IOException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
@@ -62,13 +63,13 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public ConnectionFactoryMetadata getMetadata() {
     try {
       return getConnectionFactory().getMetadata();
-    } catch (IOException e) {
+    } catch (IOException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
 
   @VisibleForTesting
-  void setBuilderHostAndPort() throws IOException {
+  void setBuilderHostAndPort() throws IOException, ExecutionException {
     String hostIp = CoreSocketFactory.getHostIp(csqlHostName, ipTypes);
     builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
   }
@@ -78,7 +79,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
     return builder;
   }
 
-  private ConnectionFactory getConnectionFactory() throws IOException {
+  private ConnectionFactory getConnectionFactory() throws IOException, ExecutionException {
     setBuilderHostAndPort();
     return connectionFactoryFactory.apply(builder.build());
   }

@@ -31,9 +31,6 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -49,6 +46,7 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -63,8 +61,8 @@ public class GcpConnectionFactoryProviderTest {
   static final String PUBLIC_IP = "127.0.0.1";
   static final String PRIVATE_IP = "10.0.0.1";
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
-  ListeningScheduledExecutorService defaultExecutor;
-  ListenableFuture<KeyPair> clientKeyPair;
+  ScheduledExecutorService defaultExecutor;
+  KeyPair clientKeyPair;
   CoreSocketFactory coreSocketFactoryStub;
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
@@ -97,7 +95,7 @@ public class GcpConnectionFactoryProviderTest {
             Date.from(notBefore.toInstant()),
             Date.from(notAfter.toInstant()),
             subject,
-            Futures.getDone(clientKeyPair).getPublic());
+            clientKeyPair.getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
@@ -168,7 +166,7 @@ public class GcpConnectionFactoryProviderTest {
         new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
+    clientKeyPair = new KeyPair(publicKey, privateKey);
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 

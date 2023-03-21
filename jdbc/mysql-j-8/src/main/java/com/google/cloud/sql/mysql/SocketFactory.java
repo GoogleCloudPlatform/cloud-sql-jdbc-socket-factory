@@ -23,6 +23,7 @@ import com.mysql.cj.protocol.SocketConnection;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
@@ -41,7 +42,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
       String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
     try {
       return connect(host, portNumber, props.exposeAsProperties(), loginTimeout);
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
@@ -52,7 +53,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    */
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, ExecutionException {
     @SuppressWarnings("unchecked")
     T socket = (T) CoreSocketFactory.connect(props);
     return socket;

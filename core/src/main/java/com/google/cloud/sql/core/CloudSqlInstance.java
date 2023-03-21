@@ -25,12 +25,7 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
-import com.google.common.util.concurrent.Uninterruptibles;
+import com.google.common.util.concurrent.*;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
 import java.io.IOException;
@@ -63,18 +58,19 @@ class CloudSqlInstance {
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
   private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
-  private final ListeningScheduledExecutorService executor;
+  private final ScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
   private final AuthType authType;
   private final Optional<OAuth2Credentials> credentials;
 
   private final CloudSqlInstanceName instanceName;
 
-  private final ListenableFuture<KeyPair> keyPair;
+  private final KeyPair keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
   private final RateLimiter<Object> forcedRenewRateLimiter =
       RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+  private final ListeningScheduledExecutorService listeningExecutor;
 
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
@@ -95,15 +91,16 @@ class CloudSqlInstance {
       SqlAdminApiFetcher apiFetcher,
       AuthType authType,
       CredentialFactory tokenSourceFactory,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws IOException, InterruptedException {
+      ScheduledExecutorService executor,
+      KeyPair keyPair)
+      throws IOException, InterruptedException, ExecutionException {
 
     this.instanceName = new CloudSqlInstanceName(connectionName);
 
     this.apiFetcher = apiFetcher;
     this.authType = authType;
     this.executor = executor;
+    this.listeningExecutor = MoreExecutors.listeningDecorator(executor);
     this.keyPair = keyPair;
 
     if (authType == AuthType.IAM) {
@@ -253,7 +250,7 @@ class CloudSqlInstance {
    * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
    */
-  void forceRefresh() throws InterruptedException {
+  void forceRefresh() throws InterruptedException, ExecutionException {
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
@@ -271,7 +268,8 @@ class CloudSqlInstance {
    * value of currentInstanceData and schedules the next refresh shortly before the information
    * would expire.
    */
-  private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
+  private ListenableFuture<InstanceData> performRefresh()
+      throws InterruptedException, ExecutionException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
@@ -280,8 +278,9 @@ class CloudSqlInstance {
       if (credentials.isPresent()) {
         GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
         refreshFuture =
-            apiFetcher.getInstanceData(
-                instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
+            Futures.immediateFuture(
+                apiFetcher.getInstanceData(
+                    instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair));
       } else {
         throw new RuntimeException(
             String.format(
@@ -291,24 +290,27 @@ class CloudSqlInstance {
 
     } else {
       refreshFuture =
-          apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
+          Futures.immediateFuture(
+              apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair));
     }
     Futures.addCallback(
         refreshFuture,
         new FutureCallback<InstanceData>() {
+          @Override
           public void onSuccess(InstanceData instanceData) {
             synchronized (instanceDataGuard) {
               // update currentInstanceData with the most recent results
               currentInstanceData = refreshFuture;
               // schedule a replacement before the SSLContext expires;
               nextInstanceData =
-                  executor.schedule(
+                  listeningExecutor.schedule(
                       () -> performRefresh(),
                       secondsUntilRefresh(getInstanceData().getExpiration()),
                       TimeUnit.SECONDS);
             }
           }
 
+          @Override
           public void onFailure(Throwable t) {
             logger.log(
                 Level.WARNING,
@@ -328,7 +330,7 @@ class CloudSqlInstance {
               }
               try {
                 nextInstanceData = Futures.immediateFuture(performRefresh());
-              } catch (InterruptedException e) {
+              } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
               }
             }
