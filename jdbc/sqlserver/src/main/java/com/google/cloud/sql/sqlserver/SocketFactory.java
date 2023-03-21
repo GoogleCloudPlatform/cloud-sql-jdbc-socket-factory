@@ -42,15 +42,13 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
   // props are protected, not private, so that they can be accessed from unit tests
-  @VisibleForTesting
-  protected Properties props = new Properties();
+  @VisibleForTesting protected Properties props = new Properties();
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
    * connections to a Cloud SQL instance.
    */
-  public SocketFactory(String socketFactoryConstructorArg)
-      throws UnsupportedEncodingException {
+  public SocketFactory(String socketFactoryConstructorArg) throws UnsupportedEncodingException {
     String[] s = socketFactoryConstructorArg.split("\\?");
     this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, s[0]);
     if (s.length == 2 && s[1].length() > 0) {
@@ -58,10 +56,11 @@ public class SocketFactory extends javax.net.SocketFactory {
       for (String param : queryParams) {
         String[] splitParam = param.split("=");
         if (splitParam.length != 2 || splitParam[0].length() == 0 || splitParam[1].length() == 0) {
-          throw new IllegalArgumentException(String.format(
-              "Malformed query param in socketFactoryConstructorArg : %s", param));
+          throw new IllegalArgumentException(
+              String.format("Malformed query param in socketFactoryConstructorArg : %s", param));
         }
-        this.props.setProperty(URLDecoder.decode(splitParam[0], StandardCharsets.UTF_8.name()),
+        this.props.setProperty(
+            URLDecoder.decode(splitParam[0], StandardCharsets.UTF_8.name()),
             URLDecoder.decode(splitParam[1], StandardCharsets.UTF_8.name()));
       }
     } else if (s.length > 2) {
@@ -95,10 +94,8 @@ public class SocketFactory extends javax.net.SocketFactory {
   }
 
   @Override
-  public Socket createSocket(InetAddress address, int port, InetAddress localAddress,
-      int localPort) {
+  public Socket createSocket(
+      InetAddress address, int port, InetAddress localAddress, int localPort) {
     throw new UnsupportedOperationException();
   }
 }
-
-

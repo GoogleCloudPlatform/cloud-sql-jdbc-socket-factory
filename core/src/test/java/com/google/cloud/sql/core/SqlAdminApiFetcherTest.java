@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.cloud.sql.AuthType;
-
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.GeneralSecurityException;
@@ -37,8 +36,9 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
   ListeningScheduledExecutorService defaultExecutor;
 
-  private final SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(fakeSuccessHttpTransport(
-      Duration.ofSeconds(0))).create(credentialFactory.create());
+  private final SqlAdminApiFetcher fetcher =
+      new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
+          .create(credentialFactory.create());
 
   @Before
   public void setup() throws GeneralSecurityException {
@@ -49,13 +49,13 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void fetchesInstanceData() throws ExecutionException, InterruptedException {
-    ListenableFuture<InstanceData> instanceDataFuture = fetcher.getInstanceData(
-        new CloudSqlInstanceName("myProject:myRegion:myInstance"),
-        null,
-        AuthType.PASSWORD,
-        defaultExecutor,
-        clientKeyPair
-    );
+    ListenableFuture<InstanceData> instanceDataFuture =
+        fetcher.getInstanceData(
+            new CloudSqlInstanceName("myProject:myRegion:myInstance"),
+            null,
+            AuthType.PASSWORD,
+            defaultExecutor,
+            clientKeyPair);
 
     InstanceData instanceData = instanceDataFuture.get();
 
@@ -75,9 +75,9 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
     } catch (IllegalArgumentException ex) {
       assertThat(ex)
           .hasMessageThat()
-          .contains("[my-project:region:my-instance] " +
-              "IAM Authentication is not supported for SQL Server instances");
+          .contains(
+              "[my-project:region:my-instance] "
+                  + "IAM Authentication is not supported for SQL Server instances");
     }
   }
-
 }

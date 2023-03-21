@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -58,10 +57,7 @@ public class CloudSqlInstanceNameTest {
     try {
       new CloudSqlInstanceName(connectionName);
     } catch (IllegalArgumentException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("Cloud SQL connection name is invalid");
+      assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
   }
-
 }

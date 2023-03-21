@@ -25,19 +25,18 @@ import com.google.cloud.sql.CredentialFactory;
  */
 public class CredentialFactoryProvider {
 
-  /**
-   * Returns a CredentialFactory instance based on whether CREDENTIAL_FACTORY_PROPERTY is set.
-   */
+  /** Returns a CredentialFactory instance based on whether CREDENTIAL_FACTORY_PROPERTY is set. */
   public static CredentialFactory getCredentialFactory() {
-    String userCredentialFactoryClassName = System.getProperty(
-        CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+    String userCredentialFactoryClassName =
+        System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
     CredentialFactory credentialFactory;
     if (userCredentialFactoryClassName != null) {
       try {
         credentialFactory =
             (CredentialFactory)
-                Class.forName(userCredentialFactoryClassName).getDeclaredConstructor()
+                Class.forName(userCredentialFactoryClassName)
+                    .getDeclaredConstructor()
                     .newInstance();
       } catch (Exception err) {
         throw new RuntimeException(err);

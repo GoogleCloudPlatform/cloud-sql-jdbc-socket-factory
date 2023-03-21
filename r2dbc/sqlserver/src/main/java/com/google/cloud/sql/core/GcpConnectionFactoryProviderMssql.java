@@ -26,18 +26,14 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Function;
 
-/**
- * {@link ConnectionFactoryProvider} for proxied access to GCP MsSQL instances.
- */
+/** {@link ConnectionFactoryProvider} for proxied access to GCP MsSQL instances. */
 public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvider {
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mssql");
   }
 
-  /**
-   * MsSQL driver option value.
-   */
+  /** MsSQL driver option value. */
   private static final String MSSQL_DRIVER = "mssql";
 
   @Override

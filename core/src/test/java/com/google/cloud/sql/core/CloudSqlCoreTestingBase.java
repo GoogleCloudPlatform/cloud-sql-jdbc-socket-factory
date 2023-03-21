@@ -88,21 +88,19 @@ public class CloudSqlCoreTestingBase {
   // Creates a fake "notAuthorized" exception that can be used for testing.
   static HttpTransport fakeNotAuthorizedException() {
     return fakeGoogleJsonResponseException(
-        "notAuthorized",
-        "The client is not authorized to make this request");
+        "notAuthorized", "The client is not authorized to make this request");
   }
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static HttpTransport fakeGoogleJsonResponseException(
-      String reason, String message) {
+  private static HttpTransport fakeGoogleJsonResponseException(String reason, String message) {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
     errorInfo.setMessage(message);
     return fakeGoogleJsonResponseExceptionTransport(errorInfo, message);
   }
 
-  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(ErrorInfo errorInfo,
-      String message) {
+  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
+      ErrorInfo errorInfo, String message) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -116,10 +114,12 @@ public class CloudSqlCoreTestingBase {
         GenericJson errorResponse = new GenericJson();
         errorResponse.set("error", jsonError);
         errorResponse.setFactory(jsonFactory);
-        return new MockLowLevelHttpRequest().setResponse(
-            new MockLowLevelHttpResponse().setContent(errorResponse.toPrettyString())
-                .setContentType(Json.MEDIA_TYPE)
-                .setStatusCode(HttpStatusCodes.STATUS_CODE_FORBIDDEN));
+        return new MockLowLevelHttpRequest()
+            .setResponse(
+                new MockLowLevelHttpResponse()
+                    .setContent(errorResponse.toPrettyString())
+                    .setContentType(Json.MEDIA_TYPE)
+                    .setStatusCode(HttpStatusCodes.STATUS_CODE_FORBIDDEN));
       }
     };
   }
@@ -132,12 +132,12 @@ public class CloudSqlCoreTestingBase {
   public void setup() throws GeneralSecurityException {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PKCS8EncodedKeySpec privateKeySpec =
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    X509EncodedKeySpec publicKeySpec =
+        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
@@ -152,14 +152,20 @@ public class CloudSqlCoreTestingBase {
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
             if (method.equals("GET") && url.contains("connectSettings")) {
-              ConnectSettings settings = new ConnectSettings().setBackendType("SECOND_GEN")
-                  .setIpAddresses(
-                      ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                          new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                  .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                  .setDatabaseVersion("POSTGRES14").setRegion("myRegion");
+              ConnectSettings settings =
+                  new ConnectSettings()
+                      .setBackendType("SECOND_GEN")
+                      .setIpAddresses(
+                          ImmutableList.of(
+                              new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                              new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+                      .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                      .setDatabaseVersion("POSTGRES14")
+                      .setRegion("myRegion");
               settings.setFactory(jsonFactory);
-              response.setContent(settings.toPrettyString()).setContentType(Json.MEDIA_TYPE)
+              response
+                  .setContent(settings.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
               GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
@@ -167,11 +173,14 @@ public class CloudSqlCoreTestingBase {
                 certResponse.setEphemeralCert(
                     new SslCert().setCert(createEphemeralCert(certDuration)));
                 certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException | ExecutionException |
-                       OperatorCreationException e) {
+              } catch (GeneralSecurityException
+                  | ExecutionException
+                  | OperatorCreationException e) {
                 throw new RuntimeException(e);
               }
-              response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
+              response
+                  .setContent(certResponse.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             }
             return response;
@@ -188,27 +197,31 @@ public class CloudSqlCoreTestingBase {
     ZonedDateTime notAfter = notBefore.plus(validFor);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
+    PKCS8EncodedKeySpec keySpec =
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
 
-    X500Principal issuer = new X500Principal(
-        "C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
+    X500Principal issuer =
+        new X500Principal("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
     X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
 
-    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(issuer,
-        BigInteger.ONE, Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()), subject,
-        Futures.getDone(clientKeyPair).getPublic());
+    JcaX509v3CertificateBuilder certificateBuilder =
+        new JcaX509v3CertificateBuilder(
+            issuer,
+            BigInteger.ONE,
+            Date.from(notBefore.toInstant()),
+            Date.from(notAfter.toInstant()),
+            subject,
+            Futures.getDone(clientKeyPair).getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
     Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
 
     return "-----BEGIN CERTIFICATE-----\n"
-        + Base64.getEncoder().encodeToString(cert.getEncoded())
-        .replaceAll("(.{64})", "$1\n")
+        + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
         + "\n"
         + "-----END CERTIFICATE-----\n";
   }

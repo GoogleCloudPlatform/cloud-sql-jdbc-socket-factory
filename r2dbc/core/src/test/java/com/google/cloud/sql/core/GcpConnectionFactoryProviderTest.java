@@ -15,7 +15,6 @@
  */
 package com.google.cloud.sql.core;
 
-
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.LowLevelHttpRequest;
@@ -81,19 +80,24 @@ public class GcpConnectionFactoryProviderTest {
     ZonedDateTime notAfter = notBefore.plus(validFor);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
+    PKCS8EncodedKeySpec keySpec =
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
 
-    X500Principal issuer = new X500Principal(
-        "C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
+    X500Principal issuer =
+        new X500Principal("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
     X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
 
-    JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(issuer,
-        BigInteger.ONE, Date.from(notBefore.toInstant()), Date.from(notAfter.toInstant()), subject,
-        Futures.getDone(clientKeyPair).getPublic());
+    JcaX509v3CertificateBuilder certificateBuilder =
+        new JcaX509v3CertificateBuilder(
+            issuer,
+            BigInteger.ONE,
+            Date.from(notBefore.toInstant()),
+            Date.from(notAfter.toInstant()),
+            subject,
+            Futures.getDone(clientKeyPair).getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
@@ -114,14 +118,20 @@ public class GcpConnectionFactoryProviderTest {
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
             if (method.equals("GET") && url.contains("connectSettings")) {
-              ConnectSettings settings = new ConnectSettings().setBackendType("SECOND_GEN")
-                  .setIpAddresses(
-                      ImmutableList.of(new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                          new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                  .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
-                  .setDatabaseVersion("POSTGRES14").setRegion("myRegion");
+              ConnectSettings settings =
+                  new ConnectSettings()
+                      .setBackendType("SECOND_GEN")
+                      .setIpAddresses(
+                          ImmutableList.of(
+                              new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                              new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+                      .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                      .setDatabaseVersion("POSTGRES14")
+                      .setRegion("myRegion");
               settings.setFactory(jsonFactory);
-              response.setContent(settings.toPrettyString()).setContentType(Json.MEDIA_TYPE)
+              response
+                  .setContent(settings.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
               GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
@@ -129,11 +139,14 @@ public class GcpConnectionFactoryProviderTest {
                 certResponse.setEphemeralCert(
                     new SslCert().setCert(createEphemeralCert(certDuration)));
                 certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException | ExecutionException |
-                       OperatorCreationException e) {
+              } catch (GeneralSecurityException
+                  | ExecutionException
+                  | OperatorCreationException e) {
                 throw new RuntimeException(e);
               }
-              response.setContent(certResponse.toPrettyString()).setContentType(Json.MEDIA_TYPE)
+              response
+                  .setContent(certResponse.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             }
             return response;
@@ -147,24 +160,23 @@ public class GcpConnectionFactoryProviderTest {
   public void setup() throws GeneralSecurityException {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PKCS8EncodedKeySpec privateKeySpec =
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
-        decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    X509EncodedKeySpec publicKeySpec =
+        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    SqlAdminApiFetcher fetcher = new StubApiFetcherFactory(
-        fakeSuccessHttpTransport(Duration.ofSeconds(0))).create(credentialFactory.create());
+    SqlAdminApiFetcher fetcher =
+        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
+            .create(credentialFactory.create());
 
-    coreSocketFactoryStub = new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory,
-        3307,
-        defaultExecutor);
+    coreSocketFactoryStub =
+        new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);
   }
-
 }

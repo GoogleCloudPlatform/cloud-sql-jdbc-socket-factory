@@ -35,8 +35,8 @@ public class CredentialFactoryProviderTest {
 
   @Test
   public void returnsUserSpecifiedCredentialFactory() {
-    System.setProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY,
-        StubCredentialFactory.class.getName());
+    System.setProperty(
+        CredentialFactory.CREDENTIAL_FACTORY_PROPERTY, StubCredentialFactory.class.getName());
     CredentialFactory factory = CredentialFactoryProvider.getCredentialFactory();
     assertThat(factory).isInstanceOf(StubCredentialFactory.class);
     System.clearProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
