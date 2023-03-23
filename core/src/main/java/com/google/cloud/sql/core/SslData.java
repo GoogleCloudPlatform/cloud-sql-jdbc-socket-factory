@@ -20,16 +20,16 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-/**
- * This class stores data that can be used to establish Cloud SQL SSL connection.
- */
+/** This class stores data that can be used to establish Cloud SQL SSL connection. */
 public class SslData {
 
   private SSLContext sslContext;
   private KeyManagerFactory keyManagerFactory;
   private TrustManagerFactory trustManagerFactory;
 
-  SslData(SSLContext sslContext, KeyManagerFactory keyManagerFactory,
+  SslData(
+      SSLContext sslContext,
+      KeyManagerFactory keyManagerFactory,
       TrustManagerFactory trustManagerFactory) {
     this.sslContext = sslContext;
     this.keyManagerFactory = keyManagerFactory;

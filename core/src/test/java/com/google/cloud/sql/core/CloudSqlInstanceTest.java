@@ -36,28 +36,24 @@ import org.mockito.MockitoAnnotations;
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  @Mock
-  private GoogleCredentials googleCredentials;
-  @Mock
-  private GoogleCredentials scopedCredentials;
-  @Mock
-  private OAuth2Credentials oAuth2Credentials;
+  @Mock private GoogleCredentials googleCredentials;
+  @Mock private GoogleCredentials scopedCredentials;
+  @Mock private OAuth2Credentials oAuth2Credentials;
 
   @Before
   public void setup() {
     MockitoAnnotations.openMocks(this);
-    when(googleCredentials.createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
+    when(googleCredentials.createScoped("https://www.googleapis.com/auth/sqlservice.login"))
+        .thenReturn(scopedCredentials);
   }
 
   @Test
   public void downscopesGoogleCredentials() {
     GoogleCredentials downscoped = CloudSqlInstance.getDownscopedCredentials(googleCredentials);
     assertThat(downscoped).isEqualTo(scopedCredentials);
-    verify(googleCredentials, times(1)).createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login");
+    verify(googleCredentials, times(1))
+        .createScoped("https://www.googleapis.com/auth/sqlservice.login");
   }
-
 
   @Test
   public void throwsErrorForWrongCredentialType() {

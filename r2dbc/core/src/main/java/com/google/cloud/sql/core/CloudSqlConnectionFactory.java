@@ -29,9 +29,7 @@ import java.io.IOException;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 
-/**
- * * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol.
- */
+/** * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol. */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
 
   private final Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
@@ -39,9 +37,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   private final String csqlHostName;
   private final String ipTypes;
 
-  /**
-   * Creates an instance of ConnectionFactory that pulls and sets host ip before delegating.
-   */
+  /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
       Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory,
       String ipTypes,
@@ -81,7 +77,6 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   ConnectionFactoryOptions.Builder getBuilder() throws IOException {
     return builder;
   }
-
 
   private ConnectionFactory getConnectionFactory() throws IOException {
     setBuilderHostAndPort();

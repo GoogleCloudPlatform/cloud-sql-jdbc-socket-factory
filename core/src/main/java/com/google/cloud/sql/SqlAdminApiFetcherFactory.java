@@ -26,9 +26,7 @@ import com.google.cloud.sql.core.SqlAdminApiFetcher;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
-/**
- * Factory for creating a SQLAdmin client that interacts with the real SQL Admin API.
- */
+/** Factory for creating a SQLAdmin client that interacts with the real SQL Admin API. */
 public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
@@ -40,7 +38,7 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
 
   /**
    * Initializes a new SQLAdminApiClientFactory class from defaults and provided userAgents.
-
+   *
    * @param userAgents string representing userAgents for the admin API client
    */
   public SqlAdminApiFetcherFactory(String userAgents) {
@@ -58,10 +56,10 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
       throw new RuntimeException("Unable to initialize HTTP transport", err);
     }
 
-
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-    SQLAdmin.Builder adminApiBuilder = new SQLAdmin.Builder(httpTransport, jsonFactory,
-        requestInitializer).setApplicationName(userAgents);
+    SQLAdmin.Builder adminApiBuilder =
+        new SQLAdmin.Builder(httpTransport, jsonFactory, requestInitializer)
+            .setApplicationName(userAgents);
     if (rootUrl != null) {
       adminApiBuilder.setRootUrl(rootUrl);
     }
@@ -70,5 +68,4 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
     }
     return new SqlAdminApiFetcher(adminApiBuilder.build());
   }
-
 }

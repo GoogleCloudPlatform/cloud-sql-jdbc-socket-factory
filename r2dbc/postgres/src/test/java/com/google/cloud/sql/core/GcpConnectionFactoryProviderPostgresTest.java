@@ -38,14 +38,16 @@ import org.junit.runners.JUnit4;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-
 @RunWith(JUnit4.class)
 public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFactoryProviderTest {
 
-  private static final Map<String, String> IP_LABEL = new HashMap<String, String>() {{
-    put("PUBLIC", "PRIMARY");
-    put("PRIVATE", "PRIVATE");
-  }};
+  private static final Map<String, String> IP_LABEL =
+      new HashMap<String, String>() {
+        {
+          put("PUBLIC", "PRIMARY");
+          put("PRIVATE", "PRIVATE");
+        }
+      };
 
   private ConnectionFactoryOptions privateIpOptions;
   private ConnectionFactoryOptions publicIpOptions;
@@ -54,43 +56,57 @@ public class GcpConnectionFactoryProviderPostgresTest extends GcpConnectionFacto
   public void setupOptions() {
 
     // Set up ConnectionFactoryOptions
-    privateIpOptions = ConnectionFactoryOptions.builder().option(DRIVER, "gcp")
-        .option(PROTOCOL, "postgres").option(USER, "fake_user").option(DATABASE, "fake_db")
-        .option(HOST, fakeInstanceName).option(IP_TYPES, "PRIVATE").build();
+    privateIpOptions =
+        ConnectionFactoryOptions.builder()
+            .option(DRIVER, "gcp")
+            .option(PROTOCOL, "postgres")
+            .option(USER, "fake_user")
+            .option(DATABASE, "fake_db")
+            .option(HOST, fakeInstanceName)
+            .option(IP_TYPES, "PRIVATE")
+            .build();
 
     publicIpOptions = privateIpOptions.mutate().option(IP_TYPES, "PUBLIC").build();
   }
 
-  public void setsCorrectOptionsForDriverHostAndPort(String ipType,
-      ConnectionFactoryOptions options, String expectedIp) {
-    try (MockedStatic<CoreSocketFactory> mockSocketFactory = Mockito.mockStatic(
-        CoreSocketFactory.class)) {
+  public void setsCorrectOptionsForDriverHostAndPort(
+      String ipType, ConnectionFactoryOptions options, String expectedIp) {
+    try (MockedStatic<CoreSocketFactory> mockSocketFactory =
+        Mockito.mockStatic(CoreSocketFactory.class)) {
 
       mockSocketFactory.when(CoreSocketFactory::getDefaultServerProxyPort).thenReturn(3307);
-      mockSocketFactory.when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
-              .getSslData());
+      mockSocketFactory
+          .when(() -> CoreSocketFactory.getSslData(fakeInstanceName))
+          .thenReturn(
+              coreSocketFactoryStub
+                  .getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
+                  .getSslData());
 
-      mockSocketFactory.when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
-          .thenReturn(coreSocketFactoryStub.getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
-              .getPreferredIp(Collections.singletonList(IP_LABEL.get(ipType))));
+      mockSocketFactory
+          .when(() -> CoreSocketFactory.getHostIp(fakeInstanceName, ipType))
+          .thenReturn(
+              coreSocketFactoryStub
+                  .getCloudSqlInstance(fakeInstanceName, AuthType.PASSWORD)
+                  .getPreferredIp(Collections.singletonList(IP_LABEL.get(ipType))));
 
-      GcpConnectionFactoryProviderPostgres mysqlProvider = new GcpConnectionFactoryProviderPostgres();
+      GcpConnectionFactoryProviderPostgres mysqlProvider =
+          new GcpConnectionFactoryProviderPostgres();
 
       // Use the PrivateIP options to make a Cloud SQL Connection Factory
-      CloudSqlConnectionFactory csqlConnFactoryPrivate = (CloudSqlConnectionFactory) mysqlProvider.create(
-          options);
+      CloudSqlConnectionFactory csqlConnFactoryPrivate =
+          (CloudSqlConnectionFactory) mysqlProvider.create(options);
       csqlConnFactoryPrivate.setBuilderHostAndPort();
 
       // Check that Driver, Host, and Port are set properly
       ConnectionFactoryOptions mysqlOptions = csqlConnFactoryPrivate.getBuilder().build();
-      assertThat(mysqlProvider.supportedProtocol((String) Objects.requireNonNull(
-          mysqlOptions.getValue(DRIVER)))).isTrue();
-      assertThat((String) Objects.requireNonNull(mysqlOptions.getValue(HOST))).isEqualTo(
-          expectedIp);
-      assertThat((int) Objects.requireNonNull(mysqlOptions.getValue(PORT))).isEqualTo(
-          CoreSocketFactory.getDefaultServerProxyPort());
-
+      assertThat(
+              mysqlProvider.supportedProtocol(
+                  (String) Objects.requireNonNull(mysqlOptions.getValue(DRIVER))))
+          .isTrue();
+      assertThat((String) Objects.requireNonNull(mysqlOptions.getValue(HOST)))
+          .isEqualTo(expectedIp);
+      assertThat((int) Objects.requireNonNull(mysqlOptions.getValue(PORT)))
+          .isEqualTo(CoreSocketFactory.getDefaultServerProxyPort());
 
     } catch (IOException e) {
       throw new RuntimeException(e);

@@ -103,5 +103,4 @@ class TestKeys {
           + "AgxI+m9NQvwyLZXjgqGZYXap61eRjQyt6saEoARqgyQFJt23uVsZ+MWDNObs7ozH\n"
           + "83dHBDTEiWkAxW6kEtjI0R6+32rBvgqhElwTI9icEJgwRPd+pBol\n"
           + "-----END CERTIFICATE-----";
-
 }
