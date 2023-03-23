@@ -33,7 +33,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
@@ -215,17 +219,6 @@ public final class CoreSocketFactory {
     return getSslData(csqlInstanceName, false);
   }
 
-  /** Returns default ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName) throws ExecutionException {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
-  }
-
-  /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName, String ipTypes)
-      throws IOException, ExecutionException {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
-  }
-
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
@@ -300,6 +293,17 @@ public final class CoreSocketFactory {
           "Unable to set ApplicationName - SQLAdmin client already initialized.");
     }
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
+  }
+
+  /** Returns default ip address that can be used to establish Cloud SQL connection. */
+  public static String getHostIp(String csqlInstanceName) throws ExecutionException {
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
+  }
+
+  /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
+  public static String getHostIp(String csqlInstanceName, String ipTypes)
+      throws IOException, ExecutionException {
+    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
   private String getHostIp(String instanceName, List<String> ipTypes) {
