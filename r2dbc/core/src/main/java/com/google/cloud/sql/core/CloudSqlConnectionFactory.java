@@ -19,67 +19,59 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
+import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
+import reactor.util.annotation.NonNull;
 
-/** * {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol. */
+/** {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol. */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
 
-  private final Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory;
+  public static final int SERVER_PROXY_PORT = 3307;
+  private final Supplier<ConnectionFactoryProvider> supplier;
   private final ConnectionFactoryOptions.Builder builder;
-  private final String csqlHostName;
+  private final String hostname;
   private final String ipTypes;
 
   /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
-      Function<ConnectionFactoryOptions, ConnectionFactory> connectionFactoryFactory,
+      Supplier<ConnectionFactoryProvider> supplier,
       String ipTypes,
       Builder builder,
-      String csqlHostName) {
-    this.connectionFactoryFactory = connectionFactoryFactory;
+      String hostname) {
+    this.supplier = supplier;
     this.ipTypes = ipTypes;
     this.builder = builder;
-    this.csqlHostName = csqlHostName;
+    this.hostname = hostname;
   }
 
   @Override
+  @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      return getConnectionFactory().create();
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
+      return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
+  @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      return getConnectionFactory().getMetadata();
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
+      return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @VisibleForTesting
-  void setBuilderHostAndPort() throws IOException {
-    String hostIp = CoreSocketFactory.getHostIp(csqlHostName, ipTypes);
-    builder.option(HOST, hostIp).option(PORT, CoreSocketFactory.getDefaultServerProxyPort());
-  }
-
-  @VisibleForTesting
-  ConnectionFactoryOptions.Builder getBuilder() throws IOException {
-    return builder;
-  }
-
-  private ConnectionFactory getConnectionFactory() throws IOException {
-    setBuilderHostAndPort();
-    return connectionFactoryFactory.apply(builder.build());
   }
 }

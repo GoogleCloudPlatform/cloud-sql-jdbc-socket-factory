@@ -30,15 +30,14 @@ import java.util.function.Function;
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances. */
 public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryProvider {
 
+  /** Postgres driver option value. */
+  private static final String POSTGRESQL_DRIVER = "postgresql";
+  /** Legacy postgres driver option value. */
+  private static final String LEGACY_POSTGRESQL_DRIVER = "postgres";
+
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-postgres");
   }
-
-  /** Postgres driver option value. */
-  private static final String POSTGRESQL_DRIVER = "postgresql";
-
-  /** Legacy postgres driver option value. */
-  private static final String LEGACY_POSTGRESQL_DRIVER = "postgres";
 
   @Override
   boolean supportedProtocol(String protocol) {
@@ -46,26 +45,26 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   }
 
   @Override
-  ConnectionFactory tcpConnectionFactory(
-      Builder optionBuilder,
+  ConnectionFactory tcpSocketConnectionFactory(
+      Builder builder,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String csqlHostName) {
-    optionBuilder
+      String hostname) {
+    builder
         .option(PostgresqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.TUNNEL)
         .option(PostgresqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
+
     return new CloudSqlConnectionFactory(
-        (ConnectionFactoryOptions options) ->
-            new PostgresqlConnectionFactoryProvider().create(options),
+        PostgresqlConnectionFactoryProvider::new,
         ipTypes,
-        optionBuilder,
-        csqlHostName);
+        builder,
+        hostname);
   }
 
   @Override
-  ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket) {
+  ConnectionFactory unixSocketConnectionFactory(Builder optionBuilder, String socket) {
     optionBuilder.option(PostgresqlConnectionFactoryProvider.SOCKET, socket);
     return new PostgresqlConnectionFactoryProvider().create(optionBuilder.build());
   }
