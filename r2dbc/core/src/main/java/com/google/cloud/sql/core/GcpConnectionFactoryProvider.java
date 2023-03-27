@@ -98,29 +98,28 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
         return unixSocketConnectionFactory(optionBuilder, socket);
       }
 
-      Function<SslContextBuilder, SslContextBuilder> sslFunction = sslContextBuilder -> {
-        // Execute in a default scheduler to prevent it from blocking event loop
-        SslData sslData =
-            Mono.fromSupplier(
-                    () -> {
-                      try {
-                        return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
-                      } catch (IOException e) {
-                        throw new RuntimeException(e);
-                      }
-                    })
-                .subscribeOn(Schedulers.boundedElastic())
-                .share()
-                .block();
-        sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
-        sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
-        sslContextBuilder.protocols("TLSv1.2");
+      Function<SslContextBuilder, SslContextBuilder> sslFunction =
+          sslContextBuilder -> {
+            // Execute in a default scheduler to prevent it from blocking event loop
+            SslData sslData =
+                Mono.fromSupplier(
+                        () -> {
+                          try {
+                            return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+                          } catch (IOException e) {
+                            throw new RuntimeException(e);
+                          }
+                        })
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .share()
+                    .block();
+            sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
+            sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
+            sslContextBuilder.protocols("TLSv1.2");
 
-        return sslContextBuilder;
-      };
-      return tcpSocketConnectionFactory(
-          optionBuilder, ipTypes, sslFunction,
-          connectionName);
+            return sslContextBuilder;
+          };
+      return tcpSocketConnectionFactory(optionBuilder, ipTypes, sslFunction, connectionName);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

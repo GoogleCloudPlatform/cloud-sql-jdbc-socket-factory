@@ -57,10 +57,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        PostgresqlConnectionFactoryProvider::new,
-        ipTypes,
-        builder,
-        hostname);
+        PostgresqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
   }
 
   @Override

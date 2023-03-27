@@ -55,10 +55,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MySqlConnectionFactoryProvider::new,
-        ipTypes,
-        builder,
-        hostname);
+        MySqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
   }
 
   @Override

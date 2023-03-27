@@ -53,10 +53,7 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
         .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MssqlConnectionFactoryProvider::new,
-        ipTypes,
-        builder,
-        hostname);
+        MssqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
   }
 
   @Override
