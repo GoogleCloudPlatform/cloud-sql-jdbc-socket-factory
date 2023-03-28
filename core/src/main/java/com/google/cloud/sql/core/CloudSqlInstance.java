@@ -296,6 +296,7 @@ class CloudSqlInstance {
     Futures.addCallback(
         refreshFuture,
         new FutureCallback<InstanceData>() {
+          @Override
           public void onSuccess(InstanceData instanceData) {
             synchronized (instanceDataGuard) {
               // update currentInstanceData with the most recent results
@@ -309,6 +310,7 @@ class CloudSqlInstance {
             }
           }
 
+          @Override
           public void onFailure(Throwable t) {
             logger.log(
                 Level.WARNING,

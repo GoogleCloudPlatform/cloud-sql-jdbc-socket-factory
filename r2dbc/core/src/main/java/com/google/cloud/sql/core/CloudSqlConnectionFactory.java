@@ -23,7 +23,6 @@ import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
-import io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -43,7 +42,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public CloudSqlConnectionFactory(
       Supplier<ConnectionFactoryProvider> supplier,
       String ipTypes,
-      Builder builder,
+      ConnectionFactoryOptions.Builder builder,
       String hostname) {
     this.supplier = supplier;
     this.ipTypes = ipTypes;
