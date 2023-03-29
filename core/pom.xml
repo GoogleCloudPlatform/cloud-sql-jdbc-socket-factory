@@ -233,7 +233,7 @@
     <dependency>
       <groupId>com.google.api</groupId>
       <artifactId>gax</artifactId>
-      <version>2.23.3</version>
+      <version>2.24.0</version>
       <exclusions>
         <!-- Native image users only need GAX's native-image metadata. GAX's
         dependencies are unnecessary for normal users and native image users -->
