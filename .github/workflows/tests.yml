@@ -23,6 +23,9 @@ on:
   schedule:
   - cron: '0 2 * * *'
 
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   unit-e2e:
     # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
@@ -37,6 +40,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+      issues: write
+      pull-requests: write
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
@@ -147,6 +152,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+      issues: write
+      pull-requests: write
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
@@ -265,6 +272,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+      issues: write
+      pull-requests: write
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"

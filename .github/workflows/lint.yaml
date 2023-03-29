@@ -18,11 +18,17 @@ on:
   pull_request_target:
     types: [labeled]
 
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   lint:
     if: "${{ github.event.action != 'labeled' || github.event.label.name == 'tests: run' }}"
     name: checkstyle
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: Remove PR Label
         if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
