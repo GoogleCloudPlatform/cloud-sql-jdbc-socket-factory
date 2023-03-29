@@ -22,6 +22,7 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
+import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
@@ -45,6 +46,9 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -269,7 +273,11 @@ public class SqlAdminApiFetcher {
     if (authType == AuthType.IAM) {
       try {
         credentials.refresh();
-        String token = credentials.getAccessToken().getTokenValue();
+        AccessToken accessToken = credentials.getAccessToken();
+
+        validateAccessToken(accessToken);
+
+        String token = accessToken.getTokenValue();
         // TODO: remove this once issue with OAuth2 Tokens is resolved.
         // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
         request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
@@ -308,6 +316,33 @@ public class SqlAdminApiFetcher {
     }
 
     return ephemeralCertificate;
+  }
+
+  private void validateAccessToken(AccessToken accessToken) {
+    Date expirationTimeDate = accessToken.getExpirationTime();
+    String tokenValue = accessToken.getTokenValue();
+
+    if (expirationTimeDate != null) {
+      Instant expirationTime = expirationTimeDate.toInstant();
+      Instant now = Instant.now();
+
+      // Is the token expired?
+      if (expirationTime.isBefore(now) || expirationTime.equals(now)) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC"));
+        String nowFormat = formatter.format(now);
+        String expirationFormat = formatter.format(expirationTime);
+        throw new RuntimeException(
+            "Access Token expiration time is in the past. Now = "
+                + nowFormat
+                + " Expiration = "
+                + expirationFormat);
+      }
+    }
+
+    // Is the token empty?
+    if (tokenValue.length() == 0) {
+      throw new RuntimeException("Access Token has length of zero");
+    }
   }
 
   /**

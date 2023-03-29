@@ -44,10 +44,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -110,8 +108,8 @@ public class MockAdminApi {
     return clientKeyPair;
   }
 
-  public OAuth2RefreshHandler getRefreshHandler() {
-    return new MockRefreshHandler();
+  public OAuth2RefreshHandler getRefreshHandler(String refreshToken, Date expirationTime) {
+    return new MockRefreshHandler(refreshToken, expirationTime);
   }
 
   public void addConnectSettingsResponse(
@@ -279,9 +277,17 @@ public class MockAdminApi {
   }
 
   private static class MockRefreshHandler implements OAuth2RefreshHandler {
+    private final String refreshToken;
+    private final Date expirationTime;
+
+    public MockRefreshHandler(String refreshToken, Date expirationTime) {
+      this.refreshToken = refreshToken;
+      this.expirationTime = expirationTime;
+    }
+
     @Override
     public AccessToken refreshAccessToken() throws IOException {
-      return new AccessToken("refreshed-token", Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+      return new AccessToken(refreshToken, expirationTime);
     }
   }
 }
