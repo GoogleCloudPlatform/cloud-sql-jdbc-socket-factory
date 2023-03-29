@@ -17,6 +17,10 @@ on:
   push:
     branches:
       - main
+
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
