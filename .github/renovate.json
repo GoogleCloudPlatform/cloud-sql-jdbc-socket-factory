@@ -1,6 +1,7 @@
 {
   "extends": [
     "config:base",
+    "helpers:pinGitHubActionDigests"
   ],
   "commitMessagePrefix": "deps: ",
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
