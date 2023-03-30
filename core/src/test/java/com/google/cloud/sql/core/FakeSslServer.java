@@ -96,15 +96,11 @@ public class FakeSslServer {
 
                 for (; ; ) {
                   SSLSocket socket = (SSLSocket) sslServerSocket.accept();
-                  try {
-                    socket.startHandshake();
-                    socket
-                        .getOutputStream()
-                        .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
-                    socket.close();
-                  } catch (Exception e) {
-                    e.printStackTrace();
-                  }
+                  socket.startHandshake();
+                  socket
+                      .getOutputStream()
+                      .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
+                  socket.close();
                 }
               } catch (Exception e) {
                 throw new RuntimeException(e);

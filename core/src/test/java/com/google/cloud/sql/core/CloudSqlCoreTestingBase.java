@@ -48,6 +48,7 @@ import java.security.cert.Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Collections;
@@ -149,6 +150,7 @@ public class CloudSqlCoreTestingBase {
       @Override
       public LowLevelHttpRequest buildRequest(String method, String url) {
         return new MockLowLevelHttpRequest() {
+          @Override
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
             if (method.equals("GET") && url.contains("connectSettings")) {
@@ -193,7 +195,7 @@ public class CloudSqlCoreTestingBase {
   private String createEphemeralCert(Duration shiftIntoPast)
       throws GeneralSecurityException, ExecutionException, OperatorCreationException {
     Duration validFor = Duration.ofHours(1);
-    ZonedDateTime notBefore = ZonedDateTime.now().minus(shiftIntoPast);
+    ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC")).minus(shiftIntoPast);
     ZonedDateTime notAfter = notBefore.plus(validFor);
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
