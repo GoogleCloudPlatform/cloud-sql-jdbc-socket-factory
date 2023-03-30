@@ -25,6 +25,12 @@ public class StubCredentialFactory implements CredentialFactory {
   String accessToken;
   Long expirationTimeInMilliseconds;
 
+  /*
+   * This empty constructor is necessary to support the property-based initialization.
+   */
+  @SuppressWarnings("unused")
+  public StubCredentialFactory() {}
+
   StubCredentialFactory(String accessToken, Long expirationTimeInMilliseconds) {
     this.accessToken = accessToken;
     this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;
