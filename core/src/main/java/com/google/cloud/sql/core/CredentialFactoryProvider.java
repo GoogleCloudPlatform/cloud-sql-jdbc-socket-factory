@@ -34,10 +34,10 @@ public class CredentialFactoryProvider {
     if (userCredentialFactoryClassName != null) {
       try {
         credentialFactory =
-            (CredentialFactory)
-                Class.forName(userCredentialFactoryClassName)
-                    .getDeclaredConstructor()
-                    .newInstance();
+            Class.forName(userCredentialFactoryClassName)
+                .asSubclass(CredentialFactory.class)
+                .getDeclaredConstructor()
+                .newInstance();
       } catch (Exception err) {
         throw new RuntimeException(err);
       }
