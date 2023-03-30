@@ -25,7 +25,6 @@ import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import java.util.logging.Logger;
 
 /**
  * A Microsoft SQL Server {@link SocketFactory} that establishes a secure connection to a Cloud SQL
@@ -34,8 +33,6 @@ import java.util.logging.Logger;
  * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
  */
 public class SocketFactory extends javax.net.SocketFactory {
-
-  private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-jdbc-sqlserver");

@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.cloud.sql.AuthType;
@@ -33,14 +34,13 @@ import org.junit.Test;
 public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
 
   private final ConnectSettings connectSettings = new ConnectSettings();
-
-  ListeningScheduledExecutorService defaultExecutor;
-
   private final SqlAdminApiFetcher fetcher =
       new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
           .create(credentialFactory.create());
+  ListeningScheduledExecutorService defaultExecutor;
 
   @Before
+  @Override
   public void setup() throws GeneralSecurityException {
     super.setup();
     connectSettings.setDatabaseVersion("SQLSERVER_2019_STANDARD");
@@ -69,15 +69,15 @@ public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
   @Test
   public void throwsErrorIamAuthNotSupported() {
     String connName = "my-project:region:my-instance";
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fetcher.checkDatabaseCompatibility(connectSettings, AuthType.IAM, connName));
 
-    try {
-      fetcher.checkDatabaseCompatibility(connectSettings, AuthType.IAM, connName);
-    } catch (IllegalArgumentException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains(
-              "[my-project:region:my-instance] "
-                  + "IAM Authentication is not supported for SQL Server instances");
-    }
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            "[my-project:region:my-instance] "
+                + "IAM Authentication is not supported for SQL Server instances");
   }
 }
