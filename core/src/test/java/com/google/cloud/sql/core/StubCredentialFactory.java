@@ -25,8 +25,6 @@ public class StubCredentialFactory implements CredentialFactory {
   String accessToken;
   Long expirationTimeInMilliseconds;
 
-  StubCredentialFactory() {}
-
   StubCredentialFactory(String accessToken, Long expirationTimeInMilliseconds) {
     this.accessToken = accessToken;
     this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;

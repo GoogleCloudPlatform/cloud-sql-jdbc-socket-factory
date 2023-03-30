@@ -25,6 +25,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
+import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
@@ -63,7 +64,7 @@ public class GcpConnectionFactoryProviderTest {
 
   static final String PUBLIC_IP = "127.0.0.1";
   static final String PRIVATE_IP = "10.0.0.1";
-  private final CredentialFactory credentialFactory = new StubCredentialFactory();
+  private final CredentialFactory credentialFactory = new StubCredentialFactory("", 0L);
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
   CoreSocketFactory coreSocketFactoryStub;
@@ -175,8 +176,12 @@ public class GcpConnectionFactoryProviderTest {
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
     SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+        new SqlAdminApiFetcher(
+            new SQLAdmin.Builder(
+                    fakeSuccessHttpTransport(Duration.ofSeconds(0)),
+                    GsonFactory.getDefaultInstance(),
+                    credentialFactory.create())
+                .build());
 
     coreSocketFactoryStub =
         new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);

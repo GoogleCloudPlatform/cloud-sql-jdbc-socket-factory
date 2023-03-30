@@ -30,6 +30,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
@@ -39,7 +40,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-public class FakeSslServer {
+public class FakeCloudSqlProxyServer {
 
   int start(final String ip) throws InterruptedException {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -55,8 +56,8 @@ public class FakeSslServer {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 PKCS8EncodedKeySpec keySpec =
                     new PKCS8EncodedKeySpec(
-                        CloudSqlCoreTestingBase.decodeBase64StripWhitespace(
-                            TestKeys.SERVER_CERT_PRIVATE_KEY));
+                        Base64.getDecoder()
+                            .decode(TestKeys.SERVER_CERT_PRIVATE_KEY.replaceAll("\\s", "")));
                 PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
                 PrivateKeyEntry serverCert =
                     new PrivateKeyEntry(
@@ -99,7 +100,7 @@ public class FakeSslServer {
                   socket.startHandshake();
                   socket
                       .getOutputStream()
-                      .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
+                      .write(CloudSqlAdminApiTestDouble.SERVER_MESSAGE.getBytes(UTF_8));
                   socket.close();
                 }
               } catch (Exception e) {

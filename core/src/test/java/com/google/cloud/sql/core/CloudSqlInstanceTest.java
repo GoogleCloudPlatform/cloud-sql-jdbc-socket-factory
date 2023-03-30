@@ -21,8 +21,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.api.client.http.BasicAuthentication;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.testing.http.MockHttpTransport;
+import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.CredentialFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -88,5 +95,51 @@ public class CloudSqlInstanceTest {
     long expected = Duration.ofHours(23).dividedBy(2).getSeconds();
     Assert.assertEquals(
         (float) CloudSqlInstance.secondsUntilRefresh(expiration), (float) expected, 1);
+  }
+
+  @Test
+  public void testNew_whenCredentialsAreNonGoogle_throwsException() {
+    class BasicAuthCredentialFactory implements CredentialFactory {
+
+      @Override
+      public HttpRequestInitializer create() {
+        return new BasicAuthentication("user", "password");
+      }
+    }
+    BasicAuthCredentialFactory credentialFactory = new BasicAuthCredentialFactory();
+    SqlAdminApiFetcher fetcher =
+        new SqlAdminApiFetcher(
+            new SQLAdmin.Builder(
+                    new MockHttpTransport(),
+                    GsonFactory.getDefaultInstance(),
+                    credentialFactory.create())
+                .build());
+
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () ->
+                new CloudSqlInstance(
+                    "myProject:myRegion:myInstance",
+                    fetcher,
+                    AuthType.IAM,
+                    credentialFactory,
+                    null,
+                    null));
+
+    assertThat(exception)
+        .hasMessageThat()
+        .contains(
+            "Not supporting credentials of type com.google.api.client.http.BasicAuthentication");
+  }
+
+  @Test
+  public void testGetPreferredIps_returnsMatchingIp() {
+    // TODO(enocom): Test happy path
+  }
+
+  @Test
+  public void testGetPreferredIps_whenNoMatches_throwsException() {
+    // TODO(enocom): Test when e.g. private IP is requested on an instance that doesn't have one.
   }
 }

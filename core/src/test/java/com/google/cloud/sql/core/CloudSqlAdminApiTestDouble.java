@@ -33,8 +33,6 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.cloud.sql.CredentialFactory;
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
@@ -42,14 +40,17 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -61,43 +62,29 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.Before;
 
-public class CloudSqlCoreTestingBase {
+public class CloudSqlAdminApiTestDouble {
 
   static final String PUBLIC_IP = "127.0.0.1";
-  // If running tests on Mac, need to run "ifconfig lo0 alias 127.0.0.2 up" first
-  static final String PRIVATE_IP = "127.0.0.2";
-
+  static final String PRIVATE_IP = "10.0.0.1";
   static final String SERVER_MESSAGE = "HELLO";
+  private final ListenableFuture<KeyPair> clientKeyPair;
+  private final CloudSqlInstanceName cloudSqlInstanceName;
 
-  final CredentialFactory credentialFactory = new StubCredentialFactory();
+  public CloudSqlAdminApiTestDouble(String instanceConnectionName)
+      throws InvalidKeySpecException, NoSuchAlgorithmException {
+    this.cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
-  ListenableFuture<KeyPair> clientKeyPair;
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    PKCS8EncodedKeySpec privateKeySpec =
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
-  // Creates a fake "accessNotConfigured" exception that can be used for testing.
-  static HttpTransport fakeNotConfiguredException() {
-    return fakeGoogleJsonResponseException(
-        "accessNotConfigured",
-        "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
-            + " it by visiting "
-            + " https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=12345"
-            + " then retry. If you enabled this API recently, wait a few minutes for the action to"
-            + " propagate to our systems and retry.");
-  }
+    X509EncodedKeySpec publicKeySpec =
+        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-  // Creates a fake "notAuthorized" exception that can be used for testing.
-  static HttpTransport fakeNotAuthorizedException() {
-    return fakeGoogleJsonResponseException(
-        "notAuthorized", "The client is not authorized to make this request");
-  }
-
-  // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static HttpTransport fakeGoogleJsonResponseException(String reason, String message) {
-    ErrorInfo errorInfo = new ErrorInfo();
-    errorInfo.setReason(reason);
-    errorInfo.setMessage(message);
-    return fakeGoogleJsonResponseExceptionTransport(errorInfo, message);
+    this.clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
   }
 
   private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
@@ -125,26 +112,35 @@ public class CloudSqlCoreTestingBase {
     };
   }
 
-  static byte[] decodeBase64StripWhitespace(String b64) {
+  private static byte[] decodeBase64StripWhitespace(String b64) {
     return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
   }
 
-  @Before
-  public void setup() throws GeneralSecurityException {
-
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
-    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
-    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
+  public ListenableFuture<KeyPair> getClientKeyPair() {
+    return clientKeyPair;
   }
 
-  HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
+  // Builds a fake GoogleJsonResponseException for testing API error handling.
+  public HttpTransport fakeGoogleJsonResponseException(String reason, String message) {
+    ErrorInfo errorInfo = new ErrorInfo();
+    errorInfo.setReason(reason);
+    errorInfo.setMessage(message);
+    return fakeGoogleJsonResponseExceptionTransport(errorInfo, message);
+  }
+
+  // Creates a fake "accessNotConfigured" exception that can be used for testing.
+  public HttpTransport fakeNotConfiguredException() {
+    return fakeGoogleJsonResponseException(
+        "accessNotConfigured",
+        "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
+            + " it by visiting "
+            + " https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=12345"
+            + " then retry. If you enabled this API recently, wait a few minutes for the action to"
+            + " propagate to our systems and retry.");
+  }
+
+  public HttpTransport fakeSuccessHttpTransport(
+      Duration certDuration, final String publicIp, final String privateIp) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -153,23 +149,33 @@ public class CloudSqlCoreTestingBase {
           @Override
           public LowLevelHttpResponse execute() throws IOException {
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
+
             if (method.equals("GET") && url.contains("connectSettings")) {
+              ArrayList<IpMapping> ipMappings = new ArrayList<>();
+              if (!publicIp.isEmpty()) {
+                ipMappings.add(new IpMapping().setIpAddress(publicIp).setType("PRIMARY"));
+              }
+              if (!privateIp.isEmpty()) {
+                ipMappings.add(new IpMapping().setIpAddress(privateIp).setType("PRIVATE"));
+              }
+
               ConnectSettings settings =
                   new ConnectSettings()
                       .setBackendType("SECOND_GEN")
-                      .setIpAddresses(
-                          ImmutableList.of(
-                              new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                              new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+                      .setIpAddresses(ipMappings)
                       .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
                       .setDatabaseVersion("POSTGRES14")
-                      .setRegion("myRegion");
+                      .setRegion(cloudSqlInstanceName.getRegionId());
               settings.setFactory(jsonFactory);
               response
                   .setContent(settings.toPrettyString())
                   .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-            } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
+
+              return response;
+            }
+
+            if (method.equals("POST") && url.contains("generateEphemeralCert")) {
               GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
               try {
                 certResponse.setEphemeralCert(
@@ -184,8 +190,10 @@ public class CloudSqlCoreTestingBase {
                   .setContent(certResponse.toPrettyString())
                   .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+              return response;
             }
-            return response;
+
+            throw new RuntimeException("Unknown request");
           }
         };
       }
