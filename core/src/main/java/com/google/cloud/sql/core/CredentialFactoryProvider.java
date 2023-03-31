@@ -23,10 +23,10 @@ import com.google.cloud.sql.CredentialFactory;
  * This class can be used to inject a credential factory based on whether
  * CREDENTIAL_FACTORY_PROPERTY is set.
  */
-public class CredentialFactoryProvider {
+class CredentialFactoryProvider {
 
   /** Returns a CredentialFactory instance based on whether CREDENTIAL_FACTORY_PROPERTY is set. */
-  public static CredentialFactory getCredentialFactory() {
+  static CredentialFactory getCredentialFactory() {
     String userCredentialFactoryClassName =
         System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
