@@ -166,7 +166,7 @@ public class SqlAdminApiFetcherTest {
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi = new MockAdminApi();
     mockAdminApi.addConnectSettingsResponse(
-        instanceConnectionName, "34.1.2.3", "10.0.0.1", databaseVersion);
+        instanceConnectionName, SAMPLE_PUBLIC_IP, SAMPLE_PRIVATE_IP, databaseVersion);
     mockAdminApi.addGenerateEphemeralCertResponse(instanceConnectionName, Duration.ofHours(1));
     return mockAdminApi;
   }
