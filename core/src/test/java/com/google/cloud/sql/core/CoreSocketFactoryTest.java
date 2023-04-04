@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
@@ -193,7 +194,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
-    CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", 6000L);
+    CredentialFactory stubCredentialFactory =
+        new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli());
 
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
