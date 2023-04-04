@@ -34,19 +34,11 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.logging.LogManager;
 import javax.net.ssl.SSLContext;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.Before;
 import org.junit.Test;
 
-public class SqlAdminApiFetcherTest extends CloudSqlCoreTestingBase {
-  @Before
-  public void setUp() {
-    // Disable logs in test. Comment this line out to restore them.
-    LogManager.getLogManager().reset();
-  }
-
+public class SqlAdminApiFetcherTest {
   @Test
   public void fetchesInstanceData()
       throws ExecutionException, InterruptedException, GeneralSecurityException,
