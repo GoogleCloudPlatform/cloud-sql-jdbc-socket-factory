@@ -19,8 +19,8 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
-import dev.miku.r2dbc.mysql.MySqlConnectionFactoryProvider;
-import dev.miku.r2dbc.mysql.constant.SslMode;
+import io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider;
+import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;

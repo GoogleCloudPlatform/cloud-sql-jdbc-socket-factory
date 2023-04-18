@@ -20,7 +20,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.11.1'
 ```
 
-*Note: Also include the R2DBC Driver for MySQL, `dev.miku:r2dbc-mysql:<LATEST-VERSION>`
+*Note: Also include the R2DBC Driver for MySQL, `io.asyncer:r2dbc-mysql:<LATEST-VERSION>`
 
 ### Creating the R2DBC URL
 
