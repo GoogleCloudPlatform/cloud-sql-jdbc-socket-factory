@@ -33,6 +33,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,6 +49,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void setUp() throws Exception {
     super.setup();
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    defaultExecutor.shutdownNow();
   }
 
   @Test
@@ -85,7 +91,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
       coreSocketFactory.createSslSocket(
           "myProject:notMyRegion:myInstance", Collections.singletonList("PRIMARY"));
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (RuntimeException e) {
       assertThat(e)
           .hasMessageThat()
           .contains("The region specified for the Cloud SQL instance is incorrect");
