@@ -27,9 +27,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
 
-/**
- * {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances.
- */
+/** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
 public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryProvider {
 
   static {
@@ -50,8 +48,8 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
 
     // The MariaDB driver accepts the UnaryOperator interface so we need to adapt the customizer
     // function passed in
-    UnaryOperator<SslContextBuilder> unaryCustomizer = (sslContextBuilder) -> customizer.apply(
-        sslContextBuilder);
+    UnaryOperator<SslContextBuilder> unaryCustomizer =
+        (sslContextBuilder) -> customizer.apply(sslContextBuilder);
 
     optionBuilder
         .option(MariadbConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, unaryCustomizer)
@@ -59,8 +57,8 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
         .option(MariadbConnectionFactoryProvider.SSL_MODE, "tunnel");
 
     return new CloudSqlConnectionFactory(
-        (ConnectionFactoryOptions options) -> new MariadbConnectionFactoryProvider().create(
-            options),
+        (ConnectionFactoryOptions options) ->
+            new MariadbConnectionFactoryProvider().create(options),
         ipTypes,
         optionBuilder,
         csqlHostName);
