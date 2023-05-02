@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static org.mariadb.r2dbc.MariadbConnectionFactoryProvider.MARIADB_DRIVER;
 
@@ -29,6 +30,7 @@ import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
 public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryProvider {
+  {
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mariadb");
@@ -40,7 +42,7 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
   }
 
   @Override
-  ConnectionFactory tcpConnectionFactory(
+  ConnectionFactory tcpSocketConnectionFactory(
       ConnectionFactoryOptions.Builder optionBuilder,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
@@ -65,14 +67,13 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
   }
 
   @Override
-  ConnectionFactory socketConnectionFactory(
-      ConnectionFactoryOptions.Builder optionBuilder, String socket) {
-    return new MariadbConnectionFactoryProvider()
-        .create(optionBuilder.option(MariadbConnectionFactoryProvider.SOCKET, socket).build());
+  ConnectionFactory unixSocketConnectionFactory(Builder optionBuilder, String socket) {
+    optionBuilder.option(MariadbConnectionFactoryProvider.SOCKET, socket);
+    return new MariadbConnectionFactoryProvider().create(optionBuilder.build());
   }
 
   @Override
-  ConnectionFactoryOptions.Builder createBuilder(
+  Builder createBuilder(
       ConnectionFactoryOptions connectionFactoryOptions) {
     return connectionFactoryOptions.mutate().option(DRIVER, MARIADB_DRIVER);
   }
