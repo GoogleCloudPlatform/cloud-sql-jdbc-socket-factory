@@ -30,7 +30,6 @@ import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
 public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryProvider {
-  {
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mariadb");
