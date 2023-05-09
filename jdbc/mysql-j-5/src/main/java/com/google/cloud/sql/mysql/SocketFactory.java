@@ -40,11 +40,10 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
     Logger logger = Logger.getLogger(SocketFactory.class.getName());
     logger.warning(
-      "MySQL Connector/J 5.0.x is no longer under development" +
-      "and has significant security vulnerabilities." +
-      "Please update to 8.0.x instead. See the following GitHub issue for more details:" +
-      "https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1243"
-    );
+        "MySQL Connector/J 5.0.x is no longer under development"
+            + "and has significant security vulnerabilities."
+            + "Please update to 8.0.x instead. See the following GitHub issue for more details:"
+            + "https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1243");
     try {
       socket = CoreSocketFactory.connect(props);
     } catch (InterruptedException e) {
