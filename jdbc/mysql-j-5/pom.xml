@@ -37,6 +37,15 @@
     SSL certificates manually.
   </description>
 
+  <distributionManagement>
+    <relocation>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+      <version>1.11.1-SNAPSHOT</version>
+      <message>MySQL Connector/J 5.0.x is no longer under development and has significant security vulnerabilities. Please update to 8.0.x instead.</message>
+    </relocation>
+  </distributionManagement>
+
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
   </properties>
