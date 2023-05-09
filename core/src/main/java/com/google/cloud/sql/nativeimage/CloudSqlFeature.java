@@ -28,7 +28,6 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
  * href="https://www.graalvm.org/22.0/reference-manual/native-image/">GraalVM native image</a>
  * compilation.
  */
-
 final class CloudSqlFeature implements Feature {
 
   private static final String CLOUD_SQL_SOCKET_CLASS =

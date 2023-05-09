@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.11.1-SNAPSHOT</version>
+    <version>1.11.2-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
@@ -43,7 +43,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.5.4</version>
+        <version>3.5.5</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
@@ -93,17 +93,17 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-tree</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-analysis</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>com.google.auto.value</groupId>
@@ -133,7 +133,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.32.0</version>
+        <version>3.34.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
@@ -170,11 +170,6 @@
         <artifactId>reactive-streams</artifactId>
       <version>1.0.4</version>
     </dependency>
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.15</version>
-    </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -195,9 +190,9 @@
       <version>1.0.0.RELEASE</version>
     </dependency>
     <dependency>
-      <groupId>dev.miku</groupId>
+      <groupId>io.asyncer</groupId>
       <artifactId>r2dbc-mysql</artifactId>
-      <version>0.8.2.RELEASE</version>
+      <version>1.0.1</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -243,22 +238,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>4.11.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>1.70</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -275,9 +257,9 @@
       <id>jar-with-driver-and-dependencies</id>
       <dependencies>
         <dependency>
-          <groupId>dev.miku</groupId>
+          <groupId>io.asyncer</groupId>
           <artifactId>r2dbc-mysql</artifactId>
-          <version>0.8.2.RELEASE</version>
+          <version>1.0.1</version>
         </dependency>
       </dependencies>
     </profile>

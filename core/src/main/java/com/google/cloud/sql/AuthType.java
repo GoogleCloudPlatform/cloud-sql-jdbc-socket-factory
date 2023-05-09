@@ -16,9 +16,7 @@
 
 package com.google.cloud.sql;
 
-/**
- * Enum for supported authentication methods.
- */
+/** Enum for supported authentication methods. */
 public enum AuthType {
   IAM,
   PASSWORD

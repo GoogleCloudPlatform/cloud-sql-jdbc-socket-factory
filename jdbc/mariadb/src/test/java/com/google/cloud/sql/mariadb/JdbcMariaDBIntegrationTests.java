@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.mariadb;
 
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -41,7 +40,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-
 @RunWith(JUnit4.class)
 public class JdbcMariaDBIntegrationTests {
 
@@ -49,11 +47,10 @@ public class JdbcMariaDBIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
-  private static final ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
+  private static final ImmutableList<String> requiredEnvVars =
+      ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
 
-  @Rule
-  public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
   private String tableName;
@@ -61,9 +58,13 @@ public class JdbcMariaDBIntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> assertWithMessage(
-        String.format("Environment variable '%s' must be set to perform these tests.", varName))
-        .that(System.getenv(varName)).isNotEmpty());
+    requiredEnvVars.forEach(
+        (varName) ->
+            assertWithMessage(
+                    String.format(
+                        "Environment variable '%s' must be set to perform these tests.", varName))
+                .that(System.getenv(varName))
+                .isNotEmpty());
   }
 
   @Before
@@ -87,16 +88,16 @@ public class JdbcMariaDBIntegrationTests {
 
     // Create table
     try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("CREATE TABLE %s (", this.tableName)
-          + "  ID CHAR(20) NOT NULL,"
-          + "  TITLE TEXT NOT NULL"
-          + ");";
+      String stmt =
+          String.format("CREATE TABLE %s (", this.tableName)
+              + "  ID CHAR(20) NOT NULL,"
+              + "  TITLE TEXT NOT NULL"
+              + ");";
       try (PreparedStatement createTableStatement = conn.prepareStatement(stmt)) {
         createTableStatement.execute();
       }
     }
   }
-
 
   @After
   public void dropTableIfPresent() throws SQLException {
@@ -135,6 +136,5 @@ public class JdbcMariaDBIntegrationTests {
       }
     }
     assertThat(bookList).containsExactly("Book One", "Book Two");
-
   }
 }

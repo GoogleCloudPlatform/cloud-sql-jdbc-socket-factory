@@ -30,85 +30,45 @@ import java.io.IOException;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.NonNull;
 
-/**
- * {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances.
- */
+/** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances. */
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
 
   public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
   public static final Option<String> IP_TYPES = Option.valueOf("IP_TYPES");
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
 
-  private static Function<SslContextBuilder, SslContextBuilder> createSslCustomizer(
-      String connectionName, boolean enableIamAuth) {
-
-    return sslContextBuilder -> {
-      // Execute in a default scheduler to prevent it from blocking event loop
-      SslData sslData = Mono
-          .fromSupplier(() -> {
-            try {
-              return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          })
-          .subscribeOn(Schedulers.boundedElastic())
-          .share()
-          .block();
-      sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
-      sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
-      sslContextBuilder.protocols("TLSv1.2");
-
-      return sslContextBuilder;
-    };
-  }
-
   /**
-   * Creates a ConnectionFactory that creates an SSL connection over TCP, using driver-specific
-   * options.
+   * Creates a ConnectionFactory that creates an SSL connection over a TCP socket, using
+   * driver-specific options.
    */
-  abstract ConnectionFactory tcpConnectionFactory(
+  abstract ConnectionFactory tcpSocketConnectionFactory(
       Builder optionBuilder,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName);
 
   /**
-   * Creates a ConnectionFactory that creates an SSL connection over a unix socket, using
+   * Creates a ConnectionFactory that creates an SSL connection over a Unix domain socket, using
    * driver-specific options.
    */
-  abstract ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket);
+  abstract ConnectionFactory unixSocketConnectionFactory(Builder optionBuilder, String socket);
 
-  /**
-   * Creates a driver-specific {@link ConnectionFactoryOptions.Builder}.
-   */
+  /** Creates a driver-specific {@link ConnectionFactoryOptions.Builder}. */
   abstract Builder createBuilder(ConnectionFactoryOptions connectionFactoryOptions);
 
-  /**
-   * Allows a particular driver to indicate if it supports a protocol.
-   */
+  /** Allows a particular driver to indicate if it supports a protocol. */
   abstract boolean supportedProtocol(String protocol);
 
   @Override
+  @NonNull
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
     String protocol = (String) connectionFactoryOptions.getRequiredValue(PROTOCOL);
-
     if (!supportedProtocol(protocol)) {
       throw new UnsupportedOperationException(
           "Cannot create ConnectionFactory: unsupported protocol (" + protocol + ")");
     }
-
-    try {
-      return createFactory(connectionFactoryOptions);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private ConnectionFactory createFactory(
-      ConnectionFactoryOptions connectionFactoryOptions) throws IOException {
-    String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
 
     String ipTypes = CoreSocketFactory.DEFAULT_IP_TYPES;
     Object ipTypesObj = connectionFactoryOptions.getValue(IP_TYPES);
@@ -116,28 +76,53 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       ipTypes = (String) ipTypesObj;
     }
 
+    boolean enableIamAuth;
     Object iamAuthObj = connectionFactoryOptions.getValue(ENABLE_IAM_AUTH);
-    boolean enableIamAuth = false;
     if (iamAuthObj instanceof Boolean) {
       enableIamAuth = (Boolean) iamAuthObj;
     } else if (iamAuthObj instanceof String) {
       enableIamAuth = Boolean.parseBoolean((String) iamAuthObj);
+    } else {
+      enableIamAuth = false;
     }
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
+    String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
+    try {
+      // Precompute SSL Data to trigger the initial refresh to happen immediately,
+      // and ensure enableIAMAuth is set correctly.
+      CoreSocketFactory.getSslData(connectionName, enableIamAuth);
 
-    // Precompute SSL Data to trigger the initial refresh to happen immediately,
-    // and ensure enableIAMAuth is set correctly.
-    CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+      String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
+      if (socket != null) {
+        return unixSocketConnectionFactory(optionBuilder, socket);
+      }
 
-    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
-    if (socket != null) {
-      return socketConnectionFactory(optionBuilder, socket);
+      Function<SslContextBuilder, SslContextBuilder> sslFunction =
+          sslContextBuilder -> {
+            // Execute in a default scheduler to prevent it from blocking event loop
+            SslData sslData =
+                Mono.fromSupplier(
+                        () -> {
+                          try {
+                            return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+                          } catch (IOException e) {
+                            throw new RuntimeException(e);
+                          }
+                        })
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .share()
+                    .block();
+            sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
+            sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
+            sslContextBuilder.protocols("TLSv1.2");
+
+            return sslContextBuilder;
+          };
+      return tcpSocketConnectionFactory(optionBuilder, ipTypes, sslFunction, connectionName);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-
-    return tcpConnectionFactory(optionBuilder, ipTypes,
-        createSslCustomizer(connectionName, enableIamAuth),
-        connectionName);
   }
 
   @Override
@@ -152,6 +137,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   }
 
   @Override
+  @NonNull
   public String getDriver() {
     return "gcp";
   }

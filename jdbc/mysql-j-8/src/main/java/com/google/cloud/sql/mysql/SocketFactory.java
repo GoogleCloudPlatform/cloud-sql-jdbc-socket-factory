@@ -37,6 +37,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   }
 
   @Override
+  @SuppressWarnings("TypeParameterUnusedInFormals")
   public <T extends Closeable> T connect(
       String host, int portNumber, PropertySet props, int loginTimeout) throws IOException {
     try {
@@ -50,6 +51,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
    * Implements the interface for com.mysql.cj.protocol.SocketFactory for mysql-connector-java prior
    * to version 8.0.13. This change is required for backwards compatibility.
    */
+  @SuppressWarnings("TypeParameterUnusedInFormals")
   public <T extends Closeable> T connect(
       String host, int portNumber, Properties props, int loginTimeout)
       throws IOException, InterruptedException {
@@ -61,10 +63,10 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   // Cloud SQL sockets always use TLS and the socket returned by connect above is already TLS-ready.
   // It is fine to implement these as no-ops.
   @Override
-  public void beforeHandshake() {
-  }
+  public void beforeHandshake() {}
 
   @Override
+  @SuppressWarnings("TypeParameterUnusedInFormals")
   public <T extends Closeable> T performTlsHandshake(
       SocketConnection socketConnection, ServerSession serverSession) throws IOException {
     @SuppressWarnings("unchecked")
@@ -73,6 +75,5 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   }
 
   @Override
-  public void afterHandshake() {
-  }
+  public void afterHandshake() {}
 }

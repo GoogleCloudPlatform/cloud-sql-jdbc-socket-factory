@@ -16,6 +16,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,38 +37,35 @@ import org.mockito.MockitoAnnotations;
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  @Mock
-  private GoogleCredentials googleCredentials;
-  @Mock
-  private GoogleCredentials scopedCredentials;
-  @Mock
-  private OAuth2Credentials oAuth2Credentials;
+  @Mock private GoogleCredentials googleCredentials;
+  @Mock private GoogleCredentials scopedCredentials;
+  @Mock private OAuth2Credentials oAuth2Credentials;
 
   @Before
   public void setup() {
     MockitoAnnotations.openMocks(this);
-    when(googleCredentials.createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login")).thenReturn(scopedCredentials);
+    when(googleCredentials.createScoped("https://www.googleapis.com/auth/sqlservice.login"))
+        .thenReturn(scopedCredentials);
   }
 
   @Test
   public void downscopesGoogleCredentials() {
     GoogleCredentials downscoped = CloudSqlInstance.getDownscopedCredentials(googleCredentials);
     assertThat(downscoped).isEqualTo(scopedCredentials);
-    verify(googleCredentials, times(1)).createScoped(
-        "https://www.googleapis.com/auth/sqlservice.login");
+    verify(googleCredentials, times(1))
+        .createScoped("https://www.googleapis.com/auth/sqlservice.login");
   }
-
 
   @Test
   public void throwsErrorForWrongCredentialType() {
-    try {
-      CloudSqlInstance.getDownscopedCredentials(oAuth2Credentials);
-    } catch (RuntimeException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("Failed to downscope credentials for IAM Authentication");
-    }
+    RuntimeException ex =
+        assertThrows(
+            RuntimeException.class,
+            () -> CloudSqlInstance.getDownscopedCredentials(oAuth2Credentials));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("Failed to downscope credentials for IAM Authentication");
   }
 
   @Test
@@ -80,13 +78,15 @@ public class CloudSqlInstanceTest {
   public void timeUntilRefresh1Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(59)));
     long expected = Duration.ofMinutes(59).minus(Duration.ofMinutes(4)).getSeconds();
-    Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
+    Assert.assertEquals(
+        (float) CloudSqlInstance.secondsUntilRefresh(expiration), (float) expected, 1);
   }
 
   @Test
   public void timeUntilRefresh24Hr() {
     Date expiration = Date.from(Instant.now().plus(Duration.ofHours(23)));
     long expected = Duration.ofHours(23).dividedBy(2).getSeconds();
-    Assert.assertEquals(CloudSqlInstance.secondsUntilRefresh(expiration), expected, 1);
+    Assert.assertEquals(
+        (float) CloudSqlInstance.secondsUntilRefresh(expiration), (float) expected, 1);
   }
 }

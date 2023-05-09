@@ -1,14 +1,15 @@
 {
   "extends": [
     "config:base",
-    ":semanticCommitTypeAll(chore)"
+    "helpers:pinGitHubActionDigests"
   ],
+  "commitMessagePrefix": "deps: ",
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
   "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
   "rebaseWhen": "never",
   "dependencyDashboard": true,
-  "semanticCommits": true,
+  "semanticCommits": false,
   "packageRules": [
     {
       "matchPackagePatterns": [".*"],

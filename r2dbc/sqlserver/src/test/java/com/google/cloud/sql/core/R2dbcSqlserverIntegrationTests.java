@@ -39,16 +39,16 @@ import reactor.core.publisher.Mono;
 @RunWith(JUnit4.class)
 public class R2dbcSqlserverIntegrationTests {
 
-  private static final ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
+  private static final ImmutableList<String> requiredEnvVars =
+      ImmutableList.of(
+          "SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
 
   private static final String CONNECTION_NAME = System.getenv("SQLSERVER_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("SQLSERVER_DB");
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
 
-  @Rule
-  public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
   private ConnectionPool connectionPool;
   private String tableName;
@@ -56,20 +56,23 @@ public class R2dbcSqlserverIntegrationTests {
   @Before
   public void setUpPool() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> assertWithMessage(
-        String.format("Environment variable '%s' must be set to perform these tests.", varName))
-        .that(System.getenv(varName)).isNotEmpty());
+    requiredEnvVars.forEach(
+        (varName) ->
+            assertWithMessage(
+                    String.format(
+                        "Environment variable '%s' must be set to perform these tests.", varName))
+                .that(System.getenv(varName))
+                .isNotEmpty());
 
     // Set up URL parameters
-    String r2dbcURL = String
-        .format("r2dbc:gcp:mssql://%s:%s@%s/%s", DB_USER, DB_PASSWORD, CONNECTION_NAME,
-            DB_NAME);
+    String r2dbcURL =
+        String.format(
+            "r2dbc:gcp:mssql://%s:%s@%s/%s", DB_USER, DB_PASSWORD, CONNECTION_NAME, DB_NAME);
 
     // Initialize connection pool
     ConnectionFactory connectionFactory = ConnectionFactories.get(r2dbcURL);
-    ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
-        .builder(connectionFactory)
-        .build();
+    ConnectionPoolConfiguration configuration =
+        ConnectionPoolConfiguration.builder(connectionFactory).build();
 
     this.connectionPool = new ConnectionPool(configuration);
     this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
@@ -97,8 +100,8 @@ public class R2dbcSqlserverIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)",
-        this.tableName);
+    String insertStmt =
+        String.format("INSERT INTO %s (ID, TITLE) VALUES (@id, @title)", this.tableName);
     Mono.from(this.connectionPool.create())
         .flatMapMany(
             c ->
@@ -115,17 +118,11 @@ public class R2dbcSqlserverIntegrationTests {
     String selectStmt = String.format("SELECT TITLE FROM %s ORDER BY ID", this.tableName);
     List<String> books =
         Mono.from(this.connectionPool.create())
-            .flatMapMany(
-                connection ->
-                    connection.createStatement(selectStmt).execute())
-            .flatMap(
-                result ->
-                    result.map(
-                        (r, meta) -> r.get("TITLE", String.class)))
+            .flatMapMany(connection -> connection.createStatement(selectStmt).execute())
+            .flatMap(result -> result.map((r, meta) -> r.get("TITLE", String.class)))
             .collectList()
             .block();
 
     assertThat(books).containsExactly("Book One", "Book Two");
-
   }
 }

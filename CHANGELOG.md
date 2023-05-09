@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.0...v1.11.1) (2023-04-10)
+
+
+### Bug Fixes
+
+* throw when token is expired or empty ([#1233](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1233)) ([970eed0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/970eed076c6544ac05f1e57871dc28723db3a2b4))
+
 ## [1.11.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.10.0...v1.11.0) (2023-02-27)
 
 
