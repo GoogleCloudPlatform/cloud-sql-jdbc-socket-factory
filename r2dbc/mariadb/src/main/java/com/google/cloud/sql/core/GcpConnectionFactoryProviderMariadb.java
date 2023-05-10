@@ -53,6 +53,7 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
         (sslContextBuilder) -> customizer.apply(sslContextBuilder);
 
     optionBuilder
+        .option(MariadbConnectionFactoryProvider.SSL_TUNNEL_DISABLE_HOST_VERIFICATION, true)
         .option(MariadbConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, unaryCustomizer)
         .option(MariadbConnectionFactoryProvider.TCP_KEEP_ALIVE, true)
         .option(MariadbConnectionFactoryProvider.SSL_MODE, "tunnel");
