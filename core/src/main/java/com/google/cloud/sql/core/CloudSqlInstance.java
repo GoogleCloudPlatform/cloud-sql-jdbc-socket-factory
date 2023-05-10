@@ -29,7 +29,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
@@ -42,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,20 +54,17 @@ import javax.net.ssl.SSLSocket;
 class CloudSqlInstance {
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
-
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
-
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
   private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
+
   private final ListeningScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
   private final AuthType authType;
   private final Optional<OAuth2Credentials> credentials;
-
   private final CloudSqlInstanceName instanceName;
-
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
@@ -80,7 +75,7 @@ class CloudSqlInstance {
   private ListenableFuture<InstanceData> currentInstanceData;
 
   @GuardedBy("instanceDataGuard")
-  private ListenableFuture<ListenableFuture<InstanceData>> nextInstanceData;
+  private ListenableFuture<InstanceData> nextInstanceData;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -98,9 +93,7 @@ class CloudSqlInstance {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair)
       throws IOException, InterruptedException {
-
     this.instanceName = new CloudSqlInstanceName(connectionName);
-
     this.apiFetcher = apiFetcher;
     this.authType = authType;
     this.executor = executor;
@@ -108,40 +101,16 @@ class CloudSqlInstance {
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
-
       this.credentials = Optional.of(parseCredentials(source));
       this.credentials.get().refresh();
     } else {
       this.credentials = Optional.empty();
     }
 
-    // Kick off initial async jobs
     synchronized (instanceDataGuard) {
-      this.currentInstanceData = performRefresh();
-      this.nextInstanceData = Futures.immediateFuture(currentInstanceData);
+      this.currentInstanceData = executor.submit(this::performRefresh);
+      this.nextInstanceData = currentInstanceData;
     }
-  }
-
-  /** Returns a future that blocks until the result of a nested future is complete. */
-  private static <T> ListenableFuture<T> blockOnNestedFuture(
-      ListenableFuture<ListenableFuture<T>> nestedFuture, ScheduledExecutorService executor) {
-    SettableFuture<T> blockedFuture = SettableFuture.create();
-    // Once the nested future is complete, update the blocked future to match
-    Futures.addCallback(
-        nestedFuture,
-        new FutureCallback<ListenableFuture<T>>() {
-          @Override
-          public void onSuccess(ListenableFuture<T> result) {
-            blockedFuture.setFuture(result);
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            blockedFuture.setException(throwable);
-          }
-        },
-        executor);
-    return blockedFuture;
   }
 
   static long secondsUntilRefresh(Date expiration) {
@@ -253,15 +222,15 @@ class CloudSqlInstance {
    * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
    */
-  void forceRefresh() throws InterruptedException {
+  void forceRefresh() {
     synchronized (instanceDataGuard) {
       // If a scheduled refresh hasn't started, perform one immediately
       if (nextInstanceData.cancel(false)) {
-        currentInstanceData = performRefresh();
-        nextInstanceData = Futures.immediateFuture(currentInstanceData);
+        currentInstanceData = executor.submit(this::performRefresh);
+        nextInstanceData = currentInstanceData;
       } else {
-        // Otherwise it's already running, so just block on the results
-        currentInstanceData = blockOnNestedFuture(nextInstanceData, executor);
+        // Otherwise it's already running, so just move next to current.
+        currentInstanceData = nextInstanceData;
       }
     }
   }
@@ -271,7 +240,7 @@ class CloudSqlInstance {
    * value of currentInstanceData and schedules the next refresh shortly before the information
    * would expire.
    */
-  private ListenableFuture<InstanceData> performRefresh() throws InterruptedException {
+  private InstanceData performRefresh() throws InterruptedException, ExecutionException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
@@ -296,6 +265,7 @@ class CloudSqlInstance {
     Futures.addCallback(
         refreshFuture,
         new FutureCallback<InstanceData>() {
+          @Override
           public void onSuccess(InstanceData instanceData) {
             synchronized (instanceDataGuard) {
               // update currentInstanceData with the most recent results
@@ -309,6 +279,7 @@ class CloudSqlInstance {
             }
           }
 
+          @Override
           public void onFailure(Throwable t) {
             logger.log(
                 Level.WARNING,
@@ -326,17 +297,13 @@ class CloudSqlInstance {
                 // replace current if it is expired or invalid
                 currentInstanceData = refreshFuture;
               }
-              try {
-                nextInstanceData = Futures.immediateFuture(performRefresh());
-              } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-              }
+              nextInstanceData = executor.submit(() -> performRefresh());
             }
           }
         },
         executor);
 
-    return refreshFuture;
+    return refreshFuture.get();
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {

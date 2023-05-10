@@ -25,12 +25,12 @@ import java.util.regex.Pattern;
  * This class parses the different parts of a Cloud SQL Connection Name to allow users to easily
  * fetch the projectId, regionId, and instanceId.
  */
-public class CloudSqlInstanceName {
+class CloudSqlInstanceName {
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
   // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
-  private static final Pattern CONNECTION_NAME = Pattern.compile(
-      "([^:]+(:[^:]+)?):([^:]+):([^:]+)");
+  private static final Pattern CONNECTION_NAME =
+      Pattern.compile("([^:]+(:[^:]+)?):([^:]+):([^:]+)");
   private final String projectId;
   private final String regionId;
   private final String instanceId;
@@ -39,10 +39,9 @@ public class CloudSqlInstanceName {
   /**
    * Initializes a new CloudSqlInstanceName class.
    *
-   * @param connectionName instance connection name in the format
-   *     "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    */
-  public CloudSqlInstanceName(String connectionName) {
+  CloudSqlInstanceName(String connectionName) {
     this.connectionName = connectionName;
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
@@ -56,19 +55,19 @@ public class CloudSqlInstanceName {
     this.instanceId = matcher.group(4);
   }
 
-  public String getConnectionName() {
+  String getConnectionName() {
     return connectionName;
   }
 
-  public String getProjectId() {
+  String getProjectId() {
     return projectId;
   }
 
-  public String getRegionId() {
+  String getRegionId() {
     return regionId;
   }
 
-  public String getInstanceId() {
+  String getInstanceId() {
     return instanceId;
   }
 }

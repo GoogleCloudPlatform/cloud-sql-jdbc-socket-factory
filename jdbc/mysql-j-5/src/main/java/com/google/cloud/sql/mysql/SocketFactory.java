@@ -20,6 +20,7 @@ import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 /**
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
@@ -37,6 +38,12 @@ public class SocketFactory implements com.mysql.jdbc.SocketFactory {
 
   @Override
   public Socket connect(String hostname, int portNumber, Properties props) throws IOException {
+    Logger logger = Logger.getLogger(SocketFactory.class.getName());
+    logger.warning(
+        "MySQL Connector/J 5.0.x is no longer under development"
+            + " and has significant security vulnerabilities."
+            + " Please update to 8.0.x instead. See the following GitHub issue for more details:"
+            + " https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1243");
     try {
       socket = CoreSocketFactory.connect(props);
     } catch (InterruptedException e) {

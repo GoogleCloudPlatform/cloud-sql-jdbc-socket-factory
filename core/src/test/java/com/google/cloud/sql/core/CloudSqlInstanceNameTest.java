@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,15 +53,11 @@ public class CloudSqlInstanceNameTest {
 
   @Test
   public void parseBadConnectionName() {
-    String connectionName = "my-project:my-instance";
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new CloudSqlInstanceName("my-project:my-instance"));
 
-    try {
-      new CloudSqlInstanceName(connectionName);
-    } catch (IllegalArgumentException ex) {
-      assertThat(ex)
-          .hasMessageThat()
-          .contains("Cloud SQL connection name is invalid");
-    }
+    assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
   }
-
 }

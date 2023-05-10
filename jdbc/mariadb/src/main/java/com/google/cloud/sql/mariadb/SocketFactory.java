@@ -37,8 +37,7 @@ public class SocketFactory extends ConfigurableSocketFactory {
 
   private Configuration conf;
 
-  public SocketFactory() {
-  }
+  public SocketFactory() {}
 
   @Override
   public void setConfiguration(Configuration conf, String host) {
@@ -74,5 +73,4 @@ public class SocketFactory extends ConfigurableSocketFactory {
   public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) {
     throw new UnsupportedOperationException();
   }
-
 }

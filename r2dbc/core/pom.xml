@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.11.1-SNAPSHOT</version>
+    <version>1.11.2-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
@@ -42,17 +42,17 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-tree</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-analysis</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -130,7 +130,7 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-      <version>3.5.4</version>
+      <version>3.5.5</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -159,7 +159,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20230111-2.0.0</version>
+      <version>v1beta4-rev20230403-2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

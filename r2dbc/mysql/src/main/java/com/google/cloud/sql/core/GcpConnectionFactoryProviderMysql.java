@@ -19,27 +19,23 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
-import dev.miku.r2dbc.mysql.MySqlConnectionFactoryProvider;
-import dev.miku.r2dbc.mysql.constant.SslMode;
+import io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider;
+import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Function;
 
-/**
- * {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances.
- */
+/** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
 public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvider {
+
+  /** MySQL driver option value. */
+  private static final String MYSQL_DRIVER = "mysql";
 
   static {
     CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mysql");
   }
-
-  /**
-   * MySQL driver option value.
-   */
-  private static final String MYSQL_DRIVER = "mysql";
 
   @Override
   boolean supportedProtocol(String protocol) {
@@ -47,26 +43,24 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   }
 
   @Override
-  ConnectionFactory tcpConnectionFactory(
-      Builder optionBuilder,
+  ConnectionFactory tcpSocketConnectionFactory(
+      Builder builder,
       String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String csqlHostName) {
-    optionBuilder
+      String hostname) {
+    builder
         .option(MySqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(MySqlConnectionFactoryProvider.SSL_MODE, SslMode.TUNNEL)
         .option(MySqlConnectionFactoryProvider.TCP_NO_DELAY, true)
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
+
     return new CloudSqlConnectionFactory(
-        (ConnectionFactoryOptions options) -> new MySqlConnectionFactoryProvider().create(options),
-        ipTypes,
-        optionBuilder,
-        csqlHostName);
+        MySqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
   }
 
   @Override
-  ConnectionFactory socketConnectionFactory(Builder optionBuilder, String socket) {
-    optionBuilder.option(MySqlConnectionFactoryProvider.UNIX_SOCKET, socket).build();
+  ConnectionFactory unixSocketConnectionFactory(Builder optionBuilder, String socket) {
+    optionBuilder.option(MySqlConnectionFactoryProvider.UNIX_SOCKET, socket);
     return new MySqlConnectionFactoryProvider().create(optionBuilder.build());
   }
 

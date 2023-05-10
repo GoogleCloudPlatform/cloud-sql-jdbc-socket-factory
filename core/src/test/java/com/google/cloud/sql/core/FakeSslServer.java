@@ -41,74 +41,72 @@ import javax.net.ssl.TrustManagerFactory;
 
 public class FakeSslServer {
 
-
   int start(final String ip) throws InterruptedException {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     final AtomicInteger pickedPort = new AtomicInteger();
 
-    new Thread(() -> {
-      try {
-        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+    new Thread(
+            () -> {
+              try {
+                CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
-        KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        authKeyStore.load(null, null);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PKCS8EncodedKeySpec keySpec =
-            new PKCS8EncodedKeySpec(
-                CloudSqlCoreTestingBase.decodeBase64StripWhitespace(
-                    TestKeys.SERVER_CERT_PRIVATE_KEY));
-        PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-        PrivateKeyEntry serverCert =
-            new PrivateKeyEntry(
-                privateKey,
-                new Certificate[]{
-                    certFactory.generateCertificate(
-                        new ByteArrayInputStream(
-                            TestKeys.SERVER_CERT.getBytes(UTF_8)))
-                });
-        authKeyStore.setEntry("serverCert", serverCert, new PasswordProtection(new char[0]));
-        KeyManagerFactory keyManagerFactory =
-            KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(authKeyStore, new char[0]);
+                KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                authKeyStore.load(null, null);
+                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                PKCS8EncodedKeySpec keySpec =
+                    new PKCS8EncodedKeySpec(
+                        CloudSqlCoreTestingBase.decodeBase64StripWhitespace(
+                            TestKeys.SERVER_CERT_PRIVATE_KEY));
+                PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+                PrivateKeyEntry serverCert =
+                    new PrivateKeyEntry(
+                        privateKey,
+                        new Certificate[] {
+                          certFactory.generateCertificate(
+                              new ByteArrayInputStream(TestKeys.SERVER_CERT.getBytes(UTF_8)))
+                        });
+                authKeyStore.setEntry(
+                    "serverCert", serverCert, new PasswordProtection(new char[0]));
+                KeyManagerFactory keyManagerFactory =
+                    KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(authKeyStore, new char[0]);
 
-        final X509Certificate signingCaCert =
-            (X509Certificate)
-                certFactory.generateCertificate(
-                    new ByteArrayInputStream(
-                        TestKeys.SIGNING_CA_CERT.getBytes(UTF_8)));
+                final X509Certificate signingCaCert =
+                    (X509Certificate)
+                        certFactory.generateCertificate(
+                            new ByteArrayInputStream(TestKeys.SIGNING_CA_CERT.getBytes(UTF_8)));
 
-        KeyStore trustKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        trustKeyStore.load(null, null);
-        trustKeyStore.setCertificateEntry("instance", signingCaCert);
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
-        tmf.init(trustKeyStore);
+                KeyStore trustKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                trustKeyStore.load(null, null);
+                trustKeyStore.setCertificateEntry("instance", signingCaCert);
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
+                tmf.init(trustKeyStore);
 
-        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-        sslContext.init(
-            keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-        SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-        SSLServerSocket sslServerSocket =
-            (SSLServerSocket)
-                sslServerSocketFactory.createServerSocket(0, 5, InetAddress.getByName(ip));
-        sslServerSocket.setNeedClientAuth(true);
+                SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+                sslContext.init(
+                    keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+                SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
+                SSLServerSocket sslServerSocket =
+                    (SSLServerSocket)
+                        sslServerSocketFactory.createServerSocket(0, 5, InetAddress.getByName(ip));
+                sslServerSocket.setNeedClientAuth(true);
 
-        pickedPort.set(sslServerSocket.getLocalPort());
-        countDownLatch.countDown();
+                pickedPort.set(sslServerSocket.getLocalPort());
+                countDownLatch.countDown();
 
-        for (; ; ) {
-          SSLSocket socket = (SSLSocket) sslServerSocket.accept();
-          try {
-            socket.startHandshake();
-            socket.getOutputStream().write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
-            socket.close();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }).start();
+                for (; ; ) {
+                  SSLSocket socket = (SSLSocket) sslServerSocket.accept();
+                  socket.startHandshake();
+                  socket
+                      .getOutputStream()
+                      .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
+                  socket.close();
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .start();
 
     countDownLatch.await();
 

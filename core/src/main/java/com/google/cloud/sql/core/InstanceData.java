@@ -20,9 +20,7 @@ import java.util.Date;
 import java.util.Map;
 import javax.net.ssl.SSLContext;
 
-/**
- * Represents the results of a certificate and metadata refresh operation.
- */
+/** Represents the results of a certificate and metadata refresh operation. */
 class InstanceData {
 
   private final Metadata metadata;

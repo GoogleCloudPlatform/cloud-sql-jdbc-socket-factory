@@ -18,10 +18,10 @@ package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.api.services.sqladmin.SQLAdmin.Builder;
 import com.google.cloud.sql.ApiFetcherFactory;
 
 public class StubApiFetcherFactory implements ApiFetcherFactory {
@@ -34,12 +34,13 @@ public class StubApiFetcherFactory implements ApiFetcherFactory {
 
   @Override
   public SqlAdminApiFetcher create(HttpRequestInitializer credentials) {
-    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-    if (httpTransport != null) {
-      return new SqlAdminApiFetcher(
-          new SQLAdmin.Builder(httpTransport, jsonFactory, credentials).build());
-    }
-    return new SqlAdminApiFetcher(
-        new SQLAdmin.Builder(new MockHttpTransport(), jsonFactory, credentials).build());
+    SQLAdmin sqlAdmin =
+        new Builder(
+                httpTransport != null ? httpTransport : new MockHttpTransport(),
+                GsonFactory.getDefaultInstance(),
+                credentials)
+            .setApplicationName("Mock SQL Admin")
+            .build();
+    return new SqlAdminApiFetcher(sqlAdmin);
   }
 }

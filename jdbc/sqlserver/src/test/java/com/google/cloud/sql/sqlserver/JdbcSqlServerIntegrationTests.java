@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.sqlserver;
 
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -40,7 +39,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-
 @RunWith(JUnit4.class)
 public class JdbcSqlServerIntegrationTests {
 
@@ -48,10 +46,10 @@ public class JdbcSqlServerIntegrationTests {
   private static final String DB_NAME = System.getenv("SQLSERVER_DB");
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
-  private static final ImmutableList<String> requiredEnvVars = ImmutableList
-      .of("SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
-  @Rule
-  public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
+  private static final ImmutableList<String> requiredEnvVars =
+      ImmutableList.of(
+          "SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
+  @Rule public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
   private String tableName;
@@ -59,9 +57,13 @@ public class JdbcSqlServerIntegrationTests {
   @BeforeClass
   public static void checkEnvVars() {
     // Check that required env vars are set
-    requiredEnvVars.forEach((varName) -> assertWithMessage(
-        String.format("Environment variable '%s' must be set to perform these tests.", varName))
-        .that(System.getenv(varName)).isNotEmpty());
+    requiredEnvVars.forEach(
+        (varName) ->
+            assertWithMessage(
+                    String.format(
+                        "Environment variable '%s' must be set to perform these tests.", varName))
+                .that(System.getenv(varName))
+                .isNotEmpty());
   }
 
   @Before
@@ -69,14 +71,13 @@ public class JdbcSqlServerIntegrationTests {
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
-    config
-        .setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
+    config.setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
     config.setUsername(DB_USER); // e.g. "root", "sqlserver"
     config.setPassword(DB_PASSWORD); // e.g. "my-password"
     config.addDataSourceProperty("databaseName", DB_NAME);
 
-    config.addDataSourceProperty("socketFactoryClass",
-        "com.google.cloud.sql.sqlserver.SocketFactory");
+    config.addDataSourceProperty(
+        "socketFactoryClass", "com.google.cloud.sql.sqlserver.SocketFactory");
     config.addDataSourceProperty("socketFactoryConstructorArg", CONNECTION_NAME);
     config.addDataSourceProperty("encrypt", "false");
     config.setConnectionTimeout(10000); // 10s
@@ -86,16 +87,16 @@ public class JdbcSqlServerIntegrationTests {
 
     // Create table
     try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("CREATE TABLE %s (", this.tableName)
-          + "  ID CHAR(20) NOT NULL,"
-          + "  TITLE TEXT NOT NULL"
-          + ");";
+      String stmt =
+          String.format("CREATE TABLE %s (", this.tableName)
+              + "  ID CHAR(20) NOT NULL,"
+              + "  TITLE TEXT NOT NULL"
+              + ");";
       try (PreparedStatement createTableStatement = conn.prepareStatement(stmt)) {
         createTableStatement.execute();
       }
     }
   }
-
 
   @After
   public void dropTableIfPresent() throws SQLException {
@@ -134,6 +135,5 @@ public class JdbcSqlServerIntegrationTests {
       }
     }
     assertThat(bookList).containsExactly("Book One", "Book Two");
-
   }
 }

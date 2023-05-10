@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.11.1-SNAPSHOT</version>
+    <version>1.11.2-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>postgres-socket-factory</artifactId>
@@ -44,17 +44,17 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-tree</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-analysis</artifactId>
-        <version>9.4</version>
+        <version>9.5</version>
       </dependency>
       <dependency>
         <groupId>com.google.auto.value</groupId>
@@ -79,7 +79,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.32.0</version>
+        <version>3.34.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
@@ -128,7 +128,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.5.4</version>
+      <version>42.6.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -162,7 +162,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.5.4</version>
+          <version>42.6.0</version>
         </dependency>
       </dependencies>
     </profile>
@@ -176,7 +176,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.5.4</version>
+          <version>42.6.0</version>
         </dependency>
       </dependencies>
     </profile>

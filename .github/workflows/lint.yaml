@@ -18,15 +18,21 @@ on:
   pull_request_target:
     types: [labeled]
 
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   lint:
     if: "${{ github.event.action != 'labeled' || github.event.label.name == 'tests: run' }}"
     name: checkstyle
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: Remove PR Label
         if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -41,9 +47,9 @@ jobs:
               console.log('Failed to remove label. Another job may have already removed it!');
             }
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2 # v3.11.0
         with:
           distribution: 'zulu'
           java-version: '17'
