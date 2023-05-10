@@ -58,10 +58,7 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
         .option(MariadbConnectionFactoryProvider.SSL_MODE, "tunnel");
 
     return new CloudSqlConnectionFactory(
-        MariadbConnectionFactoryProvider::new,
-        ipTypes,
-        optionBuilder,
-        csqlHostName);
+        MariadbConnectionFactoryProvider::new, ipTypes, optionBuilder, csqlHostName);
   }
 
   @Override
@@ -71,8 +68,7 @@ public class GcpConnectionFactoryProviderMariadb extends GcpConnectionFactoryPro
   }
 
   @Override
-  Builder createBuilder(
-      ConnectionFactoryOptions connectionFactoryOptions) {
+  Builder createBuilder(ConnectionFactoryOptions connectionFactoryOptions) {
     return connectionFactoryOptions.mutate().option(DRIVER, MARIADB_DRIVER);
   }
 }
