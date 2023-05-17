@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.11.2-SNAPSHOT</version>
+  <version>1.11.3-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -563,7 +563,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.0</version>
             <configuration>
               <!-- get all project dependencies -->
               <descriptorRefs>
@@ -596,7 +596,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.0</version>
             <configuration>
               <!-- get all project dependencies -->
               <descriptorRefs>
