@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.1...v1.11.2) (2023-05-10)
+
+
+### Bug Fixes
+
+* deprecate support for MySQL connector/J 5 ([#1278](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1278)) ([44d6e51](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/44d6e51f2a6a2bce77659007e534dfba50ddd961))
+* update dependencies to latest versions ([#1285](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1285)) ([52b3715](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/52b37158e46bf623f3ecf98b7c8ccfbc1e29edd8))
+
 ## [1.11.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.0...v1.11.1) (2023-04-10)
 
 

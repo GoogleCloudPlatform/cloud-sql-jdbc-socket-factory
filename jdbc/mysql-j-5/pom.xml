@@ -23,7 +23,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.11.2-SNAPSHOT</version>
+    <version>1.11.3-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -36,6 +36,19 @@
     permissions to connect to a Cloud SQL database without having to deal with IP allowlisting or
     SSL certificates manually.
   </description>
+
+  <distributionManagement>
+    <relocation>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+      <version>${project.version}</version>
+      <message>
+       MySQL Connector/J 5.0.x is no longer under development and has significant security vulnerabilities.
+       Please update to 8.0.x instead. See the following GitHub issue for more details: 
+       https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1243
+     </message>
+    </relocation>
+  </distributionManagement>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
