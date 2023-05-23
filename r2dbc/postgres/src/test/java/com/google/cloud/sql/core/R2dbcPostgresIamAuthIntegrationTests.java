@@ -32,7 +32,6 @@ import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -94,10 +93,10 @@ public class R2dbcPostgresIamAuthIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    List<Timestamp> rows =
+    List<Object> rows =
         Mono.from(this.connectionPool.create())
             .flatMapMany(connection -> connection.createStatement("SELECT NOW() as TS").execute())
-            .flatMap(result -> result.map((r, meta) -> r.get("TS", Timestamp.class)))
+            .flatMap(result -> result.map((r, meta) -> r.get("TS", Object.class)))
             .collectList()
             .block();
 
