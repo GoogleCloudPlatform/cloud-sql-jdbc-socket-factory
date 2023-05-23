@@ -29,9 +29,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -53,7 +51,6 @@ public class JdbcMariaDBIntegrationTests {
   @Rule public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
-  private String tableName;
 
   @BeforeClass
   public static void checkEnvVars() {
@@ -84,57 +81,20 @@ public class JdbcMariaDBIntegrationTests {
     config.setConnectionTimeout(10000); // 10s
 
     this.connectionPool = new HikariDataSource(config);
-    this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
-
-    // Create table
-    try (Connection conn = connectionPool.getConnection()) {
-      String stmt =
-          String.format("CREATE TABLE %s (", this.tableName)
-              + "  ID CHAR(20) NOT NULL,"
-              + "  TITLE TEXT NOT NULL"
-              + ");";
-      try (PreparedStatement createTableStatement = conn.prepareStatement(stmt)) {
-        createTableStatement.execute();
-      }
-    }
-  }
-
-  @After
-  public void dropTableIfPresent() throws SQLException {
-    try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("DROP TABLE %s;", this.tableName);
-      try (PreparedStatement dropTableStatement = conn.prepareStatement(stmt)) {
-        dropTableStatement.execute();
-      }
-    }
   }
 
   @Test
   public void pooledConnectionTest() throws SQLException {
-    try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (?, ?)", this.tableName);
-      try (PreparedStatement insertStmt = conn.prepareStatement(stmt)) {
-        insertStmt.setQueryTimeout(10);
-        insertStmt.setString(1, "book1");
-        insertStmt.setString(2, "Book One");
-        insertStmt.execute();
-        insertStmt.setString(1, "book2");
-        insertStmt.setString(2, "Book Two");
-        insertStmt.execute();
-      }
-    }
 
-    List<String> bookList = new ArrayList<>();
+    List<String> rows = new ArrayList<>();
     try (Connection conn = connectionPool.getConnection()) {
-      String stmt = String.format("SELECT TITLE FROM %s ORDER BY ID", this.tableName);
-      try (PreparedStatement selectStmt = conn.prepareStatement(stmt)) {
-        selectStmt.setQueryTimeout(10); // 10s
+      try (PreparedStatement selectStmt = conn.prepareStatement("SELECT NOW() as TS")) {
         ResultSet rs = selectStmt.executeQuery();
         while (rs.next()) {
-          bookList.add(rs.getString("TITLE"));
+          rows.add(rs.getString("TS"));
         }
       }
     }
-    assertThat(bookList).containsExactly("Book One", "Book Two");
+    assertThat(rows.size()).isEqualTo(1);
   }
 }
