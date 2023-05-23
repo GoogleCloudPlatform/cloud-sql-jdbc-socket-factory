@@ -78,7 +78,7 @@ public class R2dbcSqlserverIntegrationTests {
   public void pooledConnectionTest() {
     List<String> rows =
         Mono.from(this.connectionPool.create())
-            .flatMapMany(connection -> connection.createStatement("SELECT NOW() as TS").execute())
+            .flatMapMany(connection -> connection.createStatement("SELECT 1 as TS").execute())
             .flatMap(result -> result.map((r, meta) -> r.get("TS", String.class)))
             .collectList()
             .block();

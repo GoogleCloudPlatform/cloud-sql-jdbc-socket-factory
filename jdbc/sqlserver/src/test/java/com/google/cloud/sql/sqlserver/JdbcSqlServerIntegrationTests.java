@@ -87,7 +87,7 @@ public class JdbcSqlServerIntegrationTests {
 
     List<String> rows = new ArrayList<>();
     try (Connection conn = connectionPool.getConnection()) {
-      try (PreparedStatement selectStmt = conn.prepareStatement("SELECT NOW() as TS")) {
+      try (PreparedStatement selectStmt = conn.prepareStatement("SELECT 1 as TS")) {
         ResultSet rs = selectStmt.executeQuery();
         while (rs.next()) {
           rows.add(rs.getString("TS"));
