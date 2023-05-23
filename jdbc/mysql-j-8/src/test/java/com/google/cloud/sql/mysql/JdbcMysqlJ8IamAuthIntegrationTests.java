@@ -29,9 +29,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -98,5 +96,4 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
     }
     assertThat(rows.size()).isEqualTo(1);
   }
-
 }
