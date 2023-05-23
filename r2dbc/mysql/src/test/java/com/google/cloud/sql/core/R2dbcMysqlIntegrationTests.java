@@ -24,6 +24,7 @@ import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -75,10 +76,10 @@ public class R2dbcMysqlIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    List<String> rows =
+    List<Timestamp> rows =
         Mono.from(this.connectionPool.create())
             .flatMapMany(connection -> connection.createStatement("SELECT NOW() as TS").execute())
-            .flatMap(result -> result.map((r, meta) -> r.get("TS", String.class)))
+            .flatMap(result -> result.map((r, meta) -> r.get("TS", Timestamp.class)))
             .collectList()
             .block();
 
