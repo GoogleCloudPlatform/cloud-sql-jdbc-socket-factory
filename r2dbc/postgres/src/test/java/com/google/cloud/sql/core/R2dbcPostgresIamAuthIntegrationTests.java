@@ -113,10 +113,10 @@ public class R2dbcPostgresIamAuthIntegrationTests {
             DB_USER, "password", CONNECTION_NAME, DB_NAME);
     ConnectionFactory connectionPool = ConnectionFactories.get(url);
 
-    List<String> rows =
+    List<Object> rows =
         Mono.from(connectionPool.create())
             .flatMapMany(connection -> connection.createStatement("SELECT NOW() as TS").execute())
-            .flatMap(result -> result.map((r, meta) -> r.get("TS", String.class)))
+            .flatMap(result -> result.map((r, meta) -> r.get("TS", Object.class)))
             .collectList()
             .block();
 
