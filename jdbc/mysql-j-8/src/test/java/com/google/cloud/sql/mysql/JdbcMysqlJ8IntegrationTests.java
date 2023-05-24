@@ -22,10 +22,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.collect.ImmutableList;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -84,12 +81,12 @@ public class JdbcMysqlJ8IntegrationTests {
   @Test
   public void pooledConnectionTest() throws SQLException {
 
-    List<String> rows = new ArrayList<>();
+    List<Timestamp> rows = new ArrayList<>();
     try (Connection conn = connectionPool.getConnection()) {
       try (PreparedStatement selectStmt = conn.prepareStatement("SELECT NOW() as TS")) {
         ResultSet rs = selectStmt.executeQuery();
         while (rs.next()) {
-          rows.add(rs.getString("TS"));
+          rows.add(rs.getTimestamp("TS"));
         }
       }
     }
