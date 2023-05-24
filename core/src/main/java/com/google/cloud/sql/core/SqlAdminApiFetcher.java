@@ -23,6 +23,7 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
@@ -134,7 +135,7 @@ public class SqlAdminApiFetcher {
 
   ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
-      OAuth2Credentials credentials,
+      GoogleCredentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {

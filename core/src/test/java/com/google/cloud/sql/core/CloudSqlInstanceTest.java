@@ -16,13 +16,11 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.OAuth2Credentials;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -39,7 +37,6 @@ public class CloudSqlInstanceTest {
 
   @Mock private GoogleCredentials googleCredentials;
   @Mock private GoogleCredentials scopedCredentials;
-  @Mock private OAuth2Credentials oAuth2Credentials;
 
   @Before
   public void setup() {
@@ -54,18 +51,6 @@ public class CloudSqlInstanceTest {
     assertThat(downscoped).isEqualTo(scopedCredentials);
     verify(googleCredentials, times(1))
         .createScoped("https://www.googleapis.com/auth/sqlservice.login");
-  }
-
-  @Test
-  public void throwsErrorForWrongCredentialType() {
-    RuntimeException ex =
-        assertThrows(
-            RuntimeException.class,
-            () -> CloudSqlInstance.getDownscopedCredentials(oAuth2Credentials));
-
-    assertThat(ex)
-        .hasMessageThat()
-        .contains("Failed to downscope credentials for IAM Authentication");
   }
 
   @Test

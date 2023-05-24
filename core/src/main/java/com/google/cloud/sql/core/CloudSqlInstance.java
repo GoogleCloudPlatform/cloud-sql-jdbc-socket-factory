@@ -16,12 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.Throwables;
@@ -62,8 +57,7 @@ class CloudSqlInstance {
 
   private final ListeningScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
-  private final AuthType authType;
-  private final Optional<OAuth2Credentials> credentials;
+  private final Optional<GoogleCredentials> iamAuthCredentials;
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
@@ -95,16 +89,14 @@ class CloudSqlInstance {
       throws IOException, InterruptedException {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.apiFetcher = apiFetcher;
-    this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
 
     if (authType == AuthType.IAM) {
-      HttpRequestInitializer source = tokenSourceFactory.create();
-      this.credentials = Optional.of(parseCredentials(source));
-      this.credentials.get().refresh();
+      this.iamAuthCredentials =
+          Optional.of(getDownscopedCredentials(tokenSourceFactory.createGoogleCredentials()));
     } else {
-      this.credentials = Optional.empty();
+      this.iamAuthCredentials = Optional.empty();
     }
 
     synchronized (instanceDataGuard) {
@@ -129,41 +121,14 @@ class CloudSqlInstance {
     return timeUntilExp.dividedBy(2).getSeconds();
   }
 
-  static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
+  static GoogleCredentials getDownscopedCredentials(GoogleCredentials credentials) {
     GoogleCredentials downscoped;
     try {
-      GoogleCredentials oldCredentials = (GoogleCredentials) credentials;
-      downscoped = oldCredentials.createScoped(SQL_LOGIN_SCOPE);
+      downscoped = credentials.createScoped(SQL_LOGIN_SCOPE);
     } catch (ClassCastException ex) {
       throw new RuntimeException("Failed to downscope credentials for IAM Authentication:", ex);
     }
     return downscoped;
-  }
-
-  private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
-    if (source instanceof HttpCredentialsAdapter) {
-      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
-      return (OAuth2Credentials) adapter.getCredentials();
-    }
-
-    if (source instanceof Credential) {
-      Credential credential = (Credential) source;
-      AccessToken accessToken =
-          new AccessToken(
-              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
-
-      return new GoogleCredentials(accessToken) {
-        @Override
-        public AccessToken refreshAccessToken() throws IOException {
-          credential.refreshToken();
-
-          return new AccessToken(
-              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
-        }
-      };
-    }
-
-    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
   }
 
   /**
@@ -245,23 +210,15 @@ class CloudSqlInstance {
     forcedRenewRateLimiter.acquirePermit();
 
     ListenableFuture<InstanceData> refreshFuture;
-    if (authType == AuthType.IAM) {
-      if (credentials.isPresent()) {
-        GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
-        refreshFuture =
-            apiFetcher.getInstanceData(
-                instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
-      } else {
-        throw new RuntimeException(
-            String.format(
-                "[%s] Unable to connect via automatic IAM authentication: Missing credentials.",
-                instanceName.getConnectionName()));
-      }
-
+    if (iamAuthCredentials.isPresent()) {
+      refreshFuture =
+          apiFetcher.getInstanceData(
+              instanceName, iamAuthCredentials.get(), AuthType.IAM, executor, keyPair);
     } else {
       refreshFuture =
           apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
     }
+
     Futures.addCallback(
         refreshFuture,
         new FutureCallback<InstanceData>() {
@@ -304,10 +261,6 @@ class CloudSqlInstance {
         executor);
 
     return refreshFuture.get();
-  }
-
-  private Optional<Date> getTokenExpirationTime(Credential credentials) {
-    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds()).map(Date::new);
   }
 
   SslData getSslData() {

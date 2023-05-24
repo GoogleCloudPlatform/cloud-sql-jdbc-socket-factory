@@ -16,18 +16,15 @@
 
 package com.google.cloud.sql;
 
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdminScopes;
-import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import java.util.Arrays;
 
 /** This class creates a HttpRequestInitializer from Application Default Credentials. */
 public class ApplicationDefaultCredentialFactory implements CredentialFactory {
-
   @Override
-  public HttpRequestInitializer create() {
+  public GoogleCredentials createGoogleCredentials() {
     GoogleCredentials credentials;
     try {
       credentials = GoogleCredentials.getApplicationDefault();
@@ -40,6 +37,6 @@ public class ApplicationDefaultCredentialFactory implements CredentialFactory {
           credentials.createScoped(
               Arrays.asList(SQLAdminScopes.SQLSERVICE_ADMIN, SQLAdminScopes.CLOUD_PLATFORM));
     }
-    return new HttpCredentialsAdapter(credentials);
+    return credentials;
   }
 }

@@ -17,11 +17,12 @@
 package com.google.cloud.sql;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.auth.Credentials;
+import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.cloud.sql.core.SqlAdminApiFetcher;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -48,7 +49,7 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
   }
 
   @Override
-  public SqlAdminApiFetcher create(HttpRequestInitializer requestInitializer) {
+  public SqlAdminApiFetcher create(Credentials credential) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -58,7 +59,7 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
 
     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     SQLAdmin.Builder adminApiBuilder =
-        new SQLAdmin.Builder(httpTransport, jsonFactory, requestInitializer)
+        new SQLAdmin.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credential))
             .setApplicationName(userAgents);
     if (rootUrl != null) {
       adminApiBuilder.setRootUrl(rootUrl);

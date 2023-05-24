@@ -18,11 +18,8 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
-import com.google.api.client.http.BasicAuthentication;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -60,7 +57,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -84,7 +81,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -111,7 +108,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -128,7 +125,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -145,7 +142,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -157,7 +154,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_adminApiNotEnabled() throws IOException {
     SqlAdminApiFetcher apiClient =
-        new StubApiFetcherFactory(fakeNotConfiguredException()).create(credentialFactory.create());
+        new StubApiFetcherFactory(fakeNotConfiguredException())
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -178,7 +176,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_notAuthorized() throws IOException {
     SqlAdminApiFetcher apiClient =
-        new StubApiFetcherFactory(fakeNotAuthorizedException()).create(credentialFactory.create());
+        new StubApiFetcherFactory(fakeNotAuthorizedException())
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, apiClient, credentialFactory, 3307, defaultExecutor);
     try {
@@ -208,7 +207,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, apiClient, stubCredentialFactory, port, defaultExecutor);
@@ -229,7 +228,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     SqlAdminApiFetcher apiClient =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+            .create(credentialFactory.createGoogleCredentials());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, apiClient, stubCredentialFactory, port, defaultExecutor);
@@ -238,36 +237,6 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"), AuthType.IAM);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException {
-    class BasicAuthStubCredentialFactory implements CredentialFactory {
-
-      @Override
-      public HttpRequestInitializer create() {
-        return new BasicAuthentication("user", "password");
-      }
-    }
-
-    CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
-
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    SqlAdminApiFetcher apiClient =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
-            clientKeyPair, apiClient, stubCredentialFactory, port, defaultExecutor);
-    assertThrows(
-        RuntimeException.class,
-        () ->
-            coreSocketFactory.createSslSocket(
-                "myProject:myRegion:myInstance",
-                Collections.singletonList("PRIMARY"),
-                AuthType.IAM));
   }
 
   private String readLine(Socket socket) throws IOException {

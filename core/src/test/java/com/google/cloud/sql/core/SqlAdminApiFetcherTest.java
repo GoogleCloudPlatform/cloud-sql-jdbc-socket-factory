@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.OAuth2CredentialsWithRefresh;
 import com.google.cloud.sql.AuthType;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -28,8 +27,6 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +50,7 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().createGoogleCredentials());
 
     ListenableFuture<InstanceData> instanceDataFuture =
         fetcher.getInstanceData(
@@ -87,17 +84,12 @@ public class SqlAdminApiFetcherTest {
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD");
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().createGoogleCredentials());
 
     ListenableFuture<InstanceData> instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "refresh-token", Date.from(Instant.now().plus(1, ChronoUnit.HOURS))))
-                .setAccessToken(new AccessToken("my-token", Date.from(Instant.now())))
-                .build(),
+            new MockGoogleCredentials(new AccessToken("my-token", null)),
             AuthType.IAM,
             newTestExecutor(),
             Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
@@ -114,17 +106,12 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().createGoogleCredentials());
 
     ListenableFuture<InstanceData> instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "", Date.from(Instant.now().plus(1, ChronoUnit.HOURS)) /* empty */))
-                .setAccessToken(new AccessToken("" /* ignored */, Date.from(Instant.now())))
-                .build(),
+            new MockGoogleCredentials(new AccessToken("", null)),
             AuthType.IAM,
             newTestExecutor(),
             Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
@@ -140,18 +127,13 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().createGoogleCredentials());
 
     ListenableFuture<InstanceData> instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "refresh-token",
-                        Date.from(Instant.now().minus(1, ChronoUnit.HOURS)) /* 1 hour ago */))
-                .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
-                .build(),
+            new MockGoogleCredentials(
+                new AccessToken("my-token", new Date(System.currentTimeMillis() - 1000))),
             AuthType.IAM,
             newTestExecutor(),
             Futures.immediateFuture(mockAdminApi.getClientKeyPair()));

@@ -17,7 +17,7 @@
 package com.google.cloud.sql;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.http.HttpRequestInitializer;
+import com.google.auth.oauth2.GoogleCredentials;
 
 /** Factory for creating {@link Credential}s for interaction with Cloud SQL Admin API. */
 public interface CredentialFactory {
@@ -25,5 +25,5 @@ public interface CredentialFactory {
   /** Name of system property that can specify an alternative credential factory. */
   String CREDENTIAL_FACTORY_PROPERTY = "cloudSql.socketFactory.credentialFactory";
 
-  HttpRequestInitializer create();
+  GoogleCredentials createGoogleCredentials();
 }

@@ -16,9 +16,10 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential;
-import com.google.api.client.http.HttpRequestInitializer;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
+import java.util.Date;
 
 public class StubCredentialFactory implements CredentialFactory {
 
@@ -33,10 +34,12 @@ public class StubCredentialFactory implements CredentialFactory {
   }
 
   @Override
-  public HttpRequestInitializer create() {
-    MockGoogleCredential testCredential = new MockGoogleCredential.Builder().build();
-    testCredential.setAccessToken(accessToken);
-    testCredential.setExpirationTimeMilliseconds(expirationTimeInMilliseconds);
-    return testCredential;
+  public GoogleCredentials createGoogleCredentials() {
+    return new MockGoogleCredentials(
+        new AccessToken(
+            accessToken,
+            expirationTimeInMilliseconds != null
+                ? new Date(System.currentTimeMillis() + expirationTimeInMilliseconds)
+                : null));
   }
 }

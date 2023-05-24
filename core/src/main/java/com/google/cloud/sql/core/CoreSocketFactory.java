@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.SqlAdminApiFetcherFactory;
@@ -100,9 +99,9 @@ public final class CoreSocketFactory {
 
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
-      HttpRequestInitializer credential = credentialFactory.create();
       SqlAdminApiFetcher adminApiService =
-          new SqlAdminApiFetcherFactory(getUserAgents()).create(credential);
+          new SqlAdminApiFetcherFactory(getUserAgents())
+              .create(credentialFactory.createGoogleCredentials());
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
