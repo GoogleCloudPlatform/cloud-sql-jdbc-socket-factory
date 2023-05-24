@@ -76,10 +76,10 @@ public class R2dbcSqlserverIntegrationTests {
 
   @Test
   public void pooledConnectionTest() {
-    List<Object> rows =
+    List<Integer> rows =
         Mono.from(this.connectionPool.create())
             .flatMapMany(connection -> connection.createStatement("SELECT 1 as TS").execute())
-            .flatMap(result -> result.map((r, meta) -> r.get("TS", Object.class)))
+            .flatMap(result -> result.map((r, meta) -> r.get("TS", Integer.class)))
             .collectList()
             .block();
 
