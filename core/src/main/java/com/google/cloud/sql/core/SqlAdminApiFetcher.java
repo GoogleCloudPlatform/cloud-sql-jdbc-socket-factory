@@ -318,6 +318,7 @@ public class SqlAdminApiFetcher {
 
     return ephemeralCertificate;
   }
+
   /**
    * refreshWithRetry attempts to refresh the credentials 3 times, waiting 3-6 seconds between
    * attempts.
