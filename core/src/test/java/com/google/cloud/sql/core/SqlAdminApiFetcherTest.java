@@ -185,7 +185,7 @@ public class SqlAdminApiFetcherTest {
 
     ExecutionException ex = assertThrows(ExecutionException.class, instanceData::get);
 
-    assertThat(ex).hasMessageThat().contains("Fake connect timeout");
+    assertThat(ex.getCause().getCause()).hasMessageThat().contains("Fake connect timeout");
   }
 
   @SuppressWarnings("SameParameterValue")
