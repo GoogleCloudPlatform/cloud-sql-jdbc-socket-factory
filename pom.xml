@@ -288,7 +288,7 @@
             <!--  There's a bug in the plugin that prevents us from failing on warning in the latest version (3.2.0).
                   Once a new version (> 3.2.0) is released, we can upgrade the plugin to latest.
                   See https://issues.apache.org/jira/browse/MDEP-753 -->
-            <version>3.5.0</version>
+            <version>3.6.0</version>
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredDependencies>
