@@ -340,7 +340,8 @@ public class SqlAdminApiFetcher {
     } catch (IOException e) {
       throw e;
     } catch (Exception e) {
-      throw new RuntimeException("Unexpected retry exception", e);
+      throw new RuntimeException(
+          "Unexpected exception while attempting to refresh oauth credentials", e);
     }
   }
 
