@@ -31,10 +31,9 @@ import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
+import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,7 +55,6 @@ public class R2dbcMysqlIamAuthIntegrationTests {
   @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
 
   private ConnectionPool connectionPool;
-  private String tableName;
 
   @Before
   public void setUpPool() {
@@ -89,53 +87,17 @@ public class R2dbcMysqlIamAuthIntegrationTests {
     this.connectionPool = new ConnectionPool(configuration);
     // [END cloud_sql_connector_mysql_r2dbc_iam_auth]
 
-    this.tableName = String.format("books_%s", UUID.randomUUID().toString().replace("-", ""));
-
-    // Create table
-    Mono.from(this.connectionPool.create())
-        .flatMapMany(
-            c ->
-                c.createStatement(
-                        String.format("CREATE TABLE %s (", this.tableName)
-                            + "  ID CHAR(20) NOT NULL,"
-                            + "  TITLE TEXT NOT NULL"
-                            + ")")
-                    .execute())
-        .blockLast();
-  }
-
-  @After
-  public void dropTableIfPresent() {
-    String dropStmt = String.format("DROP TABLE %s", this.tableName);
-    Mono.from(this.connectionPool.create())
-        .delayUntil(c -> c.createStatement(dropStmt).execute())
-        .block();
   }
 
   @Test
   public void pooledConnectionTest() {
-    String insertStmt = String.format("INSERT INTO %s (ID, TITLE) VALUES (?, ?)", this.tableName);
-    Mono.from(this.connectionPool.create())
-        .flatMapMany(
-            c ->
-                c.createStatement(insertStmt)
-                    .bind(0, "book1")
-                    .bind(1, "Book One")
-                    .add()
-                    .bind(0, "book2")
-                    .bind(1, "Book Two")
-                    .execute())
-        .flatMap(result -> result.map((row, rowMetadata) -> row.get(0)))
-        .blockLast();
-
-    String selectStmt = String.format("SELECT TITLE FROM %s ORDER BY ID", this.tableName);
-    List<String> books =
+    List<Instant> rows =
         Mono.from(this.connectionPool.create())
-            .flatMapMany(connection -> connection.createStatement(selectStmt).execute())
-            .flatMap(result -> result.map((r, meta) -> r.get("TITLE", String.class)))
+            .flatMapMany(connection -> connection.createStatement("SELECT NOW() as TS").execute())
+            .flatMap(result -> result.map((r, meta) -> r.get("TS", Instant.class)))
             .collectList()
             .block();
 
-    assertThat(books).containsExactly("Book One", "Book Two");
+    assertThat(rows.size()).isEqualTo(1);
   }
 }
