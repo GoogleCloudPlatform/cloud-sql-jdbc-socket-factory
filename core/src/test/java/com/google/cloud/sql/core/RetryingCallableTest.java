@@ -26,7 +26,7 @@ import org.junit.Test;
 public class RetryingCallableTest {
   @Test
   public void testNoRetryRequired() throws Exception {
-    RetryingCallable<Integer> r = new RetryingCallable<>(() -> 1, 5, Duration.ofSeconds(1));
+    RetryingCallable<Integer> r = new RetryingCallable<>(() -> 1, 5, Duration.ofMillis(100));
     int v = r.call();
     assertThat(v).isEqualTo(1);
   }
@@ -41,7 +41,7 @@ public class RetryingCallableTest {
               throw new Exception("nope");
             },
             3,
-            Duration.ofSeconds(1));
+            Duration.ofMillis(100));
 
     try {
       r.call();
@@ -66,7 +66,7 @@ public class RetryingCallableTest {
               return i;
             },
             5,
-            Duration.ofSeconds(1));
+            Duration.ofMillis(100));
 
     int v = r.call();
     assertThat(counter.get()).isEqualTo(3);

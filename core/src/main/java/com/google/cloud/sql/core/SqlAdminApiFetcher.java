@@ -341,7 +341,7 @@ public class SqlAdminApiFetcher {
       throw e;
     } catch (Exception e) {
       throw new RuntimeException(
-          "Unexpected exception while attempting to refresh oauth credentials", e);
+          "Unexpected exception while attempting to refresh OAuth2 credentials", e);
     }
   }
 

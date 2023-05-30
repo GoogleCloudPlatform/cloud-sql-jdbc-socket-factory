@@ -21,16 +21,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * RetryLogic attempts to call a Callable multiple times, sleeping between failed attempts. The
- * sleep duration is chosen randomly in the range [sleepDuration, sleepDuration * 2] to avoid
+ * RetryingCallable attempts to call a Callable multiple times, sleeping between failed attempts.
+ * The sleep duration is chosen randomly in the range [sleepDuration, sleepDuration * 2] to avoid
  * causing a thundering herd of requests on failure.
  *
  * @param <T> the result type of the Callable.
  */
-public class RetryingCallable<T> implements Callable<T> {
+class RetryingCallable<T> implements Callable<T> {
 
   /** The callable that should be retried. */
-  private final Callable<T> call;
+  private final Callable<T> callable;
   /** The number of times to attempt to retry. */
   private final int retryCount;
   /** The duration to sleep after a failed retry attempt. */
@@ -39,21 +39,21 @@ public class RetryingCallable<T> implements Callable<T> {
   /**
    * Construct a new RetryLogic.
    *
-   * @param call the callable that should be retried
+   * @param callable the callable that should be retried
    * @param retryCount the number of times to retry
    * @param sleepDuration the duration wait after a failed attempt.
    */
-  public RetryingCallable(Callable<T> call, int retryCount, Duration sleepDuration) {
+  public RetryingCallable(Callable<T> callable, int retryCount, Duration sleepDuration) {
     if (retryCount <= 0) {
       throw new IllegalArgumentException("retryCount must be > 0");
     }
     if (sleepDuration.isNegative() || sleepDuration.isZero()) {
       throw new IllegalArgumentException("sleepDuration must be positive");
     }
-    if (call == null) {
+    if (callable == null) {
       throw new IllegalArgumentException("call must not be null");
     }
-    this.call = call;
+    this.callable = callable;
     this.retryCount = retryCount;
     this.sleepDuration = sleepDuration;
   }
@@ -61,16 +61,16 @@ public class RetryingCallable<T> implements Callable<T> {
   @Override
   public T call() throws Exception {
 
-    for (int i = retryCount - 1; i >= 0; i--) {
+    for (int retriesLeft = retryCount - 1; retriesLeft >= 0; retriesLeft--) {
       // Attempt to call the Callable.
       try {
-        return call.call();
+        return callable.call();
       } catch (Exception e) {
         // Callable threw an exception.
 
         // If this is the last iteration, then
         // throw the exception
-        if (i == 0) {
+        if (retriesLeft == 0) {
           throw e;
         }
 

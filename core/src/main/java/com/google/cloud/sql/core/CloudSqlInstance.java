@@ -164,7 +164,7 @@ class CloudSqlInstance {
     throw new RuntimeException(
         String.format(
             "[%s] Unable to connect via automatic IAM authentication: "
-                + "Not supporting credentials of type %s",
+                + "Unsupported credentials of type %s",
             instanceName.getConnectionName(), source.getClass().getName()));
   }
 
