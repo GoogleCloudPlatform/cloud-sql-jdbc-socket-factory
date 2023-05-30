@@ -46,6 +46,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -54,7 +55,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -327,29 +327,20 @@ public class SqlAdminApiFetcher {
    * @throws IOException when the credentials.refresh() has failed 3 times
    */
   private void refreshWithRetry(OAuth2Credentials credentials) throws IOException {
-    final int retryCount = 3;
-    final int sleepAfterFailedMs = 3000;
-    for (int i = retryCount; i >= 0; i--) {
-      // Try to refresh the credentials.
-      try {
-        credentials.refresh();
-        return; // if successful, return
-      } catch (IOException e) {
-        // failed to refresh
-        // If this is the last iteration, then
-        // throw the exception
-        if (i == 0) {
-          throw e;
-        }
-        // else, sleep a random amount of time between 3 and 6 seconds, then retry
-        long sleep =
-            ThreadLocalRandom.current().nextInt(sleepAfterFailedMs, sleepAfterFailedMs * 2);
-        try {
-          Thread.sleep(sleep);
-        } catch (InterruptedException ie) {
-          throw e; // if sleep is interrupted, then throw 'e', don't take another iteration
-        }
-      }
+    Callable<OAuth2Credentials> refresh =
+        () -> {
+          credentials.refresh();
+          return credentials;
+        };
+
+    RetryingCallable<OAuth2Credentials> c =
+        new RetryingCallable<>(refresh, 3, Duration.ofSeconds(3));
+    try {
+      c.call();
+    } catch (IOException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException("Unexpected retry exception", e);
     }
   }
 
