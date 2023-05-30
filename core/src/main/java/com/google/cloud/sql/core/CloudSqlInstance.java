@@ -161,8 +161,11 @@ class CloudSqlInstance {
         }
       };
     }
-
-    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
+    throw new RuntimeException(
+        String.format(
+            "[%s] Unable to connect via automatic IAM authentication: "
+                + "Not supporting credentials of type %s",
+            instanceName.getConnectionName(), source.getClass().getName()));
   }
 
   /**
