@@ -20,7 +20,7 @@
 
 ### Features
 
-* add support for MariaDB SocketFactory connector ([#1169](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1169)) ([6890cb6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6890cb6ce301365842d3045b85029fdc803b8744))
+* add support for MariaDB com.google.cloud.sql.core.ConnectionConfig connector ([#1169](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1169)) ([6890cb6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6890cb6ce301365842d3045b85029fdc803b8744))
 
 ## [1.10.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.9.0...v1.10.0) (2023-02-07)
 

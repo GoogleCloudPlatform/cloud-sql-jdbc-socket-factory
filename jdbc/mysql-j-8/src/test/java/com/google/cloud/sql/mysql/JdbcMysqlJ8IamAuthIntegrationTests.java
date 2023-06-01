@@ -66,7 +66,8 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
+    connProps.setProperty(
+        "socketFactory", "com.google.cloud.sql.mysql.com.google.cloud.sql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("enableIamAuth", "true");
 

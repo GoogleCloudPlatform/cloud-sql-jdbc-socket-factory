@@ -67,7 +67,8 @@ public class JdbcPostgresIntegrationTests {
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty(
+        "socketFactory", "com.google.cloud.sql.postgres.com.google.cloud.sql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
 
     // Initialize connection pool

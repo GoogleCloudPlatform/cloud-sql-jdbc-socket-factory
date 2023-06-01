@@ -35,26 +35,23 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public static final int SERVER_PROXY_PORT = 3307;
   private final Supplier<ConnectionFactoryProvider> supplier;
   private final ConnectionFactoryOptions.Builder builder;
-  private final String hostname;
-  private final String ipTypes;
+  private final ConnectionConfig config;
 
   /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
       Supplier<ConnectionFactoryProvider> supplier,
-      String ipTypes,
       ConnectionFactoryOptions.Builder builder,
-      String hostname) {
+      ConnectionConfig config) {
     this.supplier = supplier;
-    this.ipTypes = ipTypes;
     this.builder = builder;
-    this.hostname = hostname;
+    this.config = config;
   }
 
   @Override
   @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      String hostIp = CoreSocketFactory.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
@@ -66,7 +63,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      String hostIp = CoreSocketFactory.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {

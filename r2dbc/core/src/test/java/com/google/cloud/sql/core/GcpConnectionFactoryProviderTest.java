@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -50,6 +51,8 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -66,7 +69,6 @@ public class GcpConnectionFactoryProviderTest {
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
-  CoreSocketFactory coreSocketFactoryStub;
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
 
@@ -159,7 +161,7 @@ public class GcpConnectionFactoryProviderTest {
   }
 
   @Before
-  public void setup() throws GeneralSecurityException {
+  public void setup() throws GeneralSecurityException, InterruptedException, ExecutionException {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
@@ -172,13 +174,21 @@ public class GcpConnectionFactoryProviderTest {
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
 
-    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    defaultExecutor =
+        MoreExecutors.listeningDecorator(
+            MoreExecutors.getExitingScheduledExecutorService(executor));
 
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
             .create(credentialFactory.create());
+    StubApiFetcherFactory apiClientFactory =
+        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
-    coreSocketFactoryStub =
-        new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);
+    CloudSqlConnector coreSocketFactory =
+        new CloudSqlConnector(
+            defaultExecutor, clientKeyPair.get(), apiClientFactory, new StubCredentialFactory());
   }
 }

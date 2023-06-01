@@ -4,7 +4,7 @@
 
 ### Adding the library as a dependency
 
-**Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
+**Note**: Use your JDBC driver version to figure out which com.google.cloud.sql.core.ConnectionConfig you should use. If you 
 are unsure, it is recommended to use the latest version of `mysql-connector-java:8.x`.
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
@@ -36,17 +36,17 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
+| socketFactory    | com.google.cloud.sql.mysql.com.google.cloud.sql.core.ConnectionConfig |
 | cloudSqlInstance | The instance connection name (found on the instance details page) |
 | user             | MySQL username |
 | password         | MySQL user's password |
 
 The full JDBC URL should look like this:
 ```
-jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.com.google.cloud.sql.core.ConnectionConfig&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The com.google.cloud.sql.core.ConnectionConfig will get your instances IP address based on the provided `cloudSqlInstance` arg. 
 
 ### Specifying IP Types
  
@@ -75,7 +75,7 @@ Example:
     Properties connProps = new Properties();
     connProps.setProperty("user", "iam-user"); // iam-user@gmail.com
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.com.google.cloud.sql.core.ConnectionConfig");
     connProps.setProperty("cloudSqlInstance", "project:region:instance");
     connProps.setProperty("enableIamAuth", "true");
 
@@ -95,7 +95,7 @@ proxy), you can use the `unixSocketPath` property to specify a path to a local
 file instead of connecting directly over TCP.
 
 ```
-jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.com.google.cloud.sql.core.ConnectionConfig&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
 ## Examples

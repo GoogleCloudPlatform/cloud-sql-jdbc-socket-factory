@@ -28,17 +28,17 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
+| socketFactory    | com.google.cloud.sql.postgres.com.google.cloud.sql.core.ConnectionConfig |
 | cloudSqlInstance | The instance connection name (found on the instance details page) |
 | user             | PostgreSQL username |
 | password         | PostgreSQL user's password |
 
 The full JDBC URL should look like this:
 ```
-jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.com.google.cloud.sql.core.ConnectionConfig&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The com.google.cloud.sql.core.ConnectionConfig will get your instances IP address based on the provided `cloudSqlInstance` arg. 
 
 ### Specifying IP Types
  
@@ -68,7 +68,7 @@ Example:
     connProps.setProperty("user", "postgres-iam-user@gmail.com");
     connProps.setProperty("password", "password");
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.com.google.cloud.sql.core.ConnectionConfig");
     connProps.setProperty("cloudSqlInstance", "project:region:instance");
     connProps.setProperty("enableIamAuth", "true");
 
@@ -92,7 +92,7 @@ proxy), you can use the `unixSocketPath` property to specify a path to a local
 file instead of connecting directly over TCP.
 
 ```
-jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.com.google.cloud.sql.core.ConnectionConfig&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
 ## Examples

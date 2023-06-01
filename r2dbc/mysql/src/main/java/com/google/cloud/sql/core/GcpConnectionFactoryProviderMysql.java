@@ -45,17 +45,15 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
-      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      ConnectionConfig config) {
     builder
         .option(MySqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(MySqlConnectionFactoryProvider.SSL_MODE, SslMode.TUNNEL)
         .option(MySqlConnectionFactoryProvider.TCP_NO_DELAY, true)
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        MySqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+    return new CloudSqlConnectionFactory(MySqlConnectionFactoryProvider::new, builder, config);
   }
 
   @Override

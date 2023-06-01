@@ -21,12 +21,16 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 
+import com.google.cloud.sql.AuthType;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -38,6 +42,10 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
   public static final Option<String> IP_TYPES = Option.valueOf("IP_TYPES");
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
+  public static final Option<Boolean> TARGET_PRINCIPAL = Option.valueOf("TARGET_PRINCIPAL");
+  public static final Option<String> DELEGATES = Option.valueOf("DELEGATES");
+  public static final Option<String> CREDENTIAL_FACTORY_CLASS =
+      Option.valueOf("CREDENTIAL_FACTORY_CLASS");
 
   /**
    * Creates a ConnectionFactory that creates an SSL connection over a TCP socket, using
@@ -45,9 +53,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    */
   abstract ConnectionFactory tcpSocketConnectionFactory(
       Builder optionBuilder,
-      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String csqlHostName);
+      ConnectionConfig connectionConfig);
 
   /**
    * Creates a ConnectionFactory that creates an SSL connection over a Unix domain socket, using
@@ -70,7 +77,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
           "Cannot create ConnectionFactory: unsupported protocol (" + protocol + ")");
     }
 
-    String ipTypes = CoreSocketFactory.DEFAULT_IP_TYPES;
+    String ipTypes = ConnectionConfig.DEFAULT_IP_TYPES;
     Object ipTypesObj = connectionFactoryOptions.getValue(IP_TYPES);
     if (ipTypesObj != null) {
       ipTypes = (String) ipTypesObj;
@@ -88,12 +95,31 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
+
+    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
+    String targetPrinicipal = (String) connectionFactoryOptions.getValue(TARGET_PRINCIPAL);
+    String delegatesStr = (String) connectionFactoryOptions.getValue(DELEGATES);
+    String credFactory = (String) connectionFactoryOptions.getValue(CREDENTIAL_FACTORY_CLASS);
+    List<String> delegates = Collections.emptyList();
+    if (delegatesStr != null) {
+      delegates = Arrays.asList(delegatesStr.split(","));
+    }
+    ConnectionConfig config =
+        new ConnectionConfig(
+            connectionName,
+            enableIamAuth ? AuthType.IAM : AuthType.PASSWORD,
+            socket,
+            targetPrinicipal,
+            delegates,
+            ipTypes,
+            null);
+
     try {
+
       // Precompute SSL Data to trigger the initial refresh to happen immediately,
       // and ensure enableIAMAuth is set correctly.
-      CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+      CoreSocketFactory.getSslData(config);
 
-      String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
       if (socket != null) {
         return unixSocketConnectionFactory(optionBuilder, socket);
       }
@@ -105,7 +131,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                 Mono.fromSupplier(
                         () -> {
                           try {
-                            return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+                            return CoreSocketFactory.getSslData(config);
                           } catch (IOException e) {
                             throw new RuntimeException(e);
                           }
@@ -119,7 +145,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
             return sslContextBuilder;
           };
-      return tcpSocketConnectionFactory(optionBuilder, ipTypes, sslFunction, connectionName);
+      return tcpSocketConnectionFactory(optionBuilder, sslFunction, config);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

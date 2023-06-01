@@ -71,7 +71,8 @@ public class JdbcPostgresIamAuthIntegrationTests {
     // Password must be set to a nonempty value to bypass driver validation errors
     connProps.setProperty("password", "password");
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty(
+        "socketFactory", "com.google.cloud.sql.postgres.com.google.cloud.sql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("enableIamAuth", "true");
 

@@ -44,16 +44,14 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
-      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      ConnectionConfig config) {
     builder
         .option(MssqlConnectionFactoryProvider.SSL_TUNNEL, customizer)
         .option(MssqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        MssqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+    return new CloudSqlConnectionFactory(MssqlConnectionFactoryProvider::new, builder, config);
   }
 
   @Override

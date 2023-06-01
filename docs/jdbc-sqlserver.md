@@ -29,7 +29,7 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 | Property         | Value         |
 | ---------------- | ------------- |
-| socketFactoryClass    | com.google.cloud.sql.sqlserver.SocketFactory |
+| socketFactoryClass    | com.google.cloud.sql.sqlserver.com.google.cloud.sql.core.ConnectionConfig |
 | socketFactoryConstructorArg | The instance connection name (found on the instance details page) |
 | user             | SQL Server username |
 | password         | SQL Server user's password |
@@ -37,10 +37,10 @@ When specifying the JDBC connection URL, add the additional parameters:
 The full JDBC URL should look like this:
 
 ```
-jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
+jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.com.google.cloud.sql.core.ConnectionConfig;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg. 
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The com.google.cloud.sql.core.ConnectionConfig will get your instances IP address based on the provided `socketFactoryConstructorArg` arg. 
 
 ### Specifying IP Types
  
@@ -49,7 +49,7 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 IP types can be specified by appending the ipTypes argument to `socketFactoryConstructorArg` using query syntax, such as:
 
 ```
-jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE;user=<USER_NAME>;password=<PASSWORD>
+jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.com.google.cloud.sql.core.ConnectionConfig;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE;user=<USER_NAME>;password=<PASSWORD>
 ```
 
 For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).

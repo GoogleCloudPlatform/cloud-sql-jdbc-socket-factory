@@ -33,17 +33,17 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 | Property         | Value                                                          |
 | ---------------- |----------------------------------------------------------------|
-| socketFactory    | com.google.cloud.sql.mariadb.SocketFactory                     |
+| socketFactory    | com.google.cloud.sql.mariadb.com.google.cloud.sql.core.ConnectionConfig                     |
 | cloudSqlInstance | The instance connection name (found on the instance details page) |
 | user             | MariaDB username                                               |
 | password         | MariaDB user's password                                        |
 
 The full JDBC URL should look like this:
 ```
-jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mariadb.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mariadb.com.google.cloud.sql.core.ConnectionConfig&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg.
+Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The com.google.cloud.sql.core.ConnectionConfig will get your instances IP address based on the provided `cloudSqlInstance` arg.
 
 ### Specifying IP Types
 
@@ -73,7 +73,7 @@ Example:
     connProps.setProperty("user", "mysql-iam-user@gmail.com");
     connProps.setProperty("password", "password");
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.mariadb.SocketFactory");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.mariadb.com.google.cloud.sql.core.ConnectionConfig");
     connProps.setProperty("cloudSqlInstance", "project:region:instance");
     connProps.setProperty("enableIamAuth", "true");
 

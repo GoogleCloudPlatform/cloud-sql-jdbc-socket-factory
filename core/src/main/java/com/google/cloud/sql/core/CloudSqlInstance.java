@@ -32,12 +32,14 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
+import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.KeyPair;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -45,6 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
+import jnr.unixsocket.UnixSocketAddress;
+import jnr.unixsocket.UnixSocketChannel;
 
 /**
  * This class manages information on and creates connections to a Cloud SQL instance using the Cloud
@@ -62,7 +66,6 @@ class CloudSqlInstance {
 
   private final ListeningScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
-  private final AuthType authType;
   private final Optional<OAuth2Credentials> credentials;
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
@@ -70,6 +73,7 @@ class CloudSqlInstance {
   // Limit forced refreshes to 1 every minute.
   private final RateLimiter<Object> forcedRenewRateLimiter =
       RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+  private final ConnectionConfig config;
 
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
@@ -80,26 +84,25 @@ class CloudSqlInstance {
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param config The connection configuration object
    * @param apiFetcher Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
-      String connectionName,
+      ConnectionConfig config,
       SqlAdminApiFetcher apiFetcher,
-      AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair)
       throws IOException, InterruptedException {
-    this.instanceName = new CloudSqlInstanceName(connectionName);
+    this.config = config;
+    this.instanceName = new CloudSqlInstanceName(config.getInstanceName());
     this.apiFetcher = apiFetcher;
-    this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
 
-    if (authType == AuthType.IAM) {
+    if (config.getAuthType() == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
       this.credentials = Optional.of(parseCredentials(source));
       this.credentials.get().refresh();
@@ -203,9 +206,9 @@ class CloudSqlInstance {
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
-  String getPreferredIp(List<String> preferredTypes) {
+  String getPreferredIp() {
     Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
-    for (String ipType : preferredTypes) {
+    for (String ipType : config.getIpTypes()) {
       String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
         return preferredIp;
@@ -214,7 +217,7 @@ class CloudSqlInstance {
     throw new IllegalArgumentException(
         String.format(
             "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
-            instanceName.getConnectionName(), String.join(", ", preferredTypes)));
+            instanceName.getConnectionName(), String.join(", ", config.getIpTypes())));
   }
 
   /**
@@ -245,7 +248,7 @@ class CloudSqlInstance {
     forcedRenewRateLimiter.acquirePermit();
 
     ListenableFuture<InstanceData> refreshFuture;
-    if (authType == AuthType.IAM) {
+    if (config.getAuthType() == AuthType.IAM) {
       if (credentials.isPresent()) {
         GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
         refreshFuture =
@@ -310,7 +313,59 @@ class CloudSqlInstance {
     return Optional.ofNullable(credentials.getExpirationTimeMilliseconds()).map(Date::new);
   }
 
+  /**
+   * Returns the SSL Data to be used by R2DBC and other non-java socket connectors.
+   *
+   * @return the configuration data for an SSL connection
+   */
   SslData getSslData() {
     return getInstanceData().getSslData();
+  }
+
+  /** Connect returns the initialized SSL connection. */
+  Socket connect() throws IOException {
+    // Connect using the specified Unix socket
+    if (config.getUnixSocketPath() != null) {
+      return this.connectUnix();
+    } else {
+      return this.connectTcp();
+    }
+  }
+
+  private Socket connectTcp() throws IOException {
+    try {
+      SSLSocket socket = createSslSocket();
+
+      // TODO(kvg): Support all socket related options listed here:
+      // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
+      socket.setKeepAlive(true);
+      socket.setTcpNoDelay(true);
+
+      String instanceIp = getPreferredIp();
+
+      socket.connect(new InetSocketAddress(instanceIp, config.getServerPort()));
+      socket.startHandshake();
+
+      return socket;
+    } catch (Exception ex) {
+      // TODO(kvg): Let user know about the rate limit
+      forceRefresh();
+      throw ex;
+    }
+  }
+
+  private Socket connectUnix() throws IOException {
+    String unixSocket = config.getUnixSocketPath();
+    // Verify it ends with the correct suffix
+    if (config.getUnixSocketPathSuffix() != null
+        && !unixSocket.endsWith(config.getUnixSocketPathSuffix())) {
+      unixSocket = unixSocket + config.getUnixSocketPathSuffix();
+    }
+    logger.info(
+        String.format(
+            "Connecting to Cloud SQL instance [%s] via unix socket at %s.",
+            config.getInstanceName(), unixSocket));
+    UnixSocketAddress socketAddress = new UnixSocketAddress(new File(unixSocket));
+    return UnixSocketChannel.open(socketAddress).socket();
   }
 }

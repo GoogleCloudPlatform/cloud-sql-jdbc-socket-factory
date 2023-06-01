@@ -47,17 +47,15 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
-      String ipTypes,
       Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      ConnectionConfig config) {
     builder
         .option(PostgresqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.TUNNEL)
         .option(PostgresqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        PostgresqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+    return new CloudSqlConnectionFactory(PostgresqlConnectionFactoryProvider::new, builder, config);
   }
 
   @Override
