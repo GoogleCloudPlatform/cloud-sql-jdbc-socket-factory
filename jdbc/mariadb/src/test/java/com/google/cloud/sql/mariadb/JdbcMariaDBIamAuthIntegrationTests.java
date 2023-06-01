@@ -70,7 +70,7 @@ public class JdbcMariaDBIamAuthIntegrationTests {
     // Password must be set to a nonempty value to bypass driver validation errors
     connProps.setProperty("sslmode", "disable");
     connProps.setProperty(
-        "socketFactory", "com.google.cloud.sql.mariadb.com.google.cloud.sql.SocketFactory");
+        "socketFactory", "com.google.cloud.sql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("enableIamAuth", "true");
 
