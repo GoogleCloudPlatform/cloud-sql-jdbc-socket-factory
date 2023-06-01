@@ -10,8 +10,8 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * An object configured by a specific connection request com.google.cloud.sql.SocketFactory's
- * authentication should be configured.
+ * A value object containing all configuration values needed to set up a connection to a Cloud SQL
+ * Instance.
  */
 public class ConnectionConfig {
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
@@ -54,6 +54,20 @@ public class ConnectionConfig {
     return result;
   }
 
+  /**
+   * Creates a new ConnectionConfig from the JDBC connection properties. Using the property names
+   * listed above:
+   *
+   * <p>enableIamAuthn - whether to use IAM Authentication for the database connection. "true" or
+   * "false", default "false" unixSocketPath - The path to the unix socket to use when connecting to
+   * the databse. cloudSqlInstance - The name of the cloud sql instance in the format
+   * project:region:instanceName ipTypes - A comma-separated list of of IP types. Valid values:
+   * "PUBLIC" "PRIVATE" targetPrincipal - The target principal to use for service account
+   * impersonation delegates - A comma-separated list of principals to use to generate a token for
+   * the target principal
+   *
+   * @param props the JDBC connection properties
+   */
   public ConnectionConfig(Properties props) {
     authType =
         Boolean.parseBoolean(props.getProperty(ENABLE_IAM_AUTHN_PROPERTY, "false"))
@@ -68,6 +82,19 @@ public class ConnectionConfig {
     validatePreconditions();
   }
 
+  /**
+   * Creates a new ConnectionConfig.
+   *
+   * @param instanceName the name of the database instance in the format project:region:instanceName
+   * @param authType The type of authentication
+   * @param unixSocketPath The path to the unix socket for this database
+   * @param targetPrincipal The target principal to use for service account impersonation
+   * @param delegates A comma-separated list of principals to use to generate a token for the *
+   *     target principal
+   * @param ipTypes A comma-separated list of of IP types. Valid values: "PUBLIC" "PRIVATE"
+   * @param unixSocketPathSuffix a suffix to add to the database unix socket path if it is not
+   *     already included, used for Postgres.
+   */
   public ConnectionConfig(
       String instanceName,
       AuthType authType,
