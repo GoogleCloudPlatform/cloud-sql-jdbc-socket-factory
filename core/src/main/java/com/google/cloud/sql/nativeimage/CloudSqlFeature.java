@@ -33,11 +33,9 @@ final class CloudSqlFeature implements Feature {
   private static final String CLOUD_SQL_SOCKET_CLASS =
       "com.google.cloud.sql.core.CoreSocketFactory";
 
-  private static final String POSTGRES_SOCKET_CLASS =
-      "com.google.cloud.sql.postgres.com.google.cloud.sql.SocketFactory";
+  private static final String POSTGRES_SOCKET_CLASS = "com.google.cloud.sql.postgres.SocketFactory";
 
-  private static final String MYSQL_SOCKET_CLASS =
-      "com.google.cloud.sql.mysql.com.google.cloud.sql.SocketFactory";
+  private static final String MYSQL_SOCKET_CLASS = "com.google.cloud.sql.mysql.SocketFactory";
 
   @Override
   public void beforeAnalysis(BeforeAnalysisAccess access) {
@@ -61,7 +59,7 @@ final class CloudSqlFeature implements Feature {
     // Register PostgreSQL driver config.
     if (access.findClassByName(POSTGRES_SOCKET_CLASS) != null) {
       NativeImageUtils.registerClassForReflection(
-          access, "com.google.cloud.sql.postgres.com.google.cloud.sql.SocketFactory");
+          access, "com.google.cloud.sql.postgres.SocketFactory");
       NativeImageUtils.registerClassForReflection(access, "org.postgresql.PGProperty");
     }
 

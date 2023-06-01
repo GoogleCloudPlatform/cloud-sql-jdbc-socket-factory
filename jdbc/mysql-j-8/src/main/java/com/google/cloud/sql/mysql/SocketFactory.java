@@ -48,9 +48,8 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
   }
 
   /**
-   * Implements the interface for com.mysql.cj.protocol.com.google.cloud.sql.SocketFactory for
-   * mysql-connector-java prior to version 8.0.13. This change is required for backwards
-   * compatibility.
+   * Implements the interface for com.mysql.cj.protocol.SocketFactory for mysql-connector-java prior
+   * to version 8.0.13. This change is required for backwards compatibility.
    */
   @SuppressWarnings("TypeParameterUnusedInFormals")
   public <T extends Closeable> T connect(
