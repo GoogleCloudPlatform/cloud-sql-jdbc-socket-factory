@@ -46,6 +46,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -272,7 +273,7 @@ public class SqlAdminApiFetcher {
 
     if (authType == AuthType.IAM) {
       try {
-        credentials.refresh();
+        refreshWithRetry(credentials);
         AccessToken accessToken = credentials.getAccessToken();
 
         validateAccessToken(accessToken);
@@ -316,6 +317,32 @@ public class SqlAdminApiFetcher {
     }
 
     return ephemeralCertificate;
+  }
+
+  /**
+   * refreshWithRetry attempts to refresh the credentials 3 times, waiting 3-6 seconds between
+   * attempts.
+   *
+   * @param credentials the credentials to refresh
+   * @throws IOException when the credentials.refresh() has failed 3 times
+   */
+  private void refreshWithRetry(OAuth2Credentials credentials) throws IOException {
+    Callable<OAuth2Credentials> refresh =
+        () -> {
+          credentials.refresh();
+          return credentials;
+        };
+
+    RetryingCallable<OAuth2Credentials> c =
+        new RetryingCallable<>(refresh, 3, Duration.ofSeconds(3));
+    try {
+      c.call();
+    } catch (IOException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(
+          "Unexpected exception while attempting to refresh OAuth2 credentials", e);
+    }
   }
 
   private void validateAccessToken(AccessToken accessToken) {

@@ -63,7 +63,7 @@ class CloudSqlInstance {
   private final ListeningScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
   private final AuthType authType;
-  private final Optional<OAuth2Credentials> credentials;
+  private final Optional<OAuth2Credentials> iamAuthnCredentials;
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
@@ -101,10 +101,9 @@ class CloudSqlInstance {
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
-      this.credentials = Optional.of(parseCredentials(source));
-      this.credentials.get().refresh();
+      this.iamAuthnCredentials = Optional.of(parseCredentials(source));
     } else {
-      this.credentials = Optional.empty();
+      this.iamAuthnCredentials = Optional.empty();
     }
 
     synchronized (instanceDataGuard) {
@@ -162,8 +161,11 @@ class CloudSqlInstance {
         }
       };
     }
-
-    throw new RuntimeException("Not supporting credentials of type " + source.getClass().getName());
+    throw new RuntimeException(
+        String.format(
+            "[%s] Unable to connect via automatic IAM authentication: "
+                + "Unsupported credentials of type %s",
+            instanceName.getConnectionName(), source.getClass().getName()));
   }
 
   /**
@@ -245,23 +247,17 @@ class CloudSqlInstance {
     forcedRenewRateLimiter.acquirePermit();
 
     ListenableFuture<InstanceData> refreshFuture;
-    if (authType == AuthType.IAM) {
-      if (credentials.isPresent()) {
-        GoogleCredentials downscopedCredentials = getDownscopedCredentials(credentials.get());
-        refreshFuture =
-            apiFetcher.getInstanceData(
-                instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
-      } else {
-        throw new RuntimeException(
-            String.format(
-                "[%s] Unable to connect via automatic IAM authentication: Missing credentials.",
-                instanceName.getConnectionName()));
-      }
 
+    if (iamAuthnCredentials.isPresent()) {
+      GoogleCredentials downscopedCredentials = getDownscopedCredentials(iamAuthnCredentials.get());
+      refreshFuture =
+          apiFetcher.getInstanceData(
+              instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
     } else {
       refreshFuture =
           apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
     }
+
     Futures.addCallback(
         refreshFuture,
         new FutureCallback<InstanceData>() {
