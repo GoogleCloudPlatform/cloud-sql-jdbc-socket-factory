@@ -358,17 +358,20 @@ public class SqlAdminApiFetcher {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC"));
         String nowFormat = formatter.format(now);
         String expirationFormat = formatter.format(expirationTime);
-        throw new RuntimeException(
-            "Access Token expiration time is in the past. Now = "
-                + nowFormat
-                + " Expiration = "
-                + expirationFormat);
+        String errorMessage = "Access Token expiration time is in the past. Now = "
+            + nowFormat
+            + " Expiration = "
+            + expirationFormat;
+        logger.warning(errorMessage);
+        throw new RuntimeException(errorMessage);
       }
     }
 
     // Is the token empty?
     if (tokenValue.length() == 0) {
-      throw new RuntimeException("Access Token has length of zero");
+      String errorMessage = "Access Token has length of zero";
+      logger.warning(errorMessage);
+      throw new RuntimeException(errorMessage);
     }
   }
 
