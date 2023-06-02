@@ -25,6 +25,30 @@ import org.junit.Test;
 
 public class RetryingCallableTest {
   @Test
+  public void testConstructorIllegalArguments() throws Exception {
+    // Callable must not be null
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> new RetryingCallable<>(null, 1, Duration.ofMillis(1)));
+
+    // Must have a positive retryCount
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> new RetryingCallable<>(() -> null, 0, Duration.ofMillis(1)));
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> new RetryingCallable<>(() -> null, -1, Duration.ofMillis(1)));
+
+    // Must have a positive duration
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> new RetryingCallable<>(() -> null, 2, Duration.ofMillis(-5)));
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> new RetryingCallable<>(() -> null, 2, Duration.ofMillis(0)));
+  }
+
+  @Test
   public void testNoRetryRequired() throws Exception {
     RetryingCallable<Integer> r = new RetryingCallable<>(() -> 1, 5, Duration.ofMillis(100));
     int v = r.call();
