@@ -161,6 +161,33 @@ public class SqlAdminApiFetcherTest {
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
   }
 
+  @Test
+  public void testFetchInstanceData_throwsException_whenRequestsTimeout()
+      throws GeneralSecurityException, OperatorCreationException {
+    MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
+    SqlAdminApiFetcher fetcher =
+        new StubApiFetcherFactory(new BadConnectionFactory())
+            .create(new StubCredentialFactory().create());
+
+    ListenableFuture<InstanceData> instanceData =
+        fetcher.getInstanceData(
+            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+            OAuth2CredentialsWithRefresh.newBuilder()
+                .setRefreshHandler(
+                    mockAdminApi.getRefreshHandler(
+                        "refresh-token",
+                        Date.from(Instant.now().plus(1, ChronoUnit.HOURS)) /* 1 hour from now */))
+                .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
+                .build(),
+            AuthType.IAM,
+            newTestExecutor(),
+            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+
+    ExecutionException ex = assertThrows(ExecutionException.class, instanceData::get);
+
+    assertThat(ex.getCause().getCause()).hasMessageThat().contains("Fake connect timeout");
+  }
+
   @SuppressWarnings("SameParameterValue")
   private MockAdminApi buildMockAdminApi(String instanceConnectionName, String databaseVersion)
       throws GeneralSecurityException, OperatorCreationException {
