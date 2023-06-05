@@ -71,6 +71,8 @@ class CloudSqlInstance {
   private final RateLimiter<Object> forcedRenewRateLimiter =
       RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
 
+  private final RefreshCalculator refreshCalculator = new RefreshCalculator();
+
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
 
@@ -110,22 +112,6 @@ class CloudSqlInstance {
       this.currentInstanceData = executor.submit(this::performRefresh);
       this.nextInstanceData = currentInstanceData;
     }
-  }
-
-  static long secondsUntilRefresh(Date expiration) {
-    Duration timeUntilExp = Duration.between(Instant.now(), expiration.toInstant());
-
-    if (timeUntilExp.compareTo(Duration.ofHours(1)) < 0) {
-      if (timeUntilExp.compareTo(DEFAULT_REFRESH_BUFFER) < 0) {
-        // If the time until the certificate expires is less the refresh buffer, schedule the
-        // refresh immediately
-        return 0;
-      }
-      // Otherwise schedule a refresh in (timeUntilExp - buffer) seconds
-      return timeUntilExp.minus(DEFAULT_REFRESH_BUFFER).getSeconds();
-    }
-    // If the time until the certificate expires is longer than an hour, return timeUntilExp//2
-    return timeUntilExp.dividedBy(2).getSeconds();
   }
 
   static GoogleCredentials getDownscopedCredentials(OAuth2Credentials credentials) {
@@ -270,7 +256,8 @@ class CloudSqlInstance {
               nextInstanceData =
                   executor.schedule(
                       () -> performRefresh(),
-                      secondsUntilRefresh(getInstanceData().getExpiration()),
+                      refreshCalculator.calculateSecondsUntilNextRefresh(
+                          Instant.now(), getInstanceData().getExpiration().toInstant()),
                       TimeUnit.SECONDS);
             }
           }
