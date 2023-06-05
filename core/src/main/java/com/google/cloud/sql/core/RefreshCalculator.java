@@ -16,8 +16,8 @@
 
 package com.google.cloud.sql.core;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 /**
  * RefreshCalculator determines the number of seconds until the next refresh operation using the
@@ -25,17 +25,25 @@ import java.time.temporal.ChronoUnit;
  */
 class RefreshCalculator {
 
-  private static final int ONE_HOUR_IN_SECONDS = 3600;
-  private static final int REFRESH_BUFFER_IN_SECONDS = 240; // Four minutes
+  // defaultRefreshBuffer is the minimum amount of time for which a
+  // certificate must be valid to ensure the next refresh attempt has adequate
+  // time to complete.
+  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
 
-  long calculateSecondsUntilNextRefresh(Instant now, Instant clientCertificateExpiration) {
-    long secondsUntilExpiration = ChronoUnit.SECONDS.between(now, clientCertificateExpiration);
-    if (secondsUntilExpiration < ONE_HOUR_IN_SECONDS) {
-      if (secondsUntilExpiration < REFRESH_BUFFER_IN_SECONDS) {
+  long calculateSecondsUntilNextRefresh(Instant now, Instant expiration) {
+    Duration timeUntilExp = Duration.between(now, expiration);
+
+    if (timeUntilExp.compareTo(Duration.ofHours(1)) < 0) {
+      if (timeUntilExp.compareTo(DEFAULT_REFRESH_BUFFER) < 0) {
+        // If the time until the certificate expires is less the refresh buffer, schedule the
+        // refresh immediately
         return 0;
       }
-      return secondsUntilExpiration - REFRESH_BUFFER_IN_SECONDS;
+      // Otherwise schedule a refresh in (timeUntilExp - buffer) seconds
+      return timeUntilExp.minus(DEFAULT_REFRESH_BUFFER).getSeconds();
     }
-    return secondsUntilExpiration / 2;
+
+    // If the time until the certificate expires is longer than an hour, return timeUntilExp//2
+    return timeUntilExp.dividedBy(2).getSeconds();
   }
 }

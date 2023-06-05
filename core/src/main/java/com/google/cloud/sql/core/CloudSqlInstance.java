@@ -55,10 +55,6 @@ class CloudSqlInstance {
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
-  // defaultRefreshBuffer is the minimum amount of time for which a
-  // certificate must be valid to ensure the next refresh attempt has adequate
-  // time to complete.
-  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
 
   private final ListeningScheduledExecutorService executor;
   private final SqlAdminApiFetcher apiFetcher;
