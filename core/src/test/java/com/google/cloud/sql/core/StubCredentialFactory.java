@@ -18,12 +18,23 @@ package com.google.cloud.sql.core;
 
 import com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.auth.RequestMetadataCallback;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
 
 public class StubCredentialFactory implements CredentialFactory {
 
   String accessToken;
   Long expirationTimeInMilliseconds;
+  OAuth2Credentials oAuth2Credentials;
 
   StubCredentialFactory() {}
 
@@ -32,11 +43,78 @@ public class StubCredentialFactory implements CredentialFactory {
     this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;
   }
 
+  public StubCredentialFactory(OAuth2Credentials oAuth2Credentials) {
+    this.oAuth2Credentials = oAuth2Credentials;
+    try {
+      this.oAuth2Credentials.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @Override
   public HttpRequestInitializer create() {
-    MockGoogleCredential testCredential = new MockGoogleCredential.Builder().build();
-    testCredential.setAccessToken(accessToken);
-    testCredential.setExpirationTimeMilliseconds(expirationTimeInMilliseconds);
-    return testCredential;
+    if (oAuth2Credentials != null) {
+      return new HttpCredentialsAdapter(new RefreshGoogleCredentials(oAuth2Credentials));
+    } else {
+      MockGoogleCredential testCredential = new MockGoogleCredential.Builder().build();
+      testCredential.setAccessToken(accessToken);
+      testCredential.setExpirationTimeMilliseconds(expirationTimeInMilliseconds);
+      return testCredential;
+    }
+  }
+
+  private static class RefreshGoogleCredentials extends GoogleCredentials {
+    private final OAuth2Credentials oauth2;
+
+    RefreshGoogleCredentials(OAuth2Credentials oauth2) {
+      super(oauth2.getAccessToken());
+      this.oauth2 = oauth2;
+    }
+
+    @Override
+    public String getAuthenticationType() {
+      return oauth2.getAuthenticationType();
+    }
+
+    @Override
+    public boolean hasRequestMetadata() {
+      return oauth2.hasRequestMetadata();
+    }
+
+    @Override
+    public boolean hasRequestMetadataOnly() {
+      return oauth2.hasRequestMetadataOnly();
+    }
+
+    @Override
+    public void getRequestMetadata(URI uri, Executor executor, RequestMetadataCallback callback) {
+      oauth2.getRequestMetadata(uri, executor, callback);
+    }
+
+    @Override
+    public Map<String, List<String>> getRequestMetadata(URI uri) throws IOException {
+      return oauth2.getRequestMetadata(uri);
+    }
+
+    @Override
+    public void refresh() throws IOException {
+      oauth2.refresh();
+    }
+
+    @Override
+    public void refreshIfExpired() throws IOException {
+      oauth2.refreshIfExpired();
+    }
+
+    @Override
+    public AccessToken refreshAccessToken() throws IOException {
+      return oauth2.refreshAccessToken();
+    }
+
+    @Override
+    public Map<String, List<String>> getRequestMetadata() throws IOException {
+      return oauth2.getRequestMetadata();
+    }
   }
 }
