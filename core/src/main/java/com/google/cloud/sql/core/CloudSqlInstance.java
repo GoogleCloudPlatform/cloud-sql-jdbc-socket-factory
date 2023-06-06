@@ -222,8 +222,7 @@ class CloudSqlInstance {
    * value of currentInstanceData and schedules the next refresh shortly before the information
    * would expire.
    */
-  @VisibleForTesting
-  InstanceData performRefresh() throws InterruptedException, ExecutionException {
+  private InstanceData performRefresh() throws InterruptedException, ExecutionException {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
@@ -256,20 +255,6 @@ class CloudSqlInstance {
         nextInstanceData = executor.submit(() -> performRefresh());
         throw e;
       }
-    }
-  }
-
-  @VisibleForTesting
-  public ListenableFuture<InstanceData> getCurrentInstanceData() {
-    synchronized (instanceDataGuard) {
-      return currentInstanceData;
-    }
-  }
-
-  @VisibleForTesting
-  ListenableFuture<InstanceData> getNextInstanceData() {
-    synchronized (instanceDataGuard) {
-      return nextInstanceData;
     }
   }
 
