@@ -27,11 +27,9 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -55,13 +53,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
 public class SqlAdminApiFetcher {
@@ -98,92 +93,66 @@ public class SqlAdminApiFetcher {
         + "-----END RSA PUBLIC KEY-----\n";
   }
 
-  // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenAllSucceed(
-      Callable<T> task,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<?>... futures) {
-    SettableFuture<T> taskFuture = SettableFuture.create();
-
-    // Create a countDown for all Futures to complete.
-    AtomicInteger countDown = new AtomicInteger(futures.length);
-
-    // Trigger the task when all futures are complete.
-    FutureCallback<Object> runWhenInputAreComplete =
-        new FutureCallback<Object>() {
-          @Override
-          public void onSuccess(@NullableDecl Object o) {
-            if (countDown.decrementAndGet() == 0) {
-              taskFuture.setFuture(executor.submit(task));
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (!taskFuture.setException(throwable)) {
-              String msg = "Got more than one input failure. Logging failures after the first";
-              logger.log(Level.SEVERE, msg, throwable);
-            }
-          }
-        };
-    for (ListenableFuture<?> future : futures) {
-      Futures.addCallback(future, runWhenInputAreComplete, executor);
-    }
-
-    return taskFuture;
-  }
-
   ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       OAuth2Credentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
+    // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
+
+    // Fetch the ephemeral certificates
     ListenableFuture<Certificate> ephemeralCertificateFuture =
-        whenAllSucceed(
-            () ->
-                fetchEphemeralCertificate(
-                    Futures.getDone(keyPair), instanceName, credentials, authType),
-            executor,
-            keyPair);
+        Futures.whenAllComplete(keyPair)
+            .call(
+                () ->
+                    fetchEphemeralCertificate(
+                        Futures.getDone(keyPair), instanceName, credentials, authType),
+                executor);
+
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
-        whenAllSucceed(
-            () ->
-                createSslData(
-                    Futures.getDone(keyPair),
-                    Futures.getDone(metadataFuture),
-                    Futures.getDone(ephemeralCertificateFuture),
-                    instanceName,
-                    authType),
-            executor,
-            keyPair,
-            metadataFuture,
-            ephemeralCertificateFuture);
+        Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture)
+            .call(
+                () ->
+                    createSslData(
+                        Futures.getDone(keyPair),
+                        Futures.getDone(metadataFuture),
+                        Futures.getDone(ephemeralCertificateFuture),
+                        instanceName,
+                        authType),
+                executor);
+
     // Once both the SSLContext and Metadata are complete, return the results
-    return whenAllSucceed(
-        () -> {
+    ListenableFuture<InstanceData> done =
+        Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
+            .call(
+                () -> {
 
-          // Get expiration value for new cert
-          Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
-          X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-          Date expiration = x509Certificate.getNotAfter();
+                  // Get expiration value for new cert
+                  Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
+                  X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+                  Date expiration = x509Certificate.getNotAfter();
 
-          if (authType == AuthType.IAM) {
-            expiration =
-                getTokenExpirationTime(credentials)
-                    .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
-                    .orElse(x509Certificate.getNotAfter());
-          }
+                  if (authType == AuthType.IAM) {
+                    expiration =
+                        getTokenExpirationTime(credentials)
+                            .filter(
+                                tokenExpiration ->
+                                    x509Certificate.getNotAfter().after(tokenExpiration))
+                            .orElse(x509Certificate.getNotAfter());
+                  }
 
-          return new InstanceData(
-              Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture), expiration);
-        },
-        executor,
-        metadataFuture,
-        sslContextFuture);
+                  return new InstanceData(
+                      Futures.getDone(metadataFuture),
+                      Futures.getDone(sslContextFuture),
+                      expiration);
+                },
+                executor);
+
+    return done;
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
