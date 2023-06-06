@@ -18,48 +18,53 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import org.junit.Before;
+import java.util.Arrays;
+import java.util.Collection;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class RefreshCalculatorTest {
 
+  private final Duration input;
+  private final Duration want;
+
+  @Parameters(name = "Test {0}: calculateSecondsUntilNextRefresh({1})={2}")
+  public static Collection<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {"when expiration is greater than 1 hour", Duration.ofHours(4), Duration.ofHours(2)},
+          {"when expiration is equal to 1 hour", Duration.ofHours(1), Duration.ofMinutes(30)},
+          {
+            "when expiration is less than 1 hour, but greater than 4 minutes",
+            Duration.ofMinutes(5),
+            Duration.ofMinutes(1)
+          },
+          {"when expiration is less than 4 minutes", Duration.ofMinutes(3), Duration.ofMinutes(0)},
+          {"when expiration is now", Duration.ofMinutes(0), Duration.ofMinutes(0)},
+          {"when expiration is 62 minutes", Duration.ofMinutes(62), Duration.ofMinutes(31)},
+          {"when expiration is 58 minutes", Duration.ofMinutes(58), Duration.ofMinutes(54)},
+        });
+  }
+
+  public RefreshCalculatorTest(String name, Duration input, Duration want) {
+    this.input = input;
+    this.want = want;
+    this.refreshCalculator = new RefreshCalculator();
+  }
+
   private static final Instant NOW = Instant.now().truncatedTo(SECONDS);
-  private static final Instant SIXTY_TWO_MINUTES_FROM_NOW = NOW.plus(62, ChronoUnit.MINUTES);
-  private static final Instant FIFTY_EIGHT_MINUTES_FROM_NOW = NOW.plus(58, ChronoUnit.MINUTES);
-  private static final Instant THREE_MINUTES_FROM_NOW = NOW.plus(3, ChronoUnit.MINUTES);
-  private static final int THIRTY_ONE_MINUTES_FROM_NOW_IN_SECONDS = 1860;
   private RefreshCalculator refreshCalculator;
 
-  @Before
-  public void setUp() {
-    refreshCalculator = new RefreshCalculator();
-  }
-
   @Test
-  public void testCalculateSecondsUntilNextRefresh_whenDurationIsGreaterThanOneHour() {
-    long secondsUntilNextRefresh =
-        refreshCalculator.calculateSecondsUntilNextRefresh(NOW, SIXTY_TWO_MINUTES_FROM_NOW);
-    // Seconds until next refresh = time remaining on certificate / 2
-    assertThat(secondsUntilNextRefresh).isEqualTo(THIRTY_ONE_MINUTES_FROM_NOW_IN_SECONDS);
-  }
-
-  @Test
-  public void testCalculateSecondsUntilNextRefresh_whenDurationIsLessThanOneHour() {
-    long secondsUntilNextRefresh =
-        refreshCalculator.calculateSecondsUntilNextRefresh(NOW, FIFTY_EIGHT_MINUTES_FROM_NOW);
-    // Seconds until next refresh = 4 minutes before expiration
-    assertThat(secondsUntilNextRefresh)
-        .isEqualTo(SECONDS.between(NOW, FIFTY_EIGHT_MINUTES_FROM_NOW.minus(4, ChronoUnit.MINUTES)));
-  }
-
-  @Test
-  public void testCalculateSecondsUntilNextRefresh_whenDurationIsLessThanFourMinutes() {
-    long secondsUntilNextRefresh =
-        refreshCalculator.calculateSecondsUntilNextRefresh(NOW, THREE_MINUTES_FROM_NOW);
-
-    // Seconds until next refresh = now, certificate is expired
-    assertThat(secondsUntilNextRefresh).isEqualTo(0L);
+  public void testDuration() {
+    Duration nextRefresh =
+        Duration.ofSeconds(
+            refreshCalculator.calculateSecondsUntilNextRefresh(NOW, NOW.plus(input)));
+    assertThat(nextRefresh).isEqualTo(want);
   }
 }
