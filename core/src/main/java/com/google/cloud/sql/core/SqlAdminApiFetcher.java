@@ -107,10 +107,9 @@ public class SqlAdminApiFetcher {
         executor.submit(() -> fetchMetadata(instanceName, authType));
 
     // Fetch the ephemeral certificates
-    ListenableFuture<Certificate> ephemeralCertificateFuture = executor.submit(
-                () ->
-                    fetchEphemeralCertificate(
-                        keyPair, instanceName, credentials, authType));
+    ListenableFuture<Certificate> ephemeralCertificateFuture =
+        executor.submit(
+            () -> fetchEphemeralCertificate(keyPair, instanceName, credentials, authType));
 
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
