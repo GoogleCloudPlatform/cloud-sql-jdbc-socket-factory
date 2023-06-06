@@ -22,7 +22,6 @@ import static org.junit.Assert.assertThrows;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.OAuth2CredentialsWithRefresh;
 import com.google.cloud.sql.AuthType;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.security.GeneralSecurityException;
@@ -60,7 +59,7 @@ public class SqlAdminApiFetcherTest {
             null,
             AuthType.PASSWORD,
             newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+            mockAdminApi.getClientKeyPair());
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
     Map<String, String> ipAddrs = instanceData.getIpAddrs();
@@ -100,7 +99,7 @@ public class SqlAdminApiFetcherTest {
                       .build(),
                   AuthType.IAM,
                   newTestExecutor(),
-                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+                  mockAdminApi.getClientKeyPair());
             });
     assertThat(ex)
         .hasMessageThat()
@@ -129,7 +128,7 @@ public class SqlAdminApiFetcherTest {
                       .build(),
                   AuthType.IAM,
                   newTestExecutor(),
-                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+                  mockAdminApi.getClientKeyPair());
             });
 
     assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
@@ -158,7 +157,7 @@ public class SqlAdminApiFetcherTest {
                       .build(),
                   AuthType.IAM,
                   newTestExecutor(),
-                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+                  mockAdminApi.getClientKeyPair());
             });
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
@@ -188,7 +187,7 @@ public class SqlAdminApiFetcherTest {
                       .build(),
                   AuthType.IAM,
                   newTestExecutor(),
-                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+                  mockAdminApi.getClientKeyPair());
             });
 
     assertThat(ex.getCause().getCause()).hasMessageThat().contains("Fake connect timeout");

@@ -59,7 +59,7 @@ class CloudSqlInstance {
   private final AuthType authType;
   private final Optional<OAuth2Credentials> iamAuthnCredentials;
   private final CloudSqlInstanceName instanceName;
-  private final ListenableFuture<KeyPair> keyPair;
+  private final KeyPair keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
   private final RateLimiter<Object> forcedRenewRateLimiter =
@@ -87,7 +87,7 @@ class CloudSqlInstance {
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
+      KeyPair keyPair) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.apiFetcher = apiFetcher;
     this.authType = authType;

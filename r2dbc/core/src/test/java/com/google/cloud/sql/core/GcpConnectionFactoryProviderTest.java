@@ -31,8 +31,6 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -65,7 +63,7 @@ public class GcpConnectionFactoryProviderTest {
   static final String PRIVATE_IP = "10.0.0.1";
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
   ListeningScheduledExecutorService defaultExecutor;
-  ListenableFuture<KeyPair> clientKeyPair;
+  KeyPair clientKeyPair;
   CoreSocketFactory coreSocketFactoryStub;
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
@@ -98,7 +96,7 @@ public class GcpConnectionFactoryProviderTest {
             Date.from(notBefore.toInstant()),
             Date.from(notAfter.toInstant()),
             subject,
-            Futures.getDone(clientKeyPair).getPublic());
+            clientKeyPair.getPublic());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
 
@@ -170,7 +168,7 @@ public class GcpConnectionFactoryProviderTest {
         new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
+    clientKeyPair = new KeyPair(publicKey, privateKey);
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 

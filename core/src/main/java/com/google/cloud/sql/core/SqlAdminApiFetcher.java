@@ -99,7 +99,7 @@ public class SqlAdminApiFetcher {
       OAuth2Credentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
+      KeyPair keyPair)
       throws ExecutionException, InterruptedException {
 
     // Fetch the metadata
@@ -107,13 +107,10 @@ public class SqlAdminApiFetcher {
         executor.submit(() -> fetchMetadata(instanceName, authType));
 
     // Fetch the ephemeral certificates
-    ListenableFuture<Certificate> ephemeralCertificateFuture =
-        Futures.whenAllComplete(keyPair)
-            .call(
+    ListenableFuture<Certificate> ephemeralCertificateFuture = executor.submit(
                 () ->
                     fetchEphemeralCertificate(
-                        Futures.getDone(keyPair), instanceName, credentials, authType),
-                executor);
+                        keyPair, instanceName, credentials, authType));
 
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
@@ -121,7 +118,7 @@ public class SqlAdminApiFetcher {
             .call(
                 () ->
                     createSslData(
-                        Futures.getDone(keyPair),
+                        keyPair,
                         Futures.getDone(metadataFuture),
                         Futures.getDone(ephemeralCertificateFuture),
                         instanceName,
