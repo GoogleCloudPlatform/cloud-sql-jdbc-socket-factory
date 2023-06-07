@@ -101,7 +101,7 @@ public class SqlAdminApiFetcher {
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException {
+      throws ExecutionException, InterruptedException {
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
@@ -155,7 +155,7 @@ public class SqlAdminApiFetcher {
                 },
                 executor);
 
-    return Uninterruptibles.getUninterruptibly(done);
+    return done.get();
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
