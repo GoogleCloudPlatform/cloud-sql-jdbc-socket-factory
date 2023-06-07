@@ -101,6 +101,7 @@ public class SqlAdminApiFetcher {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair)
       throws ExecutionException, InterruptedException {
+    
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
