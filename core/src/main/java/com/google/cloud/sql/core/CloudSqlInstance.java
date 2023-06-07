@@ -232,41 +232,31 @@ class CloudSqlInstance {
       credentials = null;
     }
 
-    InstanceData data = null;
-    Exception instanceDataException = null;
     try {
-      data =
+      InstanceData data =
           apiFetcher.getInstanceData(
               this.instanceName, credentials, this.authType, executor, keyPair);
-    } catch (ExecutionException | InterruptedException e) {
-      instanceDataException = e;
-    }
 
-    synchronized (instanceDataGuard) {
-      if (instanceDataException == null) {
+      synchronized (instanceDataGuard) {
         // update currentInstanceData with the most recent results
         currentInstanceData = Futures.immediateFuture(data);
 
         // schedule a replacement before the SSLContext expires;
         nextInstanceData =
             executor.schedule(
-                () -> performRefresh(),
+                this::performRefresh,
                 refreshCalculator.calculateSecondsUntilNextRefresh(
                     Instant.now(), data.getExpiration().toInstant()),
                 TimeUnit.SECONDS);
-      } else {
-        nextInstanceData = executor.submit(() -> performRefresh());
       }
-    }
 
-    if (instanceDataException != null && instanceDataException instanceof ExecutionException) {
-      throw (ExecutionException) instanceDataException;
+      return data;
+    } catch (ExecutionException | InterruptedException e) {
+      synchronized (instanceDataGuard) {
+        nextInstanceData = executor.submit(this::performRefresh);
+      }
+      throw e;
     }
-    if (instanceDataException != null && instanceDataException instanceof InterruptedException) {
-      throw (InterruptedException) instanceDataException;
-    }
-
-    return data;
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
