@@ -225,19 +225,25 @@ class CloudSqlInstance {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
+    final GoogleCredentials credentials;
+    if (iamAuthnCredentials.isPresent()) {
+      credentials = getDownscopedCredentials(iamAuthnCredentials.get());
+    } else {
+      credentials = null;
+    }
+
+    InstanceData data = null;
+    Exception instanceDataException = null;
+    try {
+      data =
+          apiFetcher.getInstanceData(
+              this.instanceName, credentials, this.authType, executor, keyPair);
+    } catch (ExecutionException | InterruptedException e) {
+      instanceDataException = e;
+    }
+
     synchronized (instanceDataGuard) {
-      try {
-        final GoogleCredentials credentials;
-        if (iamAuthnCredentials.isPresent()) {
-          credentials = getDownscopedCredentials(iamAuthnCredentials.get());
-        } else {
-          credentials = null;
-        }
-
-        InstanceData data =
-            apiFetcher.getInstanceData(
-                this.instanceName, credentials, this.authType, executor, keyPair);
-
+      if (instanceDataException == null) {
         // update currentInstanceData with the most recent results
         currentInstanceData = Futures.immediateFuture(data);
 
@@ -248,13 +254,19 @@ class CloudSqlInstance {
                 refreshCalculator.calculateSecondsUntilNextRefresh(
                     Instant.now(), data.getExpiration().toInstant()),
                 TimeUnit.SECONDS);
-
-        return data;
-      } catch (Exception e) {
+      } else {
         nextInstanceData = executor.submit(() -> performRefresh());
-        throw e;
       }
     }
+
+    if (instanceDataException != null && instanceDataException instanceof ExecutionException) {
+      throw (ExecutionException) instanceDataException;
+    }
+    if (instanceDataException != null && instanceDataException instanceof InterruptedException) {
+      throw (InterruptedException) instanceDataException;
+    }
+
+    return data;
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {
