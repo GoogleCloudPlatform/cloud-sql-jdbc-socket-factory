@@ -43,15 +43,6 @@ public class StubCredentialFactory implements CredentialFactory {
     this.expirationTimeInMilliseconds = expirationTimeInMilliseconds;
   }
 
-  public StubCredentialFactory(OAuth2Credentials oAuth2Credentials) {
-    this.oAuth2Credentials = oAuth2Credentials;
-    try {
-      this.oAuth2Credentials.refresh();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @Override
   public HttpRequestInitializer create() {
     if (oAuth2Credentials != null) {
