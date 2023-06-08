@@ -25,7 +25,6 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 
@@ -89,8 +87,7 @@ class CloudSqlInstance {
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws IOException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.apiFetcher = apiFetcher;
     this.authType = authType;
@@ -228,61 +225,38 @@ class CloudSqlInstance {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
-    ListenableFuture<InstanceData> refreshFuture;
-
+    final GoogleCredentials credentials;
     if (iamAuthnCredentials.isPresent()) {
-      GoogleCredentials downscopedCredentials = getDownscopedCredentials(iamAuthnCredentials.get());
-      refreshFuture =
-          apiFetcher.getInstanceData(
-              instanceName, downscopedCredentials, AuthType.IAM, executor, keyPair);
+      credentials = getDownscopedCredentials(iamAuthnCredentials.get());
     } else {
-      refreshFuture =
-          apiFetcher.getInstanceData(instanceName, null, AuthType.PASSWORD, executor, keyPair);
+      credentials = null;
     }
 
-    Futures.addCallback(
-        refreshFuture,
-        new FutureCallback<InstanceData>() {
-          @Override
-          public void onSuccess(InstanceData instanceData) {
-            synchronized (instanceDataGuard) {
-              // update currentInstanceData with the most recent results
-              currentInstanceData = refreshFuture;
-              // schedule a replacement before the SSLContext expires;
-              nextInstanceData =
-                  executor.schedule(
-                      () -> performRefresh(),
-                      refreshCalculator.calculateSecondsUntilNextRefresh(
-                          Instant.now(), getInstanceData().getExpiration().toInstant()),
-                      TimeUnit.SECONDS);
-            }
-          }
+    try {
+      InstanceData data =
+          apiFetcher.getInstanceData(
+              this.instanceName, credentials, this.authType, executor, keyPair);
 
-          @Override
-          public void onFailure(Throwable t) {
-            logger.log(
-                Level.WARNING,
-                "An error occurred while performing refresh. Retrying immediately.",
-                t);
-            synchronized (instanceDataGuard) {
-              InstanceData instanceData = null;
-              try {
-                instanceData = getInstanceData();
-              } catch (Exception e) {
-                // this means the result was invalid
-              }
-              if (instanceData == null
-                  || instanceData.getExpiration().toInstant().isBefore(Instant.now())) {
-                // replace current if it is expired or invalid
-                currentInstanceData = refreshFuture;
-              }
-              nextInstanceData = executor.submit(() -> performRefresh());
-            }
-          }
-        },
-        executor);
+      synchronized (instanceDataGuard) {
+        // update currentInstanceData with the most recent results
+        currentInstanceData = Futures.immediateFuture(data);
 
-    return refreshFuture.get();
+        // schedule a replacement before the SSLContext expires;
+        nextInstanceData =
+            executor.schedule(
+                this::performRefresh,
+                refreshCalculator.calculateSecondsUntilNextRefresh(
+                    Instant.now(), data.getExpiration().toInstant()),
+                TimeUnit.SECONDS);
+      }
+
+      return data;
+    } catch (ExecutionException | InterruptedException e) {
+      synchronized (instanceDataGuard) {
+        nextInstanceData = executor.submit(this::performRefresh);
+      }
+      throw e;
+    }
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {

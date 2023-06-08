@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -93,12 +94,14 @@ public class SqlAdminApiFetcher {
         + "-----END RSA PUBLIC KEY-----\n";
   }
 
-  ListenableFuture<InstanceData> getInstanceData(
+  InstanceData getInstanceData(
       CloudSqlInstanceName instanceName,
       OAuth2Credentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
+      ListenableFuture<KeyPair> keyPair)
+      throws ExecutionException, InterruptedException {
+
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
@@ -152,7 +155,7 @@ public class SqlAdminApiFetcher {
                 },
                 executor);
 
-    return done;
+    return done.get();
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {

@@ -38,6 +38,11 @@ public class BadConnectionFactory extends HttpTransport {
 
     @Override
     public LowLevelHttpResponse execute() throws IOException {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        // Ignore the interruption
+      }
       throw new SocketTimeoutException("Fake connect timeout");
     }
   }

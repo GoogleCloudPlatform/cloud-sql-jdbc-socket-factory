@@ -293,6 +293,9 @@
               <failOnWarning>true</failOnWarning>
               <ignoredDependencies>
                 <!--
+                Necessary for OAuth dependencies
+                com.google.auth:google-auth-library-credentials
+
                 Necessary for Unix socket support:
                 org.ow2.asm:asm-util AND com.github.jnr:jnr-unixsocket
 
@@ -308,7 +311,7 @@
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
               </ignoredDependencies>
             </configuration>
             <executions>
