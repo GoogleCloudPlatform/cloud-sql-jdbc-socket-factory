@@ -118,6 +118,7 @@ jobs:
         SQLSERVER_USER: '${{ steps.secrets.outputs.SQLSERVER_USER }}'
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
+        GOOGLE_CLOUD_QUOTA_PROJECT: '${{ secrets.GOOGLE_CLOUD_PROJECT }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: FlakyBot (Linux)
