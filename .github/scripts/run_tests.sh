@@ -58,5 +58,14 @@ echo "Running tests using Java:"
 java -version
 
 echo "Maven version: $(mvn --version)"
-mvn -e -B  -ntp  verify -P e2e -Dcheckstyle.skip
-echo -e "******************** Tests complete.  ********************\n"
+if mvn -e -B  -ntp  verify -P e2e -Dcheckstyle.skip ; then
+  echo -e "******************** Tests complete.  ********************\n"
+else
+  echo -e "******************** Tests Failed.  ********************\n"
+  set +x
+  for report in $(find . -path '*/surefire-reports/*') ; do
+    echo "Surefire Report: $report"
+    cat "$report"
+  done
+  exit 1
+fi
