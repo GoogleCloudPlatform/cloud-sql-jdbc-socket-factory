@@ -228,7 +228,7 @@ class CloudSqlInstance {
     final GoogleCredentials credentials;
     if (iamAuthnCredentials.isPresent()) {
       credentials = getDownscopedCredentials(iamAuthnCredentials.get());
-      logger.info("Credentials type: "+credentials.getClass().getName()+" "+credentials);
+      logger.info("Credentials type: " + credentials.getClass().getName() + " " + credentials);
     } else {
       credentials = null;
     }
