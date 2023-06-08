@@ -70,17 +70,13 @@ public final class CoreSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
   private static final List<String> userAgents = new ArrayList<>();
   private static final String version = getVersion();
-  private static final CoreSocketFactory coreSocketFactory;
+  private static CoreSocketFactory coreSocketFactory;
   private final KeyPair localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
   private final SqlAdminApiFetcher adminApiService;
-
-  static {
-    coreSocketFactory = newFactory();
-  }
 
   @VisibleForTesting
   CoreSocketFactory(
@@ -96,27 +92,26 @@ public final class CoreSocketFactory {
     this.localKeyPair = localKeyPair;
   }
 
-  private static CoreSocketFactory newFactory() {
-    logger.info("First Cloud SQL connection, generating RSA key pair.");
-
-    CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
-
-    ListeningScheduledExecutorService executor = getDefaultExecutor();
-    HttpRequestInitializer credential = credentialFactory.create();
-
-    SqlAdminApiFetcher adminApiService =
-        new SqlAdminApiFetcherFactory(getUserAgents()).create(credential);
-
-    return new CoreSocketFactory(
-        CoreSocketFactory.generateRsaKeyPair(),
-        adminApiService,
-        credentialFactory,
-        DEFAULT_SERVER_PROXY_PORT,
-        executor);
-  }
-
   /** Returns the {@link CoreSocketFactory} singleton. */
-  public static CoreSocketFactory getInstance() {
+  public static synchronized CoreSocketFactory getInstance() {
+    if (coreSocketFactory == null) {
+      logger.info("First Cloud SQL connection, generating RSA key pair.");
+
+      CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
+
+      HttpRequestInitializer credential = credentialFactory.create();
+      SqlAdminApiFetcher adminApiService =
+          new SqlAdminApiFetcherFactory(getUserAgents()).create(credential);
+      ListeningScheduledExecutorService executor = getDefaultExecutor();
+
+      coreSocketFactory =
+          new CoreSocketFactory(
+              CoreSocketFactory.generateRsaKeyPair(),
+              adminApiService,
+              credentialFactory,
+              DEFAULT_SERVER_PROXY_PORT,
+              executor);
+    }
     return coreSocketFactory;
   }
 
