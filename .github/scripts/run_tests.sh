@@ -63,8 +63,9 @@ if mvn -e -B  -ntp  verify -P e2e -Dcheckstyle.skip ; then
 else
   echo -e "******************** Tests Failed.  ********************\n"
   set +x
-  for report in $(find . -path '*/surefire-reports/*') ; do
-    echo "Surefire Report: $report"
+  for report in $(find . -path '*/surefire-reports/*.txt') ; do
+    if grep -q FAILURE "$report"
+    echo "Failed Test Report: $report"
     cat "$report"
   done
   exit 1

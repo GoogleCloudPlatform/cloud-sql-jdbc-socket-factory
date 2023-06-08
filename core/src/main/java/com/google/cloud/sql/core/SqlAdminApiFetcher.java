@@ -304,10 +304,10 @@ public class SqlAdminApiFetcher {
           try {
             credentials.refresh();
           } catch (IllegalStateException e) {
-            logger.warning(
+            throw new IllegalStateException(
                 String.format(
-                    "Illegal state while attempting to refresh credentials %s, %s",
-                    credentials.getClass().getName(), e.getMessage()));
+                    "Illegal state while attempting to refresh credentials %s, %s %s",
+                    credentials.getClass().getName(), e.getMessage(), credentials.toString()), e);
           }
           return credentials;
         };
