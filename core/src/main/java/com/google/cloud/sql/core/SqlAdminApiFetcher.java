@@ -307,7 +307,8 @@ public class SqlAdminApiFetcher {
             throw new IllegalStateException(
                 String.format(
                     "Illegal state while attempting to refresh credentials %s, %s %s",
-                    credentials.getClass().getName(), e.getMessage(), credentials.toString()), e);
+                    credentials.getClass().getName(), e.getMessage(), credentials.toString()),
+                e);
           }
           return credentials;
         };
