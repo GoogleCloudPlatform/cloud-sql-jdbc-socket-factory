@@ -27,8 +27,6 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -54,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -99,18 +98,17 @@ public class SqlAdminApiFetcher {
       OAuth2Credentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPairFuture)
+      Future<KeyPair> keyPairFuture)
       throws ExecutionException, InterruptedException {
 
     // Start to fetch the metadata
-    ListenableFuture<Metadata> metadataFuture =
-        executor.submit(() -> fetchMetadata(instanceName, authType));
+    Future<Metadata> metadataFuture = executor.submit(() -> fetchMetadata(instanceName, authType));
 
     // Wait for keyPairFuture to resolve
     KeyPair keyPair = keyPairFuture.get();
 
     // Start to fetch the ephemeral certificates
-    ListenableFuture<Certificate> ephemeralCertificateFuture =
+    Future<Certificate> ephemeralCertificateFuture =
         executor.submit(
             () -> fetchEphemeralCertificate(keyPair, instanceName, credentials, authType));
 
