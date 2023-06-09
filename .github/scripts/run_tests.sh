@@ -64,9 +64,10 @@ else
   echo -e "******************** Tests Failed.  ********************\n"
   set +x
   for report in $(find . -path '*/surefire-reports/*.txt') ; do
-    if grep -q FAILURE "$report"
-    echo "Failed Test Report: $report"
-    cat "$report"
+    if grep -q FAILURE "$report" > /dev/null 2>&1 ; then
+      echo "Failed Test Report: $report"
+      cat "$report"
+    fi
   done
   exit 1
 fi
