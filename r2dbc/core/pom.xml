@@ -130,12 +130,12 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-      <version>3.5.5</version>
+      <version>3.5.6</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
-      <version>4.1.84.Final</version>
+      <version>4.1.92.Final</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
