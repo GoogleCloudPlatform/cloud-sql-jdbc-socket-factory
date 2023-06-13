@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.12.0</version>
+    <version>1.12.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
