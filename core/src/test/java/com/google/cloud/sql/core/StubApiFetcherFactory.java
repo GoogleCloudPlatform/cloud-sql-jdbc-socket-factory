@@ -22,7 +22,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
-import com.google.cloud.sql.ApiFetcherFactory;
 
 public class StubApiFetcherFactory implements ApiFetcherFactory {
 

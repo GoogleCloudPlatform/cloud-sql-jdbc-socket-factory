@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
+package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.core.SqlAdminApiFetcher;
 
 /** Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API. */
 public interface ApiFetcherFactory {

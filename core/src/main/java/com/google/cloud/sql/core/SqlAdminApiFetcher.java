@@ -60,12 +60,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
-public class SqlAdminApiFetcher {
+class SqlAdminApiFetcher {
 
   private static final Logger logger = Logger.getLogger(SqlAdminApiFetcher.class.getName());
   private final SQLAdmin apiClient;
 
-  public SqlAdminApiFetcher(SQLAdmin apiClient) {
+  SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
 
@@ -162,7 +162,7 @@ public class SqlAdminApiFetcher {
     return Optional.ofNullable(credentials.getAccessToken().getExpirationTime());
   }
 
-  public String getApplicationName() {
+  String getApplicationName() {
     return apiClient.getApplicationName();
   }
 
