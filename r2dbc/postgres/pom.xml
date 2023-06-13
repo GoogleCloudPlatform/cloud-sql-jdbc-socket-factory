@@ -78,6 +78,11 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
+        <version>4.1.93.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
         <version>4.1.93.Final</version>
       </dependency>
