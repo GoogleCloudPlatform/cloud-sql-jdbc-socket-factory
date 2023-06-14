@@ -302,7 +302,7 @@ public class SqlAdminApiFetcher {
 
     // if the access token has not expired, do not attempt to refresh
     AccessToken token = credentials.getAccessToken();
-    if( token == null || token.getExpirationTime().toInstant().isAfter(Instant.now()) ) {
+    if (token == null || token.getExpirationTime().toInstant().isAfter(Instant.now())) {
       return;
     }
 
