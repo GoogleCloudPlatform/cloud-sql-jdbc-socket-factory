@@ -300,18 +300,10 @@ public class SqlAdminApiFetcher {
    */
   private void refreshWithRetry(OAuth2Credentials credentials) throws IOException {
 
-    // if the access token has not expired, do not attempt to refresh
-    AccessToken token = credentials.getAccessToken();
-    if (token == null
-        || token.getExpirationTime() == null
-        || token.getExpirationTime().toInstant().isAfter(Instant.now())) {
-      return;
-    }
-
     Callable<OAuth2Credentials> refresh =
         () -> {
           try {
-            credentials.refreshIfExpired();
+            credentials.refresh();
           } catch (IllegalStateException e) {
             throw new IllegalStateException(
                 String.format(
