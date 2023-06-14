@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.auth.Credentials;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -121,7 +122,15 @@ class CloudSqlInstance {
   private OAuth2Credentials parseCredentials(HttpRequestInitializer source) {
     if (source instanceof HttpCredentialsAdapter) {
       HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
-      return (OAuth2Credentials) adapter.getCredentials();
+      Credentials c = adapter.getCredentials();
+      if (c != null && c instanceof OAuth2Credentials) {
+        return (OAuth2Credentials) c;
+      }
+      throw new RuntimeException(
+          String.format(
+              "[%s] Unable to connect via automatic IAM authentication: "
+                  + "HttpCredentialsAdapter did not create valid credentials. %s, %s",
+              instanceName.getConnectionName(), source.getClass().getName(), c));
     }
 
     if (source instanceof Credential) {
