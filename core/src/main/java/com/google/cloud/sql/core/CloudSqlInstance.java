@@ -268,11 +268,26 @@ class CloudSqlInstance {
     final GoogleCredentials credentials;
     if (iamAuthnCredentials.isPresent()) {
       credentials = (GoogleCredentials) parseCredentials(tokenSource.get());
-      credentials.refreshIfExpired();
+      try {
+        credentials.refreshIfExpired();
+      } catch (IllegalStateException e) {
+        throw new IllegalStateException("Error refreshing credentials " + credentials, e);
+      }
+      if (credentials.getAccessToken() == null) {
+        throw new IllegalStateException("Credentials do not have an access token");
+      }
+      if (credentials.getAccessToken().getExpirationTime() != null
+          && credentials.getAccessToken().getExpirationTime().before(new Date())) {
+        throw new IllegalStateException(
+            "Credentials were refreshed but still have an expired date");
+      }
       GoogleCredentials downscoped = getDownscopedCredentials(credentials);
       logger.info("Credentials type: " + credentials.getClass().getName() + " " + credentials);
       logger.info("Downscoped type: " + downscoped.getClass().getName() + " " + downscoped);
-      return Optional.ofNullable(downscoped.getAccessToken());
+      if (downscoped.getAccessToken() == null) {
+        throw new IllegalStateException("Donwscoped credentials do not have an access token");
+      }
+      return Optional.of(downscoped.getAccessToken());
     }
     return Optional.empty();
   }
