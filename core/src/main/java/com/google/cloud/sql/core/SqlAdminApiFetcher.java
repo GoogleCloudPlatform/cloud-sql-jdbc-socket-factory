@@ -142,7 +142,7 @@ class SqlAdminApiFetcher {
 
                   if (authType == AuthType.IAM) {
                     expiration =
-                        RealAccessTokenSupplier.getTokenExpirationTime(Futures.getDone(token))
+                        DefaultAccessTokenSupplier.getTokenExpirationTime(Futures.getDone(token))
                             .filter(
                                 tokenExpiration ->
                                     x509Certificate.getNotAfter().after(tokenExpiration))
