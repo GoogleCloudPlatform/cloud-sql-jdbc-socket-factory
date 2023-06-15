@@ -59,6 +59,7 @@ class CloudSqlInstance {
   private final SqlAdminApiFetcher apiFetcher;
   private final AuthType authType;
   private final Optional<OAuth2Credentials> iamAuthnCredentials;
+  private final Optional<HttpRequestInitializer> tokenSource;
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
@@ -97,8 +98,10 @@ class CloudSqlInstance {
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
-      this.iamAuthnCredentials = Optional.of(parseCredentials(source));
+      this.tokenSource = Optional.ofNullable(source);
+      this.iamAuthnCredentials = Optional.of(parseCredentials(tokenSource.get()));
     } else {
+      this.tokenSource = Optional.empty();
       this.iamAuthnCredentials = Optional.empty();
     }
 
@@ -234,18 +237,10 @@ class CloudSqlInstance {
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
 
-    final GoogleCredentials credentials;
-    if (iamAuthnCredentials.isPresent()) {
-      credentials = getDownscopedCredentials(iamAuthnCredentials.get());
-      logger.info("Credentials type: " + credentials.getClass().getName() + " " + credentials);
-    } else {
-      credentials = null;
-    }
-
     try {
       InstanceData data =
           apiFetcher.getInstanceData(
-              this.instanceName, credentials, this.authType, executor, keyPair);
+              this.instanceName, this::accessTokenSupplier, this.authType, executor, keyPair);
 
       synchronized (instanceDataGuard) {
         // update currentInstanceData with the most recent results
@@ -267,6 +262,19 @@ class CloudSqlInstance {
       }
       throw e;
     }
+  }
+
+  private Optional<AccessToken> accessTokenSupplier() throws IOException {
+    final GoogleCredentials credentials;
+    if (iamAuthnCredentials.isPresent()) {
+      credentials = (GoogleCredentials) parseCredentials(tokenSource.get());
+      credentials.refreshIfExpired();
+      GoogleCredentials downscoped = getDownscopedCredentials(credentials);
+      logger.info("Credentials type: " + credentials.getClass().getName() + " " + credentials);
+      logger.info("Downscoped type: " + downscoped.getClass().getName() + " " + downscoped);
+      return Optional.ofNullable(downscoped.getAccessToken());
+    }
+    return Optional.empty();
   }
 
   private Optional<Date> getTokenExpirationTime(Credential credentials) {

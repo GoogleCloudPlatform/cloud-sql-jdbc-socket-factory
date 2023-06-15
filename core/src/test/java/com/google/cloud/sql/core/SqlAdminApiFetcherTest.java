@@ -20,17 +20,17 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.OAuth2CredentialsWithRefresh;
 import com.google.cloud.sql.AuthType;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -92,12 +92,7 @@ public class SqlAdminApiFetcherTest {
             () -> {
               fetcher.getInstanceData(
                   new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-                  OAuth2CredentialsWithRefresh.newBuilder()
-                      .setRefreshHandler(
-                          mockAdminApi.getRefreshHandler(
-                              "refresh-token", Date.from(Instant.now().plus(1, ChronoUnit.HOURS))))
-                      .setAccessToken(new AccessToken("my-token", Date.from(Instant.now())))
-                      .build(),
+                  () -> Optional.empty(),
                   AuthType.IAM,
                   newTestExecutor(),
                   Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
@@ -121,12 +116,7 @@ public class SqlAdminApiFetcherTest {
             () -> {
               fetcher.getInstanceData(
                   new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-                  OAuth2CredentialsWithRefresh.newBuilder()
-                      .setRefreshHandler(
-                          mockAdminApi.getRefreshHandler(
-                              "", Date.from(Instant.now().plus(1, ChronoUnit.HOURS)) /* empty */))
-                      .setAccessToken(new AccessToken("" /* ignored */, Date.from(Instant.now())))
-                      .build(),
+                  () -> Optional.of(new AccessToken("" /* ignored */, null)),
                   AuthType.IAM,
                   newTestExecutor(),
                   Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
@@ -149,13 +139,7 @@ public class SqlAdminApiFetcherTest {
             () -> {
               fetcher.getInstanceData(
                   new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-                  OAuth2CredentialsWithRefresh.newBuilder()
-                      .setRefreshHandler(
-                          mockAdminApi.getRefreshHandler(
-                              "refresh-token",
-                              Date.from(Instant.now().minus(1, ChronoUnit.HOURS)) /* 1 hour ago */))
-                      .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
-                      .build(),
+                  () -> Optional.of(new AccessToken("original-token", Date.from(Instant.now()))),
                   AuthType.IAM,
                   newTestExecutor(),
                   Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
@@ -178,20 +162,15 @@ public class SqlAdminApiFetcherTest {
             () -> {
               fetcher.getInstanceData(
                   new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-                  OAuth2CredentialsWithRefresh.newBuilder()
-                      .setRefreshHandler(
-                          mockAdminApi.getRefreshHandler(
-                              "refresh-token",
-                              Date.from(
-                                  Instant.now().plus(1, ChronoUnit.HOURS)) /* 1 hour from now */))
-                      .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
-                      .build(),
+                  () -> {
+                    throw new IOException("Fake connect timeout");
+                  },
                   AuthType.IAM,
                   newTestExecutor(),
                   Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
             });
 
-    assertThat(ex.getCause().getCause()).hasMessageThat().contains("Fake connect timeout");
+    assertThat(ex.getCause()).hasMessageThat().contains("Fake connect timeout");
   }
 
   @SuppressWarnings("SameParameterValue")
