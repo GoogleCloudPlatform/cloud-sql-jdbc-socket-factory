@@ -23,7 +23,6 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
@@ -44,7 +43,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -52,7 +50,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
@@ -96,11 +93,15 @@ class SqlAdminApiFetcher {
 
   InstanceData getInstanceData(
       CloudSqlInstanceName instanceName,
-      OAuth2Credentials credentials,
+      AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair)
       throws ExecutionException, InterruptedException {
+
+    ListenableFuture<Optional<AccessToken>> token =
+        executor.submit(
+            () -> accessTokenSupplier != null ? accessTokenSupplier.get() : Optional.empty());
 
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
@@ -108,11 +109,11 @@ class SqlAdminApiFetcher {
 
     // Fetch the ephemeral certificates
     ListenableFuture<Certificate> ephemeralCertificateFuture =
-        Futures.whenAllComplete(keyPair)
+        Futures.whenAllComplete(keyPair, token)
             .call(
                 () ->
                     fetchEphemeralCertificate(
-                        Futures.getDone(keyPair), instanceName, credentials, authType),
+                        Futures.getDone(keyPair), instanceName, Futures.getDone(token), authType),
                 executor);
 
     // Once the API calls are complete, construct the SSLContext for the sockets
@@ -141,7 +142,7 @@ class SqlAdminApiFetcher {
 
                   if (authType == AuthType.IAM) {
                     expiration =
-                        getTokenExpirationTime(credentials)
+                        RealAccessTokenSupplier.getTokenExpirationTime(Futures.getDone(token))
                             .filter(
                                 tokenExpiration ->
                                     x509Certificate.getNotAfter().after(tokenExpiration))
@@ -156,10 +157,6 @@ class SqlAdminApiFetcher {
                 executor);
 
     return done.get();
-  }
-
-  private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
-    return Optional.ofNullable(credentials.getAccessToken().getExpirationTime());
   }
 
   String getApplicationName() {
@@ -236,28 +233,22 @@ class SqlAdminApiFetcher {
   private Certificate fetchEphemeralCertificate(
       KeyPair keyPair,
       CloudSqlInstanceName instanceName,
-      OAuth2Credentials credentials,
+      Optional<AccessToken> accessTokenOptional,
       AuthType authType) {
 
     // Use the SQL Admin API to create a new ephemeral certificate.
     GenerateEphemeralCertRequest request =
         new GenerateEphemeralCertRequest().setPublicKey(generatePublicKeyCert(keyPair));
 
-    if (authType == AuthType.IAM) {
-      try {
-        refreshWithRetry(credentials);
-        AccessToken accessToken = credentials.getAccessToken();
+    if (authType == AuthType.IAM && accessTokenOptional.isPresent()) {
+      AccessToken accessToken = accessTokenOptional.get();
 
-        validateAccessToken(accessToken);
+      validateAccessToken(accessToken);
 
-        String token = accessToken.getTokenValue();
-        // TODO: remove this once issue with OAuth2 Tokens is resolved.
-        // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
-        request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
-      } catch (IOException ex) {
-        throw addExceptionContext(
-            ex, "An exception occurred while fetching IAM auth token:", instanceName);
-      }
+      String token = accessToken.getTokenValue();
+      // TODO: remove this once issue with OAuth2 Tokens is resolved.
+      // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
+      request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
     }
     GenerateEphemeralCertResponse response;
     try {
@@ -289,32 +280,6 @@ class SqlAdminApiFetcher {
     }
 
     return ephemeralCertificate;
-  }
-
-  /**
-   * refreshWithRetry attempts to refresh the credentials 3 times, waiting 3-6 seconds between
-   * attempts.
-   *
-   * @param credentials the credentials to refresh
-   * @throws IOException when the credentials.refresh() has failed 3 times
-   */
-  private void refreshWithRetry(OAuth2Credentials credentials) throws IOException {
-    Callable<OAuth2Credentials> refresh =
-        () -> {
-          credentials.refresh();
-          return credentials;
-        };
-
-    RetryingCallable<OAuth2Credentials> c =
-        new RetryingCallable<>(refresh, 3, Duration.ofSeconds(3));
-    try {
-      c.call();
-    } catch (IOException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Unexpected exception while attempting to refresh OAuth2 credentials", e);
-    }
   }
 
   private void validateAccessToken(AccessToken accessToken) {
