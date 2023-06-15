@@ -391,10 +391,12 @@ public class DefaultAccessTokenSupplierTest {
     assertThat(DefaultAccessTokenSupplier.getTokenExpirationTime(Optional.empty()))
         .isEqualTo(Optional.empty());
     assertThat(
-            DefaultAccessTokenSupplier.getTokenExpirationTime(Optional.of(new AccessToken("", null))))
+            DefaultAccessTokenSupplier.getTokenExpirationTime(
+                Optional.of(new AccessToken("", null))))
         .isEqualTo(Optional.empty());
     assertThat(
-            DefaultAccessTokenSupplier.getTokenExpirationTime(Optional.of(new AccessToken("", past))))
+            DefaultAccessTokenSupplier.getTokenExpirationTime(
+                Optional.of(new AccessToken("", past))))
         .isEqualTo(Optional.of(past));
   }
 }
