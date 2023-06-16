@@ -258,7 +258,13 @@ public final class CoreSocketFactory {
     }
   }
 
-  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  /**
+   * Internal use only: Sets the default string which is appended to the SQLAdmin API client
+   * User-Agent header.
+   *
+   * <p>This is used by the specific database connector socket factory implementations to append
+   * their database name to the user agent.
+   */
   public static void addArtifactId(String artifactId) {
     String userAgent = artifactId + "/" + version;
     if (!userAgents.contains(userAgent)) {
@@ -280,7 +286,8 @@ public final class CoreSocketFactory {
   }
 
   /**
-   * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
+   * Adds an external application name to the user agent string for tracking. This is known to be
+   * used by the spring-cloud-gcp project.
    *
    * @throws IllegalStateException if the SQLAdmin client has already been initialized
    */
