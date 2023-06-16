@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.cloud.sql.ApplicationDefaultCredentialFactory;
 import com.google.cloud.sql.CredentialFactory;
 
 /**

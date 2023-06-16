@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
-import com.google.cloud.sql.SqlAdminApiFetcherFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -55,6 +54,7 @@ import jnr.unixsocket.UnixSocketChannel;
 public final class CoreSocketFactory {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
    *
@@ -114,10 +114,6 @@ public final class CoreSocketFactory {
               executor);
     }
     return coreSocketFactory;
-  }
-
-  static int getDefaultServerProxyPort() {
-    return DEFAULT_SERVER_PROXY_PORT;
   }
 
   // TODO(kvg): Figure out better executor to use for testing
@@ -210,21 +206,6 @@ public final class CoreSocketFactory {
     return getInstance().getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD).getSslData();
   }
 
-  /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  static SslData getSslData(String csqlInstanceName, AuthType authType) {
-    return getInstance().getCloudSqlInstance(csqlInstanceName, authType).getSslData();
-  }
-
-  /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  public static SslData getSslData(String csqlInstanceName) throws IOException {
-    return getSslData(csqlInstanceName, false);
-  }
-
-  /** Returns default ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName) {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(DEFAULT_IP_TYPES));
-  }
-
   /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
   public static String getHostIp(String csqlInstanceName, String ipTypes) throws IOException {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
@@ -277,7 +258,13 @@ public final class CoreSocketFactory {
     }
   }
 
-  /** Sets the default string which is appended to the SQLAdmin API client User-Agent header. */
+  /**
+   * Internal use only: Sets the default string which is appended to the SQLAdmin API client
+   * User-Agent header.
+   *
+   * <p>This is used by the specific database connector socket factory implementations to append
+   * their database name to the user agent.
+   */
   public static void addArtifactId(String artifactId) {
     String userAgent = artifactId + "/" + version;
     if (!userAgents.contains(userAgent)) {
@@ -291,7 +278,7 @@ public final class CoreSocketFactory {
   }
 
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
-  public static String getApplicationName() {
+  private static String getApplicationName() {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApiService.getApplicationName();
     }
@@ -299,7 +286,8 @@ public final class CoreSocketFactory {
   }
 
   /**
-   * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
+   * Adds an external application name to the user agent string for tracking. This is known to be
+   * used by the spring-cloud-gcp project.
    *
    * @throws IllegalStateException if the SQLAdmin client has already been initialized
    */

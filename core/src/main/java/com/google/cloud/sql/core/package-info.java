@@ -1,11 +1,13 @@
 /*
  * Copyright 2023 Google LLC
  *
+ * All Rights Reserved.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +16,9 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
-
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.core.SqlAdminApiFetcher;
-
-/** Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API. */
-public interface ApiFetcherFactory {
-
-  SqlAdminApiFetcher create(HttpRequestInitializer credentials);
-}
+/**
+ * Package com.google.cloud.sql.core holds internal shared packages that implement logic to create a
+ * socket to a Cloud SQL database. Classes in this package are considered internal and subject to
+ * change without notice.
+ */
+package com.google.cloud.sql.core;

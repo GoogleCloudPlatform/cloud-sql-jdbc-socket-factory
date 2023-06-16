@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
+package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.util.Arrays;
 
 /** This class creates a HttpRequestInitializer from Application Default Credentials. */
-public class ApplicationDefaultCredentialFactory implements CredentialFactory {
+class ApplicationDefaultCredentialFactory implements CredentialFactory {
 
   @Override
   public HttpRequestInitializer create() {

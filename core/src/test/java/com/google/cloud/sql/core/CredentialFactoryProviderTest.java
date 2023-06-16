@@ -18,7 +18,6 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.cloud.sql.ApplicationDefaultCredentialFactory;
 import com.google.cloud.sql.CredentialFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
