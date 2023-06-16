@@ -54,6 +54,15 @@ import jnr.unixsocket.UnixSocketChannel;
 public final class CoreSocketFactory {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+
+  /**
+   * Property used to set the application name for the underlying SQLAdmin client.
+   *
+   * @deprecated Use {@link #setApplicationName(String)} to set the application name
+   *     programmatically.
+   */
+  @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
@@ -267,7 +276,20 @@ public final class CoreSocketFactory {
     if (coreSocketFactory != null) {
       return coreSocketFactory.adminApiService.getApplicationName();
     }
-    return "";
+    return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
+  }
+
+  /**
+   * Sets the User-Agent header for requests made using the underlying SQLAdmin API client.
+   *
+   * @throws IllegalStateException if the SQLAdmin client has already been initialized
+   */
+  public static void setApplicationName(String applicationName) {
+    if (coreSocketFactory != null) {
+      throw new IllegalStateException(
+          "Unable to set ApplicationName - SQLAdmin client already initialized.");
+    }
+    System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
 
   /**
