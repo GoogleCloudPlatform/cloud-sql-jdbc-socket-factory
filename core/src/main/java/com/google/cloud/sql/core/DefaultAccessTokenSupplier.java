@@ -33,6 +33,7 @@ import java.util.Optional;
  * configured HttpRequestInitializer.
  */
 class DefaultAccessTokenSupplier implements AccessTokenSupplier {
+
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
   private final Optional<HttpRequestInitializer> tokenSource;
@@ -45,9 +46,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @param tokenSource the token source that produces auth tokens.
    */
   DefaultAccessTokenSupplier(Optional<HttpRequestInitializer> tokenSource) {
-    this.tokenSource = tokenSource;
-    retryCount = 3;
-    retryDuration = Duration.ofSeconds(3);
+    this(tokenSource, 3, Duration.ofSeconds(3));
   }
 
   /**
@@ -57,7 +56,6 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @param retryCount the number of attempts to refresh.
    * @param retryDuration the duration to wait between attempts.
    */
-  @VisibleForTesting
   DefaultAccessTokenSupplier(
       Optional<HttpRequestInitializer> tokenSource, int retryCount, Duration retryDuration) {
     this.tokenSource = tokenSource;
