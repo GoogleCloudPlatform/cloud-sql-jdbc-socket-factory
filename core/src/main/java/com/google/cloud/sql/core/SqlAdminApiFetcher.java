@@ -27,11 +27,9 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.AuthType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +44,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -54,21 +53,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
-public class SqlAdminApiFetcher {
+class SqlAdminApiFetcher {
 
   private static final Logger logger = Logger.getLogger(SqlAdminApiFetcher.class.getName());
   private final SQLAdmin apiClient;
 
-  public SqlAdminApiFetcher(SQLAdmin apiClient) {
+  SqlAdminApiFetcher(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
 
@@ -97,99 +94,75 @@ public class SqlAdminApiFetcher {
         + "-----END RSA PUBLIC KEY-----\n";
   }
 
-  // Schedules task to be executed once the provided futures are complete.
-  private <T> ListenableFuture<T> whenAllSucceed(
-      Callable<T> task,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<?>... futures) {
-    SettableFuture<T> taskFuture = SettableFuture.create();
-
-    // Create a countDown for all Futures to complete.
-    AtomicInteger countDown = new AtomicInteger(futures.length);
-
-    // Trigger the task when all futures are complete.
-    FutureCallback<Object> runWhenInputAreComplete =
-        new FutureCallback<Object>() {
-          @Override
-          public void onSuccess(@NullableDecl Object o) {
-            if (countDown.decrementAndGet() == 0) {
-              taskFuture.setFuture(executor.submit(task));
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (!taskFuture.setException(throwable)) {
-              String msg = "Got more than one input failure. Logging failures after the first";
-              logger.log(Level.SEVERE, msg, throwable);
-            }
-          }
-        };
-    for (ListenableFuture<?> future : futures) {
-      Futures.addCallback(future, runWhenInputAreComplete, executor);
-    }
-
-    return taskFuture;
-  }
-
-  ListenableFuture<InstanceData> getInstanceData(
+  InstanceData getInstanceData(
       CloudSqlInstanceName instanceName,
       OAuth2Credentials credentials,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
+      ListenableFuture<KeyPair> keyPair)
+      throws ExecutionException, InterruptedException {
+
+    // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
+
+    // Fetch the ephemeral certificates
     ListenableFuture<Certificate> ephemeralCertificateFuture =
-        whenAllSucceed(
-            () ->
-                fetchEphemeralCertificate(
-                    Futures.getDone(keyPair), instanceName, credentials, authType),
-            executor,
-            keyPair);
+        Futures.whenAllComplete(keyPair)
+            .call(
+                () ->
+                    fetchEphemeralCertificate(
+                        Futures.getDone(keyPair), instanceName, credentials, authType),
+                executor);
+
     // Once the API calls are complete, construct the SSLContext for the sockets
     ListenableFuture<SslData> sslContextFuture =
-        whenAllSucceed(
-            () ->
-                createSslData(
-                    Futures.getDone(keyPair),
-                    Futures.getDone(metadataFuture),
-                    Futures.getDone(ephemeralCertificateFuture),
-                    instanceName,
-                    authType),
-            executor,
-            keyPair,
-            metadataFuture,
-            ephemeralCertificateFuture);
+        Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture)
+            .call(
+                () ->
+                    createSslData(
+                        Futures.getDone(keyPair),
+                        Futures.getDone(metadataFuture),
+                        Futures.getDone(ephemeralCertificateFuture),
+                        instanceName,
+                        authType),
+                executor);
+
     // Once both the SSLContext and Metadata are complete, return the results
-    return whenAllSucceed(
-        () -> {
+    ListenableFuture<InstanceData> done =
+        Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
+            .call(
+                () -> {
 
-          // Get expiration value for new cert
-          Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
-          X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-          Date expiration = x509Certificate.getNotAfter();
+                  // Get expiration value for new cert
+                  Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
+                  X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+                  Date expiration = x509Certificate.getNotAfter();
 
-          if (authType == AuthType.IAM) {
-            expiration =
-                getTokenExpirationTime(credentials)
-                    .filter(tokenExpiration -> x509Certificate.getNotAfter().after(tokenExpiration))
-                    .orElse(x509Certificate.getNotAfter());
-          }
+                  if (authType == AuthType.IAM) {
+                    expiration =
+                        getTokenExpirationTime(credentials)
+                            .filter(
+                                tokenExpiration ->
+                                    x509Certificate.getNotAfter().after(tokenExpiration))
+                            .orElse(x509Certificate.getNotAfter());
+                  }
 
-          return new InstanceData(
-              Futures.getDone(metadataFuture), Futures.getDone(sslContextFuture), expiration);
-        },
-        executor,
-        metadataFuture,
-        sslContextFuture);
+                  return new InstanceData(
+                      Futures.getDone(metadataFuture),
+                      Futures.getDone(sslContextFuture),
+                      expiration);
+                },
+                executor);
+
+    return done.get();
   }
 
   private Optional<Date> getTokenExpirationTime(OAuth2Credentials credentials) {
     return Optional.ofNullable(credentials.getAccessToken().getExpirationTime());
   }
 
-  public String getApplicationName() {
+  String getApplicationName() {
     return apiClient.getApplicationName();
   }
 
@@ -272,7 +245,7 @@ public class SqlAdminApiFetcher {
 
     if (authType == AuthType.IAM) {
       try {
-        credentials.refresh();
+        refreshWithRetry(credentials);
         AccessToken accessToken = credentials.getAccessToken();
 
         validateAccessToken(accessToken);
@@ -318,6 +291,32 @@ public class SqlAdminApiFetcher {
     return ephemeralCertificate;
   }
 
+  /**
+   * refreshWithRetry attempts to refresh the credentials 3 times, waiting 3-6 seconds between
+   * attempts.
+   *
+   * @param credentials the credentials to refresh
+   * @throws IOException when the credentials.refresh() has failed 3 times
+   */
+  private void refreshWithRetry(OAuth2Credentials credentials) throws IOException {
+    Callable<OAuth2Credentials> refresh =
+        () -> {
+          credentials.refresh();
+          return credentials;
+        };
+
+    RetryingCallable<OAuth2Credentials> c =
+        new RetryingCallable<>(refresh, 3, Duration.ofSeconds(3));
+    try {
+      c.call();
+    } catch (IOException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(
+          "Unexpected exception while attempting to refresh OAuth2 credentials", e);
+    }
+  }
+
   private void validateAccessToken(AccessToken accessToken) {
     Date expirationTimeDate = accessToken.getExpirationTime();
     String tokenValue = accessToken.getTokenValue();
@@ -331,17 +330,21 @@ public class SqlAdminApiFetcher {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC"));
         String nowFormat = formatter.format(now);
         String expirationFormat = formatter.format(expirationTime);
-        throw new RuntimeException(
+        String errorMessage =
             "Access Token expiration time is in the past. Now = "
                 + nowFormat
                 + " Expiration = "
-                + expirationFormat);
+                + expirationFormat;
+        logger.warning(errorMessage);
+        throw new RuntimeException(errorMessage);
       }
     }
 
     // Is the token empty?
     if (tokenValue.length() == 0) {
-      throw new RuntimeException("Access Token has length of zero");
+      String errorMessage = "Access Token has length of zero";
+      logger.warning(errorMessage);
+      throw new RuntimeException(errorMessage);
     }
   }
 

@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.11.3-SNAPSHOT</version>
+  <version>1.12.1-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -185,7 +185,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -288,11 +288,14 @@
             <!--  There's a bug in the plugin that prevents us from failing on warning in the latest version (3.2.0).
                   Once a new version (> 3.2.0) is released, we can upgrade the plugin to latest.
                   See https://issues.apache.org/jira/browse/MDEP-753 -->
-            <version>3.5.0</version>
+            <version>3.6.0</version>
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoredDependencies>
                 <!--
+                Necessary for OAuth dependencies
+                com.google.auth:google-auth-library-credentials
+
                 Necessary for Unix socket support:
                 org.ow2.asm:asm-util AND com.github.jnr:jnr-unixsocket
 
@@ -308,7 +311,7 @@
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -330,7 +333,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -503,7 +506,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -524,7 +527,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.2.1</version>
+            <version>3.3.0</version>
             <executions>
               <execution>
                 <id>attach-sources</id>

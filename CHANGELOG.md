@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.12.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.2...v1.12.0) (2023-06-12)
+
+
+### Features
+
+* Use new certificate refresh logic ([5ad6103](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/5ad61033dd598cf4b1170d159a0b822d04fc61fd))
+
+
+### Bug Fixes
+
+* Fix refresh futures to avoid a hanging future when an api request fails during refresh. ([#1319](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1319)) ([1277b5e](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/1277b5eddcccf1828c45dbf2a37f5bc1f0da8e5c))
+* log error when token is invalid ([#1313](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1313)) ([2130317](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2130317355ea4b4c7bfc1e1a62ee8e51168320a4)), closes [#1174](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1174)
+* Retry when attempting to get the auth token ([#1301](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1301)) ([2694cc5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2694cc593c64175780282cdc8b7ea21bdb14aa19)), closes [#1288](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1288) [#1127](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1127)
+
 ## [1.11.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.1...v1.11.2) (2023-05-10)
 
 

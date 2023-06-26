@@ -23,7 +23,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.OAuth2CredentialsWithRefresh;
 import com.google.cloud.sql.AuthType;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.security.GeneralSecurityException;
@@ -55,15 +54,13 @@ public class SqlAdminApiFetcherTest {
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create());
 
-    ListenableFuture<InstanceData> instanceDataFuture =
+    InstanceData instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
             null,
             AuthType.PASSWORD,
             newTestExecutor(),
             Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
-
-    InstanceData instanceData = instanceDataFuture.get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
     Map<String, String> ipAddrs = instanceData.getIpAddrs();
@@ -89,20 +86,22 @@ public class SqlAdminApiFetcherTest {
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create());
 
-    ListenableFuture<InstanceData> instanceData =
-        fetcher.getInstanceData(
-            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "refresh-token", Date.from(Instant.now().plus(1, ChronoUnit.HOURS))))
-                .setAccessToken(new AccessToken("my-token", Date.from(Instant.now())))
-                .build(),
-            AuthType.IAM,
-            newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
-
-    ExecutionException ex = assertThrows(ExecutionException.class, instanceData::get);
+    ExecutionException ex =
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+              fetcher.getInstanceData(
+                  new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                  OAuth2CredentialsWithRefresh.newBuilder()
+                      .setRefreshHandler(
+                          mockAdminApi.getRefreshHandler(
+                              "refresh-token", Date.from(Instant.now().plus(1, ChronoUnit.HOURS))))
+                      .setAccessToken(new AccessToken("my-token", Date.from(Instant.now())))
+                      .build(),
+                  AuthType.IAM,
+                  newTestExecutor(),
+                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+            });
     assertThat(ex)
         .hasMessageThat()
         .contains("[p:r:i] IAM Authentication is not supported for SQL Server instances");
@@ -116,20 +115,22 @@ public class SqlAdminApiFetcherTest {
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create());
 
-    ListenableFuture<InstanceData> instanceData =
-        fetcher.getInstanceData(
-            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "", Date.from(Instant.now().plus(1, ChronoUnit.HOURS)) /* empty */))
-                .setAccessToken(new AccessToken("" /* ignored */, Date.from(Instant.now())))
-                .build(),
-            AuthType.IAM,
-            newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
-
-    ExecutionException ex = assertThrows(ExecutionException.class, instanceData::get);
+    ExecutionException ex =
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+              fetcher.getInstanceData(
+                  new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                  OAuth2CredentialsWithRefresh.newBuilder()
+                      .setRefreshHandler(
+                          mockAdminApi.getRefreshHandler(
+                              "", Date.from(Instant.now().plus(1, ChronoUnit.HOURS)) /* empty */))
+                      .setAccessToken(new AccessToken("" /* ignored */, Date.from(Instant.now())))
+                      .build(),
+                  AuthType.IAM,
+                  newTestExecutor(),
+                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+            });
 
     assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
   }
@@ -142,23 +143,55 @@ public class SqlAdminApiFetcherTest {
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create());
 
-    ListenableFuture<InstanceData> instanceData =
-        fetcher.getInstanceData(
-            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            OAuth2CredentialsWithRefresh.newBuilder()
-                .setRefreshHandler(
-                    mockAdminApi.getRefreshHandler(
-                        "refresh-token",
-                        Date.from(Instant.now().minus(1, ChronoUnit.HOURS)) /* 1 hour ago */))
-                .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
-                .build(),
-            AuthType.IAM,
-            newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
-
-    ExecutionException ex = assertThrows(ExecutionException.class, instanceData::get);
+    ExecutionException ex =
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+              fetcher.getInstanceData(
+                  new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                  OAuth2CredentialsWithRefresh.newBuilder()
+                      .setRefreshHandler(
+                          mockAdminApi.getRefreshHandler(
+                              "refresh-token",
+                              Date.from(Instant.now().minus(1, ChronoUnit.HOURS)) /* 1 hour ago */))
+                      .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
+                      .build(),
+                  AuthType.IAM,
+                  newTestExecutor(),
+                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+            });
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
+  }
+
+  @Test
+  public void testFetchInstanceData_throwsException_whenRequestsTimeout()
+      throws GeneralSecurityException, OperatorCreationException {
+    MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
+    SqlAdminApiFetcher fetcher =
+        new StubApiFetcherFactory(new BadConnectionFactory())
+            .create(new StubCredentialFactory().create());
+
+    ExecutionException ex =
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+              fetcher.getInstanceData(
+                  new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                  OAuth2CredentialsWithRefresh.newBuilder()
+                      .setRefreshHandler(
+                          mockAdminApi.getRefreshHandler(
+                              "refresh-token",
+                              Date.from(
+                                  Instant.now().plus(1, ChronoUnit.HOURS)) /* 1 hour from now */))
+                      .setAccessToken(new AccessToken("original-token", Date.from(Instant.now())))
+                      .build(),
+                  AuthType.IAM,
+                  newTestExecutor(),
+                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+            });
+
+    assertThat(ex.getCause().getCause()).hasMessageThat().contains("Fake connect timeout");
   }
 
   @SuppressWarnings("SameParameterValue")
