@@ -48,7 +48,7 @@ class CloudSqlInstance {
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
   private final ListeningScheduledExecutorService executor;
-  private final InstanceDataSupplier apiFetcher;
+  private final InstanceDataSupplier instanceDataSupplier;
   private final AuthType authType;
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
@@ -70,19 +70,19 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param apiFetcher Service class for interacting with the Cloud SQL Admin API
+   * @param instanceDataSupplier Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
-      InstanceDataSupplier apiFetcher,
+      InstanceDataSupplier instanceDataSupplier,
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
-    this.apiFetcher = apiFetcher;
+    this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
@@ -180,7 +180,7 @@ class CloudSqlInstance {
 
     try {
       InstanceData data =
-          apiFetcher.getInstanceData(
+          instanceDataSupplier.getInstanceData(
               this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair);
 
       synchronized (instanceDataGuard) {

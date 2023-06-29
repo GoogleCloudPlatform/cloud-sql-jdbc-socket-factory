@@ -41,7 +41,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  private InstanceDataSupplier fetcher;
+  private InstanceDataSupplier instanceDataSupplier;
   private InstanceData data;
   private SslData sslData;
 
@@ -71,7 +71,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() throws Exception {
-    fetcher =
+    instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount++;
@@ -89,7 +89,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testInstanceFailsOnConnectionError() throws Exception {
-    fetcher =
+    instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           throw new ExecutionException(new IOException("Fake connection error"));
         };
@@ -103,7 +103,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testCloudSqlInstanceForcesRefresh() throws Exception {
-    fetcher =
+    instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount++;
@@ -123,7 +123,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testGetPreferredIpTypes() throws Exception {
-    fetcher =
+    instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount++;
@@ -151,7 +151,7 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testGetPreferredIpTypesThrowsException() throws Exception {
-    fetcher =
+    instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount++;
@@ -172,7 +172,7 @@ public class CloudSqlInstanceTest {
   private CloudSqlInstance newCloudSqlInstance() {
     return new CloudSqlInstance(
         "project:region:instance",
-        fetcher,
+        instanceDataSupplier,
         AuthType.PASSWORD,
         stubCredentialFactory,
         executorService,
