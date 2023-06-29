@@ -15,8 +15,6 @@
  */
 package com.google.cloud.sql.core;
 
-import static org.mockito.Mockito.when;
-
 import com.google.cloud.sql.AuthType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.Truth;
@@ -30,6 +28,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.junit.After;
@@ -38,18 +37,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  @Mock private SqlAdminApiFetcher fetcher;
-  @Mock private InstanceData data;
-  @Mock private SslData sslData;
+  private InstanceDataSupplier fetcher;
+  private InstanceData data;
+  private SslData sslData;
 
   private int refreshCount;
   private ListeningScheduledExecutorService executorService;
@@ -62,12 +56,12 @@ public class CloudSqlInstanceTest {
 
   @Before
   public void setup() throws Exception {
-    MockitoAnnotations.openMocks(this);
     MockAdminApi mockAdminApi = new MockAdminApi();
     this.keyPairFuture = Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     executorService = newTestExecutor();
-    when(data.getSslData()).thenReturn(sslData);
     refreshCount = 0;
+    sslData = new SslData(null, null, null);
+    data = new InstanceData(null, sslData, null);
   }
 
   @After
@@ -76,22 +70,15 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void testCloudSqlInstance() throws Exception {
-    when(fetcher.getInstanceData(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-        .then(
-            new Answer<InstanceData>() {
-
-              @Override
-              public InstanceData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                // sleep for a moment, then return data
-                Thread.sleep(100);
-                refreshCount++;
-                return data;
-              }
-            });
-    when(data.getExpiration()).thenReturn(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-
+  public void testCloudSqlInstanceDataRetrievedSuccessfully() throws Exception {
+    fetcher =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount++;
+          this.data =
+              new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+          return data;
+        };
     // initialize instance after mocks are set up
     instance = newCloudSqlInstance();
 
@@ -101,18 +88,11 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void testInstanceFails() throws Exception {
-    when(fetcher.getInstanceData(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-        .then(
-            new Answer<InstanceData>() {
-
-              @Override
-              public InstanceData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new IOException("Fake connection error");
-              }
-            });
-    when(data.getExpiration()).thenReturn(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+  public void testInstanceFailsOnConnectionError() throws Exception {
+    fetcher =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          throw new ExecutionException(new IOException("Fake connection error"));
+        };
 
     // initialize instance after mocks are set up
     instance = newCloudSqlInstance();
@@ -123,22 +103,15 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testCloudSqlInstanceForcesRefresh() throws Exception {
-    when(fetcher.getInstanceData(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-        .then(
-            new Answer<InstanceData>() {
+    fetcher =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount++;
+          this.data =
+              new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+          return data;
+        };
 
-              @Override
-              public InstanceData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                // sleep for a moment, then return data
-                Thread.sleep(100);
-                refreshCount++;
-                return data;
-              }
-            });
-    when(data.getExpiration()).thenReturn(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-
-    // initialize instance after mocks are set up
     instance = newCloudSqlInstance();
 
     SslData gotSslData = instance.getSslData();
@@ -150,23 +123,21 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testGetPreferredIpTypes() throws Exception {
-    when(fetcher.getInstanceData(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-        .then(
-            new Answer<InstanceData>() {
-
-              @Override
-              public InstanceData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                refreshCount++;
-                return data;
-              }
-            });
-    when(data.getExpiration()).thenReturn(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-    when(data.getIpAddrs())
-        .thenReturn(
-            ImmutableMap.of(
-                "PUBLIC", "10.1.2.3",
-                "PRIVATE", "10.10.10.10"));
+    fetcher =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount++;
+          this.data =
+              new InstanceData(
+                  new Metadata(
+                      ImmutableMap.of(
+                          "PUBLIC", "10.1.2.3",
+                          "PRIVATE", "10.10.10.10"),
+                      null),
+                  sslData,
+                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+          return data;
+        };
 
     // initialize instance after mocks are set up
     instance = newCloudSqlInstance();
@@ -180,19 +151,17 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testGetPreferredIpTypesThrowsException() throws Exception {
-    when(fetcher.getInstanceData(
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-        .then(
-            new Answer<InstanceData>() {
-
-              @Override
-              public InstanceData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                refreshCount++;
-                return data;
-              }
-            });
-    when(data.getExpiration()).thenReturn(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-    when(data.getIpAddrs()).thenReturn(ImmutableMap.of("PUBLIC", "10.1.2.3"));
+    fetcher =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount++;
+          this.data =
+              new InstanceData(
+                  new Metadata(ImmutableMap.of("PUBLIC", "10.1.2.3"), null),
+                  sslData,
+                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+          return data;
+        };
 
     // initialize instance after mocks are set up
     instance = newCloudSqlInstance();

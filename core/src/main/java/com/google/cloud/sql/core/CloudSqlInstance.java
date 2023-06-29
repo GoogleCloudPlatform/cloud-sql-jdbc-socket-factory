@@ -48,10 +48,9 @@ class CloudSqlInstance {
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
 
   private final ListeningScheduledExecutorService executor;
-  private final SqlAdminApiFetcher apiFetcher;
+  private final InstanceDataSupplier apiFetcher;
   private final AuthType authType;
   private final AccessTokenSupplier accessTokenSupplier;
-  private final Optional<HttpRequestInitializer> tokenSource;
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
@@ -77,7 +76,7 @@ class CloudSqlInstance {
    */
   CloudSqlInstance(
       String connectionName,
-      SqlAdminApiFetcher apiFetcher,
+      InstanceDataSupplier apiFetcher,
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
@@ -90,11 +89,9 @@ class CloudSqlInstance {
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
-      this.tokenSource = Optional.ofNullable(source);
-      this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSource);
+      this.accessTokenSupplier = new DefaultAccessTokenSupplier(Optional.ofNullable(source));
     } else {
-      this.tokenSource = Optional.empty();
-      this.accessTokenSupplier = new DefaultAccessTokenSupplier(Optional.empty());
+      this.accessTokenSupplier = () -> Optional.empty();
     }
 
     synchronized (instanceDataGuard) {

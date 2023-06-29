@@ -57,7 +57,7 @@ public class SqlAdminApiFetcherTest {
     InstanceData instanceData =
         fetcher.getInstanceData(
             new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            null,
+            () -> Optional.empty(),
             AuthType.PASSWORD,
             newTestExecutor(),
             Futures.immediateFuture(mockAdminApi.getClientKeyPair()));

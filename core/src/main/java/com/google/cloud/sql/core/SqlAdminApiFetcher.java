@@ -57,7 +57,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
-class SqlAdminApiFetcher {
+class SqlAdminApiFetcher implements InstanceDataSupplier {
 
   private static final Logger logger = Logger.getLogger(SqlAdminApiFetcher.class.getName());
   private final SQLAdmin apiClient;
@@ -91,7 +91,20 @@ class SqlAdminApiFetcher {
         + "-----END RSA PUBLIC KEY-----\n";
   }
 
-  InstanceData getInstanceData(
+  /**
+   * Internal Use Only: Gets the instance data for the CloudSqlInstance from the API.
+   *
+   * @param instanceName the name of the instance
+   * @param accessTokenSupplier the token supplier
+   * @param authType the auth type
+   * @param executor the executor to use
+   * @param keyPair the client-side key pair
+   * @return an InstanceData
+   * @throws ExecutionException if an exception is thrown during execution.
+   * @throws InterruptedException if the executor is interrupted.
+   */
+  @Override
+  public InstanceData getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
@@ -100,8 +113,7 @@ class SqlAdminApiFetcher {
       throws ExecutionException, InterruptedException {
 
     ListenableFuture<Optional<AccessToken>> token =
-        executor.submit(
-            () -> accessTokenSupplier != null ? accessTokenSupplier.get() : Optional.empty());
+        executor.submit(() -> accessTokenSupplier.get());
 
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
