@@ -41,7 +41,7 @@
     <relocation>
       <groupId>com.google.cloud.sql</groupId>
       <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-      <version>${project.version}</version>
+      <version>1.12.1-SNAPSHOT</version>
       <message>
        MySQL Connector/J 5.0.x is no longer under development and has significant security vulnerabilities.
        Please update to 8.0.x instead. See the following GitHub issue for more details: 
