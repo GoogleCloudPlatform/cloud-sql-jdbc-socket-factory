@@ -94,12 +94,6 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
   /**
    * Internal Use Only: Gets the instance data for the CloudSqlInstance from the API.
    *
-   * @param instanceName the name of the instance
-   * @param accessTokenSupplier the token supplier
-   * @param authType the auth type
-   * @param executor the executor to use
-   * @param keyPair the client-side key pair
-   * @return an InstanceData
    * @throws ExecutionException if an exception is thrown during execution.
    * @throws InterruptedException if the executor is interrupted.
    */
