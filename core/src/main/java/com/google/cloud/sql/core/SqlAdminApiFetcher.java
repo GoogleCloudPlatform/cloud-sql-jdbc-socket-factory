@@ -43,9 +43,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -249,8 +246,6 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
     if (authType == AuthType.IAM && accessTokenOptional.isPresent()) {
       AccessToken accessToken = accessTokenOptional.get();
 
-      validateAccessToken(accessToken);
-
       String token = accessToken.getTokenValue();
       // TODO: remove this once issue with OAuth2 Tokens is resolved.
       // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
@@ -286,37 +281,6 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
     }
 
     return ephemeralCertificate;
-  }
-
-  private void validateAccessToken(AccessToken accessToken) {
-    Date expirationTimeDate = accessToken.getExpirationTime();
-    String tokenValue = accessToken.getTokenValue();
-
-    if (expirationTimeDate != null) {
-      Instant expirationTime = expirationTimeDate.toInstant();
-      Instant now = Instant.now();
-
-      // Is the token expired?
-      if (expirationTime.isBefore(now) || expirationTime.equals(now)) {
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC"));
-        String nowFormat = formatter.format(now);
-        String expirationFormat = formatter.format(expirationTime);
-        String errorMessage =
-            "Access Token expiration time is in the past. Now = "
-                + nowFormat
-                + " Expiration = "
-                + expirationFormat;
-        logger.warning(errorMessage);
-        throw new RuntimeException(errorMessage);
-      }
-    }
-
-    // Is the token empty?
-    if (tokenValue.length() == 0) {
-      String errorMessage = "Access Token has length of zero";
-      logger.warning(errorMessage);
-      throw new RuntimeException(errorMessage);
-    }
   }
 
   /**

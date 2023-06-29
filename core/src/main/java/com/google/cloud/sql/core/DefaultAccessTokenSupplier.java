@@ -24,14 +24,19 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
  * DefaultAccessTokenSupplier produces access tokens using credentials produced by this connector's
  * configured HttpRequestInitializer.
  */
 class DefaultAccessTokenSupplier implements AccessTokenSupplier {
+  private static final Logger logger = Logger.getLogger(DefaultAccessTokenSupplier.class.getName());
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
@@ -130,13 +135,14 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                 }
                 if (credentials.getAccessToken() == null
                     || "".equals(credentials.getAccessToken().getTokenValue())) {
-                  throw new IllegalStateException("Credentials do not have an access token");
+
+                  String errorMessage = "Access Token has length of zero";
+                  logger.warning(errorMessage);
+
+                  throw new IllegalStateException(errorMessage);
                 }
-                if (credentials.getAccessToken().getExpirationTime() != null
-                    && credentials.getAccessToken().getExpirationTime().before(new Date())) {
-                  throw new IllegalStateException(
-                      "Credentials were refreshed but expiration time is in the past");
-                }
+
+                validateAccessTokenExpiration(credentials.getAccessToken());
 
                 // Now, attempt to downscope the credentials and refresh again
                 GoogleCredentials downscoped = getDownscopedCredentials(credentials);
@@ -150,13 +156,19 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                   }
                   if (downscoped.getAccessToken() == null
                       || "".equals(downscoped.getAccessToken().getTokenValue())) {
+                    String errorMessage = "Downscoped access token has length of zero";
+                    logger.warning(errorMessage);
+
                     throw new IllegalStateException(
-                        "Downscoped credentials do not have an access token: "
+                        errorMessage
+                            + ": "
                             + downscoped.getClass().getName()
                             + " from "
                             + credentials.getClass().getName());
                   }
+                  validateAccessTokenExpiration(downscoped.getAccessToken());
                 }
+
                 return Optional.of(downscoped.getAccessToken());
               },
               this.retryCount,
@@ -173,6 +185,29 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
       }
     }
     return Optional.empty();
+  }
+
+  private void validateAccessTokenExpiration(AccessToken accessToken) {
+    Date expirationTimeDate = accessToken.getExpirationTime();
+
+    if (expirationTimeDate != null) {
+      Instant expirationTime = expirationTimeDate.toInstant();
+      Instant now = Instant.now();
+
+      // Is the token expired?
+      if (expirationTime.isBefore(now) || expirationTime.equals(now)) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.of("UTC"));
+        String nowFormat = formatter.format(now);
+        String expirationFormat = formatter.format(expirationTime);
+        String errorMessage =
+            "Access Token expiration time is in the past. Now = "
+                + nowFormat
+                + " Expiration = "
+                + expirationFormat;
+        logger.warning(errorMessage);
+        throw new IllegalStateException(errorMessage);
+      }
+    }
   }
 
   /**

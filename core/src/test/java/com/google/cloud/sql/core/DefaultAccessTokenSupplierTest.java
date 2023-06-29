@@ -264,6 +264,49 @@ public class DefaultAccessTokenSupplierTest {
   }
 
   @Test
+  public void throwsErrorForEmptyAccessToken() {
+    GoogleCredentials creds =
+        new GoogleCredentials(new AccessToken("", future)) {
+          @Override
+          public GoogleCredentials createScoped(String... scopes) {
+            return scopedCredentials;
+          }
+        };
+    DefaultAccessTokenSupplier supplier =
+        new DefaultAccessTokenSupplier(
+            Optional.of(new HttpCredentialsAdapter(creds)), 1, Duration.ofMillis(10));
+    RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
+
+    assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
+  }
+
+  @Test
+  public void throwsErrorForExpiredAccessToken() {
+    GoogleCredentials refreshableCredentials =
+        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+          @Override
+          public GoogleCredentials createScoped(String... scopes) {
+            return scopedCredentials;
+          }
+
+          @Override
+          public AccessToken refreshAccessToken() throws IOException {
+            refreshCounter++;
+            return new AccessToken("my-refreshed-token", past);
+          }
+        };
+
+    DefaultAccessTokenSupplier supplier =
+        new DefaultAccessTokenSupplier(
+            Optional.of(new HttpCredentialsAdapter(refreshableCredentials)),
+            1,
+            Duration.ofMillis(10));
+    RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
+
+    assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
+  }
+
+  @Test
   public void testWithCredential() throws Exception {
     Credential credential =
         new Credential.Builder(
