@@ -129,7 +129,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                   throw new IllegalStateException("Error refreshing credentials " + credentials, e);
                 }
                 if (credentials.getAccessToken() == null
-                    || credentials.getAccessToken().equals("")) {
+                    || credentials.getAccessToken().getTokenValue().equals("")) {
                   throw new IllegalStateException("Credentials do not have an access token");
                 }
                 if (credentials.getAccessToken().getExpirationTime() != null
@@ -140,15 +140,16 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
 
                 // Now, attempt to downscope the credentials and refresh again
                 GoogleCredentials downscoped = getDownscopedCredentials(credentials);
-                if (downscoped.getAccessToken() == null || downscoped.getAccessToken().equals("")) {
+                if (downscoped.getAccessToken() == null
+                    || downscoped.getAccessToken().getTokenValue().equals("")) {
                   try {
                     downscoped.refreshIfExpired();
-                  } catch (IllegalStateException e) {
+                  } catch (Exception e) {
                     throw new IllegalStateException(
-                        "Error refreshing credentials " + credentials, e);
+                        "Error refreshing downscoped credentials " + credentials, e);
                   }
                   if (downscoped.getAccessToken() == null
-                      || downscoped.getAccessToken().equals("")) {
+                      || downscoped.getAccessToken().getTokenValue().equals("")) {
                     throw new IllegalStateException(
                         "Downscoped credentials do not have an access token: "
                             + downscoped.getClass().getName()
