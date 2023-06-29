@@ -137,10 +137,24 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                   throw new IllegalStateException(
                       "Credentials were refreshed but expiration time is in the past");
                 }
+
+                // Now, attempt to downscope the credentials and refresh again
                 GoogleCredentials downscoped = getDownscopedCredentials(credentials);
                 if (downscoped.getAccessToken() == null || downscoped.getAccessToken().equals("")) {
-                  throw new IllegalStateException(
-                      "Donwscoped credentials do not have an access token");
+                  try {
+                    downscoped.refreshIfExpired();
+                  } catch (IllegalStateException e) {
+                    throw new IllegalStateException(
+                        "Error refreshing credentials " + credentials, e);
+                  }
+                  if (downscoped.getAccessToken() == null
+                      || downscoped.getAccessToken().equals("")) {
+                    throw new IllegalStateException(
+                        "Downscoped credentials do not have an access token: "
+                            + downscoped.getClass().getName()
+                            + " from "
+                            + credentials.getClass().getName());
+                  }
                 }
                 return Optional.of(downscoped.getAccessToken());
               },
