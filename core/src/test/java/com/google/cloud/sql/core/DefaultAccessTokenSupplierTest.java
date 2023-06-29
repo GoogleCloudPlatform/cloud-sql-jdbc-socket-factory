@@ -43,8 +43,6 @@ import java.util.Date;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public class DefaultAccessTokenSupplierTest {
 
@@ -54,13 +52,11 @@ public class DefaultAccessTokenSupplierTest {
 
   private GoogleCredentials scopedCredentials;
   private volatile int refreshCounter = 0;
-  @Mock private OAuth2Credentials oAuth2Credentials;
 
   @Before
   public void setup() throws IOException {
     refreshCounter = 0;
 
-    MockitoAnnotations.openMocks(this);
     // Scoped credentials can't be refreshed.
     scopedCredentials =
         new GoogleCredentials(new AccessToken("my-scoped-token", null)) {
@@ -256,9 +252,10 @@ public class DefaultAccessTokenSupplierTest {
 
   @Test
   public void throwsErrorForWrongCredentialType() {
+    OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("abc", null));
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(oAuth2Credentials)), 1, Duration.ofMillis(10));
+            Optional.of(new HttpCredentialsAdapter(creds)), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex)
