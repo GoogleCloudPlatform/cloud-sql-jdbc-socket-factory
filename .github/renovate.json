@@ -5,9 +5,7 @@
   ],
   "commitMessagePrefix": "deps: ",
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
-  "prConcurrentLimit": 0,
   "rebaseStalePrs": true,
-  "rebaseWhen": "never",
   "dependencyDashboard": true,
   "semanticCommits": false,
   "packageRules": [
