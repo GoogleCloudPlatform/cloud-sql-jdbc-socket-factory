@@ -89,7 +89,7 @@ class CloudSqlInstance {
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
-      this.accessTokenSupplier = new DefaultAccessTokenSupplier(Optional.ofNullable(source));
+      this.accessTokenSupplier = new DefaultAccessTokenSupplier(source);
     } else {
       this.accessTokenSupplier = () -> Optional.empty();
     }

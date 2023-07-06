@@ -36,11 +36,12 @@ import java.util.logging.Logger;
  * configured HttpRequestInitializer.
  */
 class DefaultAccessTokenSupplier implements AccessTokenSupplier {
+
   private static final Logger logger = Logger.getLogger(DefaultAccessTokenSupplier.class.getName());
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
-  private final Optional<HttpRequestInitializer> tokenSource;
+  private final HttpRequestInitializer requestInitializer;
   private final int retryCount;
   private final Duration retryDuration;
 
@@ -49,7 +50,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    *
    * @param tokenSource the token source that produces auth tokens.
    */
-  DefaultAccessTokenSupplier(Optional<HttpRequestInitializer> tokenSource) {
+  DefaultAccessTokenSupplier(HttpRequestInitializer tokenSource) {
     this(tokenSource, 3, Duration.ofSeconds(3));
   }
 
@@ -61,8 +62,8 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @param retryDuration the duration to wait between attempts.
    */
   DefaultAccessTokenSupplier(
-      Optional<HttpRequestInitializer> tokenSource, int retryCount, Duration retryDuration) {
-    this.tokenSource = tokenSource;
+      HttpRequestInitializer tokenSource, int retryCount, Duration retryDuration) {
+    this.requestInitializer = tokenSource;
     this.retryCount = retryCount;
     this.retryDuration = retryDuration;
   }
@@ -75,23 +76,22 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    *     produce a GoogleCredentials instance.
    */
   private GoogleCredentials parseCredentials() {
-    HttpRequestInitializer source = this.tokenSource.get();
 
-    if (source instanceof HttpCredentialsAdapter) {
-      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) source;
+    if (this.requestInitializer instanceof HttpCredentialsAdapter) {
+      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) this.requestInitializer;
       Credentials c = adapter.getCredentials();
-      if (c != null && c instanceof GoogleCredentials) {
+      if (c instanceof GoogleCredentials) {
         return (GoogleCredentials) c;
       }
       throw new RuntimeException(
           String.format(
               "Unable to connect via automatic IAM authentication: "
                   + "HttpCredentialsAdapter did not create valid credentials. %s, %s",
-              source.getClass().getName(), c));
+              this.requestInitializer.getClass().getName(), c));
     }
 
-    if (source instanceof Credential) {
-      Credential credential = (Credential) source;
+    if (this.requestInitializer instanceof Credential) {
+      Credential credential = (Credential) this.requestInitializer;
       AccessToken accessToken =
           new AccessToken(
               credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
@@ -110,7 +110,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
         String.format(
             "Unable to connect via automatic IAM authentication: "
                 + "Unsupported credentials of type %s",
-            source.getClass().getName()));
+            this.requestInitializer.getClass().getName()));
   }
 
   /**
@@ -122,69 +122,75 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    */
   @Override
   public Optional<AccessToken> get() throws IOException {
-    if (tokenSource.isPresent()) {
-      RetryingCallable<Optional<AccessToken>> retries =
-          new RetryingCallable<>(
-              () -> {
-                final GoogleCredentials credentials;
-                credentials = parseCredentials();
+    if (requestInitializer == null) {
+      return Optional.empty();
+    }
+
+    RetryingCallable<Optional<AccessToken>> retries =
+        new RetryingCallable<>(
+            () -> {
+              final GoogleCredentials credentials;
+              credentials = parseCredentials();
+              try {
+                credentials.refreshIfExpired();
+              } catch (IllegalStateException e) {
+                throw new IllegalStateException("Error refreshing credentials " + credentials, e);
+              }
+              if (credentials.getAccessToken() == null
+                  || "".equals(credentials.getAccessToken().getTokenValue())) {
+
+                String errorMessage = "Access Token has length of zero";
+                logger.warning(errorMessage);
+
+                throw new IllegalStateException(errorMessage);
+              }
+
+              validateAccessTokenExpiration(credentials.getAccessToken());
+
+              // Now, attempt to down-scope and refresh credentials
+              GoogleCredentials downscoped = getDownscopedCredentials(credentials);
+
+              // For some implementations of GoogleCredentials, particularly
+              // ImpersonatedCredentials, down-scoped credentials are not
+              // initialized with a token and need to be explicitly refreshed.
+              if (downscoped.getAccessToken() == null
+                  || "".equals(downscoped.getAccessToken().getTokenValue())) {
                 try {
-                  credentials.refreshIfExpired();
-                } catch (IllegalStateException e) {
-                  throw new IllegalStateException("Error refreshing credentials " + credentials, e);
-                }
-                if (credentials.getAccessToken() == null
-                    || "".equals(credentials.getAccessToken().getTokenValue())) {
-
-                  String errorMessage = "Access Token has length of zero";
-                  logger.warning(errorMessage);
-
-                  throw new IllegalStateException(errorMessage);
+                  downscoped.refreshIfExpired();
+                } catch (Exception e) {
+                  throw new IllegalStateException(
+                      "Error refreshing downscoped credentials " + credentials, e);
                 }
 
-                validateAccessTokenExpiration(credentials.getAccessToken());
-
-                // Now, attempt to downscope the credentials and refresh again
-                GoogleCredentials downscoped = getDownscopedCredentials(credentials);
+                // After attempting to refresh once, if the downscoped credentials do not have
+                // an access token after attempting to refresh, then throw an IllegalStateException
                 if (downscoped.getAccessToken() == null
                     || "".equals(downscoped.getAccessToken().getTokenValue())) {
-                  try {
-                    downscoped.refreshIfExpired();
-                  } catch (Exception e) {
-                    throw new IllegalStateException(
-                        "Error refreshing downscoped credentials " + credentials, e);
-                  }
-                  if (downscoped.getAccessToken() == null
-                      || "".equals(downscoped.getAccessToken().getTokenValue())) {
-                    String errorMessage = "Downscoped access token has length of zero";
-                    logger.warning(errorMessage);
+                  String errorMessage = "Downscoped access token has length of zero";
+                  logger.warning(errorMessage);
 
-                    throw new IllegalStateException(
-                        errorMessage
-                            + ": "
-                            + downscoped.getClass().getName()
-                            + " from "
-                            + credentials.getClass().getName());
-                  }
-                  validateAccessTokenExpiration(downscoped.getAccessToken());
+                  throw new IllegalStateException(
+                      errorMessage
+                          + ": "
+                          + downscoped.getClass().getName()
+                          + " from "
+                          + credentials.getClass().getName());
                 }
+                validateAccessTokenExpiration(downscoped.getAccessToken());
+              }
 
-                return Optional.of(downscoped.getAccessToken());
-              },
-              this.retryCount,
-              this.retryDuration);
+              return Optional.of(downscoped.getAccessToken());
+            },
+            this.retryCount,
+            this.retryDuration);
 
-      try {
-        return retries.call();
-      } catch (IOException e) {
-        throw e;
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException("Unexpected exception refreshing authentication token", e);
-      }
+    try {
+      return retries.call();
+    } catch (IOException | RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException("Unexpected exception refreshing authentication token", e);
     }
-    return Optional.empty();
   }
 
   private void validateAccessTokenExpiration(AccessToken accessToken) {
@@ -217,11 +223,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @return the expiration time, if set.
    */
   static Optional<Date> getTokenExpirationTime(Optional<AccessToken> token) {
-    if (token.isPresent()) {
-      return Optional.ofNullable(token.get().getExpirationTime());
-    } else {
-      return Optional.empty();
-    }
+    return token.flatMap((at) -> Optional.ofNullable(at.getExpirationTime()));
   }
 
   /**

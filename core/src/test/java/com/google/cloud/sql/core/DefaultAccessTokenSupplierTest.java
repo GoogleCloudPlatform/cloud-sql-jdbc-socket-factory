@@ -71,7 +71,7 @@ public class DefaultAccessTokenSupplierTest {
   @Test
   public void testEmptyTokenOnEmptyCredentials() throws IOException {
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(Optional.empty(), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(null, 1, Duration.ofMillis(10));
     assertThat(supplier.get()).isEqualTo(Optional.empty());
   }
 
@@ -94,7 +94,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(googleCredentials)), 1, Duration.ofMillis(10));
+            new HttpCredentialsAdapter(googleCredentials), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -113,7 +113,7 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(Optional.of(bad), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(bad, 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Unsupported credentials of type");
   }
@@ -137,9 +137,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(expiredGoogleCredentials)),
-            1,
-            Duration.ofMillis(10));
+            new HttpCredentialsAdapter(expiredGoogleCredentials), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Error refreshing credentials");
     assertThat(refreshCounter).isEqualTo(1);
@@ -164,9 +162,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(refreshGetsExpiredToken)),
-            1,
-            Duration.ofMillis(10));
+            new HttpCredentialsAdapter(refreshGetsExpiredToken), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("expiration time is in the past");
     assertThat(refreshCounter).isEqualTo(1);
@@ -190,9 +186,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(refreshableCredentials)),
-            1,
-            Duration.ofMillis(10));
+            new HttpCredentialsAdapter(refreshableCredentials), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -223,9 +217,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(refreshableCredentials)),
-            3,
-            Duration.ofMillis(10));
+            new HttpCredentialsAdapter(refreshableCredentials), 3, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -254,8 +246,7 @@ public class DefaultAccessTokenSupplierTest {
   public void throwsErrorForWrongCredentialType() {
     OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("abc", null));
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(creds)), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new HttpCredentialsAdapter(creds), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex)
@@ -273,8 +264,7 @@ public class DefaultAccessTokenSupplierTest {
           }
         };
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(creds)), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new HttpCredentialsAdapter(creds), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
@@ -298,9 +288,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            Optional.of(new HttpCredentialsAdapter(refreshableCredentials)),
-            1,
-            Duration.ofMillis(10));
+            new HttpCredentialsAdapter(refreshableCredentials), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
@@ -349,7 +337,7 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(future.getTime());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(Optional.of(credential), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(credential, 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -418,7 +406,7 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(past.getTime());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(Optional.of(credential), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(credential, 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
