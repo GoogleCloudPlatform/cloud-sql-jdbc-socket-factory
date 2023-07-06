@@ -15,52 +15,207 @@
  */
 package com.google.cloud.sql.core;
 
-import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static com.google.common.truth.Truth.*;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.AuthType;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.sql.Date;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 @RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  @Mock private GoogleCredentials googleCredentials;
-  @Mock private GoogleCredentials scopedCredentials;
-  @Mock private OAuth2Credentials oAuth2Credentials;
+  private ListeningScheduledExecutorService executorService;
+  private ListenableFuture<KeyPair> keyPairFuture;
+
+  private StubCredentialFactory stubCredentialFactory =
+      new StubCredentialFactory("my-token", System.currentTimeMillis() + 3600L);
 
   @Before
-  public void setup() {
-    MockitoAnnotations.openMocks(this);
-    when(googleCredentials.createScoped("https://www.googleapis.com/auth/sqlservice.login"))
-        .thenReturn(scopedCredentials);
+  public void setup() throws Exception {
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    this.keyPairFuture = Futures.immediateFuture(mockAdminApi.getClientKeyPair());
+    executorService = newTestExecutor();
+  }
+
+  @After
+  public void teardown() {
+    executorService.shutdownNow();
   }
 
   @Test
-  public void downscopesGoogleCredentials() {
-    GoogleCredentials downscoped = CloudSqlInstance.getDownscopedCredentials(googleCredentials);
-    assertThat(downscoped).isEqualTo(scopedCredentials);
-    verify(googleCredentials, times(1))
-        .createScoped("https://www.googleapis.com/auth/sqlservice.login");
+  public void testCloudSqlInstanceDataRetrievedSuccessfully() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data =
+        new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    InstanceDataSupplier instanceDataSupplier =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount.incrementAndGet();
+          return data;
+        };
+    // initialize instance after mocks are set up
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture);
+
+    SslData gotSslData = instance.getSslData();
+    assertThat(gotSslData).isSameInstanceAs(sslData);
+    assertThat(refreshCount.get()).isEqualTo(1);
   }
 
   @Test
-  public void throwsErrorForWrongCredentialType() {
-    RuntimeException ex =
-        assertThrows(
-            RuntimeException.class,
-            () -> CloudSqlInstance.getDownscopedCredentials(oAuth2Credentials));
+  public void testInstanceFailsOnConnectionError() throws Exception {
 
-    assertThat(ex)
-        .hasMessageThat()
-        .contains("Failed to downscope credentials for IAM Authentication");
+    InstanceDataSupplier instanceDataSupplier =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          throw new ExecutionException(new IOException("Fake connection error"));
+        };
+
+    // initialize instance after mocks are set up
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture);
+
+    RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
+    assertThat(ex).hasMessageThat().contains("Fake connection error");
+  }
+
+  @Test
+  public void testCloudSqlInstanceForcesRefresh() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data =
+        new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    InstanceDataSupplier instanceDataSupplier =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount.incrementAndGet();
+          return data;
+        };
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture);
+
+    SslData gotSslData = instance.getSslData();
+    assertThat(gotSslData).isSameInstanceAs(sslData);
+    instance.forceRefresh();
+    instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void testGetPreferredIpTypes() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data =
+        new InstanceData(
+            new Metadata(
+                ImmutableMap.of(
+                    "PUBLIC", "10.1.2.3",
+                    "PRIVATE", "10.10.10.10"),
+                null),
+            sslData,
+            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    InstanceDataSupplier instanceDataSupplier =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount.incrementAndGet();
+          return data;
+        };
+
+    // initialize instance after mocks are set up
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture);
+
+    assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
+    assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC"))).isEqualTo("10.1.2.3");
+    assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
+        .isEqualTo("10.10.10.10");
+    assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE"))).isEqualTo("10.10.10.10");
+  }
+
+  @Test
+  public void testGetPreferredIpTypesThrowsException() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data =
+        new InstanceData(
+            new Metadata(ImmutableMap.of("PUBLIC", "10.1.2.3"), null),
+            sslData,
+            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    InstanceDataSupplier instanceDataSupplier =
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+          Thread.sleep(100);
+          refreshCount.incrementAndGet();
+          return data;
+        };
+
+    // initialize instance after mocks are set up
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture);
+    Assert.assertThrows(
+        IllegalArgumentException.class, () -> instance.getPreferredIp(Arrays.asList("PRIVATE")));
+  }
+
+  private ListeningScheduledExecutorService newTestExecutor() {
+    ScheduledThreadPoolExecutor executor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+
+    //noinspection UnstableApiUsage
+    return MoreExecutors.listeningDecorator(
+        MoreExecutors.getExitingScheduledExecutorService(executor));
   }
 }
