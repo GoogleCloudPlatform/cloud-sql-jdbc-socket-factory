@@ -207,6 +207,11 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
         ipAddrs.put(addr.getType(), addr.getIpAddress());
       }
 
+      // resolve DnsName into IP address for PSC
+      if (instanceMetadata.getDnsName() != null && !instanceMetadata.getDnsName().isEmpty()) {
+        ipAddrs.put("PSC", instanceMetadata.getDnsName());
+      }
+
       // Update the Server CA certificate used to create the SSL connection with the instance.
       try {
         Certificate instanceCaCertificate =

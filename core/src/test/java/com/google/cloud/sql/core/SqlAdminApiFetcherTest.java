@@ -39,6 +39,8 @@ public class SqlAdminApiFetcherTest {
 
   public static final String SAMPLE_PUBLIC_IP = "34.1.2.3";
   public static final String SAMPLE_PRIVATE_IP = "10.0.0.1";
+  public static final String SAMPLE_PSC_IP = "10.0.0.2";
+  public static final String SAMPLE_PSC_HOSTNAME = "abcde.12345.us-central1.sql.goog";
   public static final String INSTANCE_CONNECTION_NAME = "p:r:i";
   public static final String DATABASE_VERSION = "POSTGRES14";
 
@@ -63,6 +65,7 @@ public class SqlAdminApiFetcherTest {
     Map<String, String> ipAddrs = instanceData.getIpAddrs();
     assertThat(ipAddrs.get("PRIMARY")).isEqualTo(SAMPLE_PUBLIC_IP);
     assertThat(ipAddrs.get("PRIVATE")).isEqualTo(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PSC_HOSTNAME);
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {
@@ -129,7 +132,12 @@ public class SqlAdminApiFetcherTest {
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi = new MockAdminApi();
     mockAdminApi.addConnectSettingsResponse(
-        instanceConnectionName, SAMPLE_PUBLIC_IP, SAMPLE_PRIVATE_IP, databaseVersion);
+        instanceConnectionName,
+        SAMPLE_PUBLIC_IP,
+        SAMPLE_PRIVATE_IP,
+        databaseVersion,
+        SAMPLE_PSC_IP,
+        SAMPLE_PSC_HOSTNAME);
     mockAdminApi.addGenerateEphemeralCertResponse(instanceConnectionName, Duration.ofHours(1));
     return mockAdminApi;
   }

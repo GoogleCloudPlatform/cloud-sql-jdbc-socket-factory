@@ -149,7 +149,8 @@ public class CloudSqlInstanceTest {
             new Metadata(
                 ImmutableMap.of(
                     "PUBLIC", "10.1.2.3",
-                    "PRIVATE", "10.10.10.10"),
+                    "PRIVATE", "10.10.10.10",
+                    "PSC", "abcde.12345.us-central1.sql.goog"),
                 null),
             sslData,
             Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
@@ -177,6 +178,7 @@ public class CloudSqlInstanceTest {
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
         .isEqualTo("10.10.10.10");
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE"))).isEqualTo("10.10.10.10");
+    assertThat(instance.getPreferredIp(Arrays.asList("PSC"))).isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
   @Test

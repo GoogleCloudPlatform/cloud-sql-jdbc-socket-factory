@@ -47,7 +47,13 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 ### Specifying IP Types
 
-"The `ipTypes` argument is used to specify a preferred order of IP types used to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE` will use the instance's Public IP if it exists, otherwise private. The value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via it's private IP. If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`.
+"The `ipTypes` argument is used to specify a preferred order of IP types used 
+to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE` 
+will use the instance's Public IP if it exists, otherwise private. The 
+value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via 
+it's private IP. The value `ipTypes=PSC` will force the Cloud SQL instance to 
+connect to the database via [Private Service Connect](https://cloud.google.com/vpc/docs/private-service-connect). 
+If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`.
 
 For more info on connecting using a private IP address, see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 

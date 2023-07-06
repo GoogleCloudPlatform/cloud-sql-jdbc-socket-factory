@@ -65,11 +65,10 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 public class MockAdminApi {
 
   private static final Pattern CONNECT_SETTINGS_PATTERN =
-      Pattern.compile(
-          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
+      Pattern.compile(".*/v1/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
   private static final Pattern GENERATE_EPHEMERAL_CERT_PATTERN =
       Pattern.compile(
-          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
+          ".*/v1/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
   private final KeyPair clientKeyPair;
   private final PrivateKey proxyServerPrivateKey;
   private final List<ConnectSettingsRequest> connectSettingsRequests;
@@ -113,7 +112,12 @@ public class MockAdminApi {
   }
 
   public void addConnectSettingsResponse(
-      String instanceConnectionName, String publicIp, String privateIp, String databaseVersion) {
+      String instanceConnectionName,
+      String publicIp,
+      String privateIp,
+      String databaseVersion,
+      String pscIp,
+      String pscHostname) {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     ArrayList<IpMapping> ipMappings = new ArrayList<>();
@@ -123,6 +127,9 @@ public class MockAdminApi {
     if (!privateIp.isEmpty()) {
       ipMappings.add(new IpMapping().setIpAddress(privateIp).setType("PRIVATE"));
     }
+    if (!pscHostname.isEmpty()) {
+      ipMappings.add(new IpMapping().setIpAddress(pscIp).setType("PSC"));
+    }
 
     ConnectSettings settings =
         new ConnectSettings()
@@ -130,6 +137,7 @@ public class MockAdminApi {
             .setIpAddresses(ipMappings)
             .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
             .setDatabaseVersion(databaseVersion)
+            .setDnsName(pscHostname)
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
 
