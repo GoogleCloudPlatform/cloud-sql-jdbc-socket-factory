@@ -178,7 +178,8 @@ public class CloudSqlInstanceTest {
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
         .isEqualTo("10.10.10.10");
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE"))).isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Arrays.asList("PSC"))).isEqualTo("abcde.12345.us-central1.sql.goog");
+    assertThat(instance.getPreferredIp(Arrays.asList("PSC")))
+        .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
   @Test
