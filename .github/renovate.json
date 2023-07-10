@@ -27,7 +27,7 @@
     },
     {
       "packageNames": ["com.google.apis:google-api-services-sqladmin"],
-      "allowedVersions": "/v1-.*/"
+      "allowedVersions": "/v1beta4-.*/"
     }
   ],
   "schedule": [
