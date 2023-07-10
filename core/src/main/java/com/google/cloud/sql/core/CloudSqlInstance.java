@@ -30,11 +30,13 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 
@@ -91,7 +93,7 @@ class CloudSqlInstance {
       HttpRequestInitializer source = tokenSourceFactory.create();
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(source);
     } else {
-      this.accessTokenSupplier = () -> Optional.empty();
+      this.accessTokenSupplier = Optional::empty;
     }
 
     synchronized (instanceDataGuard) {
@@ -105,13 +107,12 @@ class CloudSqlInstance {
    * no valid data is currently available.
    */
   private InstanceData getInstanceData() {
-    ListenableFuture<InstanceData> instanceData;
+    ListenableFuture<InstanceData> instanceDataFuture;
     synchronized (instanceDataGuard) {
-      instanceData = currentInstanceData;
+      instanceDataFuture = currentInstanceData;
     }
     try {
-      // TODO(kvg): Let exceptions up to here before adding context
-      return Uninterruptibles.getUninterruptibly(instanceData);
+      return Uninterruptibles.getUninterruptibly(instanceDataFuture);
     } catch (ExecutionException ex) {
       Throwable cause = ex.getCause();
       Throwables.throwIfUnchecked(cause);
@@ -158,11 +159,17 @@ class CloudSqlInstance {
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
-      // If a scheduled refresh hasn't started, perform one immediately
-      if (nextInstanceData.cancel(false)) {
+      nextInstanceData.cancel(false);
+      if (nextInstanceData.isCancelled()) {
+        logger.fine(
+            "Force Refresh: the next refresh operation was cancelled."
+                + " Scheduling new refresh operation immediately.");
         currentInstanceData = executor.submit(this::performRefresh);
         nextInstanceData = currentInstanceData;
       } else {
+        logger.fine(
+            "Force Refresh: the next refresh operation is already running."
+                + " Marking it as the current operation.");
         // Otherwise it's already running, so just move next to current.
         currentInstanceData = nextInstanceData;
       }
@@ -175,29 +182,42 @@ class CloudSqlInstance {
    * would expire.
    */
   private InstanceData performRefresh() throws InterruptedException, ExecutionException {
+    logger.fine("Refresh Operation: Acquiring rate limiter permit.");
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
+    logger.fine("Refresh Operation: Acquired rate limiter permit. Starting refresh...");
 
     try {
       InstanceData data =
           instanceDataSupplier.getInstanceData(
               this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair);
 
-      synchronized (instanceDataGuard) {
-        // update currentInstanceData with the most recent results
-        currentInstanceData = Futures.immediateFuture(data);
+      logger.fine(
+          String.format(
+              "Refresh Operation: Completed refresh with new certificate expiration at %s.",
+              data.getExpiration().toInstant().toString()));
+      long secondsToRefresh =
+          refreshCalculator.calculateSecondsUntilNextRefresh(
+              Instant.now(), data.getExpiration().toInstant());
 
-        // schedule a replacement before the SSLContext expires;
+      logger.fine(
+          String.format(
+              "Refresh Operation: Next operation scheduled at %s.",
+              Instant.now()
+                  .plus(secondsToRefresh, ChronoUnit.SECONDS)
+                  .truncatedTo(ChronoUnit.SECONDS)
+                  .toString()));
+
+      synchronized (instanceDataGuard) {
+        currentInstanceData = Futures.immediateFuture(data);
         nextInstanceData =
-            executor.schedule(
-                this::performRefresh,
-                refreshCalculator.calculateSecondsUntilNextRefresh(
-                    Instant.now(), data.getExpiration().toInstant()),
-                TimeUnit.SECONDS);
+            executor.schedule(this::performRefresh, secondsToRefresh, TimeUnit.SECONDS);
       }
 
       return data;
     } catch (ExecutionException | InterruptedException e) {
+      logger.log(
+          Level.FINE, "Refresh Operation: Failed! Starting next refresh operation immediately.", e);
       synchronized (instanceDataGuard) {
         nextInstanceData = executor.submit(this::performRefresh);
       }
