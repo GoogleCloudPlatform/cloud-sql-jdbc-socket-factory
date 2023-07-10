@@ -196,7 +196,6 @@ class CloudSqlInstance {
           String.format(
               "Refresh Operation: Completed refresh with new certificate expiration at %s.",
               data.getExpiration().toInstant().toString()));
-      // schedule a replacement before the SSLContext expires;
       long secondsToRefresh =
           refreshCalculator.calculateSecondsUntilNextRefresh(
               Instant.now(), data.getExpiration().toInstant());
