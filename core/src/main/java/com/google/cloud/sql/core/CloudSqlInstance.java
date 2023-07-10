@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 
@@ -158,22 +159,20 @@ class CloudSqlInstance {
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
-      String logMessage;
       nextInstanceData.cancel(false);
       if (nextInstanceData.isCancelled()) {
-        logMessage =
+        logger.fine(
             "Force Refresh: the next refresh operation was cancelled."
-                + " Scheduling new refresh operation immediately.";
+                + " Scheduling new refresh operation immediately.");
         currentInstanceData = executor.submit(this::performRefresh);
         nextInstanceData = currentInstanceData;
       } else {
-        logMessage =
+        logger.fine(
             "Force Refresh: the next refresh operation is already running."
-                + " Marking it as the current operation.";
+                + " Marking it as the current operation.");
         // Otherwise it's already running, so just move next to current.
         currentInstanceData = nextInstanceData;
       }
-      logger.fine(logMessage);
     }
   }
 
@@ -183,10 +182,10 @@ class CloudSqlInstance {
    * would expire.
    */
   private InstanceData performRefresh() throws InterruptedException, ExecutionException {
-    logger.fine("Refresh Operation: Acquiring rate limiter permit");
+    logger.fine("Refresh Operation: Acquiring rate limiter permit.");
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
-    logger.fine("Refresh Operation: Starting...");
+    logger.fine("Refresh Operation: Acquired rate limiter permit. Starting refresh...");
 
     try {
       InstanceData data =
@@ -195,7 +194,7 @@ class CloudSqlInstance {
 
       logger.fine(
           String.format(
-              "Refresh Operation: Completed with new certificate expiration = %s",
+              "Refresh Operation: Completed refresh with new certificate expiration at %s.",
               data.getExpiration().toInstant().toString()));
       // schedule a replacement before the SSLContext expires;
       long secondsToRefresh =
@@ -204,7 +203,7 @@ class CloudSqlInstance {
 
       logger.fine(
           String.format(
-              "Refresh Operation: Next operation scheduled at %s",
+              "Refresh Operation: Next operation scheduled at %s.",
               Instant.now()
                   .plus(secondsToRefresh, ChronoUnit.SECONDS)
                   .truncatedTo(ChronoUnit.SECONDS)
@@ -218,7 +217,8 @@ class CloudSqlInstance {
 
       return data;
     } catch (ExecutionException | InterruptedException e) {
-      logger.fine("Refresh Operation: Failed! Starting next refresh operation immediately.");
+      logger.log(
+          Level.FINE, "Refresh Operation: Failed! Starting next refresh operation immediately.", e);
       synchronized (instanceDataGuard) {
         nextInstanceData = executor.submit(this::performRefresh);
       }
