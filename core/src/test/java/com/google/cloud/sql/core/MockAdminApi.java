@@ -113,23 +113,30 @@ public class MockAdminApi {
   }
 
   public void addConnectSettingsResponse(
-      String instanceConnectionName, String publicIp, String privateIp, String databaseVersion) {
+      String instanceConnectionName,
+      String publicIp,
+      String privateIp,
+      String databaseVersion,
+      String pscHostname) {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     ArrayList<IpMapping> ipMappings = new ArrayList<>();
-    if (!publicIp.isEmpty()) {
+    if (publicIp != null && !publicIp.isEmpty()) {
       ipMappings.add(new IpMapping().setIpAddress(publicIp).setType("PRIMARY"));
     }
-    if (!privateIp.isEmpty()) {
+    if (privateIp != null && !privateIp.isEmpty()) {
       ipMappings.add(new IpMapping().setIpAddress(privateIp).setType("PRIVATE"));
     }
-
+    if (ipMappings.isEmpty()) {
+      ipMappings = null;
+    }
     ConnectSettings settings =
         new ConnectSettings()
             .setBackendType("SECOND_GEN")
             .setIpAddresses(ipMappings)
             .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
             .setDatabaseVersion(databaseVersion)
+            .setDnsName(pscHostname)
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
 
