@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.12.0...v1.13.0) (2023-07-11)
+
+
+### Features
+
+* Add support for PSC network connections ([#1347](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1347)) ([4474f16](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4474f16b986c0043c980f4f60dffc06801a63a16))
+
+
+### Bug Fixes
+
+* Use explicit project version in distributionManagement section. This ([#1338](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1338)) ([86afe6f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/86afe6f55a7909d877d598e46b7fa5a020b8b54c))
+
 ## [1.12.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.11.2...v1.12.0) (2023-06-12)
 
 
