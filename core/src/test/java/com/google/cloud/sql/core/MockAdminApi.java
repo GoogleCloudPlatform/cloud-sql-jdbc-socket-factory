@@ -65,10 +65,11 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 public class MockAdminApi {
 
   private static final Pattern CONNECT_SETTINGS_PATTERN =
-      Pattern.compile(".*/v1/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
+      Pattern.compile(
+          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
   private static final Pattern GENERATE_EPHEMERAL_CERT_PATTERN =
       Pattern.compile(
-          ".*/v1/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
+          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
   private final KeyPair clientKeyPair;
   private final PrivateKey proxyServerPrivateKey;
   private final List<ConnectSettingsRequest> connectSettingsRequests;
