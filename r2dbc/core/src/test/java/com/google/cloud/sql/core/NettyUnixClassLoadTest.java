@@ -7,5 +7,4 @@ public class NettyUnixClassLoadTest {
   public void testLoadNettyUnixSocketClass() throws Exception {
     Class.forName("io.netty.channel.unix.Errors");
   }
-
 }
