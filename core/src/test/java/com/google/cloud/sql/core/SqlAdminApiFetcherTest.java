@@ -68,6 +68,34 @@ public class SqlAdminApiFetcherTest {
     assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
   }
 
+  @Test
+  public void testFetchInstanceData_returnsPscForNonIpDatabase()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    mockAdminApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME, null, null, DATABASE_VERSION, SAMPLE_PCS_DNS_NAME);
+    mockAdminApi.addGenerateEphemeralCertResponse(INSTANCE_CONNECTION_NAME, Duration.ofHours(1));
+
+    SqlAdminApiFetcher fetcher =
+        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create());
+
+    InstanceData instanceData =
+        fetcher.getInstanceData(
+            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+            () -> Optional.empty(),
+            AuthType.PASSWORD,
+            newTestExecutor(),
+            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<String, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    assertThat(ipAddrs.size()).isEqualTo(1);
+  }
+
   private ListeningScheduledExecutorService newTestExecutor() {
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
@@ -136,7 +164,6 @@ public class SqlAdminApiFetcherTest {
         SAMPLE_PUBLIC_IP,
         SAMPLE_PRIVATE_IP,
         databaseVersion,
-        SAMPLE_PSC_IP,
         SAMPLE_PCS_DNS_NAME);
     mockAdminApi.addGenerateEphemeralCertResponse(instanceConnectionName, Duration.ofHours(1));
     return mockAdminApi;

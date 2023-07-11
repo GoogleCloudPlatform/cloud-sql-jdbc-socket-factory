@@ -117,21 +117,19 @@ public class MockAdminApi {
       String publicIp,
       String privateIp,
       String databaseVersion,
-      String pscIp,
       String pscHostname) {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     ArrayList<IpMapping> ipMappings = new ArrayList<>();
-    if (!publicIp.isEmpty()) {
+    if (publicIp != null && !publicIp.isEmpty()) {
       ipMappings.add(new IpMapping().setIpAddress(publicIp).setType("PRIMARY"));
     }
-    if (!privateIp.isEmpty()) {
+    if (privateIp != null && !privateIp.isEmpty()) {
       ipMappings.add(new IpMapping().setIpAddress(privateIp).setType("PRIVATE"));
     }
-    if (!pscHostname.isEmpty()) {
-      ipMappings.add(new IpMapping().setIpAddress(pscIp).setType("PSC"));
+    if (ipMappings.isEmpty()) {
+      ipMappings = null;
     }
-
     ConnectSettings settings =
         new ConnectSettings()
             .setBackendType("SECOND_GEN")

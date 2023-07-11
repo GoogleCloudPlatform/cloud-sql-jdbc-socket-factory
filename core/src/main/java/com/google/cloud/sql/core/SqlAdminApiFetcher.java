@@ -193,23 +193,26 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
 
       checkDatabaseCompatibility(instanceMetadata, authType, instanceName.getConnectionName());
 
-      // Verify the instance has at least one IP type assigned that can be used to connect.
-      if (instanceMetadata.getIpAddresses().isEmpty()) {
-        throw new IllegalStateException(
-            String.format(
-                "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
-                    + "IP address.",
-                instanceName.getConnectionName()));
-      }
-      // Update the IP addresses and types need to connect with the instance.
       Map<String, String> ipAddrs = new HashMap<>();
-      for (IpMapping addr : instanceMetadata.getIpAddresses()) {
-        ipAddrs.put(addr.getType(), addr.getIpAddress());
+      if (instanceMetadata.getIpAddresses() != null) {
+        // Update the IP addresses and types need to connect with the instance.
+        for (IpMapping addr : instanceMetadata.getIpAddresses()) {
+          ipAddrs.put(addr.getType(), addr.getIpAddress());
+        }
       }
 
       // resolve DnsName into IP address for PSC
       if (instanceMetadata.getDnsName() != null && !instanceMetadata.getDnsName().isEmpty()) {
         ipAddrs.put("PSC", instanceMetadata.getDnsName());
+      }
+
+      // Verify the instance has at least one IP type assigned that can be used to connect.
+      if (ipAddrs.isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
+                    + "IP address.",
+                instanceName.getConnectionName()));
       }
 
       // Update the Server CA certificate used to create the SSL connection with the instance.
