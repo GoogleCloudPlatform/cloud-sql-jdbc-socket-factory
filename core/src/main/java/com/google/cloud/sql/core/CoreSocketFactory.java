@@ -303,7 +303,7 @@ public final class CoreSocketFactory {
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
    * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC")
+   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC", "PSC")
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
