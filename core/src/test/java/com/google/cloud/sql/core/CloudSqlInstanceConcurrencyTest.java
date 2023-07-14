@@ -1,5 +1,7 @@
 package com.google.cloud.sql.core;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
@@ -23,15 +25,12 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static com.google.common.truth.Truth.assertThat;
 
 public class CloudSqlInstanceConcurrencyTest {
 
-  private static final Logger logger = Logger.getLogger(
-      CloudSqlInstanceConcurrencyTest.class.getName());
+  private static final Logger logger =
+      Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
 
   static {
     ConsoleHandler handler = new ConsoleHandler();
@@ -63,11 +62,13 @@ public class CloudSqlInstanceConcurrencyTest {
       this.flakey = flakey;
     }
 
-
     @Override
-    public InstanceData getInstanceData(CloudSqlInstanceName instanceName,
-        AccessTokenSupplier accessTokenSupplier, AuthType authType,
-        ListeningScheduledExecutorService executor, ListenableFuture<KeyPair> keyPair)
+    public InstanceData getInstanceData(
+        CloudSqlInstanceName instanceName,
+        AccessTokenSupplier accessTokenSupplier,
+        AuthType authType,
+        ListeningScheduledExecutorService executor,
+        ListenableFuture<KeyPair> keyPair)
         throws ExecutionException, InterruptedException {
       int c = counter.incrementAndGet();
       Thread.sleep(100);
@@ -95,20 +96,25 @@ public class CloudSqlInstanceConcurrencyTest {
   @Test
   public void testCloudSqlInstanceConcurrency() throws Exception {
     // for (int i = 0; i < 10; i++) {
-      runConcurrencyTest();
+    runConcurrencyTest();
     // }
   }
-
 
   @Test
   public void testBasicHappyPath() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
-    ListenableFuture<KeyPair> keyPairFuture = Futures.immediateFuture(
-        mockAdminApi.getClientKeyPair());
+    ListenableFuture<KeyPair> keyPairFuture =
+        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = newTestExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
-    CloudSqlInstance instance = new CloudSqlInstance("a:b:c", supplier, AuthType.PASSWORD,
-        new TestCredentialFactory(), executor, keyPairFuture);
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "a:b:c",
+            supplier,
+            AuthType.PASSWORD,
+            new TestCredentialFactory(),
+            executor,
+            keyPairFuture);
 
     assertThat(supplier.counter.get()).isEqualTo(0);
     Thread.sleep(500);
@@ -118,19 +124,26 @@ public class CloudSqlInstanceConcurrencyTest {
 
   public void runConcurrencyTest() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
-    ListenableFuture<KeyPair> keyPairFuture = Futures.immediateFuture(
-        mockAdminApi.getClientKeyPair());
+    ListenableFuture<KeyPair> keyPairFuture =
+        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = newTestExecutor();
     TestDataSupplier supplier = new TestDataSupplier(true);
-    CloudSqlInstance instance = new CloudSqlInstance("a:b:c", supplier, AuthType.PASSWORD,
-        new TestCredentialFactory(), executor, keyPairFuture);
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "a:b:c",
+            supplier,
+            AuthType.PASSWORD,
+            new TestCredentialFactory(),
+            executor,
+            keyPairFuture);
     assertThat(supplier.counter.get()).isEqualTo(0);
 
     // Attempt to retrieve data, ensure we wait for success
-    ListenableFuture<List<Object>> allData = Futures.allAsList(
-        executor.submit(instance::getSslData),
-        executor.submit(instance::getSslData),
-        executor.submit(instance::getSslData));
+    ListenableFuture<List<Object>> allData =
+        Futures.allAsList(
+            executor.submit(instance::getSslData),
+            executor.submit(instance::getSslData),
+            executor.submit(instance::getSslData));
 
     List<Object> d = allData.get();
     assertThat(d.get(0)).isNotNull();
@@ -139,19 +152,20 @@ public class CloudSqlInstanceConcurrencyTest {
     assertThat(supplier.counter.get()).isEqualTo(1);
 
     // Call forceRefresh simultaneously
-    ListenableFuture<List<Object>> all = Futures.allAsList(
-        executor.submit(instance::forceRefresh),
-        executor.submit(instance::forceRefresh),
-        executor.submit(instance::forceRefresh));
+    ListenableFuture<List<Object>> all =
+        Futures.allAsList(
+            executor.submit(instance::forceRefresh),
+            executor.submit(instance::forceRefresh),
+            executor.submit(instance::forceRefresh));
     all.get();
 
-    ListenableFuture<List<Object>> allData2 = Futures.allAsList(
-        executor.submit(instance::getSslData),
-        executor.submit(instance::getSslData),
-        executor.submit(instance::getSslData));
+    ListenableFuture<List<Object>> allData2 =
+        Futures.allAsList(
+            executor.submit(instance::getSslData),
+            executor.submit(instance::getSslData),
+            executor.submit(instance::getSslData));
     allData2.get();
     assertThat(supplier.counter.get()).isEqualTo(2);
-
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

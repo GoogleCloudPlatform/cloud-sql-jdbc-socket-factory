@@ -23,9 +23,9 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import dev.failsafe.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Duration;
@@ -56,17 +56,23 @@ class CloudSqlInstance {
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
-  // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter =
-      RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
-
+  // Rate limit delay calculator
+  private final RateLimitCalculator rateLimitCalculator =
+      new RateLimitCalculator(
+          Duration.ofMillis(50), Duration.ofMillis(250), 2.0f, Duration.ofMinutes(2));
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> currentInstanceData;
 
   @GuardedBy("instanceDataGuard")
+  private SettableFuture<InstanceData> initialInstanceData = SettableFuture.create();
+
+  @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> nextInstanceData;
+
+  @GuardedBy("instanceDataGuard")
+  private ListenableFuture<?> nextScheduledRefresh;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -95,11 +101,7 @@ class CloudSqlInstance {
     } else {
       this.accessTokenSupplier = Optional::empty;
     }
-
-    synchronized (instanceDataGuard) {
-      this.currentInstanceData = executor.submit(this::performRefresh);
-      this.nextInstanceData = currentInstanceData;
-    }
+    forceRefresh();
   }
 
   /**
@@ -109,7 +111,11 @@ class CloudSqlInstance {
   private InstanceData getInstanceData() {
     ListenableFuture<InstanceData> instanceDataFuture;
     synchronized (instanceDataGuard) {
-      instanceDataFuture = currentInstanceData;
+      if (currentInstanceData == null) {
+        instanceDataFuture = initialInstanceData;
+      } else {
+        instanceDataFuture = currentInstanceData;
+      }
     }
     try {
       return Uninterruptibles.getUninterruptibly(instanceDataFuture);
@@ -158,20 +164,21 @@ class CloudSqlInstance {
    * been completed.
    */
   void forceRefresh() {
+    // nextInstanceData holds either:
+    //   - an in-progress future created like this: `executor.submit(this::performRefresh)`
+    //   - a completed future with the result (or exception) of the refresh`
     synchronized (instanceDataGuard) {
-      nextInstanceData.cancel(false);
-      if (nextInstanceData.isCancelled()) {
-        logger.fine(
-            "Force Refresh: the next refresh operation was cancelled."
-                + " Scheduling new refresh operation immediately.");
-        currentInstanceData = executor.submit(this::performRefresh);
-        nextInstanceData = currentInstanceData;
-      } else {
-        logger.fine(
-            "Force Refresh: the next refresh operation is already running."
-                + " Marking it as the current operation.");
-        // Otherwise it's already running, so just move next to current.
-        currentInstanceData = nextInstanceData;
+      // When no refresh is in progress, start a new one
+      if (nextInstanceData == null || nextInstanceData.isDone()) {
+        nextInstanceData = executor.submit(this::performRefresh);
+        ;
+      }
+
+      // nextScheduledRefresh may hold a scheduled refresh in the future. If so, cancel
+      // it. nextScheduledRefresh will be set to a new future refresh after the next successful
+      // performRefresh() attempt.
+      if (this.nextScheduledRefresh != null && !this.nextScheduledRefresh.isDone()) {
+        this.nextScheduledRefresh.cancel(false);
       }
     }
   }
@@ -182,10 +189,8 @@ class CloudSqlInstance {
    * would expire.
    */
   private InstanceData performRefresh() throws InterruptedException, ExecutionException {
-    logger.fine("Refresh Operation: Acquiring rate limiter permit.");
-    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
-    forcedRenewRateLimiter.acquirePermit();
-    logger.fine("Refresh Operation: Acquired rate limiter permit. Starting refresh...");
+    logger.fine("Refresh Operation: Attempting refresh.");
+    rateLimitCalculator.recordAttempt();
 
     try {
       InstanceData data =
@@ -209,17 +214,34 @@ class CloudSqlInstance {
                   .toString()));
 
       synchronized (instanceDataGuard) {
+        // If currentInstanceData == null, then this is the first successful attempt,
+        // so we must also resolve initialInstanceData to satisfy any callers who requested
+        // a certificate before the first successful attempt
+        if (currentInstanceData == null) {
+          initialInstanceData.set(data);
+        }
+
+        // After successfully fetching the data, update currentInstanceData with the new value
         currentInstanceData = Futures.immediateFuture(data);
-        nextInstanceData =
-            executor.schedule(this::performRefresh, secondsToRefresh, TimeUnit.SECONDS);
+
+        // Then schedule a refresh in the future.
+        nextScheduledRefresh =
+            executor.schedule(this::forceRefresh, secondsToRefresh, TimeUnit.SECONDS);
       }
+
+      rateLimitCalculator.recordSuccess();
 
       return data;
     } catch (ExecutionException | InterruptedException e) {
+      rateLimitCalculator.recordFailure();
       logger.log(
           Level.FINE, "Refresh Operation: Failed! Starting next refresh operation immediately.", e);
       synchronized (instanceDataGuard) {
-        nextInstanceData = executor.submit(this::performRefresh);
+        // After a failed refresh, schedule a future refresh
+        // at after an appropriate delay calculated by the rate limiter.
+        Duration delay = rateLimitCalculator.nextAttemptDelayMillis();
+        nextScheduledRefresh =
+            executor.schedule(this::forceRefresh, delay.toMillis(), TimeUnit.MILLISECONDS);
       }
       throw e;
     }
