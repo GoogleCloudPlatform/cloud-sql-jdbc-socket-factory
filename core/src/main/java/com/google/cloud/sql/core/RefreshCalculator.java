@@ -30,6 +30,15 @@ class RefreshCalculator {
   // time to complete.
   private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
 
+  /**
+   * Returns true if the refresh process should begin given the time and expiration date.
+   * When the time in parameter `now` is after `expiration - DEFAULT_REFRESH_BUFFER`, then
+   * the refresh process should begin.
+   */
+  boolean isRefreshRequired(Instant now, Instant expiration) {
+    return now.plus(DEFAULT_REFRESH_BUFFER).isAfter(expiration);
+  }
+
   long calculateSecondsUntilNextRefresh(Instant now, Instant expiration) {
     Duration timeUntilExp = Duration.between(now, expiration);
 

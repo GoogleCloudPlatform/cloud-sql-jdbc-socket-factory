@@ -32,28 +32,32 @@ public class RefreshCalculatorTest {
 
   private final Duration input;
   private final Duration want;
+  private final boolean needsRefresh;
 
   @Parameters(name = "Test {0}: calculateSecondsUntilNextRefresh({1})={2}")
   public static Collection<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
-          {"when expiration is greater than 1 hour", Duration.ofHours(4), Duration.ofHours(2)},
-          {"when expiration is equal to 1 hour", Duration.ofHours(1), Duration.ofMinutes(30)},
+          {"when expiration is greater than 1 hour", Duration.ofHours(4), Duration.ofHours(2), false},
+          {"when expiration is equal to 1 hour", Duration.ofHours(1), Duration.ofMinutes(30), false},
           {
             "when expiration is less than 1 hour, but greater than 4 minutes",
             Duration.ofMinutes(5),
-            Duration.ofMinutes(1)
+            Duration.ofMinutes(1),
+              false
           },
-          {"when expiration is less than 4 minutes", Duration.ofMinutes(3), Duration.ofMinutes(0)},
-          {"when expiration is now", Duration.ofMinutes(0), Duration.ofMinutes(0)},
-          {"when expiration is 62 minutes", Duration.ofMinutes(62), Duration.ofMinutes(31)},
-          {"when expiration is 58 minutes", Duration.ofMinutes(58), Duration.ofMinutes(54)},
+          {"when expiration is less than 4 minutes", Duration.ofMinutes(3), Duration.ofMinutes(0), true},
+          {"when expiration is now", Duration.ofMinutes(0), Duration.ofMinutes(0), true},
+          {"when expiration is past", Duration.ofMinutes(-5), Duration.ofMinutes(0), true},
+          {"when expiration is 62 minutes", Duration.ofMinutes(62), Duration.ofMinutes(31), false},
+          {"when expiration is 58 minutes", Duration.ofMinutes(58), Duration.ofMinutes(54), false},
         });
   }
 
-  public RefreshCalculatorTest(String name, Duration input, Duration want) {
+  public RefreshCalculatorTest(String name, Duration input, Duration want, Boolean needsRefresh) {
     this.input = input;
     this.want = want;
+    this.needsRefresh = needsRefresh;
     this.refreshCalculator = new RefreshCalculator();
   }
 
@@ -66,5 +70,14 @@ public class RefreshCalculatorTest {
         Duration.ofSeconds(
             refreshCalculator.calculateSecondsUntilNextRefresh(NOW, NOW.plus(input)));
     assertThat(nextRefresh).isEqualTo(want);
+  }
+
+  @Test
+  public void testNeedsRefresh() {
+    if (needsRefresh) {
+      assertThat(refreshCalculator.isRefreshRequired(NOW, NOW.plus(input))).isTrue();
+    } else {
+      assertThat(refreshCalculator.isRefreshRequired(NOW, NOW.plus(input))).isFalse();
+    }
   }
 }
