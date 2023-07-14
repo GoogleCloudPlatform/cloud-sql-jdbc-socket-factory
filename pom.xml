@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.12.1-SNAPSHOT</version>
+  <version>1.13.1-SNAPSHOT</version>
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -72,8 +72,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <native-image.version>0.9.21</native-image.version>
-    <graal-sdk.version>22.3.1</graal-sdk.version>
+    <native-image.version>0.9.23</native-image.version>
+    <graal-sdk.version>22.3.2</graal-sdk.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
