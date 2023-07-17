@@ -57,8 +57,7 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter =
-      RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+  private final RateLimiter<Object> forcedRenewRateLimiter;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
@@ -67,6 +66,9 @@ class CloudSqlInstance {
 
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> nextInstanceData;
+
+  @GuardedBy("instanceDataGuard")
+  private boolean forceRefreshRunning;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -83,11 +85,31 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
+    this(
+        connectionName,
+        instanceDataSupplier,
+        authType,
+        tokenSourceFactory,
+        executor,
+        keyPair,
+        RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+  }
+
+  /** A constructor for use in tests that allows the caller to set the RateLimiter. */
+  CloudSqlInstance(
+      String connectionName,
+      InstanceDataSupplier instanceDataSupplier,
+      AuthType authType,
+      CredentialFactory tokenSourceFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> keyPair,
+      RateLimiter<Object> forcedRenewRateLimiter) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
+    this.forcedRenewRateLimiter = forcedRenewRateLimiter;
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
@@ -159,6 +181,13 @@ class CloudSqlInstance {
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
+      // Don't force a refresh until the current forceRefresh operation
+      // has produced a successful refresh.
+      if (forceRefreshRunning) {
+        return;
+      }
+
+      forceRefreshRunning = true;
       nextInstanceData.cancel(false);
       if (nextInstanceData.isCancelled()) {
         logger.fine(
@@ -212,8 +241,9 @@ class CloudSqlInstance {
         currentInstanceData = Futures.immediateFuture(data);
         nextInstanceData =
             executor.schedule(this::performRefresh, secondsToRefresh, TimeUnit.SECONDS);
+        // Refresh completed successfully, reset forceRefreshRunning.
+        forceRefreshRunning = false;
       }
-
       return data;
     } catch (ExecutionException | InterruptedException e) {
       logger.log(
@@ -227,5 +257,21 @@ class CloudSqlInstance {
 
   SslData getSslData() {
     return getInstanceData().getSslData();
+  }
+
+  ListenableFuture<InstanceData> getNext() {
+    synchronized (instanceDataGuard) {
+      return this.nextInstanceData;
+    }
+  }
+
+  ListenableFuture<InstanceData> getCurrent() {
+    synchronized (instanceDataGuard) {
+      return this.currentInstanceData;
+    }
+  }
+
+  public CloudSqlInstanceName getInstanceName() {
+    return instanceName;
   }
 }
