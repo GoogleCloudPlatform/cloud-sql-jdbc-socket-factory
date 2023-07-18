@@ -151,10 +151,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                             .orElse(x509Certificate.getNotAfter());
                   }
 
-                  logger.info(
-                      String.format(
-                          "[%s %d] INSTANCE DATA DONE",
-                          instanceName, Thread.currentThread().getId()));
+                  logger.fine(String.format("[%s] INSTANCE DATA DONE", instanceName));
 
                   return new InstanceData(
                       Futures.getDone(metadataFuture),
@@ -164,8 +161,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                 executor);
 
     InstanceData instanceData = done.get();
-    logger.info(
-        String.format("[%s %d] ALL FUTURES DONE", instanceName, Thread.currentThread().getId()));
+    logger.fine(String.format("[%s] ALL FUTURES DONE", instanceName));
     return instanceData;
   }
 
@@ -227,8 +223,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
         Certificate instanceCaCertificate =
             createCertificate(instanceMetadata.getServerCaCert().getCert());
 
-        logger.info(
-            String.format("[%s %d] METADATA DONE", instanceName, Thread.currentThread().getId()));
+        logger.fine(String.format("[%s] METADATA DONE", instanceName));
 
         return new Metadata(ipAddrs, instanceCaCertificate);
       } catch (CertificateException ex) {
@@ -299,7 +294,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
           ex);
     }
 
-    logger.info(String.format("[%s %d] CERT DONE", instanceName, Thread.currentThread().getId()));
+    logger.fine(String.format("[%s %d] CERT DONE", instanceName, Thread.currentThread().getId()));
 
     return ephemeralCertificate;
   }
@@ -352,7 +347,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
-      logger.info(
+      logger.fine(
           String.format("[%s %d] SSL CONTEXT", instanceName, Thread.currentThread().getId()));
 
       return new SslData(sslContext, kmf, tmf);

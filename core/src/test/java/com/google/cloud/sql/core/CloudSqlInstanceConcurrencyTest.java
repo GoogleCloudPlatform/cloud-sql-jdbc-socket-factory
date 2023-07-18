@@ -19,13 +19,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.junit.Assert;
@@ -37,43 +32,6 @@ public class CloudSqlInstanceConcurrencyTest {
 
   private static final Logger logger =
       Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
-
-  static {
-    ConsoleHandler handler =
-        new ConsoleHandler() {
-          {
-            setOutputStream(System.out);
-            setFormatter(
-                new Formatter() {
-                  @Override
-                  public String format(LogRecord record) {
-                    return String.format(
-                        "%5d %s (%s): %s\n",
-                        record.getMillis() - start,
-                        record.getLevel(),
-                        threadName(record.getThreadID()),
-                        record.getMessage());
-                  }
-
-                  private String threadName(long threadID) {
-                    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-                    for (Thread t : threadSet) {
-                      if (t.getId() == threadID) {
-                        return t.getName();
-                      }
-                    }
-                    return "unknown";
-                  }
-                });
-            setLevel(Level.ALL);
-          }
-        };
-
-    Logger.getLogger("").addHandler(handler);
-    Logger l = Logger.getLogger(CloudSqlInstance.class.getName());
-    l.setLevel(Level.ALL);
-    logger.info("Hello");
-  }
 
   private static class TestDataSupplier implements InstanceDataSupplier {
 

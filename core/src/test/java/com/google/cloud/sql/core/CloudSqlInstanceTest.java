@@ -82,7 +82,8 @@ public class CloudSqlInstanceTest {
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
-            keyPairFuture);
+            keyPairFuture,
+            CloudSqlInstance.defaultRateLimiter());
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(sslData);
@@ -105,7 +106,8 @@ public class CloudSqlInstanceTest {
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
-            keyPairFuture);
+            keyPairFuture,
+            CloudSqlInstance.defaultRateLimiter());
 
     RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
     assertThat(ex).hasMessageThat().contains("Fake connection error");
@@ -132,7 +134,8 @@ public class CloudSqlInstanceTest {
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
-            keyPairFuture);
+            keyPairFuture,
+            CloudSqlInstance.defaultRateLimiter());
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(sslData);
@@ -171,7 +174,8 @@ public class CloudSqlInstanceTest {
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
-            keyPairFuture);
+            keyPairFuture,
+            CloudSqlInstance.defaultRateLimiter());
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC"))).isEqualTo("10.1.2.3");
@@ -207,7 +211,8 @@ public class CloudSqlInstanceTest {
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
-            keyPairFuture);
+            keyPairFuture,
+            CloudSqlInstance.defaultRateLimiter());
     Assert.assertThrows(
         IllegalArgumentException.class, () -> instance.getPreferredIp(Arrays.asList("PRIVATE")));
   }

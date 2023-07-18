@@ -70,6 +70,10 @@ class CloudSqlInstance {
   @GuardedBy("instanceDataGuard")
   private boolean forceRefreshRunning;
 
+  static final RateLimiter defaultRateLimiter() {
+    return RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+  }
+
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
@@ -78,24 +82,6 @@ class CloudSqlInstance {
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
-  CloudSqlInstance(
-      String connectionName,
-      InstanceDataSupplier instanceDataSupplier,
-      AuthType authType,
-      CredentialFactory tokenSourceFactory,
-      ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
-    this(
-        connectionName,
-        instanceDataSupplier,
-        authType,
-        tokenSourceFactory,
-        executor,
-        keyPair,
-        RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
-  }
-
-  /** A constructor for use in tests that allows the caller to set the RateLimiter. */
   CloudSqlInstance(
       String connectionName,
       InstanceDataSupplier instanceDataSupplier,
@@ -190,8 +176,10 @@ class CloudSqlInstance {
       forceRefreshRunning = true;
       nextInstanceData.cancel(false);
       logger.fine(
-          "Force Refresh: the next refresh operation was cancelled."
-              + " Scheduling new refresh operation immediately.");
+          String.format(
+              "[%s] Force Refresh: the next refresh operation was cancelled."
+                  + " Scheduling new refresh operation immediately.",
+              instanceName));
       currentInstanceData = executor.submit(this::performRefresh);
       nextInstanceData = currentInstanceData;
     }

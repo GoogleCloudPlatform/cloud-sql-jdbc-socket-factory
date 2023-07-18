@@ -351,6 +351,12 @@ public final class CoreSocketFactory {
         instanceName,
         k ->
             new CloudSqlInstance(
-                k, adminApiService, authType, credentialFactory, executor, localKeyPair));
+                k,
+                adminApiService,
+                authType,
+                credentialFactory,
+                executor,
+                localKeyPair,
+                CloudSqlInstance.defaultRateLimiter()));
   }
 }
