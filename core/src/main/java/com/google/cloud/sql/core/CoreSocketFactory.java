@@ -120,9 +120,14 @@ public final class CoreSocketFactory {
   @VisibleForTesting
   // Returns a listenable, scheduled executor that exits upon shutdown.
   static ListeningScheduledExecutorService getDefaultExecutor() {
-    // TODO(kvg): Figure out correct way to determine number of threads
+
+    // During refresh, each instance consumes 2 threads from the thread pool. By using 8 threads,
+    // there should be enough free threads so that there will not be a deadlock. Most users
+    // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
+    // this to 8, it's enough threads for most users, plus a safety factor of 2.
     ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
+
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
         MoreExecutors.getExitingScheduledExecutorService(executor));
