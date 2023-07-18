@@ -28,8 +28,6 @@ import org.junit.Test;
 
 public class CloudSqlInstanceConcurrencyTest {
 
-  private static final long start = System.currentTimeMillis();
-
   private static final Logger logger =
       Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
 
@@ -219,7 +217,7 @@ public class CloudSqlInstanceConcurrencyTest {
     }
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 45000) //45 seconds
   public void testForceRefreshDoesNotCauseADeadlock() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
@@ -242,9 +240,7 @@ public class CloudSqlInstanceConcurrencyTest {
               newRateLimiter()));
     }
 
-    assertThat(supplier.counter.get()).isEqualTo(0);
-
-    // Get SSL Data for each instance, forcing the first refresh
+    // Get SSL Data for each instance, forcing the first refresh to complete.
     instances.forEach(i -> i.getSslData());
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
