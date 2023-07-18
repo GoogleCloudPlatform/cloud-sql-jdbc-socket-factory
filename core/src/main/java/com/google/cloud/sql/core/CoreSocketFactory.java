@@ -122,7 +122,9 @@ public final class CoreSocketFactory {
   static ListeningScheduledExecutorService getDefaultExecutor() {
 
     // During refresh, each instance consumes 2 threads from the thread pool. By using 8 threads,
-    // there should be enough free threads so that there will not be a deadlock.
+    // there should be enough free threads so that there will not be a deadlock. Most users
+    // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
+    // this to 8, it's enough threads for most users, plus a safety factor of 2.
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
 
