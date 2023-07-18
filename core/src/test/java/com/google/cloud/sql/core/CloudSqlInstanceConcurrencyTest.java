@@ -217,7 +217,7 @@ public class CloudSqlInstanceConcurrencyTest {
     }
   }
 
-  @Test(timeout = 45000) //45 seconds
+  @Test(timeout = 45000) // 45 seconds
   public void testForceRefreshDoesNotCauseADeadlock() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
