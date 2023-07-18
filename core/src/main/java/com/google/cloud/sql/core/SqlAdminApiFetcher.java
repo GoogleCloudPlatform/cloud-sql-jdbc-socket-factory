@@ -103,8 +103,7 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
       ListenableFuture<KeyPair> keyPair)
       throws ExecutionException, InterruptedException {
 
-    ListenableFuture<Optional<AccessToken>> token =
-        executor.submit(() -> accessTokenSupplier.get());
+    ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
     // Fetch the metadata
     ListenableFuture<Metadata> metadataFuture =
@@ -152,6 +151,11 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                             .orElse(x509Certificate.getNotAfter());
                   }
 
+                  logger.info(
+                      String.format(
+                          "[%s %d] INSTANCE DATA DONE",
+                          instanceName, Thread.currentThread().getId()));
+
                   return new InstanceData(
                       Futures.getDone(metadataFuture),
                       Futures.getDone(sslContextFuture),
@@ -159,7 +163,10 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                 },
                 executor);
 
-    return done.get();
+    InstanceData instanceData = done.get();
+    logger.info(
+        String.format("[%s %d] ALL FUTURES DONE", instanceName, Thread.currentThread().getId()));
+    return instanceData;
   }
 
   String getApplicationName() {
@@ -219,6 +226,10 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
       try {
         Certificate instanceCaCertificate =
             createCertificate(instanceMetadata.getServerCaCert().getCert());
+
+        logger.info(
+            String.format("[%s %d] METADATA DONE", instanceName, Thread.currentThread().getId()));
+
         return new Metadata(ipAddrs, instanceCaCertificate);
       } catch (CertificateException ex) {
         throw new RuntimeException(
@@ -288,6 +299,8 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
           ex);
     }
 
+    logger.info(String.format("[%s %d] CERT DONE", instanceName, Thread.currentThread().getId()));
+
     return ephemeralCertificate;
   }
 
@@ -338,6 +351,9 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
       }
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+
+      logger.info(
+          String.format("[%s %d] SSL CONTEXT", instanceName, Thread.currentThread().getId()));
 
       return new SslData(sslContext, kmf, tmf);
     } catch (GeneralSecurityException | IOException ex) {

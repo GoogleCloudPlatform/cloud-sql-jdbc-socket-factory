@@ -211,10 +211,14 @@ class CloudSqlInstance {
    * would expire.
    */
   private InstanceData performRefresh() throws InterruptedException, ExecutionException {
-    logger.fine("Refresh Operation: Acquiring rate limiter permit.");
+    logger.fine(
+        String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
-    logger.fine("Refresh Operation: Acquired rate limiter permit. Starting refresh...");
+    logger.fine(
+        String.format(
+            "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",
+            instanceName));
 
     try {
       InstanceData data =
@@ -223,15 +227,16 @@ class CloudSqlInstance {
 
       logger.fine(
           String.format(
-              "Refresh Operation: Completed refresh with new certificate expiration at %s.",
-              data.getExpiration().toInstant().toString()));
+              "[%s] Refresh Operation: Completed refresh with new certificate expiration at %s.",
+              instanceName, data.getExpiration().toInstant().toString()));
       long secondsToRefresh =
           refreshCalculator.calculateSecondsUntilNextRefresh(
               Instant.now(), data.getExpiration().toInstant());
 
       logger.fine(
           String.format(
-              "Refresh Operation: Next operation scheduled at %s.",
+              "[%s] Refresh Operation: Next operation scheduled at %s.",
+              instanceName,
               Instant.now()
                   .plus(secondsToRefresh, ChronoUnit.SECONDS)
                   .truncatedTo(ChronoUnit.SECONDS)
@@ -247,7 +252,11 @@ class CloudSqlInstance {
       return data;
     } catch (ExecutionException | InterruptedException e) {
       logger.log(
-          Level.FINE, "Refresh Operation: Failed! Starting next refresh operation immediately.", e);
+          Level.FINE,
+          String.format(
+              "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.",
+              instanceName),
+          e);
       synchronized (instanceDataGuard) {
         nextInstanceData = executor.submit(this::performRefresh);
       }
