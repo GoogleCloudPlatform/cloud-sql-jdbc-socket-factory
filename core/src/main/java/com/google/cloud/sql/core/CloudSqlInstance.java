@@ -189,19 +189,11 @@ class CloudSqlInstance {
 
       forceRefreshRunning = true;
       nextInstanceData.cancel(false);
-      if (nextInstanceData.isCancelled()) {
-        logger.fine(
-            "Force Refresh: the next refresh operation was cancelled."
-                + " Scheduling new refresh operation immediately.");
-        currentInstanceData = executor.submit(this::performRefresh);
-        nextInstanceData = currentInstanceData;
-      } else {
-        logger.fine(
-            "Force Refresh: the next refresh operation is already running."
-                + " Marking it as the current operation.");
-        // Otherwise it's already running, so just move next to current.
-        currentInstanceData = nextInstanceData;
-      }
+      logger.fine(
+          "Force Refresh: the next refresh operation was cancelled."
+              + " Scheduling new refresh operation immediately.");
+      currentInstanceData = executor.submit(this::performRefresh);
+      nextInstanceData = currentInstanceData;
     }
   }
 
