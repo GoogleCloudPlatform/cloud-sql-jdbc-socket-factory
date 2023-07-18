@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import dev.failsafe.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
@@ -22,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -35,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class CloudSqlInstanceConcurrencyTest {
+
   private static final long start = System.currentTimeMillis();
 
   private static final Logger logger =
@@ -138,8 +136,8 @@ public class CloudSqlInstanceConcurrencyTest {
     }
   }
 
-  @Test
-  public void testCloudSqlInstanceConcurrency() throws Exception {
+  @Test(timeout = 45000)
+  public void testCloudSqlInstanceRefreshesConsistentlyWithoutRaceConditions() throws Exception {
     // Run the test 10 times to ensure we don't have race conditions
     for (int i = 0; i < 10; i++) {
       runConcurrencyTest();
@@ -147,7 +145,7 @@ public class CloudSqlInstanceConcurrencyTest {
   }
 
   @Test
-  public void testBasicHappyPath() throws Exception {
+  public void testCloudSqlInstanceCorrectlyRefreshesInstanceData() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
@@ -170,7 +168,7 @@ public class CloudSqlInstanceConcurrencyTest {
   }
 
   @Test
-  public void testPermanentFailure() throws Exception {
+  public void testRefreshWhenRefreshRequestAlwaysFails() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
@@ -263,8 +261,8 @@ public class CloudSqlInstanceConcurrencyTest {
     }
   }
 
-  @Test
-  public void testForceRefreshDeadlock() throws Exception {
+  @Test(timeout = 10000)
+  public void testForceRefreshDoesNotCauseADeadlock() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
@@ -293,35 +291,13 @@ public class CloudSqlInstanceConcurrencyTest {
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
+    // Start a thread for each instance that will force refresh and get InstanceData
+    // 50 times.
     List<Thread> threads =
-        instances.stream()
-            .map(
-                (inst) -> {
-                  Thread t =
-                      new Thread(
-                          () -> {
-                            for (int i = 0; i < 50; i++) {
-                              try {
-                                inst.forceRefresh();
-                                inst.forceRefresh();
-                                Thread.yield();
-                                inst.forceRefresh();
-                                inst.getSslData();
-                                Thread.sleep(10);
-                              } catch (Exception e) {
-                                logger.info("Exception in force refresh loop.");
-                              }
-                            }
-                            logger.info("Done spamming");
-                          });
-                  t.setName("test-" + inst.getInstanceName());
-                  t.start();
-                  return t;
-                })
-            .collect(Collectors.toList());
+        instances.stream().map(this::startForceRefreshThread).collect(Collectors.toList());
 
     for (Thread t : threads) {
-      t.join();
+      t.join(10000);
     }
 
     // Check if there is a scheduled future
@@ -335,14 +311,32 @@ public class CloudSqlInstanceConcurrencyTest {
     assertThat(brokenLoop).isEqualTo(0);
   }
 
-  private ListeningScheduledExecutorService newTestExecutor() {
-    ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+  private Thread startForceRefreshThread(CloudSqlInstance inst) {
+    Runnable forceRefreshRepeat =
+        () -> {
+          for (int i = 0; i < 50; i++) {
+            try {
+              Thread.sleep(100);
+              inst.forceRefresh();
+              inst.forceRefresh();
+              Thread.yield();
+              inst.forceRefresh();
+              inst.getSslData();
+            } catch (Exception e) {
+              logger.info("Exception in force refresh loop.");
+            }
+          }
+          logger.info("Done spamming");
+        };
 
-    //noinspection UnstableApiUsage
-    return MoreExecutors.listeningDecorator(
-        MoreExecutors.getExitingScheduledExecutorService(executor));
+    Thread t = new Thread(forceRefreshRepeat);
+    t.setName("test-" + inst.getInstanceName());
+    t.start();
+    return t;
+  }
+
+  private ListeningScheduledExecutorService newTestExecutor() {
+    return CoreSocketFactory.getDefaultExecutor();
   }
 
   private RateLimiter<Object> newRateLimiter() {

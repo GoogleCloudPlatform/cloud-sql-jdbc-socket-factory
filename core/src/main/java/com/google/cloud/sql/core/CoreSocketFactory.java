@@ -37,8 +37,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
@@ -80,7 +78,6 @@ public final class CoreSocketFactory {
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
   private final SqlAdminApiFetcher adminApiService;
-  private final AtomicInteger atomicInteger;
 
   @VisibleForTesting
   CoreSocketFactory(
@@ -94,7 +91,6 @@ public final class CoreSocketFactory {
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
-    this.atomicInteger = new AtomicInteger();
   }
 
   /** Returns the {@link CoreSocketFactory} singleton. */
@@ -221,6 +217,11 @@ public final class CoreSocketFactory {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
+  private String getHostIp(String instanceName, List<String> ipTypes) {
+    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
+    return instance.getPreferredIp(ipTypes);
+  }
+
   /**
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
@@ -304,11 +305,6 @@ public final class CoreSocketFactory {
     System.setProperty(USER_TOKEN_PROPERTY_NAME, applicationName);
   }
 
-  private String getHostIp(String instanceName, List<String> ipTypes) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
-    return instance.getPreferredIp(ipTypes);
-  }
-
   /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
@@ -324,10 +320,6 @@ public final class CoreSocketFactory {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName, authType);
 
     try {
-      int i = atomicInteger.incrementAndGet();
-      if (i > 10 && i % 2 == 0) {
-        throw new IOException("Failed to connect WOOO!");
-      }
       SSLSocket socket = instance.createSslSocket();
 
       // TODO(kvg): Support all socket related options listed here:
@@ -342,10 +334,6 @@ public final class CoreSocketFactory {
 
       return socket;
     } catch (Exception ex) {
-      logger.log(
-          Level.WARNING,
-          String.format("[%s] Failed to Connect, force refreshing", instanceName),
-          ex);
       // TODO(kvg): Let user know about the rate limit
       instance.forceRefresh();
       throw ex;
