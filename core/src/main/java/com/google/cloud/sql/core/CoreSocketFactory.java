@@ -122,7 +122,7 @@ public final class CoreSocketFactory {
   static ListeningScheduledExecutorService getDefaultExecutor() {
     // TODO(kvg): Figure out correct way to determine number of threads
     ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
         MoreExecutors.getExitingScheduledExecutorService(executor));
