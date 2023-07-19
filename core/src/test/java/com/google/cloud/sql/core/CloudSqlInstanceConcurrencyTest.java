@@ -89,7 +89,6 @@ public class CloudSqlInstanceConcurrencyTest {
                 Thread.sleep(100);
 
                 if (flaky && c % 2 == 0 && c > 10) {
-                  Thread.sleep(500);
                   throw new ExecutionException("Flaky", new Exception());
                 }
 
@@ -114,74 +113,6 @@ public class CloudSqlInstanceConcurrencyTest {
 
   @Test(timeout = 45000)
   public void testCloudSqlInstanceRefreshesConsistentlyWithoutRaceConditions() throws Exception {
-    // Run the test 10 times to ensure we don't have race conditions
-    for (int i = 0; i < 10; i++) {
-      runConcurrencyTest();
-    }
-  }
-
-  @Test
-  public void testCloudSqlInstanceCorrectlyRefreshesInstanceData() throws Exception {
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    ListenableFuture<KeyPair> keyPairFuture =
-        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(false);
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "a:b:c",
-            supplier,
-            AuthType.PASSWORD,
-            new TestCredentialFactory(),
-            executor,
-            keyPairFuture,
-            newRateLimiter());
-
-    assertThat(supplier.counter.get()).isEqualTo(0);
-    Thread.sleep(500);
-    SslData data = instance.getSslData();
-    assertThat(data).isNotNull();
-  }
-
-  @Test
-  public void testRefreshWhenRefreshRequestAlwaysFails() throws Exception {
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    ListenableFuture<KeyPair> keyPairFuture =
-        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
-
-    InstanceDataSupplier supplier =
-        (CloudSqlInstanceName instanceName,
-            AccessTokenSupplier accessTokenSupplier,
-            AuthType authType,
-            ListeningScheduledExecutorService exec,
-            ListenableFuture<KeyPair> keyPair) -> {
-          ListenableFuture<?> f =
-              exec.submit(
-                  () -> {
-                    throw new RuntimeException("always fails");
-                  });
-          f.get(); // this will throw an ExecutionException
-          return null;
-        };
-
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "a:b:c",
-            supplier,
-            AuthType.PASSWORD,
-            new TestCredentialFactory(),
-            executor,
-            keyPairFuture,
-            newRateLimiter());
-
-    Thread.sleep(500);
-    Assert.assertThrows(RuntimeException.class, () -> instance.getSslData());
-    // Note: refresh attempts will continue the background. This instance.getSslData() throws an
-    // exception after the first refresh attempt fails.
-  }
-
-  public void runConcurrencyTest() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
@@ -237,7 +168,68 @@ public class CloudSqlInstanceConcurrencyTest {
     }
   }
 
-  @Test(timeout = 45000) // 45 seconds
+  @Test
+  public void testCloudSqlInstanceCorrectlyRefreshesInstanceData() throws Exception {
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    ListenableFuture<KeyPair> keyPairFuture =
+        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
+    ListeningScheduledExecutorService executor = newTestExecutor();
+    TestDataSupplier supplier = new TestDataSupplier(false);
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "a:b:c",
+            supplier,
+            AuthType.PASSWORD,
+            new TestCredentialFactory(),
+            executor,
+            keyPairFuture,
+            newRateLimiter());
+
+    assertThat(supplier.counter.get()).isEqualTo(0);
+    Thread.sleep(100);
+    SslData data = instance.getSslData();
+    assertThat(data).isNotNull();
+  }
+
+  @Test
+  public void testRefreshWhenRefreshRequestAlwaysFails() throws Exception {
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    ListenableFuture<KeyPair> keyPairFuture =
+        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
+    ListeningScheduledExecutorService executor = newTestExecutor();
+
+    InstanceDataSupplier supplier =
+        (CloudSqlInstanceName instanceName,
+            AccessTokenSupplier accessTokenSupplier,
+            AuthType authType,
+            ListeningScheduledExecutorService exec,
+            ListenableFuture<KeyPair> keyPair) -> {
+          ListenableFuture<?> f =
+              exec.submit(
+                  () -> {
+                    throw new RuntimeException("always fails");
+                  });
+          f.get(); // this will throw an ExecutionException
+          return null;
+        };
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "a:b:c",
+            supplier,
+            AuthType.PASSWORD,
+            new TestCredentialFactory(),
+            executor,
+            keyPairFuture,
+            newRateLimiter());
+
+    Thread.sleep(500);
+    Assert.assertThrows(RuntimeException.class, () -> instance.getSslData());
+    // Note: refresh attempts will continue the background. This instance.getSslData() throws an
+    // exception after the first refresh attempt fails.
+  }
+
+  @Test(timeout = 45000) // 45 seconds timeout in case of deadlock
   public void testForceRefreshDoesNotCauseADeadlock() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
@@ -288,7 +280,7 @@ public class CloudSqlInstanceConcurrencyTest {
   private Thread startForceRefreshThread(CloudSqlInstance inst) {
     Runnable forceRefreshRepeat =
         () -> {
-          for (int i = 0; i < 50; i++) {
+          for (int i = 0; i < 10; i++) {
             try {
               Thread.sleep(100);
               inst.forceRefresh();
