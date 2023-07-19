@@ -49,10 +49,10 @@ public class CloudSqlInstanceConcurrencyTest {
 
   private static class TestDataSupplier implements InstanceDataSupplier {
 
-    private final boolean flakey;
+    private final boolean flaky;
 
-    private AtomicInteger counter = new AtomicInteger();
-    private InstanceData response =
+    private final AtomicInteger counter = new AtomicInteger();
+    private final InstanceData response =
         new InstanceData(
             new Metadata(
                 ImmutableMap.of(
@@ -62,11 +62,9 @@ public class CloudSqlInstanceConcurrencyTest {
                 null),
             new SslData(null, null, null),
             Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-    private final ListeningScheduledExecutorService executor;
 
-    private TestDataSupplier(boolean flakey, ListeningScheduledExecutorService executor) {
-      this.flakey = flakey;
-      this.executor = executor;
+    private TestDataSupplier(boolean flaky) {
+      this.flaky = flaky;
     }
 
     @Override
@@ -78,13 +76,19 @@ public class CloudSqlInstanceConcurrencyTest {
         ListenableFuture<KeyPair> keyPair)
         throws ExecutionException, InterruptedException {
 
+      // This method mimics the behavior of SqlAdminApiFetcher under flaky network conditions.
+      // It schedules a future on the executor to produces the result InstanceData.
+      // When `this.flaky` is set, every other call to getInstanceData()
+      // will pause the thread for an extra 500ms and then throw an ExecutionException,
+      // as if SqlAdminApiFetcher made an API request, and that request took extra time
+      // and then failed.
       ListenableFuture<InstanceData> f =
           executor.submit(
               () -> {
                 int c = counter.incrementAndGet();
                 Thread.sleep(100);
 
-                if (flakey && c % 2 == 0 && c > 10) {
+                if (flaky && c % 2 == 0 && c > 10) {
                   Thread.sleep(500);
                   throw new ExecutionException("Flaky", new Exception());
                 }
@@ -122,7 +126,7 @@ public class CloudSqlInstanceConcurrencyTest {
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = newTestExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(false, executor);
+    TestDataSupplier supplier = new TestDataSupplier(false);
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "a:b:c",
@@ -182,7 +186,7 @@ public class CloudSqlInstanceConcurrencyTest {
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = newTestExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(true, executor);
+    TestDataSupplier supplier = new TestDataSupplier(true);
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "a:b:c",
@@ -239,7 +243,7 @@ public class CloudSqlInstanceConcurrencyTest {
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = newTestExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(true, executor);
+    TestDataSupplier supplier = new TestDataSupplier(true);
     List<CloudSqlInstance> instances = new ArrayList<>();
 
     final int instanceCount = 5;

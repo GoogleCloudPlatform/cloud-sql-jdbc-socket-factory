@@ -28,7 +28,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -69,10 +68,6 @@ class CloudSqlInstance {
 
   @GuardedBy("instanceDataGuard")
   private boolean forceRefreshRunning;
-
-  static final RateLimiter defaultRateLimiter() {
-    return RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
-  }
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
