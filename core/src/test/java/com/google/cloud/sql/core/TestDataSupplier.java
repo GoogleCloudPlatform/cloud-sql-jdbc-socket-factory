@@ -49,13 +49,12 @@ class TestDataSupplier implements InstanceDataSupplier {
   }
 
   @Override
-  public InstanceData getInstanceData(
+  public ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair) {
 
     // This method mimics the behavior of SqlAdminApiFetcher under flaky network conditions.
     // It schedules a future on the executor to produces the result InstanceData.
@@ -74,6 +73,6 @@ class TestDataSupplier implements InstanceDataSupplier {
               return response;
             });
 
-    return f.get();
+    return f;
   }
 }

@@ -54,12 +54,14 @@ public class SqlAdminApiFetcherTest {
             .create(new StubCredentialFactory().create());
 
     InstanceData instanceData =
-        fetcher.getInstanceData(
-            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            () -> Optional.empty(),
-            AuthType.PASSWORD,
-            newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+        fetcher
+            .getInstanceData(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
     Map<String, String> ipAddrs = instanceData.getIpAddrs();
@@ -83,12 +85,14 @@ public class SqlAdminApiFetcherTest {
             .create(new StubCredentialFactory().create());
 
     InstanceData instanceData =
-        fetcher.getInstanceData(
-            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
-            () -> Optional.empty(),
-            AuthType.PASSWORD,
-            newTestExecutor(),
-            Futures.immediateFuture(mockAdminApi.getClientKeyPair()));
+        fetcher
+            .getInstanceData(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
     Map<String, String> ipAddrs = instanceData.getIpAddrs();

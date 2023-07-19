@@ -32,6 +32,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -218,7 +219,7 @@ public final class CoreSocketFactory {
     return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes));
   }
 
-  private String getHostIp(String instanceName, List<String> ipTypes) {
+  private String getHostIp(String instanceName, List<String> ipTypes) throws IOException {
     CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD);
     return instance.getPreferredIp(ipTypes);
   }
@@ -358,6 +359,7 @@ public final class CoreSocketFactory {
                 credentialFactory,
                 executor,
                 localKeyPair,
-                RateLimiter.create(1.0 / 30.0))); // 1 refresh attempt every 30 seconds
+                RateLimiter.create(1.0 / 30.0),
+                Duration.ofSeconds(30)));
   }
 }

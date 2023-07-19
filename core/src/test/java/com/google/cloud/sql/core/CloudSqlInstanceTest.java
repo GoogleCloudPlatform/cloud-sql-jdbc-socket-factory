@@ -24,11 +24,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
+import java.io.IOException;
 import java.security.KeyPair;
 import java.sql.Date;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,7 +79,8 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            RateLimiter.create(2.0 / 60.0),
+            Duration.ofSeconds(30));
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
@@ -87,19 +91,9 @@ public class CloudSqlInstanceTest {
   public void testInstanceFailsOnConnectionError() throws Exception {
 
     InstanceDataSupplier instanceDataSupplier =
-        (CloudSqlInstanceName instanceName,
-            AccessTokenSupplier accessTokenSupplier,
-            AuthType authType,
-            ListeningScheduledExecutorService exec,
-            ListenableFuture<KeyPair> keyPair) -> {
-          ListenableFuture<?> f =
-              exec.submit(
-                  () -> {
-                    throw new RuntimeException("always fails");
-                  });
-          f.get(); // this will throw an ExecutionException
-          return null;
-        };
+        (instanceName, accessTokenSupplier, authType, executor, keyPair) ->
+            Futures.immediateFailedFuture(
+                new ExecutionException(new IOException("Fake connection error")));
 
     // initialize instance after mocks are set up
     CloudSqlInstance instance =
@@ -110,7 +104,8 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            RateLimiter.create(1.0 / 30.0),
+            Duration.ofSeconds(30));
 
     RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
     assertThat(ex).hasMessageThat().contains("always fails");
@@ -125,9 +120,8 @@ public class CloudSqlInstanceTest {
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return Futures.immediateFuture(data);
         };
 
     CloudSqlInstance instance =
@@ -138,7 +132,8 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            RateLimiter.create(2.0 / 60.0),
+            Duration.ofSeconds(30));
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(sslData);
@@ -164,9 +159,8 @@ public class CloudSqlInstanceTest {
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return Futures.immediateFuture(data);
         };
 
     // initialize instance after mocks are set up
@@ -178,7 +172,8 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            RateLimiter.create(2.0 / 60.0),
+            Duration.ofSeconds(30));
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC"))).isEqualTo("10.1.2.3");
@@ -201,9 +196,8 @@ public class CloudSqlInstanceTest {
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return Futures.immediateFuture(data);
         };
 
     // initialize instance after mocks are set up
@@ -215,7 +209,8 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            RateLimiter.create(2.0 / 60.0),
+            Duration.ofSeconds(30));
     Assert.assertThrows(
         IllegalArgumentException.class, () -> instance.getPreferredIp(Arrays.asList("PRIVATE")));
   }

@@ -95,13 +95,12 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
    * @throws InterruptedException if the executor is interrupted.
    */
   @Override
-  public InstanceData getInstanceData(
+  public ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair) {
 
     ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
@@ -160,9 +159,10 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                 },
                 executor);
 
-    InstanceData instanceData = done.get();
-    logger.fine(String.format("[%s] ALL FUTURES DONE", instanceName));
-    return instanceData;
+    done.addListener(
+        () -> logger.fine(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
+
+    return done;
   }
 
   String getApplicationName() {
