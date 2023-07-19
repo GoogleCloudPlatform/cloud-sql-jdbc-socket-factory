@@ -23,9 +23,9 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import dev.failsafe.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Instant;
@@ -56,7 +56,7 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter;
+  private final RateLimiter forcedRenewRateLimiter;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
@@ -84,7 +84,7 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
-      RateLimiter<Object> forcedRenewRateLimiter) {
+      RateLimiter forcedRenewRateLimiter) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
@@ -189,7 +189,7 @@ class CloudSqlInstance {
     logger.fine(
         String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
-    forcedRenewRateLimiter.acquirePermit();
+    forcedRenewRateLimiter.acquire();
     logger.fine(
         String.format(
             "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",

@@ -24,7 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import dev.failsafe.RateLimiter;
+import com.google.common.util.concurrent.RateLimiter;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -32,7 +32,6 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -359,6 +358,6 @@ public final class CoreSocketFactory {
                 credentialFactory,
                 executor,
                 localKeyPair,
-                RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build()));
+                RateLimiter.create(1.0 / 30.0))); // 1 refresh attempt every 30 seconds
   }
 }

@@ -23,10 +23,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import dev.failsafe.RateLimiter;
+import com.google.common.util.concurrent.RateLimiter;
 import java.security.KeyPair;
 import java.sql.Date;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -77,7 +76,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+            RateLimiter.create(1.0 / 30.0));
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
@@ -111,7 +110,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+            RateLimiter.create(1.0 / 30.0));
 
     RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
     assertThat(ex).hasMessageThat().contains("always fails");
@@ -139,7 +138,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+            RateLimiter.create(1.0 / 30.0));
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(sslData);
@@ -179,7 +178,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+            RateLimiter.create(1.0 / 30.0));
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC"))).isEqualTo("10.1.2.3");
@@ -216,7 +215,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
+            RateLimiter.create(1.0 / 30.0));
     Assert.assertThrows(
         IllegalArgumentException.class, () -> instance.getPreferredIp(Arrays.asList("PRIVATE")));
   }
