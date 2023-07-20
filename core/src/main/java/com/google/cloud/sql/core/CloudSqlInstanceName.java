@@ -70,4 +70,9 @@ class CloudSqlInstanceName {
   String getInstanceId() {
     return instanceId;
   }
+
+  @Override
+  public String toString() {
+    return connectionName;
+  }
 }

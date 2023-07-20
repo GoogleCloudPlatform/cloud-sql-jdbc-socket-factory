@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import dev.failsafe.RateLimiter;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -31,6 +32,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -125,6 +127,7 @@ public final class CoreSocketFactory {
     // there should be enough free threads so that there will not be a deadlock. Most users
     // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
     // this to 8, it's enough threads for most users, plus a safety factor of 2.
+
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
 
@@ -350,6 +353,12 @@ public final class CoreSocketFactory {
         instanceName,
         k ->
             new CloudSqlInstance(
-                k, adminApiService, authType, credentialFactory, executor, localKeyPair));
+                k,
+                adminApiService,
+                authType,
+                credentialFactory,
+                executor,
+                localKeyPair,
+                RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build()));
   }
 }

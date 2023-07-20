@@ -28,7 +28,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import dev.failsafe.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -57,8 +56,7 @@ class CloudSqlInstance {
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
   // Limit forced refreshes to 1 every minute.
-  private final RateLimiter<Object> forcedRenewRateLimiter =
-      RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build();
+  private final RateLimiter<Object> forcedRenewRateLimiter;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
@@ -67,6 +65,9 @@ class CloudSqlInstance {
 
   @GuardedBy("instanceDataGuard")
   private ListenableFuture<InstanceData> nextInstanceData;
+
+  @GuardedBy("instanceDataGuard")
+  private boolean forceRefreshRunning;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -82,12 +83,14 @@ class CloudSqlInstance {
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair) {
+      ListenableFuture<KeyPair> keyPair,
+      RateLimiter<Object> forcedRenewRateLimiter) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
+    this.forcedRenewRateLimiter = forcedRenewRateLimiter;
 
     if (authType == AuthType.IAM) {
       HttpRequestInitializer source = tokenSourceFactory.create();
@@ -159,20 +162,21 @@ class CloudSqlInstance {
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
-      nextInstanceData.cancel(false);
-      if (nextInstanceData.isCancelled()) {
-        logger.fine(
-            "Force Refresh: the next refresh operation was cancelled."
-                + " Scheduling new refresh operation immediately.");
-        currentInstanceData = executor.submit(this::performRefresh);
-        nextInstanceData = currentInstanceData;
-      } else {
-        logger.fine(
-            "Force Refresh: the next refresh operation is already running."
-                + " Marking it as the current operation.");
-        // Otherwise it's already running, so just move next to current.
-        currentInstanceData = nextInstanceData;
+      // Don't force a refresh until the current forceRefresh operation
+      // has produced a successful refresh.
+      if (forceRefreshRunning) {
+        return;
       }
+
+      forceRefreshRunning = true;
+      nextInstanceData.cancel(false);
+      logger.fine(
+          String.format(
+              "[%s] Force Refresh: the next refresh operation was cancelled."
+                  + " Scheduling new refresh operation immediately.",
+              instanceName));
+      currentInstanceData = executor.submit(this::performRefresh);
+      nextInstanceData = currentInstanceData;
     }
   }
 
@@ -182,10 +186,14 @@ class CloudSqlInstance {
    * would expire.
    */
   private InstanceData performRefresh() throws InterruptedException, ExecutionException {
-    logger.fine("Refresh Operation: Acquiring rate limiter permit.");
+    logger.fine(
+        String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     forcedRenewRateLimiter.acquirePermit();
-    logger.fine("Refresh Operation: Acquired rate limiter permit. Starting refresh...");
+    logger.fine(
+        String.format(
+            "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",
+            instanceName));
 
     try {
       InstanceData data =
@@ -194,15 +202,16 @@ class CloudSqlInstance {
 
       logger.fine(
           String.format(
-              "Refresh Operation: Completed refresh with new certificate expiration at %s.",
-              data.getExpiration().toInstant().toString()));
+              "[%s] Refresh Operation: Completed refresh with new certificate expiration at %s.",
+              instanceName, data.getExpiration().toInstant().toString()));
       long secondsToRefresh =
           refreshCalculator.calculateSecondsUntilNextRefresh(
               Instant.now(), data.getExpiration().toInstant());
 
       logger.fine(
           String.format(
-              "Refresh Operation: Next operation scheduled at %s.",
+              "[%s] Refresh Operation: Next operation scheduled at %s.",
+              instanceName,
               Instant.now()
                   .plus(secondsToRefresh, ChronoUnit.SECONDS)
                   .truncatedTo(ChronoUnit.SECONDS)
@@ -212,12 +221,17 @@ class CloudSqlInstance {
         currentInstanceData = Futures.immediateFuture(data);
         nextInstanceData =
             executor.schedule(this::performRefresh, secondsToRefresh, TimeUnit.SECONDS);
+        // Refresh completed successfully, reset forceRefreshRunning.
+        forceRefreshRunning = false;
       }
-
       return data;
     } catch (ExecutionException | InterruptedException e) {
       logger.log(
-          Level.FINE, "Refresh Operation: Failed! Starting next refresh operation immediately.", e);
+          Level.FINE,
+          String.format(
+              "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.",
+              instanceName),
+          e);
       synchronized (instanceDataGuard) {
         nextInstanceData = executor.submit(this::performRefresh);
       }
@@ -227,5 +241,21 @@ class CloudSqlInstance {
 
   SslData getSslData() {
     return getInstanceData().getSslData();
+  }
+
+  ListenableFuture<InstanceData> getNext() {
+    synchronized (instanceDataGuard) {
+      return this.nextInstanceData;
+    }
+  }
+
+  ListenableFuture<InstanceData> getCurrent() {
+    synchronized (instanceDataGuard) {
+      return this.currentInstanceData;
+    }
+  }
+
+  public CloudSqlInstanceName getInstanceName() {
+    return instanceName;
   }
 }
