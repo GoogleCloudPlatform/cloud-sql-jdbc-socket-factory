@@ -24,14 +24,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import dev.failsafe.RateLimiter;
-import java.io.IOException;
 import java.security.KeyPair;
 import java.sql.Date;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,14 +66,8 @@ public class CloudSqlInstanceTest {
     SslData sslData = new SslData(null, null, null);
     InstanceData data =
         new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
-    AtomicInteger refreshCount = new AtomicInteger();
 
-    InstanceDataSupplier instanceDataSupplier =
-        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
-          refreshCount.incrementAndGet();
-          return data;
-        };
+    TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
     // initialize instance after mocks are set up
     CloudSqlInstance instance =
         new CloudSqlInstance(
@@ -88,16 +80,26 @@ public class CloudSqlInstanceTest {
             RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
 
     SslData gotSslData = instance.getSslData();
-    assertThat(gotSslData).isSameInstanceAs(sslData);
-    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
+    assertThat(instanceDataSupplier.counter.get()).isEqualTo(1);
   }
 
   @Test
   public void testInstanceFailsOnConnectionError() throws Exception {
 
     InstanceDataSupplier instanceDataSupplier =
-        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          throw new ExecutionException(new IOException("Fake connection error"));
+        (CloudSqlInstanceName instanceName,
+            AccessTokenSupplier accessTokenSupplier,
+            AuthType authType,
+            ListeningScheduledExecutorService exec,
+            ListenableFuture<KeyPair> keyPair) -> {
+          ListenableFuture<?> f =
+              exec.submit(
+                  () -> {
+                    throw new RuntimeException("always fails");
+                  });
+          f.get(); // this will throw an ExecutionException
+          return null;
         };
 
     // initialize instance after mocks are set up
@@ -112,7 +114,7 @@ public class CloudSqlInstanceTest {
             RateLimiter.burstyBuilder(2, Duration.ofSeconds(30)).build());
 
     RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
-    assertThat(ex).hasMessageThat().contains("Fake connection error");
+    assertThat(ex).hasMessageThat().contains("always fails");
   }
 
   @Test
