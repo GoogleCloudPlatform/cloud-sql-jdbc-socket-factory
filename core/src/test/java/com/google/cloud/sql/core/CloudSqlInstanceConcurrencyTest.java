@@ -36,6 +36,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -49,9 +50,10 @@ public class CloudSqlInstanceConcurrencyTest {
 
   private static class TestDataSupplier implements InstanceDataSupplier {
 
-    private final boolean flaky;
+    private volatile boolean flaky;
 
     private final AtomicInteger counter = new AtomicInteger();
+    private final AtomicInteger successCounter = new AtomicInteger();
     private final InstanceData response =
         new InstanceData(
             new Metadata(
@@ -83,17 +85,17 @@ public class CloudSqlInstanceConcurrencyTest {
       // as if SqlAdminApiFetcher made an API request, and that request took extra time
       // and then failed.
       ListenableFuture<InstanceData> f =
-          executor.submit(
+          executor.schedule(
               () -> {
                 int c = counter.incrementAndGet();
-                Thread.sleep(100);
-
-                if (flaky && c % 2 == 0 && c > 10) {
+                if (flaky && c % 2 == 0) {
                   throw new ExecutionException("Flaky", new Exception());
                 }
-
+                successCounter.incrementAndGet();
                 return response;
-              });
+              },
+              100,
+              TimeUnit.MILLISECONDS);
 
       return f.get();
     }
@@ -116,7 +118,7 @@ public class CloudSqlInstanceConcurrencyTest {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
+    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(true);
     CloudSqlInstance instance =
         new CloudSqlInstance(
@@ -140,30 +142,49 @@ public class CloudSqlInstanceConcurrencyTest {
     assertThat(d.get(0)).isNotNull();
     assertThat(d.get(1)).isNotNull();
     assertThat(d.get(2)).isNotNull();
-    assertThat(supplier.counter.get()).isEqualTo(1);
 
-    for (int i = 0; i < 10; i++) {
-      // Call forceRefresh simultaneously
-      ListenableFuture<List<Object>> all =
-          Futures.allAsList(
-              executor.submit(instance::forceRefresh),
-              executor.submit(instance::forceRefresh),
-              executor.submit(instance::forceRefresh));
-      try {
-        all.get();
-      } catch (Exception e) {
+    // Test that there was 1 successful attempt from when the CloudSqlInstance was instantiated.
+    assertThat(supplier.successCounter.get()).isEqualTo(1);
+
+    for (int i = 1; i < 20; i++) {
+      // Assert the expected number of successful refresh operations
+      assertThat(supplier.successCounter.get()).isEqualTo(i);
+
+      // Call forceRefresh 3 times in rapid succession. This should only kick off 1 refresh
+      // cycle.
+      instance.forceRefresh();
+      // force Java to run a different thread now. That gives the refrsh task an opportunity to
+      // start.
+      Thread.yield();
+      instance.forceRefresh();
+      instance.forceRefresh();
+      Thread.yield();
+
+      while (true) {
+        try {
+          // Attempt to get sslData 3 times, simultaneously, in different threads.
+          ListenableFuture<List<Object>> allData2 =
+              Futures.allAsList(
+                  executor.submit(instance::getSslData),
+                  executor.submit(instance::getSslData),
+                  executor.submit(instance::getSslData));
+
+          // Wait for all to finish.
+          allData2.get();
+
+          // If they all succeeded, then continue with the test.
+          break;
+        } catch (ExecutionException e) {
+          // We expect some of these to throw an exception indicating that the refresh cycle
+          // got a failed attempt. When they throw an exception,
+          // sleep and try again. This shows that the refresh cycle is working.
+          Thread.sleep(100);
+        }
       }
 
-      ListenableFuture<List<Object>> allData2 =
-          Futures.allAsList(
-              executor.submit(instance::getSslData),
-              executor.submit(instance::getSslData),
-              executor.submit(instance::getSslData));
-      try {
-        allData2.get();
-      } catch (Exception e) {
-      }
-      assertThat(supplier.counter.get()).isEqualTo(2 + i);
+      // Assert the expected number of successful refresh operations is one more than before.
+      assertThat(supplier.successCounter.get()).isEqualTo(i + 1);
+
       Thread.sleep(100);
     }
   }
@@ -173,7 +194,7 @@ public class CloudSqlInstanceConcurrencyTest {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
+    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
     CloudSqlInstance instance =
         new CloudSqlInstance(
@@ -196,7 +217,7 @@ public class CloudSqlInstanceConcurrencyTest {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
+    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
 
     InstanceDataSupplier supplier =
         (CloudSqlInstanceName instanceName,
@@ -230,12 +251,12 @@ public class CloudSqlInstanceConcurrencyTest {
   }
 
   @Test(timeout = 45000) // 45 seconds timeout in case of deadlock
-  public void testForceRefreshDoesNotCauseADeadlock() throws Exception {
+  public void testForceRefreshDoesNotCauseADeadlockOrBrokenRefreshLoop() throws Exception {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = newTestExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(true);
+    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
+    TestDataSupplier supplier = new TestDataSupplier(false);
     List<CloudSqlInstance> instances = new ArrayList<>();
 
     final int instanceCount = 5;
@@ -253,9 +274,12 @@ public class CloudSqlInstanceConcurrencyTest {
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
-    instances.forEach(i -> i.getSslData());
+    instances.forEach(CloudSqlInstance::getSslData);
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
+
+    // Now that everything is initialized, make the network flakey
+    supplier.flaky = true;
 
     // Start a thread for each instance that will force refresh and get InstanceData
     // 50 times.
@@ -285,8 +309,8 @@ public class CloudSqlInstanceConcurrencyTest {
               Thread.sleep(100);
               inst.forceRefresh();
               inst.forceRefresh();
-              Thread.yield();
               inst.forceRefresh();
+              Thread.yield();
               inst.getSslData();
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
@@ -299,10 +323,6 @@ public class CloudSqlInstanceConcurrencyTest {
     t.setName("test-" + inst.getInstanceName());
     t.start();
     return t;
-  }
-
-  private ListeningScheduledExecutorService newTestExecutor() {
-    return CoreSocketFactory.getDefaultExecutor();
   }
 
   private RateLimiter<Object> newRateLimiter() {
