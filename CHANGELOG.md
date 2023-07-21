@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.13.0...v1.13.1) (2023-07-20)
+
+
+### Bug Fixes
+
+* Increase threadpool count to avoid deadlocks ([#1391](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1391)) ([75fef46](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/75fef46f38732877e01fd7e4f1c5df189794eee7)), closes [#1314](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1314)
+* remove race condition bug in refresh logic ([#1390](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1390)) ([c0a5d58](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c0a5d580bfcfe92954872522d8354a38f57f3d80)), closes [#1209](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1209) [#1159](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1159)
+
 ## [1.13.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.12.0...v1.13.0) (2023-07-11)
 
 
