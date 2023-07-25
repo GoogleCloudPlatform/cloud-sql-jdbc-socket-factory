@@ -25,10 +25,9 @@ import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import dev.failsafe.RateLimiter;
+import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -214,7 +213,7 @@ public class CloudSqlInstanceConcurrencyTest {
     return t;
   }
 
-  private RateLimiter<Object> newRateLimiter() {
-    return RateLimiter.burstyBuilder(2, Duration.ofMillis(50)).build();
+  private RateLimiter newRateLimiter() {
+    return RateLimiter.create(20.0); // 20/sec = every 50 ms
   }
 }
