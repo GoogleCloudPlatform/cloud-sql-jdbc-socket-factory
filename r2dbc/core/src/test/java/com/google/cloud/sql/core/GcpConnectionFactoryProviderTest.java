@@ -174,9 +174,8 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)))
-            .create(credentialFactory.create());
+    ApiFetcherFactory fetcher =
+        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     coreSocketFactoryStub =
         new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);

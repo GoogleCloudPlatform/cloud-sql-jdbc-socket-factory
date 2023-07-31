@@ -25,6 +25,7 @@ import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import reactor.util.annotation.NonNull;
@@ -37,24 +38,27 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   private final ConnectionFactoryOptions.Builder builder;
   private final String hostname;
   private final String ipTypes;
+  private final List<String> delegates;
 
   /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
       Supplier<ConnectionFactoryProvider> supplier,
       String ipTypes,
+      List<String> delegates,
       ConnectionFactoryOptions.Builder builder,
       String hostname) {
     this.supplier = supplier;
     this.ipTypes = ipTypes;
     this.builder = builder;
     this.hostname = hostname;
+    this.delegates = delegates;
   }
 
   @Override
   @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, delegates);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
@@ -66,7 +70,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes);
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, delegates);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {

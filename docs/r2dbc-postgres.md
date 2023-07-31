@@ -73,6 +73,35 @@ Note: a non-empty string value for the `password` property must be set. While th
 be ignored when connecting with the Cloud SQL Connector using IAM auth, leaving it empty will cause
 driver-level validations to fail.
 
+## Service Account Delegation
+
+The delegates option is a comma-separated list of principals that are used by 
+the connector to get the delegated principal for the connector.
+
+The first element in the list is the target service account.
+
+```java
+    // Set up ConnectionFactoryOptions
+    ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+        .option(DRIVER, "gcp")
+        .option(PROTOCOL, "postgresql")
+        .option(PASSWORD, "password")
+        .option(USER, "postgres-iam-user@gmail.com")
+        .option(DATABASE, "my_db")
+        .option(HOST, "project:region:instance")
+        .option(ENABLE_IAM_AUTH, true)
+        .option(DELEGATES, "postgres-iam-user@gmail.com,db-service-account@iam.gooogle.com")
+        .build();
+
+    // Initialize connection pool
+    ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+    ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
+        .builder(connectionFactory)
+        .build();
+
+    this.connectionPool = new ConnectionPool(configuration);
+```
+
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.
