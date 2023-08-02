@@ -17,11 +17,9 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.auth.Credentials;
-import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,13 +33,13 @@ import java.util.logging.Logger;
  * DefaultAccessTokenSupplier produces access tokens using credentials produced by this connector's
  * configured HttpRequestInitializer.
  */
-class DefaultAccessTokenSupplier implements AccessTokenSupplier {
+public class DefaultAccessTokenSupplier implements AccessTokenSupplier {
 
   private static final Logger logger = Logger.getLogger(DefaultAccessTokenSupplier.class.getName());
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
-  private final HttpRequestInitializer requestInitializer;
+  private final CredentialFactory credentialFactory;
   private final int retryCount;
   private final Duration retryDuration;
 
@@ -50,7 +48,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    *
    * @param tokenSource the token source that produces auth tokens.
    */
-  DefaultAccessTokenSupplier(HttpRequestInitializer tokenSource) {
+  DefaultAccessTokenSupplier(CredentialFactory tokenSource) {
     this(tokenSource, 3, Duration.ofSeconds(3));
   }
 
@@ -62,55 +60,10 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @param retryDuration the duration to wait between attempts.
    */
   DefaultAccessTokenSupplier(
-      HttpRequestInitializer tokenSource, int retryCount, Duration retryDuration) {
-    this.requestInitializer = tokenSource;
+      CredentialFactory tokenSource, int retryCount, Duration retryDuration) {
+    this.credentialFactory = tokenSource;
     this.retryCount = retryCount;
     this.retryDuration = retryDuration;
-  }
-
-  /**
-   * Parses credentials out of the HttpRequestInitializer.
-   *
-   * @return the GoogleCredentials.
-   * @throws RuntimeException when the HttpRequestInitializer is unrecognized, or if it can't
-   *     produce a GoogleCredentials instance.
-   */
-  private GoogleCredentials parseCredentials() {
-
-    if (this.requestInitializer instanceof HttpCredentialsAdapter) {
-      HttpCredentialsAdapter adapter = (HttpCredentialsAdapter) this.requestInitializer;
-      Credentials c = adapter.getCredentials();
-      if (c instanceof GoogleCredentials) {
-        return (GoogleCredentials) c;
-      }
-      throw new RuntimeException(
-          String.format(
-              "Unable to connect via automatic IAM authentication: "
-                  + "HttpCredentialsAdapter did not create valid credentials. %s, %s",
-              this.requestInitializer.getClass().getName(), c));
-    }
-
-    if (this.requestInitializer instanceof Credential) {
-      Credential credential = (Credential) this.requestInitializer;
-      AccessToken accessToken =
-          new AccessToken(
-              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
-
-      return new GoogleCredentials(accessToken) {
-        @Override
-        public AccessToken refreshAccessToken() throws IOException {
-          credential.refreshToken();
-
-          return new AccessToken(
-              credential.getAccessToken(), getTokenExpirationTime(credential).orElse(null));
-        }
-      };
-    }
-    throw new RuntimeException(
-        String.format(
-            "Unable to connect via automatic IAM authentication: "
-                + "Unsupported credentials of type %s",
-            this.requestInitializer.getClass().getName()));
   }
 
   /**
@@ -122,15 +75,14 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    */
   @Override
   public Optional<AccessToken> get() throws IOException {
-    if (requestInitializer == null) {
+    if (credentialFactory == null) {
       return Optional.empty();
     }
 
     RetryingCallable<Optional<AccessToken>> retries =
         new RetryingCallable<>(
             () -> {
-              final GoogleCredentials credentials;
-              credentials = parseCredentials();
+              final GoogleCredentials credentials = credentialFactory.getCredentials();
               try {
                 credentials.refreshIfExpired();
               } catch (IllegalStateException e) {

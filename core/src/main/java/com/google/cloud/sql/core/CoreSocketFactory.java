@@ -34,7 +34,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -349,21 +348,22 @@ public final class CoreSocketFactory {
     }
   }
 
-  @VisibleForTesting
-  Socket createSslSocket(String instanceName, List<String> ipTypes)
-      throws IOException, InterruptedException {
-    return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD, Collections.emptyList());
-  }
-
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(
+  private CloudSqlInstance getCloudSqlInstance(
       String instanceName, AuthType authType, List<String> delegates) {
     return instances.computeIfAbsent(instanceName, k -> apiFetcher(k, authType, delegates));
   }
 
   private CloudSqlInstance apiFetcher(
       String instanceName, AuthType authType, List<String> delegates) {
-    CredentialFactory instanceCredentialFactory = credentialFactory.withDelegates(delegates);
+
+    final CredentialFactory instanceCredentialFactory;
+    if (delegates != null && !delegates.isEmpty()) {
+      instanceCredentialFactory =
+          new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
+    } else {
+      instanceCredentialFactory = credentialFactory;
+    }
+
     HttpRequestInitializer credential = instanceCredentialFactory.create();
     SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
 

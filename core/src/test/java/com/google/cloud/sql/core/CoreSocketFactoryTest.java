@@ -63,14 +63,22 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket("myProject", Collections.singletonList("PRIMARY"));
+      coreSocketFactory.createSslSocket(
+          "myProject",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          Collections.emptyList());
       fail();
     } catch (IllegalArgumentException | InterruptedException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
     try {
-      coreSocketFactory.createSslSocket("myProject:myRegion", Collections.singletonList("PRIMARY"));
+      coreSocketFactory.createSslSocket(
+          "myProject:myRegion",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          Collections.emptyList());
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
@@ -87,7 +95,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
-          "myProject:notMyRegion:myInstance", Collections.singletonList("PRIMARY"));
+          "myProject:notMyRegion:myInstance",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          Collections.emptyList());
       fail();
     } catch (RuntimeException e) {
       assertThat(e)
@@ -113,7 +124,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIVATE"));
+            "myProject:myRegion:myInstance",
+            Collections.singletonList("PRIVATE"),
+            AuthType.PASSWORD,
+            Collections.emptyList());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -129,7 +143,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"));
+            "myProject:myRegion:myInstance",
+            Collections.singletonList("PRIMARY"),
+            AuthType.PASSWORD,
+            Collections.emptyList());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -145,7 +162,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "example.com:myProject:myRegion:myInstance", Collections.singletonList("PRIMARY"));
+            "example.com:myProject:myRegion:myInstance",
+            Collections.singletonList("PRIMARY"),
+            AuthType.PASSWORD,
+            Collections.emptyList());
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
@@ -157,7 +177,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
       // Use a different project to get Api Not Enabled Error.
       coreSocketFactory.createSslSocket(
-          "NotMyProject:myRegion:myInstance", Collections.singletonList("PRIMARY"));
+          "NotMyProject:myRegion:myInstance",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          Collections.emptyList());
       fail("Expected RuntimeException");
     } catch (RuntimeException | InterruptedException e) {
       assertThat(e)
@@ -177,7 +200,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
       // Use a different instance to simulate incorrect permissions.
       coreSocketFactory.createSslSocket(
-          "myProject:myRegion:NotMyInstance", Collections.singletonList("PRIMARY"));
+          "myProject:myRegion:NotMyInstance",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          Collections.emptyList());
       fail();
     } catch (RuntimeException e) {
       assertThat(e)
