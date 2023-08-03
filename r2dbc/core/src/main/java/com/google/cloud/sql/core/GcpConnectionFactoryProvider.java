@@ -94,7 +94,12 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     final List<String> delegates;
     Object delegatesObj = connectionFactoryOptions.getValue(DELEGATES);
     if (delegatesObj instanceof String) {
-      delegates = Arrays.asList(((String) delegatesObj).split(","));
+      final String delegatesStr = (String) delegatesObj;
+      if (!delegatesStr.isEmpty()) {
+        delegates = Arrays.asList(delegatesStr.split(","));
+      } else {
+        delegates = Collections.emptyList();
+      }
     } else {
       delegates = Collections.emptyList();
     }

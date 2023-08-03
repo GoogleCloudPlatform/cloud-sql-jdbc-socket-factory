@@ -34,6 +34,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -174,8 +175,13 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
-    final List<String> delegates =
-        Arrays.asList(props.getProperty(CLOUD_SQL_DELEGATES_PROPERTY, "").split(","));
+    final String delegatesStr = props.getProperty(CLOUD_SQL_DELEGATES_PROPERTY);
+    final List<String> delegates;
+    if (delegatesStr != null && !delegatesStr.isEmpty()) {
+      delegates = Arrays.asList(delegatesStr.split(","));
+    } else {
+      delegates = Collections.emptyList();
+    }
 
     // Validate parameters
     Preconditions.checkArgument(
@@ -356,13 +362,13 @@ public final class CoreSocketFactory {
   private CloudSqlInstance apiFetcher(
       String instanceName, AuthType authType, List<String> delegates) {
 
-    final CredentialFactory instanceCredentialFactory = credentialFactory;
-    // if (delegates != null && !delegates.isEmpty()) {
-    //   instanceCredentialFactory =
-    //       new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
-    // } else {
-    //   instanceCredentialFactory = credentialFactory;
-    // }
+    final CredentialFactory instanceCredentialFactory;
+    if (delegates != null && !delegates.isEmpty()) {
+      instanceCredentialFactory =
+          new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
+    } else {
+      instanceCredentialFactory = credentialFactory;
+    }
 
     HttpRequestInitializer credential = instanceCredentialFactory.create();
     SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
