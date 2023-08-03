@@ -356,13 +356,13 @@ public final class CoreSocketFactory {
   private CloudSqlInstance apiFetcher(
       String instanceName, AuthType authType, List<String> delegates) {
 
-    final CredentialFactory instanceCredentialFactory;
-    if (delegates != null && !delegates.isEmpty()) {
-      instanceCredentialFactory =
-          new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
-    } else {
-      instanceCredentialFactory = credentialFactory;
-    }
+    final CredentialFactory instanceCredentialFactory = credentialFactory;
+    // if (delegates != null && !delegates.isEmpty()) {
+    //   instanceCredentialFactory =
+    //       new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
+    // } else {
+    //   instanceCredentialFactory = credentialFactory;
+    // }
 
     HttpRequestInitializer credential = instanceCredentialFactory.create();
     SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
