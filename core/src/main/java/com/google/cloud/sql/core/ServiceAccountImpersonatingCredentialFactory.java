@@ -47,24 +47,13 @@ class ServiceAccountImpersonatingCredentialFactory implements CredentialFactory 
 
   private final CredentialFactory source;
   private final List<String> delegates;
+  private final String targetPrincipal;
 
   ServiceAccountImpersonatingCredentialFactory(CredentialFactory source, List<String> delegates) {
     if (delegates == null || delegates.isEmpty()) {
       throw new IllegalArgumentException("delegates must not be empty");
     }
     this.source = source;
-    this.delegates = delegates;
-  }
-
-  @Override
-  public HttpRequestInitializer create() {
-    GoogleCredentials credentials = getCredentials();
-    return new HttpCredentialsAdapter(credentials);
-  }
-
-  @Override
-  public GoogleCredentials getCredentials() {
-    GoogleCredentials credentials = source.getCredentials();
 
     // The "delegates" property is built so that delegated credentials are applied first from end
     // of the list, working towards the beginning of the list. However, the
@@ -81,13 +70,26 @@ class ServiceAccountImpersonatingCredentialFactory implements CredentialFactory 
     //      role on serviceAccountB. serviceAccountB must have the Token Creator on
     //      serviceAccountC. Finally, C must have Token Creator on target_principal.
     //      If unset, sourceCredential must have that role on targetPrincipal.
-
     List<String> reversedDelegates = Lists.reverse(delegates);
+    this.targetPrincipal = reversedDelegates.get(reversedDelegates.size() - 1);
+    this.delegates = reversedDelegates.subList(0, reversedDelegates.size() - 1);
+  }
+
+  @Override
+  public HttpRequestInitializer create() {
+    GoogleCredentials credentials = getCredentials();
+    return new HttpCredentialsAdapter(credentials);
+  }
+
+  @Override
+  public GoogleCredentials getCredentials() {
+    GoogleCredentials credentials = source.getCredentials();
+
     credentials =
         ImpersonatedCredentials.newBuilder()
             .setSourceCredentials(credentials)
-            .setTargetPrincipal(reversedDelegates.get(reversedDelegates.size() - 1))
-            .setDelegates(reversedDelegates.subList(0, reversedDelegates.size() - 1))
+            .setTargetPrincipal(targetPrincipal)
+            .setDelegates(this.delegates)
             .setScopes(
                 Arrays.asList(SQLAdminScopes.SQLSERVICE_ADMIN, SQLAdminScopes.CLOUD_PLATFORM))
             .build();

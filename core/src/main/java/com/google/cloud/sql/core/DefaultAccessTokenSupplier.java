@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * DefaultAccessTokenSupplier produces access tokens using credentials produced by this connector's
  * configured HttpRequestInitializer.
  */
-public class DefaultAccessTokenSupplier implements AccessTokenSupplier {
+class DefaultAccessTokenSupplier implements AccessTokenSupplier {
 
   private static final Logger logger = Logger.getLogger(DefaultAccessTokenSupplier.class.getName());
 
