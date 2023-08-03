@@ -27,8 +27,6 @@ import java.util.Arrays;
 /** This class creates a HttpRequestInitializer from Application Default Credentials. */
 class ApplicationDefaultCredentialFactory implements CredentialFactory {
 
-  ApplicationDefaultCredentialFactory() {}
-
   @Override
   public HttpRequestInitializer create() {
     GoogleCredentials credentials = getCredentials();

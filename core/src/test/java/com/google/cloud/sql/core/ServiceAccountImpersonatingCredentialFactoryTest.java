@@ -33,7 +33,7 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
   @Test
   public void testImpersonatedCredentials() {
     ApplicationDefaultCredentialFactory factory = new ApplicationDefaultCredentialFactory();
-    Credentials credentials = newCredentials(factory);
+    Credentials credentials = factory.getCredentials();
 
     CredentialFactory impersonatedFactory =
         new ServiceAccountImpersonatingCredentialFactory(
@@ -42,10 +42,14 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
                 "first@serviceaccount.com",
                 "second@serviceaccount.com",
                 "third@serviceaccount.com"));
+
+    // Test that the CredentialsFactory.create() works.
     Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
     assertThat(impersonatedCredentials).isInstanceOf(ImpersonatedCredentials.class);
-    ImpersonatedCredentials ic = (ImpersonatedCredentials) impersonatedCredentials;
 
+    // Test that CredentialsFatory.getCredentials() works.
+    assertThat(impersonatedFactory.getCredentials()).isInstanceOf(ImpersonatedCredentials.class);
+    ImpersonatedCredentials ic = (ImpersonatedCredentials) impersonatedFactory.getCredentials();
     assertThat(ic.getAccount()).isEqualTo("first@serviceaccount.com");
     assertThat(ic.getSourceCredentials()).isEqualTo(credentials);
   }

@@ -26,7 +26,25 @@ import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Wraps an existing CredentialFactory, adding service account impersonation for the list of
+ * delegates.
+ *
+ * <p>The "delegates" property is built to work like the cloud-sql-proxy
+ * --impersonate-service-account and gcloud --impersonate-service-account flags: The first element
+ * in the list is the target service account. Intermediate delegated credentials are applied first
+ * from end of the list, working towards the beginning of the list. For example, if <code>
+ * delegates = Arrays.asList( "first@serviceaccount.com", "second@serviceaccount.com",
+ * "third@serviceaccount.com")
+ * </code>
+ *
+ * <p>The connector will start with the GoogleCredentials supplied by `source`. It will use those to
+ * impersonate "third@serviceaccount.com", then with a token for "third@serviceaccount.com",
+ * impersonate "second@serviceaccount.com", and then impersonate "first@serviceaccount.com".
+ * Finally, the connector will attempt to access the services as "first@serviceaccount.com".
+ */
 class ServiceAccountImpersonatingCredentialFactory implements CredentialFactory {
+
   private final CredentialFactory source;
   private final List<String> delegates;
 
@@ -48,26 +66,10 @@ class ServiceAccountImpersonatingCredentialFactory implements CredentialFactory 
   public GoogleCredentials getCredentials() {
     GoogleCredentials credentials = source.getCredentials();
 
-    // The "delegates" property is built to work like the cloud-sql-proxy
-    // --impersonate-service-account
-    // and gcloud --impersonate-service-account flags: The first element in the list is the target
-    // service account. Intermediate delegated credentials are applied first from end of the list,
-    // working towards the beginning of the list.
-    //
-    // For example, if
-    //
-    //   delegates = Arrays.asList(
-    //        "first@serviceaccount.com",
-    //        "second@serviceaccount.com",
-    //        "third@serviceaccount.com")
-    //
-    // The connector will start with the Application Default credentials, use those to impersonate
-    // "third@serviceaccount.com", then with a token for "third@serviceaccount.com",
-    // impersonate "second@serviceaccount.com", and then impersonate "first@serviceaccount.com".
-    // Finally, the connector will attempt to access the services as "first@serviceaccount.com".
-    //
-    // However, the ImpersonatedCredentials.setDelegates() expects the list to be in the reverse
-    // order.
+    // The "delegates" property is built so that delegated credentials are applied first from end
+    // of the list, working towards the beginning of the list. However, the
+    // ImpersonatedCredentials.setDelegates() expects the list to be in the opposite order,
+    // so we have to reverse the list.
     //
     // From the ImpersonatedCredentials doc:
     //
