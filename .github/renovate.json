@@ -29,8 +29,5 @@
       "packageNames": ["com.google.apis:google-api-services-sqladmin"],
       "allowedVersions": "/v1beta4-.*/"
     }
-  ],
-  "schedule": [
-    "before 4am on the first day of the month"
   ]
 }
