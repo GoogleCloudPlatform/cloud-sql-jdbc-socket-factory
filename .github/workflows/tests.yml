@@ -226,6 +226,7 @@ jobs:
           SQLSERVER_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_USER
           SQLSERVER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
           SQLSERVER_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
+          IMPERSONATED_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
     - name: Run tests
       env:
         MYSQL_CONNECTION_NAME: '${{ steps.secrets.outputs.MYSQL_CONNECTION_NAME }}'
@@ -244,6 +245,7 @@ jobs:
         SQLSERVER_USER: '${{ steps.secrets.outputs.SQLSERVER_USER }}'
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
+        IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: FlakyBot (Linux)
@@ -336,6 +338,7 @@ jobs:
           SQLSERVER_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_USER
           SQLSERVER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
           SQLSERVER_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
+          IMPERSONATED_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
 
     - name: Run tests
       env:
@@ -355,6 +358,7 @@ jobs:
         SQLSERVER_USER: '${{ steps.secrets.outputs.SQLSERVER_USER }}'
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
+        IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
       run: ./.github/scripts/run_tests_graalvm_native.sh
       shell: bash
     - name: FlakyBot
