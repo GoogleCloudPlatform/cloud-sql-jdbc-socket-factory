@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.13.1...v1.13.2) (2023-08-07)
+
+
+### Bug Fixes
+
+* Use guava rate limiter instead of dev.failsafe ([#1393](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1393)) ([d27f2a6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d27f2a66f73e6d2d5ad7b7bd5d61bcc3f87fdc20))
+
 ## [1.13.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.13.0...v1.13.1) (2023-07-20)
 
 
