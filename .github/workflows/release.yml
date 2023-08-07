@@ -29,7 +29,7 @@ jobs:
       releases_created: ${{ steps.release-please.outputs.releases_created }}
       release_tag: ${{ steps.release-please.outputs.tag_name }}
     steps:
-      - uses: GoogleCloudPlatform/release-please-action@8016a6649226f2ec88ed05441c11bb5410a22d29 # v3.7.10
+      - uses: GoogleCloudPlatform/release-please-action@ca6063f4ed81b55db15b8c42d1b6f7925866342d # v3.7.11
         id: release-please
         with:
           token: ${{ secrets.RELEASE_BOT_PAT }}
