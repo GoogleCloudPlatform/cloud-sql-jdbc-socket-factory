@@ -280,13 +280,14 @@ public final class CoreSocketFactory {
     }
   }
 
-  /** Resets the values of User Agent fields */
+  /** Resets the values of User Agent fields. */
   @VisibleForTesting
   static void resetUserAgent() {
     coreSocketFactory = null;
     userAgents.clear();
     setApplicationName("");
   }
+
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
   static String getUserAgents() {
     String ua = String.join(" ", userAgents);
