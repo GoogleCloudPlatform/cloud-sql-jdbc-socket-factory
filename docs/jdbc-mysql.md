@@ -94,6 +94,51 @@ Example:
     HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
+### Service Account Impersonation
+
+The Java Connector supports service account impersonation with the
+`delegates` JDBC connection property. When enabled,
+all API requests are made impersonating the supplied service account. The
+IAM principal must have the iam.serviceAccounts.getAccessToken permission or
+the role roles/iam.serviceAccounts.serviceAccountTokenCreator.
+
+Example:
+```java
+    // Set up URL parameters
+    String jdbcURL = String.format("jdbc:mysql:///%s", DB_NAME);
+    Properties connProps = new Properties();
+    connProps.setProperty("user", "iam-user"); // iam-user@gmail.com
+    connProps.setProperty("sslmode", "disable");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("cloudSqlInstance", "project:region:instance");
+    connProps.setProperty("enableIamAuth", "true");
+    connProps.setProperty("delegates", "iam-user@gmail.com");
+
+    // Initialize connection pool
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(jdbcURL);
+    config.setDataSourceProperties(connProps);
+    config.setConnectionTimeout(10000); // 10s
+
+    HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
+In addition, the `delegates` property supports an impersonation delegation chain
+where the value is a comma-separated list of service accounts. The first service
+account in the list is the impersonation target. Each subsequent service
+account is a delegate to the previous service account. When delegation is
+used, each delegate must have the permissions named above on the service
+account it is delegating to.
+
+For example:
+```java
+    connProps.setProperty("delegates", "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2,SERVICE_ACCOUNT_3");
+```
+
+In this example, the environment's IAM principal impersonates
+SERVICE_ACCOUNT_3 which impersonates SERVICE_ACCOUNT_2 which then
+impersonates the target SERVICE_ACCOUNT_1.
+
 ### Connection via Unix Sockets
 
 To connect using a Unix domain socket (such as the one created by the Cloud SQL 

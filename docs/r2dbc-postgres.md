@@ -73,6 +73,53 @@ Note: a non-empty string value for the `password` property must be set. While th
 be ignored when connecting with the Cloud SQL Connector using IAM auth, leaving it empty will cause
 driver-level validations to fail.
 
+## Service Account Delegation
+
+The Java Connector supports service account impersonation with the
+`DELEGATES` option. When enabled, all API requests are made impersonating the 
+supplied service account. The IAM principal must have the 
+iam.serviceAccounts.getAccessToken permission or the role 
+roles/iam.serviceAccounts.serviceAccountTokenCreator.
+
+```java
+    // Set up ConnectionFactoryOptions
+    ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+        .option(DRIVER, "gcp")
+        .option(PROTOCOL, "postgresql")
+        .option(PASSWORD, "password")
+        .option(USER, "postgres-iam-user@gmail.com")
+        .option(DATABASE, "my_db")
+        .option(HOST, "project:region:instance")
+        .option(ENABLE_IAM_AUTH, true)
+        .option(DELEGATES, "postgres-iam-user@gmail.com,db-service-account@iam.gooogle.com")
+        .build();
+
+    // Initialize connection pool
+    ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+    ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
+        .builder(connectionFactory)
+        .build();
+
+    this.connectionPool = new ConnectionPool(configuration);
+```
+
+
+In addition, the `DELEGATES` option supports an impersonation delegation chain
+where the value is a comma-separated list of service accounts. The first service
+account in the list is the impersonation target. Each subsequent service
+account is a delegate to the previous service account. When delegation is
+used, each delegate must have the permissions named above on the service
+account it is delegating to.
+
+For example:
+```java
+    options.option(DELEGATES, "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2,SERVICE_ACCOUNT_3");
+```
+
+In this example, the environment's IAM principal impersonates
+SERVICE_ACCOUNT_3 which impersonates SERVICE_ACCOUNT_2 which then
+impersonates the target SERVICE_ACCOUNT_1.
+
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for Postgres can be found by looking at the integration tests in this repository.
