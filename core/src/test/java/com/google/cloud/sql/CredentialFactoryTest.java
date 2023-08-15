@@ -33,6 +33,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.Test;
 
 public class CredentialFactoryTest {
@@ -82,8 +83,9 @@ public class CredentialFactoryTest {
                       @Override
                       public LowLevelHttpResponse execute() throws IOException {
                         MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-                        response.setHeaderNames(Arrays.asList("WWW-Authenticate"));
-                        response.setHeaderValues(Arrays.asList("Bearer my-refreshed-token"));
+                        response.setHeaderNames(Collections.singletonList("WWW-Authenticate"));
+                        response.setHeaderValues(
+                            Collections.singletonList("Bearer my-refreshed-token"));
 
                         return response;
                       }

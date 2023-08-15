@@ -58,7 +58,7 @@ public class RefreshCalculatorTest {
   }
 
   private static final Instant NOW = Instant.now().truncatedTo(SECONDS);
-  private RefreshCalculator refreshCalculator;
+  private final RefreshCalculator refreshCalculator;
 
   @Test
   public void testDuration() {
