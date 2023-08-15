@@ -21,6 +21,7 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -279,16 +280,26 @@ public final class CoreSocketFactory {
     }
   }
 
+  /** Resets the values of User Agent fields. */
+  @VisibleForTesting
+  static void resetUserAgent() {
+    coreSocketFactory = null;
+    userAgents.clear();
+    setApplicationName("");
+  }
+
   /** Returns the default string which is appended to the SQLAdmin API client User-Agent header. */
-  private static String getUserAgents() {
-    return String.join(" ", userAgents) + " " + getApplicationName();
+  static String getUserAgents() {
+    String ua = String.join(" ", userAgents);
+    String appName = getApplicationName();
+    if (!Strings.isNullOrEmpty(appName)) {
+      ua = ua + " " + appName;
+    }
+    return ua;
   }
 
   /** Returns the current User-Agent header set for the underlying SQLAdmin API client. */
   private static String getApplicationName() {
-    if (coreSocketFactory != null) {
-      return coreSocketFactory.adminApiService.getApplicationName();
-    }
     return System.getProperty(USER_TOKEN_PROPERTY_NAME, "");
   }
 

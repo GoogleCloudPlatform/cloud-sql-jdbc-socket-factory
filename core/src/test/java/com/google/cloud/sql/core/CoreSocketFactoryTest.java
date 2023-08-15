@@ -270,6 +270,24 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
                 AuthType.IAM));
   }
 
+  @Test
+  public void testGetApplicationNameWithApplicationName() {
+    CoreSocketFactory.resetUserAgent();
+    CoreSocketFactory.setApplicationName("sample-app");
+    CoreSocketFactory.addArtifactId("unit-test");
+    CoreSocketFactory.getInstance();
+    assertThat(CoreSocketFactory.getUserAgents()).startsWith("unit-test/");
+    assertThat(CoreSocketFactory.getUserAgents()).endsWith(" sample-app");
+  }
+
+  @Test
+  public void testGetApplicationNameFailsAfterInitialization() {
+    CoreSocketFactory.resetUserAgent();
+    CoreSocketFactory.getInstance();
+    assertThrows(
+        IllegalStateException.class, () -> CoreSocketFactory.setApplicationName("sample-app"));
+  }
+
   private String readLine(Socket socket) throws IOException {
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
