@@ -32,7 +32,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Test;
 

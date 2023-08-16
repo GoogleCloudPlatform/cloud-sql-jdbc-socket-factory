@@ -299,7 +299,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     CoreSocketFactory.getInstance();
     assertThat(CoreSocketFactory.getUserAgents()).startsWith("unit-test/");
     assertThat(CoreSocketFactory.getUserAgents()).endsWith(" sample-app");
-  }git 
+  }
 
   @Test
   public void testGetApplicationNameFailsAfterInitialization() {
