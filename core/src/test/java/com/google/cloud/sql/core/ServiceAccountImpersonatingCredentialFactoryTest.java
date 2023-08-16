@@ -31,7 +31,7 @@ import org.junit.Test;
 public class ServiceAccountImpersonatingCredentialFactoryTest {
 
   @Test
-  public void testImpersonatedCredentials() {
+  public void testImpersonatedCredentialsWithMultipleAccounts() {
     ApplicationDefaultCredentialFactory factory = new ApplicationDefaultCredentialFactory();
     Credentials credentials = factory.getCredentials();
 
@@ -47,7 +47,29 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
     Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
     assertThat(impersonatedCredentials).isInstanceOf(ImpersonatedCredentials.class);
 
-    // Test that CredentialsFatory.getCredentials() works.
+    // Test that CredentialsFactory.getCredentials() works.
+    assertThat(impersonatedFactory.getCredentials()).isInstanceOf(ImpersonatedCredentials.class);
+    ImpersonatedCredentials ic = (ImpersonatedCredentials) impersonatedFactory.getCredentials();
+    assertThat(ic.getAccount()).isEqualTo("first@serviceaccount.com");
+    assertThat(ic.getSourceCredentials()).isEqualTo(credentials);
+  }
+
+  @Test
+  public void testImpersonatedCredentialsWithOneAccount() {
+    ApplicationDefaultCredentialFactory factory = new ApplicationDefaultCredentialFactory();
+    Credentials credentials = factory.getCredentials();
+
+    CredentialFactory impersonatedFactory =
+        new ServiceAccountImpersonatingCredentialFactory(
+            factory,
+            Arrays.asList(
+                "first@serviceaccount.com"));
+
+    // Test that the CredentialsFactory.create() works.
+    Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
+    assertThat(impersonatedCredentials).isInstanceOf(ImpersonatedCredentials.class);
+
+    // Test that CredentialsFactory.getCredentials() works.
     assertThat(impersonatedFactory.getCredentials()).isInstanceOf(ImpersonatedCredentials.class);
     ImpersonatedCredentials ic = (ImpersonatedCredentials) impersonatedFactory.getCredentials();
     assertThat(ic.getAccount()).isEqualTo("first@serviceaccount.com");
