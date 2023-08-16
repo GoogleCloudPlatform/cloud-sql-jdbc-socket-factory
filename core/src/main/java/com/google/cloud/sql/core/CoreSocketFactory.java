@@ -79,16 +79,16 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
-  private final SqlAdminApiFetcher adminApiService;
+  private final ApiFetcherFactory apiFetcherFactory;
 
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      SqlAdminApiFetcher adminApi,
+      ApiFetcherFactory apiFetcherFactory,
       CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.adminApiService = adminApi;
+    this.apiFetcherFactory = apiFetcherFactory;
     this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
@@ -102,15 +102,12 @@ public final class CoreSocketFactory {
 
       CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
 
-      HttpRequestInitializer credential = credentialFactory.create();
-      SqlAdminApiFetcher adminApiService =
-          new SqlAdminApiFetcherFactory(getUserAgents()).create(credential);
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              adminApiService,
+              new SqlAdminApiFetcherFactory(getUserAgents()),
               credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
@@ -280,7 +277,7 @@ public final class CoreSocketFactory {
     }
   }
 
-  /** Resets the values of User Agent fields. */
+  /** Resets the values of User Agent fields for unit tests. */
   @VisibleForTesting
   static void resetUserAgent() {
     coreSocketFactory = null;
@@ -352,23 +349,22 @@ public final class CoreSocketFactory {
     }
   }
 
-  Socket createSslSocket(String instanceName, List<String> ipTypes)
-      throws IOException, InterruptedException {
-    return createSslSocket(instanceName, ipTypes, AuthType.PASSWORD);
+  private CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
+    return instances.computeIfAbsent(instanceName, k -> apiFetcher(k, authType));
   }
 
-  @VisibleForTesting
-  CloudSqlInstance getCloudSqlInstance(String instanceName, AuthType authType) {
-    return instances.computeIfAbsent(
+  private CloudSqlInstance apiFetcher(String instanceName, AuthType authType) {
+
+    HttpRequestInitializer credential = credentialFactory.create();
+    SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
+
+    return new CloudSqlInstance(
         instanceName,
-        k ->
-            new CloudSqlInstance(
-                k,
-                adminApiService,
-                authType,
-                credentialFactory,
-                executor,
-                localKeyPair,
-                RateLimiter.create(1.0 / 30.0))); // 1 refresh attempt every 30 seconds
+        adminApi,
+        authType,
+        credentialFactory,
+        executor,
+        localKeyPair,
+        RateLimiter.create(1.0 / 30.0)); // 1 refresh attempt every 30 seconds
   }
 }

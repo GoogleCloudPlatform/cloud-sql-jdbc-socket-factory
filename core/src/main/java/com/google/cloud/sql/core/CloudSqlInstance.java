@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.base.Throwables;
@@ -93,8 +92,7 @@ class CloudSqlInstance {
     this.forcedRenewRateLimiter = forcedRenewRateLimiter;
 
     if (authType == AuthType.IAM) {
-      HttpRequestInitializer source = tokenSourceFactory.create();
-      this.accessTokenSupplier = new DefaultAccessTokenSupplier(source);
+      this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
     } else {
       this.accessTokenSupplier = Optional::empty;
     }
