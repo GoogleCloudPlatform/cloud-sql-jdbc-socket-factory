@@ -61,9 +61,7 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
 
     CredentialFactory impersonatedFactory =
         new ServiceAccountImpersonatingCredentialFactory(
-            factory,
-            Arrays.asList(
-                "first@serviceaccount.com"));
+            factory, Arrays.asList("first@serviceaccount.com"));
 
     // Test that the CredentialsFactory.create() works.
     Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
