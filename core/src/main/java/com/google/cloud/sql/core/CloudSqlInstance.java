@@ -155,8 +155,7 @@ class CloudSqlInstance {
 
   /**
    * Attempts to force a new refresh of the instance data. May fail if called too frequently or if a
-   * new refresh is already in progress. If successful, other methods will block until refresh has
-   * been completed.
+   * new refresh is already in progress.
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
@@ -173,8 +172,7 @@ class CloudSqlInstance {
               "[%s] Force Refresh: the next refresh operation was cancelled."
                   + " Scheduling new refresh operation immediately.",
               instanceName));
-      currentInstanceData = executor.submit(this::performRefresh);
-      nextInstanceData = currentInstanceData;
+      nextInstanceData = executor.submit(this::performRefresh);
     }
   }
 
