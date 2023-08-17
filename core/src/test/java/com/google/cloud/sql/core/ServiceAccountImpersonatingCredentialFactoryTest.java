@@ -38,10 +38,8 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
     CredentialFactory impersonatedFactory =
         new ServiceAccountImpersonatingCredentialFactory(
             factory,
-            Arrays.asList(
-                "first@serviceaccount.com",
-                "second@serviceaccount.com",
-                "third@serviceaccount.com"));
+            "first@serviceaccount.com",
+            Arrays.asList("third@serviceaccount.com", "second@serviceaccount.com"));
 
     // Test that the CredentialsFactory.create() works.
     Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
@@ -60,8 +58,7 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
     Credentials credentials = factory.getCredentials();
 
     CredentialFactory impersonatedFactory =
-        new ServiceAccountImpersonatingCredentialFactory(
-            factory, Arrays.asList("first@serviceaccount.com"));
+        new ServiceAccountImpersonatingCredentialFactory(factory, "first@serviceaccount.com", null);
 
     // Test that the CredentialsFactory.create() works.
     Credentials impersonatedCredentials = newCredentials(impersonatedFactory);
@@ -80,7 +77,7 @@ public class ServiceAccountImpersonatingCredentialFactoryTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> {
-          new ServiceAccountImpersonatingCredentialFactory(factory, Collections.emptyList());
+          new ServiceAccountImpersonatingCredentialFactory(factory, null, Collections.emptyList());
         });
   }
 
