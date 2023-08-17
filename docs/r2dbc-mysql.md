@@ -39,8 +39,8 @@ Add the following parameters:
 
 
 The Java Connector supports service account impersonation with the
-`DELEGATES` option. When enabled, all API requests are made impersonating the
-supplied service account. The IAM principal must have the
+`TARGET_PRINCIPAL` option. When enabled, all API requests are made impersonating
+the supplied service account. The IAM principal must have the
 iam.serviceAccounts.getAccessToken permission or the role
 roles/iam.serviceAccounts.serviceAccountTokenCreator.
 
@@ -54,7 +54,7 @@ roles/iam.serviceAccounts.serviceAccountTokenCreator.
         .option(DATABASE, "my_db")
         .option(HOST, "project:region:instance")
         .option(ENABLE_IAM_AUTH, true)
-        .option(DELEGATES, "mysql-iam-user@gmail.com,db-service-account@iam.gooogle.com")
+        .option(TARGET_PRINCIPAL, "mysql-iam-user@gmail.com")
         .build();
 
     // Initialize connection pool
@@ -66,21 +66,35 @@ roles/iam.serviceAccounts.serviceAccountTokenCreator.
     this.connectionPool = new ConnectionPool(configuration);
 ```
 
+In addition, the `DELEGATES` option controls impersonation delegation.
+The value is a comma-separated list of service accounts containing chained
+list of delegates required to grant the final access_token. If set,
+the sequence of identities must have "Service Account Token Creator" capability
+granted to the preceding identity. For example, if set to 
+`"serviceAccountB,serviceAccountC"`, the application default credentials must
+have the Token Creator role on serviceAccountB. serviceAccountB must have
+the Token Creator on serviceAccountC. Finally, C must have Token Creator on
+targetPrincipal. If unset, the application default credential principal
+must "Service Account Token Creator" capability granted that role on the
+targetPrincipal service account.
+
+
+For example:
+```java
+    options.option(TARGET_PRINCIPAL, "TARGET_SERVICE_ACCOUNT");
+    options.option(DELEGATES, "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2");
+```
+
+In this example, the environment's application default principal impersonates
+SERVICE_ACCOUNT_2 which impersonates SERVICE_ACCOUNT_3 which then
+impersonates the TARGET_SERVICE_ACCOUNT.
+
 In addition, the `DELEGATES` option supports an impersonation delegation chain
 where the value is a comma-separated list of service accounts. The first service
 account in the list is the impersonation target. Each subsequent service
 account is a delegate to the previous service account. When delegation is
 used, each delegate must have the permissions named above on the service
 account it is delegating to.
-
-For example:
-```java
-    options.option(DELEGATES, "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2,SERVICE_ACCOUNT_3");
-```
-
-In this example, the environment's IAM principal impersonates
-SERVICE_ACCOUNT_3 which impersonates SERVICE_ACCOUNT_2 which then
-impersonates the target SERVICE_ACCOUNT_1.
 
 
 ## Examples
