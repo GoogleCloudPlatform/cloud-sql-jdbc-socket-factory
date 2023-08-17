@@ -58,7 +58,8 @@ import jnr.unixsocket.UnixSocketChannel;
 public final class CoreSocketFactory {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String CLOUD_SQL_DELEGATES_PROPERTY = "delegates";
+  public static final String CLOUD_SQL_DELEGATES_PROPERTY = "cloudSqlDelegates";
+  public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY = "cloudSqlTargetPrincipal";
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -176,6 +177,7 @@ public final class CoreSocketFactory {
     // Gather parameters
     final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
     final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
+    final String targetPrincipal = props.getProperty(CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
     final String delegatesStr = props.getProperty(CLOUD_SQL_DELEGATES_PROPERTY);
     final List<String> delegates;
     if (delegatesStr != null && !delegatesStr.isEmpty()) {
@@ -207,32 +209,42 @@ public final class CoreSocketFactory {
 
     final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
     if (enableIamAuth) {
-      return getInstance().createSslSocket(csqlInstanceName, ipTypes, AuthType.IAM, delegates);
+      return getInstance()
+          .createSslSocket(csqlInstanceName, ipTypes, AuthType.IAM, targetPrincipal, delegates);
     }
-    return getInstance().createSslSocket(csqlInstanceName, ipTypes, AuthType.PASSWORD, delegates);
+    return getInstance()
+        .createSslSocket(csqlInstanceName, ipTypes, AuthType.PASSWORD, targetPrincipal, delegates);
   }
 
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
   public static SslData getSslData(
-      String csqlInstanceName, boolean enableIamAuth, List<String> delegates) throws IOException {
+      String csqlInstanceName,
+      boolean enableIamAuth,
+      String targetPrincipal,
+      List<String> delegates)
+      throws IOException {
     if (enableIamAuth) {
       return getInstance()
-          .getCloudSqlInstance(csqlInstanceName, AuthType.IAM, delegates)
+          .getCloudSqlInstance(csqlInstanceName, AuthType.IAM, targetPrincipal, delegates)
           .getSslData();
     }
     return getInstance()
-        .getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD, delegates)
+        .getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD, targetPrincipal, delegates)
         .getSslData();
   }
 
   /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(String csqlInstanceName, String ipTypes, List<String> delegates)
+  public static String getHostIp(
+      String csqlInstanceName, String ipTypes, String targetPrincipal, List<String> delegates)
       throws IOException {
-    return getInstance().getHostIp(csqlInstanceName, listIpTypes(ipTypes), delegates);
+    return getInstance()
+        .getHostIp(csqlInstanceName, listIpTypes(ipTypes), targetPrincipal, delegates);
   }
 
-  private String getHostIp(String instanceName, List<String> ipTypes, List<String> delegates) {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, AuthType.PASSWORD, delegates);
+  private String getHostIp(
+      String instanceName, List<String> ipTypes, String targetPrincipal, List<String> delegates) {
+    CloudSqlInstance instance =
+        getCloudSqlInstance(instanceName, AuthType.PASSWORD, targetPrincipal, delegates);
     return instance.getPreferredIp(ipTypes);
   }
 
@@ -340,9 +352,14 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(
-      String instanceName, List<String> ipTypes, AuthType authType, List<String> delegates)
+      String instanceName,
+      List<String> ipTypes,
+      AuthType authType,
+      String targetPrincipal,
+      List<String> delegates)
       throws IOException, InterruptedException {
-    CloudSqlInstance instance = getCloudSqlInstance(instanceName, authType, delegates);
+    CloudSqlInstance instance =
+        getCloudSqlInstance(instanceName, authType, targetPrincipal, delegates);
 
     try {
       SSLSocket socket = instance.createSslSocket();
@@ -365,19 +382,27 @@ public final class CoreSocketFactory {
     }
   }
 
-  private CloudSqlInstance getCloudSqlInstance(
-      String instanceName, AuthType authType, List<String> delegates) {
-    return instances.computeIfAbsent(instanceName, k -> apiFetcher(k, authType, delegates));
+  CloudSqlInstance getCloudSqlInstance(
+      String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
+    return instances.computeIfAbsent(
+        instanceName, k -> apiFetcher(k, authType, targetPrincipal, delegates));
   }
 
   private CloudSqlInstance apiFetcher(
-      String instanceName, AuthType authType, List<String> delegates) {
+      String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
 
     final CredentialFactory instanceCredentialFactory;
-    if (delegates != null && !delegates.isEmpty()) {
+    if (targetPrincipal != null && !targetPrincipal.isEmpty()) {
       instanceCredentialFactory =
-          new ServiceAccountImpersonatingCredentialFactory(credentialFactory, delegates);
+          new ServiceAccountImpersonatingCredentialFactory(
+              credentialFactory, targetPrincipal, delegates);
     } else {
+      if (delegates != null && !delegates.isEmpty()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Connection property %s must be when %s is set.",
+                CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY, CLOUD_SQL_DELEGATES_PROPERTY));
+      }
       instanceCredentialFactory = credentialFactory;
     }
 

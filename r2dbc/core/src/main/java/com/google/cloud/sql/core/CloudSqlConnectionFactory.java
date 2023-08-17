@@ -38,12 +38,14 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   private final ConnectionFactoryOptions.Builder builder;
   private final String hostname;
   private final String ipTypes;
+  private final String targetPrincipal;
   private final List<String> delegates;
 
   /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
       Supplier<ConnectionFactoryProvider> supplier,
       String ipTypes,
+      String targetPrincipal,
       List<String> delegates,
       ConnectionFactoryOptions.Builder builder,
       String hostname) {
@@ -51,6 +53,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
     this.ipTypes = ipTypes;
     this.builder = builder;
     this.hostname = hostname;
+    this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
   }
 
@@ -58,7 +61,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, delegates);
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, targetPrincipal, delegates);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
@@ -70,7 +73,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, delegates);
+      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, targetPrincipal, delegates);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {

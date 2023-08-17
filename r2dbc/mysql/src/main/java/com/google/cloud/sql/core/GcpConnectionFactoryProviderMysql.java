@@ -47,6 +47,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
       List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
@@ -57,7 +58,12 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MySqlConnectionFactoryProvider::new, ipTypes, delegates, builder, hostname);
+        MySqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override

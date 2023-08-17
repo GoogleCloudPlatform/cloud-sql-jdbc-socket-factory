@@ -46,6 +46,7 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
       List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
@@ -55,7 +56,12 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
         .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MssqlConnectionFactoryProvider::new, ipTypes, delegates, builder, hostname);
+        MssqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override

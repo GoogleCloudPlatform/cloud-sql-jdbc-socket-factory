@@ -49,6 +49,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
       List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
@@ -59,7 +60,12 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        PostgresqlConnectionFactoryProvider::new, ipTypes, delegates, builder, hostname);
+        PostgresqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override
