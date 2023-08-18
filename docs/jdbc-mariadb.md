@@ -146,7 +146,7 @@ For example:
 ```
 
 In this example, the environment's application default principal impersonates
-SERVICE_ACCOUNT_2 which impersonates SERVICE_ACCOUNT_3 which then
+SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
 impersonates the TARGET_SERVICE_ACCOUNT.
 
 ## Examples
