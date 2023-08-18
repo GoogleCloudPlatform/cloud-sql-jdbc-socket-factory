@@ -29,6 +29,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +46,7 @@ public class CloudSqlInstanceTest {
   private ListeningScheduledExecutorService executorService;
   private ListenableFuture<KeyPair> keyPairFuture;
 
-  private StubCredentialFactory stubCredentialFactory =
+  private final StubCredentialFactory stubCredentialFactory =
       new StubCredentialFactory("my-token", System.currentTimeMillis() + 3600L);
 
   @Before
@@ -181,11 +182,12 @@ public class CloudSqlInstanceTest {
             RateLimiter.create(1.0 / 30.0));
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC"))).isEqualTo("10.1.2.3");
+    assertThat(instance.getPreferredIp(Collections.singletonList("PUBLIC"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
         .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE"))).isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Arrays.asList("PSC")))
+    assertThat(instance.getPreferredIp(Collections.singletonList("PRIVATE")))
+        .isEqualTo("10.10.10.10");
+    assertThat(instance.getPreferredIp(Collections.singletonList("PSC")))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
@@ -217,7 +219,8 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             RateLimiter.create(1.0 / 30.0));
     Assert.assertThrows(
-        IllegalArgumentException.class, () -> instance.getPreferredIp(Arrays.asList("PRIVATE")));
+        IllegalArgumentException.class,
+        () -> instance.getPreferredIp(Collections.singletonList("PRIVATE")));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

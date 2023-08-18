@@ -27,6 +27,9 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -38,6 +41,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<String> UNIX_SOCKET = Option.valueOf("UNIX_SOCKET");
   public static final Option<String> IP_TYPES = Option.valueOf("IP_TYPES");
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
+  public static final Option<String> DELEGATES = Option.valueOf("DELEGATES");
+  public static final Option<String> TARGET_PRINCIPAL = Option.valueOf("TARGET_PRINCIPAL");
 
   /**
    * Creates a ConnectionFactory that creates an SSL connection over a TCP socket, using
@@ -46,6 +51,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   abstract ConnectionFactory tcpSocketConnectionFactory(
       Builder optionBuilder,
       String ipTypes,
+      String targetPrincipal,
+      List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String csqlHostName);
 
@@ -86,12 +93,22 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       enableIamAuth = false;
     }
 
+    final List<String> delegates;
+    Object delegatesObj = connectionFactoryOptions.getValue(DELEGATES);
+
+    if (delegatesObj instanceof String && !((String) delegatesObj).isEmpty()) {
+      delegates = Arrays.asList(((String) delegatesObj).split(","));
+    } else {
+      delegates = Collections.emptyList();
+    }
+    final String targetPrincipal = (String) connectionFactoryOptions.getValue(TARGET_PRINCIPAL);
+
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
     String connectionName = (String) connectionFactoryOptions.getRequiredValue(HOST);
     try {
       // Precompute SSL Data to trigger the initial refresh to happen immediately,
       // and ensure enableIAMAuth is set correctly.
-      CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+      CoreSocketFactory.getSslData(connectionName, enableIamAuth, targetPrincipal, delegates);
 
       String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
       if (socket != null) {
@@ -105,7 +122,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                 Mono.fromSupplier(
                         () -> {
                           try {
-                            return CoreSocketFactory.getSslData(connectionName, enableIamAuth);
+                            return CoreSocketFactory.getSslData(
+                                connectionName, enableIamAuth, targetPrincipal, delegates);
                           } catch (IOException e) {
                             throw new RuntimeException(e);
                           }
@@ -119,7 +137,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
             return sslContextBuilder;
           };
-      return tcpSocketConnectionFactory(optionBuilder, ipTypes, sslFunction, connectionName);
+      return tcpSocketConnectionFactory(
+          optionBuilder, ipTypes, targetPrincipal, delegates, sslFunction, connectionName);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

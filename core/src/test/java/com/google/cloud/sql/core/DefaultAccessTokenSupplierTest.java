@@ -39,7 +39,7 @@ import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 import org.junit.Before;
@@ -335,8 +335,9 @@ public class DefaultAccessTokenSupplierTest {
                       @Override
                       public LowLevelHttpResponse execute() throws IOException {
                         MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-                        response.setHeaderNames(Arrays.asList("WWW-Authenticate"));
-                        response.setHeaderValues(Arrays.asList("Bearer my-refreshed-token"));
+                        response.setHeaderNames(Collections.singletonList("WWW-Authenticate"));
+                        response.setHeaderValues(
+                            Collections.singletonList("Bearer my-refreshed-token"));
 
                         return response;
                       }
