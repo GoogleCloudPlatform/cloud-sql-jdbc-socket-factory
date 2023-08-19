@@ -15,7 +15,7 @@
  */
 package com.google.cloud.sql.core;
 
-import static com.google.common.truth.Truth.*;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.sql.AuthType;
 import com.google.common.collect.ImmutableMap;
@@ -37,17 +37,16 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-@RunWith(JUnit4.class)
 public class CloudSqlInstanceTest {
 
-  private ListeningScheduledExecutorService executorService;
-  private ListenableFuture<KeyPair> keyPairFuture;
-
+  @SuppressWarnings("UnstableApiUsage")
+  public static final RateLimiter TEST_RATE_LIMITER = RateLimiter.create(
+      1000 /* permits per second */);
   private final StubCredentialFactory stubCredentialFactory =
       new StubCredentialFactory("my-token", System.currentTimeMillis() + 3600L);
+  private ListeningScheduledExecutorService executorService;
+  private ListenableFuture<KeyPair> keyPairFuture;
 
   @Before
   public void setup() throws Exception {
@@ -77,7 +76,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            TEST_RATE_LIMITER);
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
@@ -111,24 +110,24 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            TEST_RATE_LIMITER);
 
     RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
     assertThat(ex).hasMessageThat().contains("always fails");
   }
 
   @Test
-  public void testCloudSqlInstanceForcesRefresh() throws Exception {
-    SslData sslData = new SslData(null, null, null);
-    InstanceData data =
-        new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+  public void testCloudSqlInstanceForcesRefresh() {
     AtomicInteger refreshCount = new AtomicInteger();
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return new InstanceData(
+              null,
+              new SslData(null, null, null),
+              Date.from(Instant.now().plus(1, ChronoUnit.HOURS))
+          );
         };
 
     CloudSqlInstance instance =
@@ -139,13 +138,16 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            TEST_RATE_LIMITER);
 
-    SslData gotSslData = instance.getSslData();
-    assertThat(gotSslData).isSameInstanceAs(sslData);
-    instance.forceRefresh();
     instance.getSslData();
-    assertThat(refreshCount.get()).isEqualTo(2);
+    assertThat(refreshCount.get()).isEqualTo(1);
+
+    instance.forceRefresh();
+
+    instance.getSslData();
+    // refresh count hasn't changed because we re-use the existing connection info
+    assertThat(refreshCount.get()).isEqualTo(1);
   }
 
   @Test
@@ -179,14 +181,15 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            TEST_RATE_LIMITER);
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Collections.singletonList("PUBLIC"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
         .isEqualTo("10.10.10.10");
     assertThat(instance.getPreferredIp(Collections.singletonList("PRIVATE")))
-        .isEqualTo("10.10.10.10");
+        .isEqualTo(
+        "10.10.10.10");
     assertThat(instance.getPreferredIp(Collections.singletonList("PSC")))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
@@ -217,10 +220,10 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(1.0 / 30.0));
+            TEST_RATE_LIMITER);
     Assert.assertThrows(
-        IllegalArgumentException.class,
-        () -> instance.getPreferredIp(Collections.singletonList("PRIVATE")));
+        IllegalArgumentException.class, () -> instance.getPreferredIp(
+            Collections.singletonList("PRIVATE")));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {
@@ -228,7 +231,6 @@ public class CloudSqlInstanceTest {
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 
-    //noinspection UnstableApiUsage
     return MoreExecutors.listeningDecorator(
         MoreExecutors.getExitingScheduledExecutorService(executor));
   }

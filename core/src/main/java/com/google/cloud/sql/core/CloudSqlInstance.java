@@ -54,7 +54,7 @@ class CloudSqlInstance {
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
-  // Limit forced refreshes to 1 every minute.
+  @SuppressWarnings("UnstableApiUsage")
   private final RateLimiter forcedRenewRateLimiter;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
@@ -83,7 +83,7 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
-      RateLimiter forcedRenewRateLimiter) {
+      @SuppressWarnings("UnstableApiUsage") RateLimiter forcedRenewRateLimiter) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
@@ -173,8 +173,7 @@ class CloudSqlInstance {
               "[%s] Force Refresh: the next refresh operation was cancelled."
                   + " Scheduling new refresh operation immediately.",
               instanceName));
-      currentInstanceData = executor.submit(this::performRefresh);
-      nextInstanceData = currentInstanceData;
+      nextInstanceData = executor.submit(this::performRefresh);
     }
   }
 
@@ -187,6 +186,7 @@ class CloudSqlInstance {
     logger.fine(
         String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
+    //noinspection UnstableApiUsage
     forcedRenewRateLimiter.acquire();
     logger.fine(
         String.format(
