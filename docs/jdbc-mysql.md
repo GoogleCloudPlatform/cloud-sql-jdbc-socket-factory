@@ -81,7 +81,7 @@ Example:
     Properties connProps = new Properties();
     connProps.setProperty("user", "iam-user"); // iam-user@gmail.com
     connProps.setProperty("sslmode", "disable");
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", "project:region:instance");
     connProps.setProperty("enableIamAuth", "true");
 
