@@ -45,25 +45,25 @@ iam.serviceAccounts.getAccessToken permission or the role
 roles/iam.serviceAccounts.serviceAccountTokenCreator.
 
 ```java
-    // Set up ConnectionFactoryOptions
-    ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
-        .option(DRIVER, "gcp")
-        .option(PROTOCOL, "mysql")
-        .option(PASSWORD, "password")
-        .option(USER, "mysql-iam-user@gmail.com")
-        .option(DATABASE, "my_db")
-        .option(HOST, "project:region:instance")
-        .option(ENABLE_IAM_AUTH, true)
-        .option(TARGET_PRINCIPAL, "mysql-iam-user@gmail.com")
-        .build();
+// Set up ConnectionFactoryOptions
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(DRIVER, "gcp")
+    .option(PROTOCOL, "mysql")
+    .option(PASSWORD, "password")
+    .option(USER, "mysql-iam-user@gmail.com")
+    .option(DATABASE, "my_db")
+    .option(HOST, "project:region:instance")
+    .option(ENABLE_IAM_AUTH, true)
+    .option(TARGET_PRINCIPAL, "mysql-iam-user@gmail.com")
+    .build();
 
-    // Initialize connection pool
-    ConnectionFactory connectionFactory = ConnectionFactories.get(options);
-    ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
-        .builder(connectionFactory)
-        .build();
+// Initialize connection pool
+ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
+    .builder(connectionFactory)
+    .build();
 
-    this.connectionPool = new ConnectionPool(configuration);
+this.connectionPool = new ConnectionPool(configuration);
 ```
 
 In addition, the `DELEGATES` option controls impersonation delegation.
@@ -74,15 +74,15 @@ granted to the preceding identity. For example, if set to
 `"serviceAccountB,serviceAccountC"`, the application default credentials must
 have the Token Creator role on serviceAccountB. serviceAccountB must have
 the Token Creator on serviceAccountC. Finally, C must have Token Creator on
-targetPrincipal. If unset, the application default credential principal
+target principal. If unset, the application default credential principal
 must "Service Account Token Creator" capability granted that role on the
-targetPrincipal service account.
+target principal service account.
 
 
 For example:
 ```java
-    options.option(TARGET_PRINCIPAL, "TARGET_SERVICE_ACCOUNT");
-    options.option(DELEGATES, "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2");
+options.option(TARGET_PRINCIPAL, "TARGET_SERVICE_ACCOUNT");
+options.option(DELEGATES, "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2");
 ```
 
 In this example, the environment's application default principal impersonates
