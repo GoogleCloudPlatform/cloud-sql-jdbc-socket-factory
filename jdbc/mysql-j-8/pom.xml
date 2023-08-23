@@ -15,8 +15,9 @@
  limitations under the License.
 -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -31,8 +32,10 @@
 
   <name>Cloud SQL MySQL Socket Factory (for Connector/J 8.x)</name>
   <description>
-    Socket factory for the MySQL JDBC driver (version 8.x) that allows a user with the appropriate
-    permissions to connect to a Cloud SQL database without having to deal with IP allowlisting or
+    Socket factory for the MySQL JDBC driver (version 8.x) that allows a user
+    with the appropriate
+    permissions to connect to a Cloud SQL database without having to deal with
+    IP allowlisting or
     SSL certificates manually.
   </description>
 
@@ -117,6 +120,14 @@
         <artifactId>commons-codec</artifactId>
         <version>1.16.0</version>
       </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.10.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -137,11 +148,11 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.2</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
