@@ -14,7 +14,7 @@
 
 # Temporarily disable automatic running of renovate tests in order to
 # manage to control the number of tests running simultaneously.
-#annotations:
-#  - type: label
-#    text: "tests: run"
-#trustedContributors: ['renovate-bot', 'gcf-merge-on-green[bot]']
+
+trustedContributors:
+- renovate-bot
+- gcf-owl-bot[bot]
