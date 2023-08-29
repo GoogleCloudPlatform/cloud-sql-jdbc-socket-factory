@@ -1,0 +1,4 @@
+# Format:
+# module:released-version:current-version
+
+cloud-sql-jdbc-socket-factory:1.13.1:1.13.2-SNAPSHOT

@@ -16,6 +16,7 @@
 set -eo pipefail
 
 source $(dirname "$0")/common.sh
+source $(dirname "$0")/../common.sh
 MAVEN_SETTINGS_FILE=$(realpath $(dirname "$0")/../../)/settings.xml
 pushd $(dirname "$0")/../../
 
