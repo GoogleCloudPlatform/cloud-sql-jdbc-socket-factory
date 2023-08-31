@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,18 @@
 - name: 'autorelease: tagged'
   color: ededed
   description: Release please has completed a release for this.
+
+- name: 'release-please:force-run'
+  color: ededed
+  description: Trigger release please
+
+- name: 'owlbot:run'
+  color: ededed
+  description: Trigger Owlbot
+
+- name: 'owlbot:ignore'
+  color: ededed
+  description: Make Owlbot ignore this
 
 - name: 'tests: run'
   color: 3DED97

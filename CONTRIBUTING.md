@@ -1,4 +1,3 @@
-
 # Contributing
 
 1. **Please sign one of the contributor license agreements below!**
@@ -7,11 +6,30 @@
 1. Send a pull request.
 
 ## Table of contents
+* [Community Guidelines](#community-guidelines)
+* [Contributor License Agreement](#contributor-license-agreement)
 * [Opening an issue](#opening-an-issue)
-* [Contributor License Agreements](#contributor-license-agreements)
-* [Contributor Code of Conduct](#contributor-code-of-conduct)
 * [Running tests](#running-tests)
 * [Code reviews](#code-reviews)
+
+
+## Community Guidelines
+
+This project follows [Google's Open Source Community
+Guidelines](https://opensource.google/conduct/).
+
+## Contributor License Agreement
+
+Contributions to this project must be accompanied by a Contributor License
+Agreement. You (or your employer) retain the copyright to your contribution;
+this simply gives us permission to use and redistribute your contributions as
+part of the project. Head over to <https://cla.developers.google.com/> to see
+your current agreements on file or to sign a new one.
+
+You generally only need to submit a CLA once, so if you've already submitted one
+(even if it was for a different project), you probably don't need to do it
+again.
+
 
 ## Opening an issue
 
@@ -75,81 +93,11 @@ expect to be impacted, as well as its severity. As a rule of thumb:
   </tr>
 </table>
 
-## Contributor License Agreements
-
-Open-source software licensing is a wonderful arrangement that benefits
-everyone, but in an imperfect world, we all need to exercise some legal
-prudence. In order to protect you, Google, and most of all, everyone who comes
-to depend on these libraries, we require that all contributors sign our short
-and human-readable Contributor License Agreement (CLA). We don't want to open
-the door to patent trolls, predatory lawyers, or anyone else who isn't on board
-with creating value and making the world a better place. We hope you will agree
-that the CLA offers very important protection and is easy to understand. Take a
-moment to read it carefully, and if you agree with what you read, please sign it
-now. If you believe you've already signed the appropriate CLA already for this
-or any other Google open-source project, you shouldn't have to do so again. You
-can review your signed CLAs at
-[cla.developers.google.com/clas](https://cla.developers.google.com/clas).
-
-First, check that you are signed in to a [Google
-Account](https://accounts.google.com) that matches your [local Git email
-address](https://help.github.com/articles/setting-your-email-in-git/). Then
-choose one of the following:
-
-* If you are **an individual writing original source code** and **you own the
-  intellectual property**, sign the [Individual
-  CLA](https://developers.google.com/open-source/cla/individual).
-* If you work for **a company that wants to allow you to contribute**, sign the
-  [Corporate CLA](https://developers.google.com/open-source/cla/corporate).
-
-You (and your authorized signer, if corporate) can sign the CLA
-electronically. After that, we'll be able to accept your contributions.
-
-## Contributor Code of Conduct
-
-As contributors and maintainers of this project, and in the interest of
-fostering an open and welcoming community, we pledge to respect all people who
-contribute through reporting issues, posting feature requests, updating
-documentation, submitting pull requests or patches, and other activities.
-
-We are committed to making participation in this project a harassment-free
-experience for everyone, regardless of level of experience, gender, gender
-identity and expression, sexual orientation, disability, personal appearance,
-body size, race, ethnicity, age, religion, or nationality.
-
-Examples of unacceptable behavior by participants include:
-
-* The use of sexualized language or imagery
-* Personal attacks
-* Trolling or insulting/derogatory comments
-* Public or private harassment
-* Publishing other's private information, such as physical or electronic
-addresses, without explicit permission
-* Other unethical or unprofessional conduct.
-
-Project maintainers have the right and responsibility to remove, edit, or reject
-comments, commits, code, wiki edits, issues, and other contributions that are
-not aligned to this Code of Conduct.  By adopting this Code of Conduct, project
-maintainers commit themselves to fairly and consistently applying these
-principles to every aspect of managing this project.  Project maintainers who do
-not follow or enforce the Code of Conduct may be permanently removed from the
-project team.
-
-This code of conduct applies both within project spaces and in public spaces
-when an individual is representing the project or its community.
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by opening an issue or contacting one or more of the project
-maintainers.
-
-This Code of Conduct is adapted from the [Contributor
-Covenant](http://contributor-covenant.org), version 1.2.0, available at
-[http://contributor-covenant.org/version/1/2/0/](http://contributor-covenant.org/version/1/2/0/)
 
 ### Running tests
 
-The test suite contains both unit tests and integration tests. 
-Integration tests are skipped by default. To run only unit tests, run 
+The test suite contains both unit tests and integration tests.
+Integration tests are skipped by default. To run only unit tests, run
 ```
 mvn clean verify
 ```
@@ -164,8 +112,10 @@ values for each variable, source the file (`source .envrc`, or consider using
 ```
 mvn clean verify -P e2e 
 ```
-### Code reviews
-All submissions, including submissions by project members, require review. We
-use Github pull requests for this purpose.
 
-[direnv]: https://direnv.net/
+## Code Reviews
+
+All submissions, including submissions by project members, require review. We
+use GitHub pull requests for this purpose. Consult
+[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
+information on using pull requests.
