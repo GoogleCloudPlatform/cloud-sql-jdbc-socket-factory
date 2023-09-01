@@ -1,0 +1,13 @@
+{
+  "api_shortname": "cloud-sql-jdbc-socket-factory",
+  "name_pretty": "Google Cloud SQL JDBC Socket Factory",
+  "product_documentation": "https://cloud.google.com/sql",
+  "release_level": "stable",
+  "language": "java",
+  "repo": "GoogleCloudPlatform/cloud-sql-jdbc-socket-factory",
+  "repo_short": "cloud-sql-jdbc-socket-factory",
+  "distribution_name": "com.google.cloud.sql:jdbc-socket-factory-parent",
+  "api_id": "sqladmin.googleapis.com",
+  "library_type": "OTHER",
+  "codeowner_team": "@GoogleCloudPlatform/infra-db-sdk"
+}
