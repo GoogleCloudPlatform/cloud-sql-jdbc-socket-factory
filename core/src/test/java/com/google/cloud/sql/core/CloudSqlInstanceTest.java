@@ -42,8 +42,9 @@ import org.junit.Test;
 public class CloudSqlInstanceTest {
 
   @SuppressWarnings("UnstableApiUsage")
-  public static final RateLimiter TEST_RATE_LIMITER = RateLimiter.create(
-      1000 /* permits per second */);
+  public static final RateLimiter TEST_RATE_LIMITER =
+      RateLimiter.create(1000 /* permits per second */);
+
   private final StubCredentialFactory stubCredentialFactory =
       new StubCredentialFactory("my-token", System.currentTimeMillis() + 3600L);
   private ListeningScheduledExecutorService executorService;
@@ -129,8 +130,7 @@ public class CloudSqlInstanceTest {
               return new InstanceData(
                   null,
                   new SslData(null, null, null),
-                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS))
-              );
+                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -196,8 +196,7 @@ public class CloudSqlInstanceTest {
     assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
         .isEqualTo("10.10.10.10");
     assertThat(instance.getPreferredIp(Collections.singletonList("PRIVATE")))
-        .isEqualTo(
-        "10.10.10.10");
+        .isEqualTo("10.10.10.10");
     assertThat(instance.getPreferredIp(Collections.singletonList("PSC")))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
@@ -230,8 +229,8 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             TEST_RATE_LIMITER);
     Assert.assertThrows(
-        IllegalArgumentException.class, () -> instance.getPreferredIp(
-            Collections.singletonList("PRIVATE")));
+        IllegalArgumentException.class,
+        () -> instance.getPreferredIp(Collections.singletonList("PRIVATE")));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

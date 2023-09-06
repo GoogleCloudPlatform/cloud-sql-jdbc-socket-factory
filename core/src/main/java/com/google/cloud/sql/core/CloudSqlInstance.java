@@ -54,6 +54,7 @@ class CloudSqlInstance {
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
+
   @SuppressWarnings("UnstableApiUsage")
   private final RateLimiter forcedRenewRateLimiter;
 
