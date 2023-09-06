@@ -16,6 +16,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.cloud.sql.AuthType;
 import com.google.common.collect.ImmutableMap;
@@ -117,23 +118,20 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void testCloudSqlInstanceForcesRefresh() {
+  public void testCloudSqlInstanceForcesRefresh() throws InterruptedException {
     AtomicInteger refreshCount = new AtomicInteger();
-
-    InstanceDataSupplier instanceDataSupplier =
-        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          refreshCount.incrementAndGet();
-          return new InstanceData(
-              null,
-              new SslData(null, null, null),
-              Date.from(Instant.now().plus(1, ChronoUnit.HOURS))
-          );
-        };
 
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
-            instanceDataSupplier,
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              refreshCount.incrementAndGet();
+              return new InstanceData(
+                  null,
+                  new SslData(null, null, null),
+                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS))
+              );
+            },
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
@@ -148,6 +146,16 @@ public class CloudSqlInstanceTest {
     instance.getSslData();
     // refresh count hasn't changed because we re-use the existing connection info
     assertThat(refreshCount.get()).isEqualTo(1);
+
+    for (int i = 0; i < 10; i++) {
+      instance.getSslData();
+      if (refreshCount.get() > 1) {
+        return;
+      }
+      Thread.sleep(100);
+    }
+
+    fail(String.format("refresh count should be 2, got = %d", refreshCount.get()));
   }
 
   @Test
