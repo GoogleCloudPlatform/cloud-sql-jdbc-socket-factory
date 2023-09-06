@@ -29,6 +29,12 @@ class ApplicationDefaultCredentialFactory implements CredentialFactory {
 
   @Override
   public HttpRequestInitializer create() {
+    GoogleCredentials credentials = getCredentials();
+    return new HttpCredentialsAdapter(credentials);
+  }
+
+  @Override
+  public GoogleCredentials getCredentials() {
     GoogleCredentials credentials;
     try {
       credentials = GoogleCredentials.getApplicationDefault();
@@ -36,11 +42,12 @@ class ApplicationDefaultCredentialFactory implements CredentialFactory {
       throw new RuntimeException(
           "Unable to obtain credentials to communicate with the Cloud SQL API", err);
     }
+
     if (credentials.createScopedRequired()) {
       credentials =
           credentials.createScoped(
               Arrays.asList(SQLAdminScopes.SQLSERVICE_ADMIN, SQLAdminScopes.CLOUD_PLATFORM));
     }
-    return new HttpCredentialsAdapter(credentials);
+    return credentials;
   }
 }

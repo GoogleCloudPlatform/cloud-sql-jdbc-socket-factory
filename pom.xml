@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.13.2-SNAPSHOT</version>
+  <version>1.13.2-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
 
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -41,15 +41,15 @@
 
   <distributionManagement>
     <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>sonatype-nexus-snapshots</id>
+      <url>https://google.oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
-
     <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <id>sonatype-nexus-staging</id>
+      <url>https://google.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
+
 
   <scm>
     <connection>
@@ -73,14 +73,13 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.9.23</native-image.version>
-    <graal-sdk.version>22.3.2</graal-sdk.version>
+    <graal-sdk.version>23.0.1</graal-sdk.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
   <modules>
     <module>core</module>
     <module>jdbc/mariadb</module>
-    <module>jdbc/mysql-j-5</module>
     <module>jdbc/mysql-j-8</module>
     <module>jdbc/postgres</module>
     <module>jdbc/sqlserver</module>

@@ -25,6 +25,7 @@ import io.r2dbc.postgresql.client.SSLMode;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
+import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances. */
@@ -48,6 +49,8 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
+      List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
     builder
@@ -57,7 +60,12 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        PostgresqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+        PostgresqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override

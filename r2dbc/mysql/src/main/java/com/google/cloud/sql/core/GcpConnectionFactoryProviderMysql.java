@@ -25,6 +25,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
+import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
@@ -46,6 +47,8 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
+      List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
     builder
@@ -55,7 +58,12 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MySqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+        MySqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override

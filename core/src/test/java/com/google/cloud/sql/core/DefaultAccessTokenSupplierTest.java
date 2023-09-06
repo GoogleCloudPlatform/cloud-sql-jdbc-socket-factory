@@ -35,10 +35,11 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
+import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 import org.junit.Before;
@@ -94,7 +95,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(googleCredentials), 1, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(googleCredentials), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -112,8 +113,16 @@ public class DefaultAccessTokenSupplierTest {
           }
         };
 
+    CredentialFactory badFactory =
+        new CredentialFactory() {
+          @Override
+          public HttpRequestInitializer create() {
+            return bad;
+          }
+        };
+
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(bad, 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(badFactory, 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Unsupported credentials of type");
   }
@@ -137,7 +146,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(expiredGoogleCredentials), 1, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(expiredGoogleCredentials), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Error refreshing credentials");
     assertThat(refreshCounter).isEqualTo(1);
@@ -162,7 +171,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(refreshGetsExpiredToken), 1, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(refreshGetsExpiredToken), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("expiration time is in the past");
     assertThat(refreshCounter).isEqualTo(1);
@@ -186,7 +195,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(refreshableCredentials), 1, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(refreshableCredentials), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -217,7 +226,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(refreshableCredentials), 3, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(refreshableCredentials), 3, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -246,7 +255,8 @@ public class DefaultAccessTokenSupplierTest {
   public void throwsErrorForWrongCredentialType() {
     OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("abc", null));
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(new HttpCredentialsAdapter(creds), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(
+            new Oauth2BadCredentialFactory(creds), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex)
@@ -264,7 +274,8 @@ public class DefaultAccessTokenSupplierTest {
           }
         };
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(new HttpCredentialsAdapter(creds), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(
+            new GoogleCredentialsFactory(creds), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
@@ -288,7 +299,7 @@ public class DefaultAccessTokenSupplierTest {
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
-            new HttpCredentialsAdapter(refreshableCredentials), 1, Duration.ofMillis(10));
+            new GoogleCredentialsFactory(refreshableCredentials), 1, Duration.ofMillis(10));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
@@ -324,8 +335,9 @@ public class DefaultAccessTokenSupplierTest {
                       @Override
                       public LowLevelHttpResponse execute() throws IOException {
                         MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-                        response.setHeaderNames(Arrays.asList("WWW-Authenticate"));
-                        response.setHeaderValues(Arrays.asList("Bearer my-refreshed-token"));
+                        response.setHeaderNames(Collections.singletonList("WWW-Authenticate"));
+                        response.setHeaderValues(
+                            Collections.singletonList("Bearer my-refreshed-token"));
 
                         return response;
                       }
@@ -337,7 +349,8 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(future.getTime());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(credential, 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(
+            new Oauth2CredentialFactory(credential), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -406,7 +419,8 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(past.getTime());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(credential, 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(
+            new Oauth2CredentialFactory(credential), 1, Duration.ofMillis(10));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -426,5 +440,49 @@ public class DefaultAccessTokenSupplierTest {
             DefaultAccessTokenSupplier.getTokenExpirationTime(
                 Optional.of(new AccessToken("", past))))
         .isEqualTo(Optional.of(past));
+  }
+
+  private static class Oauth2CredentialFactory implements CredentialFactory {
+    private final Credential credential;
+
+    private Oauth2CredentialFactory(Credential credential) {
+      this.credential = credential;
+    }
+
+    @Override
+    public HttpRequestInitializer create() {
+      return credential;
+    }
+  }
+
+  private static class Oauth2BadCredentialFactory implements CredentialFactory {
+    private final OAuth2Credentials credential;
+
+    private Oauth2BadCredentialFactory(OAuth2Credentials credential) {
+      this.credential = credential;
+    }
+
+    @Override
+    public HttpRequestInitializer create() {
+      return new HttpCredentialsAdapter(credential);
+    }
+  }
+
+  private static class GoogleCredentialsFactory implements CredentialFactory {
+    private final GoogleCredentials credentials;
+
+    private GoogleCredentialsFactory(GoogleCredentials credentials) {
+      this.credentials = credentials;
+    }
+
+    @Override
+    public HttpRequestInitializer create() {
+      return new HttpCredentialsAdapter(credentials);
+    }
+
+    @Override
+    public GoogleCredentials getCredentials() {
+      return credentials;
+    }
   }
 }

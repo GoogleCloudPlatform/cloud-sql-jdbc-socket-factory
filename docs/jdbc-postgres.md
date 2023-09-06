@@ -91,6 +91,63 @@ Note: a non-empty string value for the `password` property must be set. While th
 be ignored when connecting with the Cloud SQL Connector using IAM auth, leaving it empty will cause
 driver-level validations to fail.
 
+
+### Service Account Impersonation
+
+The Java Connector supports service account impersonation with the
+`cloudSqlTargetPrincipal` JDBC connection property. When enabled,
+all API requests are made impersonating the supplied service account. The
+IAM principal must have the iam.serviceAccounts.getAccessToken permission or
+the role roles/iam.serviceAccounts.serviceAccountTokenCreator.
+
+Example:
+
+```java
+// Set up URL parameters
+String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
+Properties connProps = new Properties();
+connProps.setProperty("user", "postgres-iam-user@gmail.com");
+connProps.setProperty("password", "password");
+connProps.setProperty("sslmode", "disable");
+connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+connProps.setProperty("cloudSqlInstance", "project:region:instance");
+connProps.setProperty("enableIamAuth", "true");
+connProps.setProperty("cloudSqlTargetPrincipal", "postgres-iam-user@gmail.com");
+
+// Initialize connection pool
+HikariConfig config = new HikariConfig();
+config.setJdbcUrl(jdbcURL);
+config.setDataSourceProperties(connProps);
+config.setConnectionTimeout(10000); // 10s
+
+HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
+
+In addition, the `cloudSqlDelegates` property controls impersonation delegation.
+The value is a comma-separated list of service accounts containing chained
+list of delegates required to grant the final access_token. If set,
+the sequence of identities must have "Service Account Token Creator" capability
+granted to the preceding identity. For example, if set to 
+`"serviceAccountB,serviceAccountC"`, the application default credentials must
+have the Token Creator role on serviceAccountB. serviceAccountB must have
+the Token Creator on serviceAccountC. Finally, C must have Token Creator on
+`cloudSqlTargetPrincipal`. If unset, the application default credential principal
+must "Service Account Token Creator" capability granted that role on the
+cloudSqlTargetPrincipal service account.
+
+
+For example:
+```java
+connProps.setProperty("cloudSqlTargetPrincipal", "TARGET_SERVICE_ACCOUNT");
+connProps.setProperty("cloudSqlDelegates", "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2");
+```
+
+In this example, the environment's application default principal impersonates
+SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
+impersonates the TARGET_SERVICE_ACCOUNT.
+
+
 ### Connection via Unix Sockets
 
 To connect using a Unix domain socket (such as the one created by the Cloud SQL 

@@ -24,6 +24,7 @@ import io.r2dbc.mssql.MssqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
+import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MsSQL instances. */
@@ -45,6 +46,8 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
   ConnectionFactory tcpSocketConnectionFactory(
       Builder builder,
       String ipTypes,
+      String targetPrincipal,
+      List<String> delegates,
       Function<SslContextBuilder, SslContextBuilder> customizer,
       String hostname) {
     builder
@@ -53,7 +56,12 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
         .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
     return new CloudSqlConnectionFactory(
-        MssqlConnectionFactoryProvider::new, ipTypes, builder, hostname);
+        MssqlConnectionFactoryProvider::new,
+        ipTypes,
+        targetPrincipal,
+        delegates,
+        builder,
+        hostname);
   }
 
   @Override
