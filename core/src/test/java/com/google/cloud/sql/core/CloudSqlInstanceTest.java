@@ -16,7 +16,6 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.fail;
 
 import com.google.cloud.sql.AuthType;
 import com.google.common.collect.ImmutableMap;
@@ -89,13 +88,7 @@ public class CloudSqlInstanceTest {
             AuthType authType,
             ListeningScheduledExecutorService exec,
             ListenableFuture<KeyPair> keyPair) -> {
-          ListenableFuture<?> f =
-              exec.submit(
-                  () -> {
-                    throw new RuntimeException("always fails");
-                  });
-          f.get(); // this will throw an ExecutionException
-          return null;
+          throw new RuntimeException("always fails");
         };
 
     // initialize instance after mocks are set up
@@ -114,16 +107,24 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void testCloudSqlInstanceForcesRefresh() throws InterruptedException {
+  public void testCloudSqlInstanceForcesRefresh() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data = new InstanceData(null, sslData, Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition cond = new PauseCondition();
 
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              // Allow the first execution to complete immediately.
+              // The second execution should pause until signaled.
+              if (c == 1) {
+                cond.pause();
+              }
               refreshCount.incrementAndGet();
-              return new InstanceData(
-                  null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+              return data;
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -134,21 +135,151 @@ public class CloudSqlInstanceTest {
     instance.getSslData();
     assertThat(refreshCount.get()).isEqualTo(1);
 
+    // Force refresh, which will start, but not finish the refresh process.
     instance.forceRefresh();
 
+    // Then immediately getSslData() and assert that the refresh count has not changed.
+    // Refresh count hasn't changed because we re-use the existing connection info.
     instance.getSslData();
-    // refresh count hasn't changed because we re-use the existing connection info
     assertThat(refreshCount.get()).isEqualTo(1);
 
-    for (int i = 0; i < 10; i++) {
-      instance.getSslData();
-      if (refreshCount.get() > 1) {
-        return;
-      }
-      Thread.sleep(100);
+    // Allow the second refresh operation to complete
+    cond.proceed();
+    cond.waitForPauseToEnd(1000L);
+    cond.waitForCondition(() -> refreshCount.get() >= 2, 1000L);
+
+    // getSslData again, and assert the refresh operation completed.
+    instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void testCloudSqlRefreshesExpiredData() throws Exception {
+    InstanceData initialData =
+        new InstanceData(
+            null, new SslData(null, null, null), Instant.now().plus(2, ChronoUnit.SECONDS));
+
+    InstanceData data =
+        new InstanceData(
+            null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition refresh1 = new PauseCondition();
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              InstanceData refreshResult = data;
+              switch (c) {
+                case 0:
+                  // refresh 0 should return initialData immediately
+                  refreshResult = initialData;
+                  break;
+                case 1:
+                  // refresh 1 should pause
+                  refresh1.pause();
+                  break;
+              }
+              // refresh 2 and on should return data immediately
+              refreshCount.incrementAndGet();
+              return refreshResult;
+            },
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            TEST_RATE_LIMITER);
+
+    // Get the first data that is about to expire
+    SslData d = instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(d).isSameInstanceAs(initialData.getSslData());
+
+    // Wait for the instance to expire
+    while (Instant.now().isBefore(initialData.getExpiration())) {
+      Thread.sleep(10);
     }
 
-    fail(String.format("refresh count should be 2, got = %d", refreshCount.get()));
+    // Now that the InstanceData has expired, getInstanceData will return the same, expired
+    // token until a new one is retrieved.
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(instance.getSslData()).isSameInstanceAs(initialData.getSslData());
+
+    // Allow the second refresh operation to complete
+    refresh1.proceed();
+    refresh1.waitForPauseToEnd(1000L);
+
+    // getSslData again, and assert the refresh operation completed.
+    refresh1.waitForCondition(() -> instance.getSslData() == data.getSslData(), 1000L);
+  }
+
+  @Test
+  public void testThatForceRefreshBalksWhenAForceRefreshIsInProgress() throws Exception {
+    InstanceData initialData =
+        new InstanceData(
+            null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+
+    InstanceData data =
+        new InstanceData(
+            null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition refresh1 = new PauseCondition();
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              switch (c) {
+                case 0:
+                  refreshCount.incrementAndGet();
+                  return initialData;
+                case 1:
+                  refresh1.pause();
+                  refreshCount.incrementAndGet();
+                  return data;
+                default:
+                  return data;
+              }
+            },
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            TEST_RATE_LIMITER);
+
+    // Get the first data that is about to expire
+    SslData d = instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(d).isSameInstanceAs(initialData.getSslData());
+
+    // call forceRefresh twice, this should only result in 1 refresh fetch
+    instance.forceRefresh();
+    instance.forceRefresh();
+
+    // Allow the refresh operation to complete
+    refresh1.proceed();
+
+    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // has been retrieved.
+    refresh1.waitForPauseToEnd(1000);
+    refresh1.waitForCondition(() -> refreshCount.get() >= 2, 1000);
+
+    // getSslData until the refresh operation returns the newer
+    // SslData instance
+    SslData d2 = instance.getSslData();
+    for (int i = 0; i < 10 && d2 != data.getSslData(); i++) {
+      Thread.sleep(10);
+      d2 = instance.getSslData();
+    }
+
+    // assert the refresh operation completed exactly once after
+    // forceRefresh was called multiple times.
+    assertThat(d2).isSameInstanceAs(data.getSslData());
+    assertThat(refreshCount.get()).isEqualTo(2);
   }
 
   @Test
@@ -168,7 +299,6 @@ public class CloudSqlInstanceTest {
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
           return data;
         };
@@ -206,7 +336,6 @@ public class CloudSqlInstanceTest {
 
     InstanceDataSupplier instanceDataSupplier =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          Thread.sleep(100);
           refreshCount.incrementAndGet();
           return data;
         };
@@ -230,7 +359,7 @@ public class CloudSqlInstanceTest {
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-
+    executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
         MoreExecutors.getExitingScheduledExecutorService(executor));
   }

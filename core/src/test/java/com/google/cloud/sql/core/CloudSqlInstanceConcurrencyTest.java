@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -53,98 +52,6 @@ public class CloudSqlInstanceConcurrencyTest {
     public void initialize(HttpRequest var1) throws IOException {
       // do nothing
     }
-  }
-
-  @Test(timeout = 20000)
-  public void testThatForceRefreshBalksWhenARefreshIsInProgress() throws Exception {
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    ListenableFuture<KeyPair> keyPairFuture =
-        Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
-    TestDataSupplier supplier = new TestDataSupplier(true);
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "a:b:c",
-            supplier,
-            AuthType.PASSWORD,
-            new TestCredentialFactory(),
-            executor,
-            keyPairFuture,
-            newRateLimiter());
-
-    // Attempt to retrieve data, ensure we wait for success
-    // 3 simultaneous requests can put enough pressure on the thread pool
-    // to cause a deadlock.
-    ListenableFuture<List<Object>> allData =
-        Futures.allAsList(
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData));
-
-    List<Object> d = allData.get();
-    assertThat(d.get(0)).isNotNull();
-    assertThat(d.get(1)).isNotNull();
-    assertThat(d.get(2)).isNotNull();
-
-    // Test that there was 1 successful attempt from when the CloudSqlInstance was instantiated.
-    assertThat(supplier.successCounter.get()).isEqualTo(1);
-
-    // Now, run through a number of cycles where we call forceRefresh() multiple times and make sure
-    // that it only runs one successful refresh per cycle 10 times. This will prove that
-    // forceRefresh() will balk when an operation is in progress, and that forceRefresh() will retry
-    // after a failed attempt to get InstanceData.
-    for (int i = 1; i <= FORCE_REFRESH_COUNT; i++) {
-      // Assert the expected number of successful refresh operations
-      assertThat(supplier.successCounter.get()).isEqualTo(i);
-
-      // Call forceRefresh 3 times in rapid succession. This should only kick off 1 refresh
-      // cycle.
-      instance.forceRefresh();
-      // force Java to run a different thread now. That gives the refresh task an opportunity to
-      // start.
-      Thread.sleep(0);
-      instance.forceRefresh();
-      instance.forceRefresh();
-
-      Thread.sleep(DEFAULT_WAIT); // Wait for the refresh to occur
-
-      // This will loop forever if CloudSqlInstance does not successfully retry after a failed
-      // forceRefresh() attempt.
-      while (true) {
-        try {
-          // Attempt to get sslData 3 times, simultaneously, in different threads.
-          ListenableFuture<List<Object>> allData2 =
-              Futures.allAsList(
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData));
-
-          // This should return immediately
-          allData2.get();
-          break;
-
-        } catch (ExecutionException e) {
-          // We expect some of these to throw an exception indicating that the refresh cycle
-          // got a failed attempt. When they throw an exception,
-          // sleep and try again. This shows that the refresh cycle is working.
-          //noinspection BusyWait
-          Thread.sleep(DEFAULT_WAIT);
-        }
-      }
-
-      // Wait for the actual background refresh to complete before checking the success counter.
-      Thread.sleep(DEFAULT_WAIT);
-
-      // Assert the expected number of successful refresh operations at the end of the loop
-      // is only one more than the beginning of the loop.
-      // This means that only one additional refresh operation was run.
-      assertThat(supplier.successCounter.get()).isEqualTo(i + 1);
-
-      Thread.sleep(DEFAULT_WAIT);
-    }
-
-    // Refresh count should equal initial refresh plus FORCE_REFRESH_COUNT times refreshing
-    assertThat(supplier.successCounter.get()).isEqualTo(FORCE_REFRESH_COUNT + 1);
   }
 
   @Test(timeout = 20000) // 45 seconds timeout in case of deadlock
