@@ -23,7 +23,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.IOException;
 import java.security.KeyPair;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
@@ -46,6 +46,7 @@ import javax.net.ssl.SSLSocket;
 class CloudSqlInstance {
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
+  public static final int MAX_INSTANCE_DATA_WAIT_SEC = 30;
 
   private final ListeningScheduledExecutorService executor;
   private final InstanceDataSupplier instanceDataSupplier;
@@ -68,6 +69,9 @@ class CloudSqlInstance {
 
   @GuardedBy("instanceDataGuard")
   private boolean forceRefreshRunning;
+
+  @GuardedBy("instanceDataGuard")
+  private Throwable currentRefreshFailure;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -99,14 +103,14 @@ class CloudSqlInstance {
     }
 
     synchronized (instanceDataGuard) {
-      this.currentInstanceData = executor.submit(this::performRefresh);
+      this.currentInstanceData = this.startRefreshAttempt();
       this.nextInstanceData = currentInstanceData;
     }
   }
 
   /**
-   * Returns the current data related to the instance from {@link #performRefresh()}. May block if
-   * no valid data is currently available.
+   * Returns the current data related to the instance from {@link #startRefreshAttempt()}. May block
+   * if no valid data is currently available.
    */
   private InstanceData getInstanceData() {
     ListenableFuture<InstanceData> instanceDataFuture;
@@ -114,8 +118,19 @@ class CloudSqlInstance {
       instanceDataFuture = currentInstanceData;
     }
     try {
-      return Uninterruptibles.getUninterruptibly(instanceDataFuture);
-    } catch (ExecutionException ex) {
+      return instanceDataFuture.get(MAX_INSTANCE_DATA_WAIT_SEC, TimeUnit.SECONDS);
+    } catch (TimeoutException e) {
+      synchronized (instanceDataGuard) {
+        if (currentRefreshFailure != null) {
+          throw new RuntimeException(
+              "Unable to get valid instance data within 30 seconds. Last refresh attempt failed:"
+                  + currentRefreshFailure.getMessage(),
+              currentRefreshFailure);
+        }
+      }
+      throw new RuntimeException(
+          "Unable to get valid instance data within 30 seconds. No refresh has completed.", e);
+    } catch (ExecutionException | InterruptedException ex) {
       Throwable cause = ex.getCause();
       Throwables.throwIfUnchecked(cause);
       throw new RuntimeException(cause);
@@ -174,30 +189,64 @@ class CloudSqlInstance {
               "[%s] Force Refresh: the next refresh operation was cancelled."
                   + " Scheduling new refresh operation immediately.",
               instanceName));
-      nextInstanceData = executor.submit(this::performRefresh);
+      nextInstanceData = this.startRefreshAttempt();
     }
   }
 
   /**
-   * Triggers an update of internal information obtained from the Cloud SQL Admin API. Replaces the
-   * value of currentInstanceData and schedules the next refresh shortly before the information
-   * would expire.
+   * Triggers an update of internal information obtained from the Cloud SQL Admin API, returning a
+   * future that resolves once a valid InstanceData has been acquired. This sets up a chain of
+   * futures that will 1. Acquire a rate limiter. 2. Attempt to fetch instance data. 3. Schedule the
+   * next attempt to get instance data based on the success/failure of this attempt.
+   *
+   * @see com.google.cloud.sql.core.CloudSqlInstance#handleRefreshResult(
+   *     com.google.common.util.concurrent.ListenableFuture)
    */
-  private InstanceData performRefresh() throws InterruptedException, ExecutionException {
-    logger.fine(
-        String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
-    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
-    //noinspection UnstableApiUsage
-    forcedRenewRateLimiter.acquire();
-    logger.fine(
-        String.format(
-            "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",
-            instanceName));
+  private ListenableFuture<InstanceData> startRefreshAttempt() {
 
+    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
+    ListenableFuture rateLimit =
+        executor.submit(
+            () -> {
+              logger.fine(
+                  String.format(
+                      "[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
+              //noinspection UnstableApiUsage
+              forcedRenewRateLimiter.acquire();
+              logger.fine(
+                  String.format(
+                      "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",
+                      instanceName));
+            },
+            executor);
+
+    // Once rate limiter is done, attempt to getInstanceData.
+    ListenableFuture<InstanceData> dataFuture =
+        Futures.whenAllComplete(rateLimit)
+            .callAsync(
+                () ->
+                    instanceDataSupplier.getInstanceData(
+                        this.instanceName,
+                        this.accessTokenSupplier,
+                        this.authType,
+                        executor,
+                        keyPair),
+                executor);
+
+    // Finally, reschedule refresh after getInstanceData is complete.
+    ListenableFuture<InstanceData> rescheduleFuture =
+        Futures.whenAllComplete(dataFuture)
+            .callAsync(() -> handleRefreshResult(dataFuture), executor);
+
+    return rescheduleFuture;
+  }
+
+  private ListenableFuture<InstanceData> handleRefreshResult(
+      ListenableFuture<InstanceData> dataFuture) {
     try {
-      InstanceData data =
-          instanceDataSupplier.getInstanceData(
-              this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair);
+      // This does not block, because it only gets called when dataFuture has completed.
+      // This will throw an exception if the refresh attempt has failed.
+      InstanceData data = dataFuture.get();
 
       logger.fine(
           String.format(
@@ -216,13 +265,21 @@ class CloudSqlInstance {
                   .toString()));
 
       synchronized (instanceDataGuard) {
-        currentInstanceData = Futures.immediateFuture(data);
-        nextInstanceData =
-            executor.schedule(this::performRefresh, secondsToRefresh, TimeUnit.SECONDS);
         // Refresh completed successfully, reset forceRefreshRunning.
         forceRefreshRunning = false;
+        currentRefreshFailure = null;
+        currentInstanceData = Futures.immediateFuture(data);
+
+        // Now update nextInstanceData to perform a refresh after the
+        // scheduled delay
+        nextInstanceData =
+            Futures.scheduleAsync(
+                this::startRefreshAttempt, secondsToRefresh, TimeUnit.SECONDS, executor);
+
+        // Resolves to an InstanceData immediately
+        return currentInstanceData;
       }
-      return data;
+
     } catch (ExecutionException | InterruptedException e) {
       logger.log(
           Level.FINE,
@@ -231,9 +288,12 @@ class CloudSqlInstance {
               instanceName),
           e);
       synchronized (instanceDataGuard) {
-        nextInstanceData = executor.submit(this::performRefresh);
+        currentRefreshFailure = e;
+        nextInstanceData = this.startRefreshAttempt();
+
+        // Resolves after the next successful refresh attempt.
+        return nextInstanceData;
       }
-      throw e;
     }
   }
 

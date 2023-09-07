@@ -48,7 +48,7 @@ class TestDataSupplier implements InstanceDataSupplier {
   }
 
   @Override
-  public InstanceData getInstanceData(
+  public ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
@@ -73,6 +73,6 @@ class TestDataSupplier implements InstanceDataSupplier {
               return response;
             });
 
-    return f.get();
+    return f;
   }
 }

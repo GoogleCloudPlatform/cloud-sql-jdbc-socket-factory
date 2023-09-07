@@ -89,13 +89,10 @@ public class CloudSqlInstanceTest {
             AuthType authType,
             ListeningScheduledExecutorService exec,
             ListenableFuture<KeyPair> keyPair) -> {
-          ListenableFuture<?> f =
-              exec.submit(
-                  () -> {
-                    throw new RuntimeException("always fails");
-                  });
-          f.get(); // this will throw an ExecutionException
-          return null;
+          return exec.submit(
+              () -> {
+                throw new RuntimeException("always fails");
+              });
         };
 
     // initialize instance after mocks are set up
@@ -114,16 +111,55 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
-  public void testCloudSqlInstanceForcesRefresh() throws InterruptedException {
+  public void testInstanceFailsOnTooLongToRetrieve() throws Exception {
+
+    InstanceDataSupplier instanceDataSupplier =
+        (CloudSqlInstanceName instanceName,
+            AccessTokenSupplier accessTokenSupplier,
+            AuthType authType,
+            ListeningScheduledExecutorService exec,
+            ListenableFuture<KeyPair> keyPair) -> {
+          return exec.submit(
+              () -> {
+                try {
+                  // stop for 2 minutes, which is longer than the timeout
+                  // to wait for getInstanceData()
+                  Thread.sleep(120 * 1000);
+                } catch (InterruptedException e) {
+                }
+                throw new RuntimeException("fake read timeout");
+              });
+        };
+
+    // initialize instance after mocks are set up
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            instanceDataSupplier,
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            RateLimiter.create(10));
+
+    RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
+    assertThat(ex).hasMessageThat().contains("No refresh has completed");
+  }
+
+  @Test
+  public void testCloudSqlInstanceForcesRefresh() throws Exception {
+    SslData sslData = new SslData(null, null, null);
+    InstanceData data =
+        new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
     AtomicInteger refreshCount = new AtomicInteger();
 
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              Thread.sleep(100);
               refreshCount.incrementAndGet();
-              return new InstanceData(
-                  null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+              return Futures.immediateFuture(data);
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -170,7 +206,7 @@ public class CloudSqlInstanceTest {
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return Futures.immediateFuture(data);
         };
 
     // initialize instance after mocks are set up
@@ -208,7 +244,7 @@ public class CloudSqlInstanceTest {
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           Thread.sleep(100);
           refreshCount.incrementAndGet();
-          return data;
+          return Futures.immediateFuture(data);
         };
 
     // initialize instance after mocks are set up
