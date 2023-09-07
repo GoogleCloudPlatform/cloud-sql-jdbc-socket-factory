@@ -122,6 +122,8 @@ jobs:
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
+    - name: Check Coverage
+      run: .kokoro/check_coverage.sh
     - name: FlakyBot (Linux)
       # only run flakybot on periodic (schedule) and continuous (push) events
       if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Linux' && always() }}
@@ -248,6 +250,8 @@ jobs:
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
+    - name: Check Coverage
+      run: .kokoro/check_coverage.sh
     - name: FlakyBot (Linux)
       # only run flakybot on periodic (schedule) and continuous (push) events
       if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Linux' && always() }}
@@ -361,6 +365,8 @@ jobs:
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
       run: ./.github/scripts/run_tests_graalvm_native.sh
       shell: bash
+    - name: Check Coverage
+      run: .kokoro/check_coverage.sh
     - name: FlakyBot
       # only run flakybot on periodic (schedule) and continuous (push) events
       if: ${{ (github.event_name == 'schedule' || github.event_name == 'push')  && always() }}
