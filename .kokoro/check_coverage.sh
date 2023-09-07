@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eo pipefail
+# `-e` enables the script to automatically fail when a command fails
+set -e
 
 export CUR_COVER=$(cat core/target/site/jacoco/index.html | grep -o 'Total[^%]*' | sed 's/<.*>//; s/Total//')
 echo "Current Coverage is $CUR_COVER%"
