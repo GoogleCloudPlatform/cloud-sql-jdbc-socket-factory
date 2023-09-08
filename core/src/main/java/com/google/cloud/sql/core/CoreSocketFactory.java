@@ -25,7 +25,6 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.RateLimiter;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -392,6 +391,6 @@ public final class CoreSocketFactory {
         instanceCredentialFactory,
         executor,
         localKeyPair,
-        RateLimiter.create(1.0 / 30.0)); // 1 refresh attempt every 30 seconds
+        30 * 1000); // 1 refresh attempt every 30 seconds
   }
 }
