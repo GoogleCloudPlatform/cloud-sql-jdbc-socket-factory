@@ -37,8 +37,10 @@ import org.junit.Test;
 
 public class CloudSqlInstanceConcurrencyTest {
 
+  public static final int DEFAULT_WAIT = 200;
   private static final Logger logger =
       Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
+  public static final int FORCE_REFRESH_COUNT = 10;
 
   private static class TestCredentialFactory implements CredentialFactory, HttpRequestInitializer {
 
@@ -86,23 +88,25 @@ public class CloudSqlInstanceConcurrencyTest {
     // Test that there was 1 successful attempt from when the CloudSqlInstance was instantiated.
     assertThat(supplier.successCounter.get()).isEqualTo(1);
 
-    // Now, run through 20 cycles where we call forceRefresh() multiple times and make sure that
-    // it only runs one successful refresh per cycle 20 times. This will prove that forceRefresh()
-    // will balk when an operation is in progress, and that forceRefresh() will retry after a failed
-    // attempt to get InstanceData.
-    for (int i = 1; i <= 20; i++) {
+    // Now, run through a number of cycles where we call forceRefresh() multiple times and make sure
+    // that it only runs one successful refresh per cycle 10 times. This will prove that
+    // forceRefresh() will balk when an operation is in progress, and that forceRefresh() will retry
+    // after a failed attempt to get InstanceData.
+    for (int i = 1; i <= FORCE_REFRESH_COUNT; i++) {
       // Assert the expected number of successful refresh operations
       assertThat(supplier.successCounter.get()).isEqualTo(i);
 
       // Call forceRefresh 3 times in rapid succession. This should only kick off 1 refresh
       // cycle.
       instance.forceRefresh();
-      // force Java to run a different thread now. That gives the refrsh task an opportunity to
+      // force Java to run a different thread now. That gives the refresh task an opportunity to
       // start.
       Thread.yield();
       instance.forceRefresh();
       instance.forceRefresh();
       Thread.yield();
+
+      Thread.sleep(DEFAULT_WAIT); // Wait for the refresh to occur
 
       // This will loop forever if CloudSqlInstance does not successfully retry after a failed
       // forceRefresh() attempt.
@@ -115,25 +119,32 @@ public class CloudSqlInstanceConcurrencyTest {
                   executor.submit(instance::getSslData),
                   executor.submit(instance::getSslData));
 
-          // Wait for all to finish.
+          // This should return immediately
           allData2.get();
-
-          // If they all succeeded, then continue with the test.
           break;
+
         } catch (ExecutionException e) {
           // We expect some of these to throw an exception indicating that the refresh cycle
           // got a failed attempt. When they throw an exception,
           // sleep and try again. This shows that the refresh cycle is working.
-          Thread.sleep(100);
+          //noinspection BusyWait
+          Thread.sleep(DEFAULT_WAIT);
         }
       }
 
+      // Wait for the actual background refresh to complete before checking the success counter.
+      Thread.sleep(DEFAULT_WAIT);
+
       // Assert the expected number of successful refresh operations at the end of the loop
-      // is one more than the beginning of the loop.
+      // is only one more than the beginning of the loop.
+      // This means that only one additional refresh operation was run.
       assertThat(supplier.successCounter.get()).isEqualTo(i + 1);
 
-      Thread.sleep(100);
+      Thread.sleep(DEFAULT_WAIT);
     }
+
+    // Refresh count should equal initial refresh plus FORCE_REFRESH_COUNT times refreshing
+    assertThat(supplier.successCounter.get()).isEqualTo(FORCE_REFRESH_COUNT + 1);
   }
 
   @Test(timeout = 20000) // 45 seconds timeout in case of deadlock
@@ -164,7 +175,7 @@ public class CloudSqlInstanceConcurrencyTest {
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
-    // Now that everything is initialized, make the network flakey
+    // Now that everything is initialized, make the network flaky
     supplier.flaky = true;
 
     // Start a thread for each instance that will force refresh and get InstanceData
