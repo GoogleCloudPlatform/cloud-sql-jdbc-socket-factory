@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 /** Factory for creating a SQLAdmin client that interacts with the real SQL Admin API. */
-public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
+public class CloudSqlConnectorAdminClientFactory implements AdminClientFactory {
   // Test properties, not for end-user use. May be changed or removed without notice.
   private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
   private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
@@ -36,18 +36,18 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
   private final String userAgents;
 
   /**
-   * Initializes a new SQLAdminApiClientFactory class from defaults and provided userAgents.
+   * Initializes a new CloudSqlConnectorInfoRepository class from defaults and provided userAgents.
    *
    * @param userAgents string representing userAgents for the admin API client
    */
-  public SqlAdminApiFetcherFactory(String userAgents) {
+  public CloudSqlConnectorAdminClientFactory(String userAgents) {
     this.userAgents = userAgents;
     this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
     this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
   @Override
-  public SqlAdminApiFetcher create(HttpRequestInitializer requestInitializer) {
+  public CloudSqlConnectorInfoRepository create(HttpRequestInitializer requestInitializer) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -65,6 +65,6 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
     if (servicePath != null) {
       adminApiBuilder.setServicePath(servicePath);
     }
-    return new SqlAdminApiFetcher(adminApiBuilder.build());
+    return new CloudSqlConnectorInfoRepository(adminApiBuilder.build());
   }
 }

@@ -174,10 +174,11 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    ApiFetcherFactory fetcher =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory adminClientFactory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     coreSocketFactoryStub =
-        new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, adminClientFactory, credentialFactory, 3307, defaultExecutor);
   }
 }

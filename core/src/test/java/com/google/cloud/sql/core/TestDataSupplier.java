@@ -57,10 +57,10 @@ class TestDataSupplier implements InstanceDataSupplier {
       ListenableFuture<KeyPair> keyPair)
       throws ExecutionException, InterruptedException {
 
-    // This method mimics the behavior of SqlAdminApiFetcher under flaky network conditions.
-    // It schedules a future on the executor to produces the result InstanceData.
+    // This method mimics the behavior of CloudSqlConnectorInfoRepository under flaky network
+    // conditions. It schedules a future on the executor to produces the result InstanceData.
     // When `this.flaky` is set, every other call to getInstanceData()
-    // throw an ExecutionException, as if SqlAdminApiFetcher made an API request,
+    // throw an ExecutionException, as if CloudSqlConnectorInfoRepository made an API request,
     // and then failed.
     ListenableFuture<InstanceData> f =
         executor.submit(

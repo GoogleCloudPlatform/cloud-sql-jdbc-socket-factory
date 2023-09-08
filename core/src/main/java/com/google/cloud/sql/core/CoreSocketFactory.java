@@ -83,16 +83,16 @@ public final class CoreSocketFactory {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
-  private final ApiFetcherFactory apiFetcherFactory;
+  private final AdminClientFactory adminClientFactory;
 
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      ApiFetcherFactory apiFetcherFactory,
+      AdminClientFactory adminClientFactory,
       CredentialFactory credentialFactory,
       int serverProxyPort,
       ListeningScheduledExecutorService executor) {
-    this.apiFetcherFactory = apiFetcherFactory;
+    this.adminClientFactory = adminClientFactory;
     this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
@@ -111,7 +111,7 @@ public final class CoreSocketFactory {
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              new SqlAdminApiFetcherFactory(getUserAgents()),
+              new CloudSqlConnectorAdminClientFactory(getUserAgents()),
               credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               executor);
@@ -385,10 +385,10 @@ public final class CoreSocketFactory {
   CloudSqlInstance getCloudSqlInstance(
       String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
     return instances.computeIfAbsent(
-        instanceName, k -> apiFetcher(k, authType, targetPrincipal, delegates));
+        instanceName, k -> createInstance(k, authType, targetPrincipal, delegates));
   }
 
-  private CloudSqlInstance apiFetcher(
+  private CloudSqlInstance createInstance(
       String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
 
     final CredentialFactory instanceCredentialFactory;
@@ -407,7 +407,7 @@ public final class CoreSocketFactory {
     }
 
     HttpRequestInitializer credential = instanceCredentialFactory.create();
-    SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
+    CloudSqlConnectorInfoRepository adminApi = adminClientFactory.create(credential);
 
     return new CloudSqlInstance(
         instanceName,

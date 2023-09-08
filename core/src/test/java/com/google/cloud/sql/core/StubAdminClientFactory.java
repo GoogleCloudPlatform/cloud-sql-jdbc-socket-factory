@@ -23,16 +23,16 @@ import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdmin.Builder;
 
-public class StubApiFetcherFactory implements ApiFetcherFactory {
+public class StubAdminClientFactory implements AdminClientFactory {
 
   HttpTransport httpTransport;
 
-  StubApiFetcherFactory(HttpTransport transport) {
+  StubAdminClientFactory(HttpTransport transport) {
     this.httpTransport = transport;
   }
 
   @Override
-  public SqlAdminApiFetcher create(HttpRequestInitializer credentials) {
+  public CloudSqlConnectorInfoRepository create(HttpRequestInitializer credentials) {
     SQLAdmin sqlAdmin =
         new Builder(
                 httpTransport != null ? httpTransport : new MockHttpTransport(),
@@ -40,6 +40,6 @@ public class StubApiFetcherFactory implements ApiFetcherFactory {
                 credentials)
             .setApplicationName("Mock SQL Admin")
             .build();
-    return new SqlAdminApiFetcher(sqlAdmin);
+    return new CloudSqlConnectorInfoRepository(sqlAdmin);
   }
 }

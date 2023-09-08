@@ -59,8 +59,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
@@ -92,8 +92,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
@@ -122,8 +122,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PRIVATE_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -142,8 +142,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     try {
@@ -166,8 +166,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
 
@@ -187,8 +187,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     Socket socket =
@@ -203,7 +203,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
-    ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotConfiguredException());
+    AdminClientFactory factory = new StubAdminClientFactory(fakeNotConfiguredException());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
@@ -227,7 +227,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_notAuthorized() throws IOException {
-    ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotAuthorizedException());
+    AdminClientFactory factory = new StubAdminClientFactory(fakeNotAuthorizedException());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
     try {
@@ -259,8 +259,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
@@ -283,8 +283,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
     Socket socket =
@@ -313,8 +313,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    AdminClientFactory factory =
+        new StubAdminClientFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
     assertThrows(
