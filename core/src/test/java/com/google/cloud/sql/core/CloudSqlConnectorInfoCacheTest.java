@@ -41,7 +41,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class CloudSqlInstanceTest {
+public class CloudSqlConnectorInfoCacheTest {
 
   private ListeningScheduledExecutorService executorService;
   private ListenableFuture<KeyPair> keyPairFuture;
@@ -68,10 +68,10 @@ public class CloudSqlInstanceTest {
         new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
 
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "project:region:instance",
+    // initialize cache after mocks are set up
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
+            "project:region:cache",
             instanceDataSupplier,
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -79,7 +79,7 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             RateLimiter.create(1.0 / 30.0));
 
-    SslData gotSslData = instance.getSslData();
+    SslData gotSslData = cache.getSslData();
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
     assertThat(instanceDataSupplier.counter.get()).isEqualTo(1);
   }
@@ -102,10 +102,10 @@ public class CloudSqlInstanceTest {
           return null;
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "project:region:instance",
+    // initialize cache after mocks are set up
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
+            "project:region:cache",
             instanceDataSupplier,
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -113,7 +113,7 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             RateLimiter.create(1.0 / 30.0));
 
-    RuntimeException ex = Assert.assertThrows(RuntimeException.class, instance::getSslData);
+    RuntimeException ex = Assert.assertThrows(RuntimeException.class, cache::getSslData);
     assertThat(ex).hasMessageThat().contains("always fails");
   }
 
@@ -131,9 +131,9 @@ public class CloudSqlInstanceTest {
           return data;
         };
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "project:region:instance",
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
+            "project:region:cache",
             instanceDataSupplier,
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -141,10 +141,10 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             RateLimiter.create(1.0 / 30.0));
 
-    SslData gotSslData = instance.getSslData();
+    SslData gotSslData = cache.getSslData();
     assertThat(gotSslData).isSameInstanceAs(sslData);
-    instance.forceRefresh();
-    instance.getSslData();
+    cache.forceRefresh();
+    cache.getSslData();
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -170,10 +170,10 @@ public class CloudSqlInstanceTest {
           return data;
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "project:region:instance",
+    // initialize cache after mocks are set up
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
+            "project:region:cache",
             instanceDataSupplier,
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -181,13 +181,11 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             RateLimiter.create(1.0 / 30.0));
 
-    assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PUBLIC"))).isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC")))
-        .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PRIVATE")))
-        .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PSC")))
+    assertThat(cache.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
+    assertThat(cache.getPreferredIp(Collections.singletonList("PUBLIC"))).isEqualTo("10.1.2.3");
+    assertThat(cache.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC"))).isEqualTo("10.10.10.10");
+    assertThat(cache.getPreferredIp(Collections.singletonList("PRIVATE"))).isEqualTo("10.10.10.10");
+    assertThat(cache.getPreferredIp(Collections.singletonList("PSC")))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
@@ -208,10 +206,10 @@ public class CloudSqlInstanceTest {
           return data;
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
-            "project:region:instance",
+    // initialize cache after mocks are set up
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
+            "project:region:cache",
             instanceDataSupplier,
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -220,7 +218,7 @@ public class CloudSqlInstanceTest {
             RateLimiter.create(1.0 / 30.0));
     Assert.assertThrows(
         IllegalArgumentException.class,
-        () -> instance.getPreferredIp(Collections.singletonList("PRIVATE")));
+        () -> cache.getPreferredIp(Collections.singletonList("PRIVATE")));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

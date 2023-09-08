@@ -79,7 +79,8 @@ public final class CoreSocketFactory {
   private static final String version = getVersion();
   private static CoreSocketFactory coreSocketFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, CloudSqlConnectorInfoCache> instances =
+      new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
@@ -225,11 +226,11 @@ public final class CoreSocketFactory {
       throws IOException {
     if (enableIamAuth) {
       return getInstance()
-          .getCloudSqlInstance(csqlInstanceName, AuthType.IAM, targetPrincipal, delegates)
+          .getConnectorInfo(csqlInstanceName, AuthType.IAM, targetPrincipal, delegates)
           .getSslData();
     }
     return getInstance()
-        .getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD, targetPrincipal, delegates)
+        .getConnectorInfo(csqlInstanceName, AuthType.PASSWORD, targetPrincipal, delegates)
         .getSslData();
   }
 
@@ -243,9 +244,9 @@ public final class CoreSocketFactory {
 
   private String getHostIp(
       String instanceName, List<String> ipTypes, String targetPrincipal, List<String> delegates) {
-    CloudSqlInstance instance =
-        getCloudSqlInstance(instanceName, AuthType.PASSWORD, targetPrincipal, delegates);
-    return instance.getPreferredIp(ipTypes);
+    CloudSqlConnectorInfoCache cache =
+        getConnectorInfo(instanceName, AuthType.PASSWORD, targetPrincipal, delegates);
+    return cache.getPreferredIp(ipTypes);
   }
 
   /**
@@ -358,18 +359,18 @@ public final class CoreSocketFactory {
       String targetPrincipal,
       List<String> delegates)
       throws IOException, InterruptedException {
-    CloudSqlInstance instance =
-        getCloudSqlInstance(instanceName, authType, targetPrincipal, delegates);
+    CloudSqlConnectorInfoCache cache =
+        getConnectorInfo(instanceName, authType, targetPrincipal, delegates);
 
     try {
-      SSLSocket socket = instance.createSslSocket();
+      SSLSocket socket = cache.createSslSocket();
 
       // TODO(kvg): Support all socket related options listed here:
       // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getPreferredIp(ipTypes);
+      String instanceIp = cache.getPreferredIp(ipTypes);
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();
@@ -377,18 +378,18 @@ public final class CoreSocketFactory {
       return socket;
     } catch (Exception ex) {
       // TODO(kvg): Let user know about the rate limit
-      instance.forceRefresh();
+      cache.forceRefresh();
       throw ex;
     }
   }
 
-  CloudSqlInstance getCloudSqlInstance(
+  CloudSqlConnectorInfoCache getConnectorInfo(
       String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
     return instances.computeIfAbsent(
         instanceName, k -> createInstance(k, authType, targetPrincipal, delegates));
   }
 
-  private CloudSqlInstance createInstance(
+  private CloudSqlConnectorInfoCache createInstance(
       String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
 
     final CredentialFactory instanceCredentialFactory;
@@ -409,7 +410,7 @@ public final class CoreSocketFactory {
     HttpRequestInitializer credential = instanceCredentialFactory.create();
     CloudSqlConnectorInfoRepository adminApi = adminClientFactory.create(credential);
 
-    return new CloudSqlInstance(
+    return new CloudSqlConnectorInfoCache(
         instanceName,
         adminApi,
         authType,

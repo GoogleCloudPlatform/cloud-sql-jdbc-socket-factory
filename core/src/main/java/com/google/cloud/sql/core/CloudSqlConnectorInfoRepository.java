@@ -90,7 +90,7 @@ class CloudSqlConnectorInfoRepository implements InstanceDataSupplier {
   }
 
   /**
-   * Internal Use Only: Gets the instance data for the CloudSqlInstance from the API.
+   * Internal Use Only: Gets the instance data from the API.
    *
    * @throws ExecutionException if an exception is thrown during execution.
    * @throws InterruptedException if the executor is interrupted.

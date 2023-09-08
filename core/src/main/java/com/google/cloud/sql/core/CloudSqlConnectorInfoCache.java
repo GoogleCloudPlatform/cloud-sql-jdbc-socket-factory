@@ -43,9 +43,9 @@ import javax.net.ssl.SSLSocket;
  * SQL Admin API. The operations to retrieve information with the API are largely done
  * asynchronously, and this class should be considered threadsafe.
  */
-class CloudSqlInstance {
+class CloudSqlConnectorInfoCache {
 
-  private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
+  private static final Logger logger = Logger.getLogger(CloudSqlConnectorInfoCache.class.getName());
 
   private final ListeningScheduledExecutorService executor;
   private final InstanceDataSupplier instanceDataSupplier;
@@ -76,7 +76,7 @@ class CloudSqlInstance {
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
-  CloudSqlInstance(
+  CloudSqlConnectorInfoCache(
       String connectionName,
       InstanceDataSupplier instanceDataSupplier,
       AuthType authType,

@@ -35,10 +35,10 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
-public class CloudSqlInstanceConcurrencyTest {
+public class CloudSqlConnectorInfoCacheConcurrencyTest {
 
   private static final Logger logger =
-      Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
+      Logger.getLogger(CloudSqlConnectorInfoCacheConcurrencyTest.class.getName());
 
   private static class TestCredentialFactory implements CredentialFactory, HttpRequestInitializer {
 
@@ -59,8 +59,8 @@ public class CloudSqlInstanceConcurrencyTest {
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(true);
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    CloudSqlConnectorInfoCache cache =
+        new CloudSqlConnectorInfoCache(
             "a:b:c",
             supplier,
             AuthType.PASSWORD,
@@ -74,16 +74,17 @@ public class CloudSqlInstanceConcurrencyTest {
     // to cause a deadlock.
     ListenableFuture<List<Object>> allData =
         Futures.allAsList(
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData));
+            executor.submit(cache::getSslData),
+            executor.submit(cache::getSslData),
+            executor.submit(cache::getSslData));
 
     List<Object> d = allData.get();
     assertThat(d.get(0)).isNotNull();
     assertThat(d.get(1)).isNotNull();
     assertThat(d.get(2)).isNotNull();
 
-    // Test that there was 1 successful attempt from when the CloudSqlInstance was instantiated.
+    // Test that there was 1 successful attempt from when the CloudSqlConnectorInfoCache was
+    // instantiated.
     assertThat(supplier.successCounter.get()).isEqualTo(1);
 
     // Now, run through 20 cycles where we call forceRefresh() multiple times and make sure that
@@ -96,24 +97,25 @@ public class CloudSqlInstanceConcurrencyTest {
 
       // Call forceRefresh 3 times in rapid succession. This should only kick off 1 refresh
       // cycle.
-      instance.forceRefresh();
+      cache.forceRefresh();
       // force Java to run a different thread now. That gives the refrsh task an opportunity to
       // start.
       Thread.yield();
-      instance.forceRefresh();
-      instance.forceRefresh();
+      cache.forceRefresh();
+      cache.forceRefresh();
       Thread.yield();
 
-      // This will loop forever if CloudSqlInstance does not successfully retry after a failed
+      // This will loop forever if CloudSqlConnectorInfoCache does not successfully retry after a
+      // failed
       // forceRefresh() attempt.
       while (true) {
         try {
           // Attempt to get sslData 3 times, simultaneously, in different threads.
           ListenableFuture<List<Object>> allData2 =
               Futures.allAsList(
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData));
+                  executor.submit(cache::getSslData),
+                  executor.submit(cache::getSslData),
+                  executor.submit(cache::getSslData));
 
           // Wait for all to finish.
           allData2.get();
@@ -143,13 +145,13 @@ public class CloudSqlInstanceConcurrencyTest {
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
-    List<CloudSqlInstance> instances = new ArrayList<>();
+    List<CloudSqlConnectorInfoCache> cloudSqlConnectorInfoCaches = new ArrayList<>();
 
     final int instanceCount = 5;
 
     for (int i = 0; i < instanceCount; i++) {
-      instances.add(
-          new CloudSqlInstance(
+      cloudSqlConnectorInfoCaches.add(
+          new CloudSqlConnectorInfoCache(
               "a:b:instance" + i,
               supplier,
               AuthType.PASSWORD,
@@ -160,7 +162,7 @@ public class CloudSqlInstanceConcurrencyTest {
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
-    instances.forEach(CloudSqlInstance::getSslData);
+    cloudSqlConnectorInfoCaches.forEach(CloudSqlConnectorInfoCache::getSslData);
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
@@ -170,7 +172,9 @@ public class CloudSqlInstanceConcurrencyTest {
     // Start a thread for each instance that will force refresh and get InstanceData
     // 50 times.
     List<Thread> threads =
-        instances.stream().map(this::startForceRefreshThread).collect(Collectors.toList());
+        cloudSqlConnectorInfoCaches.stream()
+            .map(this::startForceRefreshThread)
+            .collect(Collectors.toList());
 
     for (Thread t : threads) {
       // If threads don't complete in 10 seconds, throw an exception,
@@ -180,26 +184,26 @@ public class CloudSqlInstanceConcurrencyTest {
 
     // Check if there is a scheduled future
     int brokenLoop = 0;
-    for (CloudSqlInstance inst : instances) {
-      if (inst.getCurrent().isDone() && inst.getNext().isDone()) {
-        logger.warning("No future scheduled thing for instance " + inst.getInstanceName());
+    for (CloudSqlConnectorInfoCache cache : cloudSqlConnectorInfoCaches) {
+      if (cache.getCurrent().isDone() && cache.getNext().isDone()) {
+        logger.warning("No future scheduled thing for instance " + cache.getInstanceName());
         brokenLoop++;
       }
     }
     assertThat(brokenLoop).isEqualTo(0);
   }
 
-  private Thread startForceRefreshThread(CloudSqlInstance inst) {
+  private Thread startForceRefreshThread(CloudSqlConnectorInfoCache cache) {
     Runnable forceRefreshRepeat =
         () -> {
           for (int i = 0; i < 10; i++) {
             try {
               Thread.sleep(100);
-              inst.forceRefresh();
-              inst.forceRefresh();
-              inst.forceRefresh();
+              cache.forceRefresh();
+              cache.forceRefresh();
+              cache.forceRefresh();
               Thread.yield();
-              inst.getSslData();
+              cache.getSslData();
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
             }
@@ -208,7 +212,7 @@ public class CloudSqlInstanceConcurrencyTest {
         };
 
     Thread t = new Thread(forceRefreshRepeat);
-    t.setName("test-" + inst.getInstanceName());
+    t.setName("test-" + cache.getInstanceName());
     t.start();
     return t;
   }
