@@ -25,7 +25,6 @@ import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.RateLimiter;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -74,7 +73,7 @@ public class CloudSqlInstanceConcurrencyTest {
               new TestCredentialFactory(),
               executor,
               keyPairFuture,
-              newRateLimiter()));
+              50L));
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
@@ -129,9 +128,5 @@ public class CloudSqlInstanceConcurrencyTest {
     t.setName("test-" + inst.getInstanceName());
     t.start();
     return t;
-  }
-
-  private RateLimiter newRateLimiter() {
-    return RateLimiter.create(20.0); // 20/sec = every 50 ms
   }
 }

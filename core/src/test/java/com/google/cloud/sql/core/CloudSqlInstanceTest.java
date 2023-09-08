@@ -24,7 +24,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.RateLimiter;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -41,14 +40,14 @@ import org.junit.Test;
 
 public class CloudSqlInstanceTest {
 
-  @SuppressWarnings("UnstableApiUsage")
-  public static final RateLimiter TEST_RATE_LIMITER =
-      RateLimiter.create(1000 /* permits per second */);
+  public static final long MIN_REFERSH_DELAY_MS = 1;
 
   private final StubCredentialFactory stubCredentialFactory =
       new StubCredentialFactory("my-token", System.currentTimeMillis() + 3600L);
   private ListeningScheduledExecutorService executorService;
   private ListenableFuture<KeyPair> keyPairFuture;
+
+  private final long RATE_LIMIT_BETWEEN_REQUESTS = 10L;
 
   @Before
   public void setup() throws Exception {
@@ -74,7 +73,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            MIN_REFERSH_DELAY_MS);
 
     SslData gotSslData = instance.getSslData();
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
@@ -104,7 +103,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            MIN_REFERSH_DELAY_MS);
 
     RuntimeException ex =
         Assert.assertThrows(RuntimeException.class, () -> instance.getSslData(2000));
@@ -136,7 +135,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            RateLimiter.create(10));
+            100);
 
     RuntimeException ex =
         Assert.assertThrows(RuntimeException.class, () -> instance.getSslData(2000));
@@ -167,7 +166,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            MIN_REFERSH_DELAY_MS);
 
     instance.getSslData();
     assertThat(refreshCount.get()).isEqualTo(1);
@@ -217,7 +216,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            RATE_LIMIT_BETWEEN_REQUESTS);
 
     cond.proceed();
 
@@ -262,7 +261,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
     SslData d = instance.getSslData();
@@ -328,7 +327,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            RATE_LIMIT_BETWEEN_REQUESTS);
 
     refresh0.proceedWhen(() -> refreshCount.get() > 0);
     // Get the first data that is about to expire
@@ -390,7 +389,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
     SslData d = instance.getSslData();
@@ -466,7 +465,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
     SslData d = instance.getSslData();
@@ -549,7 +548,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            MIN_REFERSH_DELAY_MS);
 
     assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"))).isEqualTo("10.1.2.3");
     assertThat(instance.getPreferredIp(Collections.singletonList("PUBLIC"))).isEqualTo("10.1.2.3");
@@ -586,7 +585,7 @@ public class CloudSqlInstanceTest {
             stubCredentialFactory,
             executorService,
             keyPairFuture,
-            TEST_RATE_LIMITER);
+            MIN_REFERSH_DELAY_MS);
     Assert.assertThrows(
         IllegalArgumentException.class,
         () -> instance.getPreferredIp(Collections.singletonList("PRIVATE")));

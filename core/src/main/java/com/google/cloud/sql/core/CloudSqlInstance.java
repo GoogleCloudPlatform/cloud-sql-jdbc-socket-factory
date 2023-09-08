@@ -22,7 +22,6 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.IOException;
 import java.security.KeyPair;
@@ -56,9 +55,7 @@ class CloudSqlInstance {
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
-
-  @SuppressWarnings("UnstableApiUsage")
-  private final RateLimiter forcedRenewRateLimiter;
+  private final RateLimitCalculator rateLimitCalculator;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
@@ -89,13 +86,15 @@ class CloudSqlInstance {
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
-      @SuppressWarnings("UnstableApiUsage") RateLimiter forcedRenewRateLimiter) {
+      long minRefreshDelayMs) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
     this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
     this.executor = executor;
     this.keyPair = keyPair;
-    this.forcedRenewRateLimiter = forcedRenewRateLimiter;
+
+    // convert requests/second into milliseconds between requests.
+    this.rateLimitCalculator = new RateLimitCalculator(minRefreshDelayMs);
 
     if (authType == AuthType.IAM) {
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
@@ -254,25 +253,19 @@ class CloudSqlInstance {
       refreshRunning = true;
     }
 
-    // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
-    ListenableFuture rateLimit =
-        executor.submit(
-            () -> {
-              logger.fine(
-                  String.format(
-                      "[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
-              //noinspection UnstableApiUsage
-              forcedRenewRateLimiter.acquire();
-              logger.fine(
-                  String.format(
-                      "[%s] Refresh Operation: Acquired rate limiter permit. Starting refresh...",
-                      instanceName));
-            },
-            executor);
+    logger.fine(
+        String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
+    ListenableFuture delay = rateLimitCalculator.acquireAsync(executor, 1);
+    delay.addListener(
+        () ->
+            logger.fine(
+                String.format(
+                    "[%s] Refresh Operation: Rate limiter permit acquired.", instanceName)),
+        executor);
 
     // Once rate limiter is done, attempt to getInstanceData.
     ListenableFuture<InstanceData> dataFuture =
-        Futures.whenAllComplete(rateLimit)
+        Futures.whenAllComplete(delay)
             .callAsync(
                 () -> {
                   return instanceDataSupplier.getInstanceData(
