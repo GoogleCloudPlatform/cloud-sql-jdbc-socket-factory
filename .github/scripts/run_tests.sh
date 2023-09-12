@@ -58,5 +58,5 @@ echo "Running tests using Java:"
 java -version
 
 echo "Maven version: $(mvn --version)"
-mvn -e -B  -ntp  verify -P e2e -Dcheckstyle.skip
+mvn -e -B  -ntp  verify -P e2e -P coverage -Dcheckstyle.skip
 echo -e "******************** Tests complete.  ********************\n"
