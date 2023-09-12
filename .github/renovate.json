@@ -1,33 +1,43 @@
 {
   "extends": [
-    "config:base",
+    "config:recommended",
     "helpers:pinGitHubActionDigests"
   ],
   "commitMessagePrefix": "deps: ",
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
-  "rebaseStalePrs": true,
+  "rebaseWhen": "behind-base-branch",
   "dependencyDashboard": true,
-  "semanticCommits": false,
+  "semanticCommits": "disabled",
   "packageRules": [
     {
       "matchPackagePatterns": [".*"],
       "addLabels": ["automerge"]
     },
     {
-      "packageNames":[ "mysql:mysql-connector-java" ],
+      "matchPackageNames": ["mysql:mysql-connector-java"],
       "enabled": false
     },
     {
-      "packageNames": ["com.google.guava:guava"],
+      "matchPackageNames": ["com.google.guava:guava"],
       "allowedVersions": "/.+-android/"
     },
     {
-      "packageNames": ["com.microsoft.sqlserver:mssql-jdbc"],
+      "matchPackageNames": ["com.microsoft.sqlserver:mssql-jdbc"],
       "allowedVersions": "/.+jre8.?/"
     },
     {
-      "packageNames": ["com.google.apis:google-api-services-sqladmin"],
+      "matchPackageNames": ["com.google.apis:google-api-services-sqladmin"],
       "allowedVersions": "/v1beta4-.*/"
+    },
+    {
+      "matchPackagePatterns": [
+        "^io.netty:.*",
+        "^io.projectreactor.netty:.*",
+        "^io.r2dbc:.*",
+        "^io.asyncer:r2dbc-mysql",
+        "^org.postgresql:r2dbc-postgresql"
+      ],
+      "groupName": "netty and r2dbc dependencies"
     }
   ]
 }
