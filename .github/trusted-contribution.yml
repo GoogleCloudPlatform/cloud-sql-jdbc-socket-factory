@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Temporarily disable automatic running of renovate tests in order to
-# manage to control the number of tests running simultaneously.
+annotations:
+  - type: label
+    text: "tests: run"
 
 trustedContributors:
 - renovate-bot
