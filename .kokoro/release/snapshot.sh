@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,33 +15,20 @@
 
 set -eo pipefail
 
-# Start the releasetool reporter
-requirementsFile=$(realpath $(dirname "${BASH_SOURCE[0]}")/../requirements.txt)
-python3 -m pip install --require-hashes -r $requirementsFile
-python3 -m releasetool publish-reporter-script > /tmp/publisher-script; source /tmp/publisher-script
-
 source $(dirname "$0")/common.sh
 source $(dirname "$0")/../common.sh
 MAVEN_SETTINGS_FILE=$(realpath $(dirname "$0")/../../)/settings.xml
 pushd $(dirname "$0")/../../
 
+# ensure we're trying to push a snapshot (no-result returns non-zero exit code)
+grep SNAPSHOT versions.txt
+
 setup_environment_secrets
 create_settings_xml_file "settings.xml"
 
-# attempt to stage 3 times with exponential backoff (starting with 10 seconds)
-retry_with_backoff 3 10 \
-  mvn clean deploy -B \
-    --settings ${MAVEN_SETTINGS_FILE} \
-    -DskipTests=true \
-    -Dclirr.skip=true \
-    -DperformRelease=true \
-    -Dgpg.executable=gpg \
-    -Dgpg.passphrase=${GPG_PASSPHRASE} \
-    -Dgpg.homedir=${GPG_HOMEDIR}
-
-if [[ -n "${AUTORELEASE_PR}" ]]
-then
-  mvn nexus-staging:release -B \
-    -DperformRelease=true \
-    --settings=settings.xml
-fi
+mvn clean deploy -B \
+  --settings ${MAVEN_SETTINGS_FILE} \
+  -DperformRelease=true \
+  -Dgpg.executable=gpg \
+  -Dgpg.passphrase=${GPG_PASSPHRASE} \
+  -Dgpg.homedir=${GPG_HOMEDIR}

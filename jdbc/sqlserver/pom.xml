@@ -22,10 +22,11 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.13.2-SNAPSHOT</version>
+    <version>1.13.2-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+    <version>1.13.2-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-jdbc-sqlserver:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL JDBC Connector for SQL Server</name>
@@ -59,7 +60,7 @@
       <dependency>
         <groupId>com.google.auto.value</groupId>
         <artifactId>auto-value-annotations</artifactId>
-        <version>1.10.2</version>
+        <version>1.10.4</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -94,12 +95,12 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.16</version>
+        <version>2.21.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-ffi</artifactId>
-        <version>2.2.14</version>
+        <version>2.2.15</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -128,7 +129,7 @@
     <dependency>
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
-      <version>12.2.0.jre8</version>
+      <version>12.4.1.jre8</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -172,7 +173,7 @@
         <dependency>
           <groupId>com.microsoft.sqlserver</groupId>
           <artifactId>mssql-jdbc</artifactId>
-          <version>12.2.0.jre8</version>
+          <version>12.4.1.jre8</version>
         </dependency>
       </dependencies>
     </profile>

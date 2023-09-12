@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.13.2-SNAPSHOT</version>
+    <version>1.13.2-SNAPSHOT</version><!-- {x-version-update:cloud-sql-jdbc-socket-factory:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
@@ -109,7 +109,7 @@
       <dependency>
         <groupId>com.google.auto.value</groupId>
         <artifactId>auto-value-annotations</artifactId>
-        <version>1.10.2</version>
+        <version>1.10.4</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -154,12 +154,12 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.16</version>
+        <version>2.21.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-ffi</artifactId>
-        <version>2.2.14</version>
+        <version>2.2.15</version>
       </dependency>
       <dependency>
         <groupId>org.graalvm.sdk</groupId>
