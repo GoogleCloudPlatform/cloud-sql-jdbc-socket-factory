@@ -38,6 +38,49 @@
         "^org.postgresql:r2dbc-postgresql"
       ],
       "groupName": "netty and r2dbc dependencies"
+    },
+    {
+      "matchPackagePatterns": [
+        "^attrs",
+        "^cachetools",
+        "^certifi",
+        "^cffi",
+        "^charset-normalizer",
+        "^click",
+        "^colorlog",
+        "^cryptography",
+        "^gcp-docuploader",
+        "^gcp-releasetool",
+        "^google-api-core",
+        "^google-auth",
+        "^google-cloud",
+        "^google-crc32c",
+        "^google-resumable-media",
+        "^googleapis-common-protos",
+        "^idna",
+        "^importlib-metadata",
+        "^jeepney",
+        "^Jinja2",
+        "^keyring",
+        "^MarkupSafe",
+        "^packaging",
+        "^protobuf",
+        "^pyasn1",
+        "^pycparser",
+        "^PyJWT",
+        "^pyparsing",
+        "^pyperclip",
+        "^python-dateutil",
+        "^requests",
+        "^rsa",
+        "^secretstorage",
+        "^six",
+        "^typing-extensions",
+        "^urllib3",
+        "^wheel",
+        "^zipp"
+      ],
+      "groupName": "python dependencies"
     }
   ]
 }
