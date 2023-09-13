@@ -150,9 +150,9 @@ google-cloud-core==2.3.3 \
     --hash=sha256:37b80273c8d7eee1ae816b3a20ae43585ea50506cb0e60f3cf5be5f87f1373cb \
     --hash=sha256:fbd11cad3e98a7e5b0343dc07cb1039a5ffd7a5bb96e1f1e27cee4bda4a90863
     # via google-cloud-storage
-google-cloud-storage==2.0.0 \
-    --hash=sha256:a57a15aead0f9dfbd4381f1bfdbe8bf89818a4bd75bab846cafcefb2db846c47 \
-    --hash=sha256:ec4be60bb223a3a960f0d01697d849b86d91cad815a84915a32ed3635e93a5e7
+google-cloud-storage==2.10.0 \
+    --hash=sha256:934b31ead5f3994e5360f9ff5750982c5b6b11604dc072bc452c25965e076dc7 \
+    --hash=sha256:9433cf28801671de1c80434238fb1e7e4a1ba3087470e90f70c928ea77c2b9d7
     # via gcp-docuploader
 google-crc32c==1.5.0 \
     --hash=sha256:024894d9d3cfbc5943f8f230e23950cd4906b2fe004c72e29b209420a1e6b05a \
