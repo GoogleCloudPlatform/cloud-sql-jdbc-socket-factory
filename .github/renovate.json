@@ -80,7 +80,7 @@
         "^wheel",
         "^zipp"
       ],
-      "groupName": "python dependencies"
+      "groupName": "python dependencies for kokoro"
     }
   ]
 }
