@@ -81,6 +81,20 @@
         "^zipp"
       ],
       "groupName": "python dependencies for kokoro"
+    },
+    {
+      "matchPackagePatterns": [
+        "^actions/checkout",
+        "^actions/github-script",
+        "^actions/setup-java",
+        "^actions/upload-artifact",
+        "^github/codeql-action",
+        "^google-github-actions/auth",
+        "^google-github-actions/get-secretmanager-secrets",
+        "^micnncim/action-label-syncer",
+        "^ossf/scorecard-action"
+      ],
+      "groupName": "dependencies for github"
     }
   ]
 }
