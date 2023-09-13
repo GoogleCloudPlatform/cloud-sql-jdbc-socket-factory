@@ -31,8 +31,10 @@ class RetryingCallable<T> implements Callable<T> {
 
   /** The callable that should be retried. */
   private final Callable<T> callable;
+
   /** The number of times to attempt to retry. */
   private final int retryCount;
+
   /** The duration to sleep after a failed retry attempt. */
   private final Duration sleepDuration;
 

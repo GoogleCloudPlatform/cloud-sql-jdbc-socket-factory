@@ -33,6 +33,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
 
   /** Postgres driver option value. */
   private static final String POSTGRESQL_DRIVER = "postgresql";
+
   /** Legacy postgres driver option value. */
   private static final String LEGACY_POSTGRESQL_DRIVER = "postgres";
 

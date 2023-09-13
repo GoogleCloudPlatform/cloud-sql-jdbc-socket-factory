@@ -46,7 +46,9 @@ public class SqlAdminApiFetcherTest {
 
   @Test
   public void testFetchInstanceData_returnsIpAddresses()
-      throws ExecutionException, InterruptedException, GeneralSecurityException,
+      throws ExecutionException,
+          InterruptedException,
+          GeneralSecurityException,
           OperatorCreationException {
     MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
     SqlAdminApiFetcher fetcher =
@@ -70,7 +72,9 @@ public class SqlAdminApiFetcherTest {
 
   @Test
   public void testFetchInstanceData_returnsPscForNonIpDatabase()
-      throws ExecutionException, InterruptedException, GeneralSecurityException,
+      throws ExecutionException,
+          InterruptedException,
+          GeneralSecurityException,
           OperatorCreationException {
 
     MockAdminApi mockAdminApi = new MockAdminApi();
