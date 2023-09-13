@@ -250,9 +250,9 @@ Jinja2==3.1.2 \
     --hash=sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852 \
     --hash=sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61
     # via gcp-releasetool
-keyring==23.4.1 \
-    --hash=sha256:17e49fb0d6883c2b4445359434dba95aad84aabb29bbff044ad0ed7100232eca \
-    --hash=sha256:89cbd74d4683ed164c8082fb38619341097741323b3786905c6dac04d6915a55
+keyring==23.13.1 \
+    --hash=sha256:771ed2a91909389ed6148631de678f82ddc73737d85a927f382a8a1b157898cd \
+    --hash=sha256:ba2e15a9b35e21908d0aaf4e0a47acc52d6ae33444df0da2b49d41a46ef6d678
     # via gcp-releasetool
 MarkupSafe==2.1.3 \
     --hash=sha256:05fb21170423db021895e1ea1e1f3ab3adb85d1c2333cbc2310f2a26bc77272e \
