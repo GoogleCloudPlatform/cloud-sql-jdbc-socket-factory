@@ -21,6 +21,8 @@ function setJava() {
   export PATH=${JAVA_HOME}/bin:$PATH
 }
 
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # include common functions
 source ${scriptDir}/common.sh
 

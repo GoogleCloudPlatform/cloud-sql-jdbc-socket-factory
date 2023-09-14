@@ -16,6 +16,8 @@
 # `-e` enables the script to automatically fail when a command fails
 set -e
 
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # include common functions
 source ${scriptDir}/common.sh
 
