@@ -13,52 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function retry_with_backoff {
-    attempts_left=$1
-    sleep_seconds=$2
-    shift 2
-    command=$@
-
-
-    # store current flag state
-    flags=$-
-    
-    # allow a failures to continue
-    set +e
-    ${command}
-    exit_code=$?
-
-    # restore "e" flag
-    if [[ ${flags} =~ e ]]
-    then set -e
-    else set +e
-    fi
-
-    if [[ $exit_code == 0 ]]
-    then
-        return 0
-    fi
-
-    # failure
-    if [[ ${attempts_left} > 0 ]]
-    then
-        echo "failure (${exit_code}), sleeping ${sleep_seconds}..."
-        sleep ${sleep_seconds}
-        new_attempts=$((${attempts_left} - 1))
-        new_sleep=$((${sleep_seconds} * 2))
-        retry_with_backoff ${new_attempts} ${new_sleep} ${command}
-    fi
-
-    return $exit_code
-}
-
-## Helper functionss
-function now() { date +"%Y-%m-%d %H:%M:%S" | tr -d '\n'; }
-function msg() { println "$*" >&2; }
-function println() { printf '%s\n' "$(now) $*"; }
-
-## Helper comment to trigger updated repo dependency release
-
 function determineMavenOpts() {
   local javaVersion=$(
     # filter down to the version line, then pull out the version between quotes,

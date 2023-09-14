@@ -21,6 +21,11 @@ function setJava() {
   export PATH=${JAVA_HOME}/bin:$PATH
 }
 
+# include common functions
+source ${scriptDir}/common.sh
+
+export MAVEN_OPTS=$(determineMavenOpts)
+
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x

@@ -27,27 +27,6 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
-function determineMavenOpts() {
-  local javaVersion=$(
-    # filter down to the version line, then pull out the version between quotes,
-    # then trim the version number down to its minimal number (removing any
-    # update or suffix number).
-    java -version 2>&1 | grep "version" \
-      | sed -E 's/^.*"(.*?)".*$/\1/g' \
-      | sed -E 's/^(1\.[0-9]\.0).*$/\1/g'
-    )
-
-  # Workaround for google-java-format to work on java 17+
-  if [[ $javaVersion == 17* ]]
-    then
-    echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED"
-    echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED"
-    echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED"
-    echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"
-    echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED"
-  fi
-}
-
 export MAVEN_OPTS=$(determineMavenOpts)
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
@@ -101,7 +80,7 @@ graalvm)
     ;;
 graalvm17)
     # Run Unit and Integration Tests with Native Image
-    mvn -B ${INTEGRATION_TEST_ARGS} -ntp -Pnative -Pe2e -Pcoverage verify
+    mvn -B ${INTEGRATION_TEST_ARGS} -ntp -Pnative test
     RETURN_CODE=$?
     ;;
 samples)

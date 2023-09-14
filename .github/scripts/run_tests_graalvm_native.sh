@@ -16,6 +16,11 @@
 # `-e` enables the script to automatically fail when a command fails
 set -e
 
+# include common functions
+source ${scriptDir}/common.sh
+
+export MAVEN_OPTS=$(determineMavenOpts)
+
 echo -e "******************** Installing modules... ********************\n"
 mvn -e -B install -DskipTests
 echo -e "******************** Installation complete.  ********************\n"
