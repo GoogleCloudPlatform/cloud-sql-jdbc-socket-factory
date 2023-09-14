@@ -38,7 +38,8 @@ function determineMavenOpts() {
     )
 
   # Workaround for google-java-format to work on java 17+
-  if [[ $javaVersion == 17* ]] then
+  if [[ $javaVersion == 17* ]]
+    then
     echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED"
     echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED"
     echo -n " --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED"
@@ -100,7 +101,7 @@ graalvm)
     ;;
 graalvm17)
     # Run Unit and Integration Tests with Native Image
-    mvn -B ${INTEGRATION_TEST_ARGS} -ntp -Pnative test
+    mvn -B ${INTEGRATION_TEST_ARGS} -ntp -Pnative -Pe2e -Pcoverage verify
     RETURN_CODE=$?
     ;;
 samples)

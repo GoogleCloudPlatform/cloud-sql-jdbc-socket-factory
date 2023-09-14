@@ -120,7 +120,8 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
-      run: ./.github/scripts/run_tests.sh
+        JOB_TYPE: integration
+      run: .kokoro/build.sh
       shell: bash
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
@@ -249,7 +250,8 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
-      run: ./.github/scripts/run_tests.sh
+        JOB_TYPE: integration
+      run: .kokoro/build.sh
       shell: bash
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
@@ -365,7 +367,8 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
-      run: ./.github/scripts/run_tests_graalvm_native.sh
+        JOB_TYPE: graalvm17
+      run: .kokoro/build.sh
       shell: bash
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
