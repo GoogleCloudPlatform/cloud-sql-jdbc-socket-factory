@@ -310,7 +310,6 @@
         <configuration>
           <comparisonVersion>1.14.0</comparisonVersion>
         </configuration>
-
       </plugin>
     </plugins>
   </build>
