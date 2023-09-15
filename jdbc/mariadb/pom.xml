@@ -91,6 +91,12 @@
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
         <version>1.43.3</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
