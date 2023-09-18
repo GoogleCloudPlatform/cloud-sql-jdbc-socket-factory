@@ -422,9 +422,17 @@ public class CloudSqlInstanceTest {
       Thread.yield();
     }
 
-    // getSslData again, and assert the refresh operation completed exactly once
+    // getSslData until the refresh operation returns the newer
+    // SslData instance
     SslData d2 = instance.getSslData(1000);
+    for (int i = 0; i < 10 && d2 != data.getSslData(); i++) {
+      Thread.sleep(10);
+    }
+
+    // assert the refresh operation completed exactly once after
+    // forceRefresh was called multiple times.
     assertThat(d2).isSameInstanceAs(data.getSslData());
+    assertThat(refreshCount.get()).isEqualTo(2);
   }
 
   @Test
