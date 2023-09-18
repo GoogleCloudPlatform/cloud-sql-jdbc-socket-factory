@@ -23,6 +23,11 @@
   <packaging>pom</packaging>
   <version>1.14.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
 
+  <parent>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-shared-config</artifactId>
+    <version>1.5.7</version>
+  </parent>
 
   <name>Cloud SQL JDBC Socket Factory</name>
   <description>
