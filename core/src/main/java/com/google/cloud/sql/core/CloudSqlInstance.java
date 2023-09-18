@@ -154,7 +154,8 @@ class CloudSqlInstance {
         if (currentRefreshFailure != null) {
           throw new RuntimeException(
               String.format(
-                      "Unable to get valid instance data within %d ms. Last refresh attempt failed:",
+                      "Unable to get valid instance data within %d ms."
+                          + " Last refresh attempt failed:",
                       timeoutMs)
                   + currentRefreshFailure.getMessage(),
               currentRefreshFailure);
