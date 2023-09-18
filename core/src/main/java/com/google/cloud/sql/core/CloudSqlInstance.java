@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,8 @@ import javax.net.ssl.SSLSocket;
 class CloudSqlInstance {
 
   private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
-  public static final int MAX_INSTANCE_DATA_WAIT_SEC = 30;
+
+  public static final int MAX_INSTANCE_DATA_WAIT_MS = 30000;
 
   private final ListeningScheduledExecutorService executor;
   private final InstanceDataSupplier instanceDataSupplier;
@@ -110,26 +112,59 @@ class CloudSqlInstance {
 
   /**
    * Returns the current data related to the instance from {@link #startRefreshAttempt()}. May block
-   * if no valid data is currently available.
+   * if no valid data is currently available. This method is called by an application thread when it
+   * is trying to create a new connection to the database. (It is not called by a
+   * ListeningScheduledExecutorService task.) So it is OK to block waiting for a future to complete.
+   *
+   * <p>When no refresh attempt is in progress, this returns immediately. Otherwise, it waits up to
+   * 30 seconds. If a refresh attempt succeeds, returns immediately at the end of that successful
+   * attempt. If no attempts succeed within the 30 second timeout, throws a RuntimeException with
+   * the exception from the last failed refresh attempt as the cause.
+   *
+   * <p>The behavior of this method has changed from earlier releases. In version 1.14.1 and
+   * earlier, When no refresh attempt is in progress, returns immediately. Otherwise, blocks
+   * application thread until the current refresh attempt finishes. If the refresh attempt succeeds,
+   * this returns the InstanceData. If not, this throws a RuntimeException, while a new refresh
+   * attempt is submitted to the executor in the background.
    */
-  private InstanceData getInstanceData() {
+  private InstanceData getInstanceData(long timeoutMs) {
     ListenableFuture<InstanceData> instanceDataFuture;
     synchronized (instanceDataGuard) {
       instanceDataFuture = currentInstanceData;
     }
     try {
-      return instanceDataFuture.get(MAX_INSTANCE_DATA_WAIT_SEC, TimeUnit.SECONDS);
+
+      // If the currentInstanceData has expired, then force refresh (which will balk if a refresh
+      // is already running) and make this and future requests to getInstanceData wait on the
+      // refresh operation to complete.
+      if (instanceDataFuture.isDone()) {
+        Date expiration = instanceDataFuture.get().getExpiration();
+        if (expiration.before(new Date())) {
+          forceRefresh();
+          synchronized (instanceDataGuard) {
+            currentInstanceData = nextInstanceData;
+            instanceDataFuture = currentInstanceData;
+          }
+        }
+      }
+
+      return instanceDataFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       synchronized (instanceDataGuard) {
         if (currentRefreshFailure != null) {
           throw new RuntimeException(
-              "Unable to get valid instance data within 30 seconds. Last refresh attempt failed:"
+              String.format(
+                      "Unable to get valid instance data within %d ms. Last refresh attempt failed:",
+                      timeoutMs)
                   + currentRefreshFailure.getMessage(),
               currentRefreshFailure);
         }
       }
       throw new RuntimeException(
-          "Unable to get valid instance data within 30 seconds. No refresh has completed.", e);
+          String.format(
+              "Unable to get valid instance data within %d ms. No refresh has completed.",
+              timeoutMs),
+          e);
     } catch (ExecutionException | InterruptedException ex) {
       Throwable cause = ex.getCause();
       Throwables.throwIfUnchecked(cause);
@@ -142,7 +177,11 @@ class CloudSqlInstance {
    * block until required instance data is available.
    */
   SSLSocket createSslSocket() throws IOException {
-    return (SSLSocket) getInstanceData().getSslContext().getSocketFactory().createSocket();
+    return (SSLSocket)
+        getInstanceData(MAX_INSTANCE_DATA_WAIT_MS)
+            .getSslContext()
+            .getSocketFactory()
+            .createSocket();
   }
 
   /**
@@ -156,7 +195,7 @@ class CloudSqlInstance {
    *     preferences.
    */
   String getPreferredIp(List<String> preferredTypes) {
-    Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
+    Map<String, String> ipAddrs = getInstanceData(MAX_INSTANCE_DATA_WAIT_MS).getIpAddrs();
     for (String ipType : preferredTypes) {
       String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
@@ -198,6 +237,10 @@ class CloudSqlInstance {
    * future that resolves once a valid InstanceData has been acquired. This sets up a chain of
    * futures that will 1. Acquire a rate limiter. 2. Attempt to fetch instance data. 3. Schedule the
    * next attempt to get instance data based on the success/failure of this attempt.
+   *
+   * <p>This behavior changed. In version 1.14.1 and earlier, this method was called
+   * performRefresh(). It used to block until either (1) an InstanceData was retrieved or (2) an
+   * attempt failed, and an exception was thrown.
    *
    * @see com.google.cloud.sql.core.CloudSqlInstance#handleRefreshResult(
    *     com.google.common.util.concurrent.ListenableFuture)
@@ -298,7 +341,11 @@ class CloudSqlInstance {
   }
 
   SslData getSslData() {
-    return getInstanceData().getSslData();
+    return getInstanceData(MAX_INSTANCE_DATA_WAIT_MS).getSslData();
+  }
+
+  SslData getSslData(long timeoutMs) {
+    return getInstanceData(timeoutMs).getSslData();
   }
 
   ListenableFuture<InstanceData> getNext() {

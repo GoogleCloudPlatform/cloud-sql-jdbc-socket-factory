@@ -77,9 +77,9 @@ public class CloudSqlInstanceConcurrencyTest {
     // to cause a deadlock.
     ListenableFuture<List<Object>> allData =
         Futures.allAsList(
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData),
-            executor.submit(instance::getSslData));
+            executor.submit(() -> instance.getSslData()),
+            executor.submit(() -> instance.getSslData()),
+            executor.submit(() -> instance.getSslData()));
 
     List<Object> d = allData.get();
     assertThat(d.get(0)).isNotNull();
@@ -115,9 +115,9 @@ public class CloudSqlInstanceConcurrencyTest {
           // Attempt to get sslData 3 times, simultaneously, in different threads.
           ListenableFuture<List<Object>> allData2 =
               Futures.allAsList(
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData),
-                  executor.submit(instance::getSslData));
+                  executor.submit(() -> instance.getSslData()),
+                  executor.submit(() -> instance.getSslData()),
+                  executor.submit(() -> instance.getSslData()));
 
           // This should return immediately
           allData2.get();
