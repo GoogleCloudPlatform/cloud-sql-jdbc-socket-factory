@@ -302,6 +302,132 @@ public class CloudSqlInstanceTest {
   }
 
   @Test
+  public void testThatForceRefreshBalksWhenAScheduledRefreshIsInProgress() throws Exception {
+    InstanceData aboutToExpireData =
+        new InstanceData(
+            null,
+            new SslData(null, null, null),
+            Date.from(Instant.now().plus(10, ChronoUnit.MILLIS)));
+
+    InstanceData data =
+        new InstanceData(
+            null,
+            new SslData(null, null, null),
+            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition cond = new PauseCondition();
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              switch (c) {
+                case 0:
+                  refreshCount.incrementAndGet();
+                  return Futures.immediateFuture(aboutToExpireData);
+                case 1:
+                  cond.pause();
+                  refreshCount.incrementAndGet();
+                  return Futures.immediateFuture(data);
+                default:
+                  return Futures.immediateFuture(data);
+              }
+            },
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            TEST_RATE_LIMITER);
+
+    // Get the first data that is about to expire
+    SslData d = instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(d).isSameInstanceAs(aboutToExpireData.getSslData());
+
+    // call forceRefresh twice, this should only result in 1 refresh fetch
+    instance.forceRefresh();
+    instance.forceRefresh();
+
+    // Allow the refresh operation to complete
+    cond.proceed();
+    cond.waitForPauseToEnd(1000);
+
+    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // has been retrieved.
+
+    // getSslData again, and assert the refresh operation completed.
+    SslData d2 = instance.getSslData(5000);
+    assertThat(d2).isSameInstanceAs(data.getSslData());
+    assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void testThatForceRefreshBalksWhenAForceRefreshIsInProgress() throws Exception {
+    InstanceData aboutToExpireData =
+        new InstanceData(
+            null,
+            new SslData(null, null, null),
+            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+
+    InstanceData data =
+        new InstanceData(
+            null,
+            new SslData(null, null, null),
+            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition cond = new PauseCondition();
+
+    CloudSqlInstance instance =
+        new CloudSqlInstance(
+            "project:region:instance",
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              switch (c) {
+                case 0:
+                  refreshCount.incrementAndGet();
+                  return Futures.immediateFuture(aboutToExpireData);
+                case 1:
+                  cond.pause();
+                  refreshCount.incrementAndGet();
+                  return Futures.immediateFuture(data);
+                default:
+                  return Futures.immediateFuture(data);
+              }
+            },
+            AuthType.PASSWORD,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            TEST_RATE_LIMITER);
+
+    // Get the first data that is about to expire
+    SslData d = instance.getSslData();
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(d).isSameInstanceAs(aboutToExpireData.getSslData());
+
+    // call forceRefresh twice, this should only result in 1 refresh fetch
+    instance.forceRefresh();
+    instance.forceRefresh();
+
+    // Allow the refresh operation to complete
+    cond.proceed();
+    cond.waitForPauseToEnd(1000);
+
+    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // has been retrieved.
+    while (refreshCount.get() < 2) {
+      Thread.yield();
+    }
+
+    // getSslData again, and assert the refresh operation completed exactly once
+    SslData d2 = instance.getSslData(1000);
+    assertThat(d2).isSameInstanceAs(data.getSslData());
+  }
+
+  @Test
   public void testRefreshRetriesOnAfterFailedAttempts() throws Exception {
     InstanceData aboutToExpireData =
         new InstanceData(

@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -31,7 +32,10 @@ class PauseCondition {
 
   final Lock lock = new ReentrantLock();
   final Condition allowContinue = lock.newCondition();
+  final Condition proceeded = lock.newCondition();
+
   final AtomicBoolean allowProceed = new AtomicBoolean(false);
+  final AtomicBoolean afterPause = new AtomicBoolean(false);
 
   /**
    * Waits for the condition to become true, signaling the thread that is blocked on pause() to
@@ -66,7 +70,19 @@ class PauseCondition {
       while (!allowProceed.get()) {
         allowContinue.await();
       }
-      allowProceed.set(false);
+      afterPause.set(true);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public void waitForPauseToEnd(long waitMs) throws InterruptedException {
+    try {
+      lock.lock();
+      if (afterPause.get()) {
+        return;
+      }
+      proceeded.await(waitMs, TimeUnit.MILLISECONDS);
     } finally {
       lock.unlock();
     }

@@ -70,7 +70,7 @@ class CloudSqlInstance {
   private ListenableFuture<InstanceData> nextInstanceData;
 
   @GuardedBy("instanceDataGuard")
-  private boolean forceRefreshRunning;
+  private boolean refreshRunning;
 
   @GuardedBy("instanceDataGuard")
   private Throwable currentRefreshFailure;
@@ -131,23 +131,25 @@ class CloudSqlInstance {
     ListenableFuture<InstanceData> instanceDataFuture;
     synchronized (instanceDataGuard) {
       instanceDataFuture = currentInstanceData;
-    }
-    try {
-
       // If the currentInstanceData has expired, then force refresh (which will balk if a refresh
       // is already running) and make this and future requests to getInstanceData wait on the
       // refresh operation to complete.
       if (instanceDataFuture.isDone()) {
-        Date expiration = instanceDataFuture.get().getExpiration();
-        if (expiration.before(new Date())) {
-          forceRefresh();
-          synchronized (instanceDataGuard) {
+        Date expiration;
+        try {
+          expiration = instanceDataFuture.get().getExpiration();
+          if (expiration == null || expiration.before(new Date())) {
+            forceRefresh();
             currentInstanceData = nextInstanceData;
             instanceDataFuture = currentInstanceData;
           }
+        } catch (ExecutionException | InterruptedException e) {
+          forceRefresh();
         }
       }
+    }
 
+    try {
       return instanceDataFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       synchronized (instanceDataGuard) {
@@ -216,13 +218,11 @@ class CloudSqlInstance {
    */
   void forceRefresh() {
     synchronized (instanceDataGuard) {
-      // Don't force a refresh until the current forceRefresh operation
+      // Don't force a refresh until the current refresh operation
       // has produced a successful refresh.
-      if (forceRefreshRunning) {
+      if (refreshRunning) {
         return;
       }
-
-      forceRefreshRunning = true;
       nextInstanceData.cancel(false);
       logger.fine(
           String.format(
@@ -247,7 +247,6 @@ class CloudSqlInstance {
    *     com.google.common.util.concurrent.ListenableFuture)
    */
   private ListenableFuture<InstanceData> startRefreshAttempt() {
-
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     ListenableFuture rateLimit =
         executor.submit(
@@ -268,13 +267,18 @@ class CloudSqlInstance {
     ListenableFuture<InstanceData> dataFuture =
         Futures.whenAllComplete(rateLimit)
             .callAsync(
-                () ->
-                    instanceDataSupplier.getInstanceData(
-                        this.instanceName,
-                        this.accessTokenSupplier,
-                        this.authType,
-                        executor,
-                        keyPair),
+                () -> {
+                  synchronized (instanceDataGuard) {
+                    refreshRunning = true;
+                  }
+
+                  return instanceDataSupplier.getInstanceData(
+                      this.instanceName,
+                      this.accessTokenSupplier,
+                      this.authType,
+                      executor,
+                      keyPair);
+                },
                 executor);
 
     // Finally, reschedule refresh after getInstanceData is complete.
@@ -310,7 +314,7 @@ class CloudSqlInstance {
 
       synchronized (instanceDataGuard) {
         // Refresh completed successfully, reset forceRefreshRunning.
-        forceRefreshRunning = false;
+        refreshRunning = false;
         currentRefreshFailure = null;
         currentInstanceData = Futures.immediateFuture(data);
 
