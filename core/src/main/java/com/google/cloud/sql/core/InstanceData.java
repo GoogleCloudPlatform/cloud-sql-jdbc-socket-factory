@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 import javax.net.ssl.SSLContext;
 
@@ -26,16 +26,16 @@ class InstanceData {
   private final Metadata metadata;
   private final SSLContext sslContext;
   private final SslData sslData;
-  private final Date expiration;
+  private final Instant expiration;
 
-  InstanceData(Metadata metadata, SslData sslData, Date expiration) {
+  InstanceData(Metadata metadata, SslData sslData, Instant expiration) {
     this.metadata = metadata;
     this.sslData = sslData;
     this.sslContext = sslData.getSslContext();
     this.expiration = expiration;
   }
 
-  Date getExpiration() {
+  Instant getExpiration() {
     return expiration;
   }
 

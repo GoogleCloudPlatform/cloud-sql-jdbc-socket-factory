@@ -23,6 +23,7 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Date;
 
 /** Factory for creating {@link Credential}s for interaction with Cloud SQL Admin API. */
@@ -60,7 +61,7 @@ public interface CredentialFactory {
           new AccessToken(
               credential.getAccessToken(),
               credential.getExpirationTimeMilliseconds() != null
-                  ? new Date(credential.getExpirationTimeMilliseconds())
+                  ? Date.from(Instant.ofEpochMilli(credential.getExpirationTimeMilliseconds()))
                   : null);
 
       return new GoogleCredentials(accessToken) {
@@ -71,7 +72,7 @@ public interface CredentialFactory {
           return new AccessToken(
               credential.getAccessToken(),
               credential.getExpirationTimeMilliseconds() != null
-                  ? new Date(credential.getExpirationTimeMilliseconds())
+                  ? Date.from(Instant.ofEpochMilli(credential.getExpirationTimeMilliseconds()))
                   : null);
         }
       };

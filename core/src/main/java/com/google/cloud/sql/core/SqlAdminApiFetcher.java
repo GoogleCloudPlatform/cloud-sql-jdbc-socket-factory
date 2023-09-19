@@ -43,7 +43,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -140,15 +140,18 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
                   // Get expiration value for new cert
                   Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
                   X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-                  Date expiration = x509Certificate.getNotAfter();
+                  Instant expiration = x509Certificate.getNotAfter().toInstant();
 
                   if (authType == AuthType.IAM) {
                     expiration =
                         DefaultAccessTokenSupplier.getTokenExpirationTime(Futures.getDone(token))
                             .filter(
                                 tokenExpiration ->
-                                    x509Certificate.getNotAfter().after(tokenExpiration))
-                            .orElse(x509Certificate.getNotAfter());
+                                    x509Certificate
+                                        .getNotAfter()
+                                        .toInstant()
+                                        .isAfter(tokenExpiration))
+                            .orElse(x509Certificate.getNotAfter().toInstant());
                   }
 
                   logger.fine(String.format("[%s] INSTANCE DATA DONE", instanceName));

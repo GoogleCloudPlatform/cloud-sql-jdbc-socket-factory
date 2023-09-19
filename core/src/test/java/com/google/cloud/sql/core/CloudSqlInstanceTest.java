@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import java.security.KeyPair;
-import java.sql.Date;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -65,8 +64,7 @@ public class CloudSqlInstanceTest {
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() throws Exception {
     SslData sslData = new SslData(null, null, null);
-    InstanceData data =
-        new InstanceData(null, sslData, Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+    InstanceData data = new InstanceData(null, sslData, Instant.now().plus(1, ChronoUnit.HOURS));
 
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
     // initialize instance after mocks are set up
@@ -128,9 +126,7 @@ public class CloudSqlInstanceTest {
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               refreshCount.incrementAndGet();
               return new InstanceData(
-                  null,
-                  new SslData(null, null, null),
-                  Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+                  null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -170,7 +166,7 @@ public class CloudSqlInstanceTest {
                     "PSC", "abcde.12345.us-central1.sql.goog"),
                 null),
             sslData,
-            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+            Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
 
     InstanceDataSupplier instanceDataSupplier =
@@ -208,7 +204,7 @@ public class CloudSqlInstanceTest {
         new InstanceData(
             new Metadata(ImmutableMap.of("PUBLIC", "10.1.2.3"), null),
             sslData,
-            Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+            Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
 
     InstanceDataSupplier instanceDataSupplier =
