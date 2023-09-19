@@ -63,9 +63,6 @@ public class CloudSqlInstanceTest {
 
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() throws Exception {
-    SslData sslData = new SslData(null, null, null);
-    InstanceData data = new InstanceData(null, sslData, Instant.now().plus(1, ChronoUnit.HOURS));
-
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
     // initialize instance after mocks are set up
     CloudSqlInstance instance =
