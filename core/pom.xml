@@ -118,7 +118,7 @@
       </dependency>
       <dependency>
         <groupId>org.graalvm.sdk</groupId>
-        <artifactId>graal-sdk</artifactId>
+        <artifactId>nativeimage</artifactId>
         <version>${graal-sdk.version}</version>
       </dependency>
       <dependency>
@@ -224,7 +224,7 @@
 
     <dependency>
       <groupId>org.graalvm.sdk</groupId>
-      <artifactId>graal-sdk</artifactId>
+      <artifactId>nativeimage</artifactId>
       <scope>provided</scope>
     </dependency>
     <!-- GAX provides native-image metadata for core Google libraries, such as
