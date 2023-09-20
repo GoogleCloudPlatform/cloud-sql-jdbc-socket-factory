@@ -38,6 +38,7 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
@@ -47,9 +48,9 @@ import org.junit.Test;
 
 public class DefaultAccessTokenSupplierTest {
 
-  private final Date now = new Date();
-  private final Date past = Date.from(now.toInstant().plus(-1, ChronoUnit.HOURS));
-  private final Date future = Date.from(now.toInstant().plus(1, ChronoUnit.HOURS));
+  private final Instant now = Instant.now();
+  private final Instant past = now.plus(-1, ChronoUnit.HOURS);
+  private final Instant future = now.plus(1, ChronoUnit.HOURS);
 
   private GoogleCredentials scopedCredentials;
   private volatile int refreshCounter = 0;
@@ -80,7 +81,7 @@ public class DefaultAccessTokenSupplierTest {
   public void testWithValidToken() throws Exception {
     // Google credentials can be refreshed
     GoogleCredentials googleCredentials =
-        new GoogleCredentials(new AccessToken("my-token", future)) {
+        new GoogleCredentials(new AccessToken("my-token", Date.from(future))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -131,7 +132,7 @@ public class DefaultAccessTokenSupplierTest {
   public void testThrowsOnExpiredTokenRefreshNotSupported() throws Exception {
 
     GoogleCredentials expiredGoogleCredentials =
-        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+        new GoogleCredentials(new AccessToken("my-expired-token", Date.from(past))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -156,7 +157,7 @@ public class DefaultAccessTokenSupplierTest {
   public void testThrowsOnExpiredTokenRefreshStillExpired() throws Exception {
 
     GoogleCredentials refreshGetsExpiredToken =
-        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+        new GoogleCredentials(new AccessToken("my-expired-token", Date.from(past))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -165,7 +166,7 @@ public class DefaultAccessTokenSupplierTest {
           @Override
           public AccessToken refreshAccessToken() throws IOException {
             refreshCounter++;
-            return new AccessToken("my-still-expired-token", past);
+            return new AccessToken("my-still-expired-token", Date.from(past));
           }
         };
 
@@ -180,7 +181,7 @@ public class DefaultAccessTokenSupplierTest {
   @Test
   public void testValidOnRefreshSucceeded() throws Exception {
     GoogleCredentials refreshableCredentials =
-        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+        new GoogleCredentials(new AccessToken("my-expired-token", Date.from(past))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -189,7 +190,7 @@ public class DefaultAccessTokenSupplierTest {
           @Override
           public AccessToken refreshAccessToken() throws IOException {
             refreshCounter++;
-            return new AccessToken("my-refreshed-token", future);
+            return new AccessToken("my-refreshed-token", Date.from(future));
           }
         };
 
@@ -207,7 +208,7 @@ public class DefaultAccessTokenSupplierTest {
   @Test
   public void testValidOnRefreshFailsSometimes() throws Exception {
     GoogleCredentials refreshableCredentials =
-        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+        new GoogleCredentials(new AccessToken("my-expired-token", Date.from(past))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -220,7 +221,7 @@ public class DefaultAccessTokenSupplierTest {
             if (refreshCounter % 2 == 1) {
               throw new IOException("Fake Connect IOException");
             }
-            return new AccessToken("my-refreshed-token", future);
+            return new AccessToken("my-refreshed-token", Date.from(future));
           }
         };
 
@@ -239,7 +240,7 @@ public class DefaultAccessTokenSupplierTest {
   public void downscopesGoogleCredentials() {
     // Google credentials can be refreshed
     GoogleCredentials googleCredentials =
-        new GoogleCredentials(new AccessToken("my-token", future)) {
+        new GoogleCredentials(new AccessToken("my-token", Date.from(future))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -267,7 +268,7 @@ public class DefaultAccessTokenSupplierTest {
   @Test
   public void throwsErrorForEmptyAccessToken() {
     GoogleCredentials creds =
-        new GoogleCredentials(new AccessToken("", future)) {
+        new GoogleCredentials(new AccessToken("", Date.from(future))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -284,7 +285,7 @@ public class DefaultAccessTokenSupplierTest {
   @Test
   public void throwsErrorForExpiredAccessToken() {
     GoogleCredentials refreshableCredentials =
-        new GoogleCredentials(new AccessToken("my-expired-token", past)) {
+        new GoogleCredentials(new AccessToken("my-expired-token", Date.from(past))) {
           @Override
           public GoogleCredentials createScoped(String... scopes) {
             return scopedCredentials;
@@ -293,7 +294,7 @@ public class DefaultAccessTokenSupplierTest {
           @Override
           public AccessToken refreshAccessToken() throws IOException {
             refreshCounter++;
-            return new AccessToken("my-refreshed-token", past);
+            return new AccessToken("my-refreshed-token", Date.from(past));
           }
         };
 
@@ -346,7 +347,7 @@ public class DefaultAccessTokenSupplierTest {
                 })
             .build();
     credential.setAccessToken("my-token");
-    credential.setExpirationTimeMilliseconds(future.getTime());
+    credential.setExpirationTimeMilliseconds(future.toEpochMilli());
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
@@ -416,7 +417,7 @@ public class DefaultAccessTokenSupplierTest {
             .build();
     credential.setAccessToken("my-token");
     credential.setRefreshToken("refresh-token");
-    credential.setExpirationTimeMilliseconds(past.getTime());
+    credential.setExpirationTimeMilliseconds(past.toEpochMilli());
 
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(
@@ -438,8 +439,10 @@ public class DefaultAccessTokenSupplierTest {
         .isEqualTo(Optional.empty());
     assertThat(
             DefaultAccessTokenSupplier.getTokenExpirationTime(
-                Optional.of(new AccessToken("", past))))
-        .isEqualTo(Optional.of(past));
+                    Optional.of(new AccessToken("", Date.from(past))))
+                .get()
+                .toEpochMilli())
+        .isEqualTo(past.toEpochMilli());
   }
 
   private static class Oauth2CredentialFactory implements CredentialFactory {

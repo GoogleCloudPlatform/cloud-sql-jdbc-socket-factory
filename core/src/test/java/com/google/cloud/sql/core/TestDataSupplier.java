@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.KeyPair;
-import java.sql.Date;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
@@ -42,7 +41,7 @@ class TestDataSupplier implements InstanceDataSupplier {
                   "PSC", "abcde.12345.us-central1.sql.goog"),
               null),
           new SslData(null, null, null),
-          Date.from(Instant.now().plus(1, ChronoUnit.HOURS)));
+          Instant.now().plus(1, ChronoUnit.HOURS));
 
   TestDataSupplier(boolean flaky) {
     this.flaky = flaky;

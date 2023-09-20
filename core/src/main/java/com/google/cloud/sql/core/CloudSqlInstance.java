@@ -202,10 +202,9 @@ class CloudSqlInstance {
       logger.fine(
           String.format(
               "[%s] Refresh Operation: Completed refresh with new certificate expiration at %s.",
-              instanceName, data.getExpiration().toInstant().toString()));
+              instanceName, data.getExpiration().toString()));
       long secondsToRefresh =
-          refreshCalculator.calculateSecondsUntilNextRefresh(
-              Instant.now(), data.getExpiration().toInstant());
+          refreshCalculator.calculateSecondsUntilNextRefresh(Instant.now(), data.getExpiration());
 
       logger.fine(
           String.format(

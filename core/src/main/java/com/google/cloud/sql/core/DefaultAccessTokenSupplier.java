@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
@@ -174,18 +173,8 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
    * @param token the token
    * @return the expiration time, if set.
    */
-  static Optional<Date> getTokenExpirationTime(Optional<AccessToken> token) {
-    return token.flatMap((at) -> Optional.ofNullable(at.getExpirationTime()));
-  }
-
-  /**
-   * Extracts the expiration time from a Credential.
-   *
-   * @param credentials the token
-   * @return the expiration time, if set.
-   */
-  private Optional<Date> getTokenExpirationTime(Credential credentials) {
-    return Optional.ofNullable(credentials.getExpirationTimeMilliseconds()).map(Date::new);
+  static Optional<Instant> getTokenExpirationTime(Optional<AccessToken> token) {
+    return token.flatMap((at) -> Optional.ofNullable(at.getExpirationTime())).map(Date::toInstant);
   }
 
   /**
