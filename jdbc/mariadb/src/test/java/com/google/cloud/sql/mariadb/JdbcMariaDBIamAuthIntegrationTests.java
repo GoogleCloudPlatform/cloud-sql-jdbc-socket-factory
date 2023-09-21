@@ -46,7 +46,6 @@ public class JdbcMariaDBIamAuthIntegrationTests {
   @Rule public Timeout globalTimeout = new Timeout(60, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
-  private String tableName;
 
   @BeforeClass
   public static void checkEnvVars() {

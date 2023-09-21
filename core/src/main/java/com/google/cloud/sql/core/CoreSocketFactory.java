@@ -21,6 +21,7 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -252,13 +253,13 @@ public final class CoreSocketFactory {
    * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
    */
   private static List<String> listIpTypes(String cloudSqlIpTypes) {
-    String[] rawTypes = cloudSqlIpTypes.split(",");
-    ArrayList<String> result = new ArrayList<>(rawTypes.length);
-    for (int i = 0; i < rawTypes.length; i++) {
-      if (rawTypes[i].trim().equalsIgnoreCase("PUBLIC")) {
-        result.add(i, "PRIMARY");
+    List<String> rawTypes = Splitter.on(',').splitToList(cloudSqlIpTypes);
+    ArrayList<String> result = new ArrayList<>(rawTypes.size());
+    for (String type : rawTypes) {
+      if (type.trim().equalsIgnoreCase("PUBLIC")) {
+        result.add("PRIMARY");
       } else {
-        result.add(i, rawTypes[i].trim().toUpperCase());
+        result.add(type.trim().toUpperCase());
       }
     }
     return result;

@@ -43,6 +43,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,18 +54,18 @@ public class DefaultAccessTokenSupplierTest {
   private final Instant future = now.plus(1, ChronoUnit.HOURS);
 
   private GoogleCredentials scopedCredentials;
-  private volatile int refreshCounter = 0;
+  private AtomicInteger refreshCounter;
 
   @Before
   public void setup() throws IOException {
-    refreshCounter = 0;
+    refreshCounter = new AtomicInteger();
 
     // Scoped credentials can't be refreshed.
     scopedCredentials =
         new GoogleCredentials(new AccessToken("my-scoped-token", null)) {
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             throw new IllegalStateException("Refresh not supported");
           }
         };
@@ -89,7 +90,7 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             return super.refreshAccessToken();
           }
         };
@@ -101,7 +102,7 @@ public class DefaultAccessTokenSupplierTest {
 
     assertThat(token.isPresent()).isTrue();
     assertThat(token.get().getTokenValue()).isEqualTo("my-scoped-token");
-    assertThat(refreshCounter).isEqualTo(0);
+    assertThat(refreshCounter.get()).isEqualTo(0);
   }
 
   @Test
@@ -140,7 +141,7 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             return super.refreshAccessToken();
           }
         };
@@ -150,7 +151,7 @@ public class DefaultAccessTokenSupplierTest {
             new GoogleCredentialsFactory(expiredGoogleCredentials), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Error refreshing credentials");
-    assertThat(refreshCounter).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(1);
   }
 
   @Test
@@ -165,7 +166,7 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             return new AccessToken("my-still-expired-token", Date.from(past));
           }
         };
@@ -175,7 +176,7 @@ public class DefaultAccessTokenSupplierTest {
             new GoogleCredentialsFactory(refreshGetsExpiredToken), 1, Duration.ofMillis(10));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("expiration time is in the past");
-    assertThat(refreshCounter).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(1);
   }
 
   @Test
@@ -189,7 +190,7 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             return new AccessToken("my-refreshed-token", Date.from(future));
           }
         };
@@ -202,7 +203,7 @@ public class DefaultAccessTokenSupplierTest {
     assertThat(token.isPresent()).isTrue();
     assertThat(token.get().getTokenValue()).isEqualTo("my-scoped-token");
 
-    assertThat(refreshCounter).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(1);
   }
 
   @Test
@@ -216,9 +217,9 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             // fail the first request and every other request after it
-            if (refreshCounter % 2 == 1) {
+            if (refreshCounter.get() % 2 == 1) {
               throw new IOException("Fake Connect IOException");
             }
             return new AccessToken("my-refreshed-token", Date.from(future));
@@ -233,7 +234,7 @@ public class DefaultAccessTokenSupplierTest {
     assertThat(token.isPresent()).isTrue();
     assertThat(token.get().getTokenValue()).isEqualTo("my-scoped-token");
 
-    assertThat(refreshCounter).isEqualTo(2);
+    assertThat(refreshCounter.get()).isEqualTo(2);
   }
 
   @Test
@@ -293,7 +294,7 @@ public class DefaultAccessTokenSupplierTest {
 
           @Override
           public AccessToken refreshAccessToken() throws IOException {
-            refreshCounter++;
+            refreshCounter.incrementAndGet();
             return new AccessToken("my-refreshed-token", Date.from(past));
           }
         };
@@ -356,7 +357,7 @@ public class DefaultAccessTokenSupplierTest {
 
     assertThat(token.isPresent()).isTrue();
     assertThat(token.get().getTokenValue()).isEqualTo("my-token");
-    assertThat(refreshCounter).isEqualTo(0);
+    assertThat(refreshCounter.get()).isEqualTo(0);
   }
 
   @Test
@@ -398,7 +399,7 @@ public class DefaultAccessTokenSupplierTest {
                         String content = GsonFactory.getDefaultInstance().toString(tr);
                         response.setContent(content);
 
-                        refreshCounter++;
+                        refreshCounter.incrementAndGet();
 
                         return response;
                       }
@@ -426,7 +427,7 @@ public class DefaultAccessTokenSupplierTest {
 
     assertThat(token.isPresent()).isTrue();
     assertThat(token.get().getTokenValue()).isEqualTo("my-refreshed-token");
-    assertThat(refreshCounter).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(1);
   }
 
   @Test
