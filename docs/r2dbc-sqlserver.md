@@ -4,6 +4,7 @@
 
 ### Adding the library as a dependency
 
+<!-- {x-release-please-start-version} -->
 ##### Maven
 Include the following in the project's `pom.xml`: 
 ```maven-pom
@@ -19,6 +20,7 @@ Include the following the project's `build.gradle`
 compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.13.1'
 ```
 *Note: Also include the R2DBC Driver for SQL Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
+<!-- {x-release-please-end} -->
 
 ### Creating the R2DBC URL
 

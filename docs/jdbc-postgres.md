@@ -3,6 +3,7 @@
 
 ### Adding the library as a dependency
 
+<!-- {x-release-please-start-version} -->
 ##### Maven
 Include the following in the project's `pom.xml`:
 ```maven-pom
@@ -19,6 +20,7 @@ Include the following the project's `gradle.build`
 compile 'com.google.cloud.sql:postgres-socket-factory:1.13.1'
 ```
 *Note*: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
+<!-- {x-release-please-end} -->
 
 ### Creating the JDBC URL
 

@@ -2,6 +2,7 @@
 
 ## Setup and Usage
 
+<!-- {x-release-please-start-version} -->
 ### Adding the library as a dependency
 
 **Note**: Use your JDBC driver version to figure out which SocketFactory you should use. If you 
@@ -27,6 +28,7 @@ Include the following the project's `build.gradle`
 ```gradle
 compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.13.1'
 ```
+<!-- {x-release-please-end} -->
 
 ### Creating theJDBC URL
 
