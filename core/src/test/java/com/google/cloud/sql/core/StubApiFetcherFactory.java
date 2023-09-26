@@ -21,7 +21,6 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.SQLAdmin.Builder;
 
 public class StubApiFetcherFactory implements ApiFetcherFactory {
 
@@ -34,7 +33,7 @@ public class StubApiFetcherFactory implements ApiFetcherFactory {
   @Override
   public SqlAdminApiFetcher create(HttpRequestInitializer credentials) {
     SQLAdmin sqlAdmin =
-        new Builder(
+        new SQLAdmin.Builder(
                 httpTransport != null ? httpTransport : new MockHttpTransport(),
                 GsonFactory.getDefaultInstance(),
                 credentials)

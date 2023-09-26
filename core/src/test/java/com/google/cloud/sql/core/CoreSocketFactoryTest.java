@@ -148,13 +148,12 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
     try {
 
-      Socket socket =
-          coreSocketFactory.createSslSocket(
-              "myProject:myRegion:myInstance",
-              Collections.singletonList("PRIMARY"),
-              AuthType.PASSWORD,
-              null,
-              Arrays.asList("delegate-service-principal@example.com"));
+      coreSocketFactory.createSslSocket(
+          "myProject:myRegion:myInstance",
+          Collections.singletonList("PRIMARY"),
+          AuthType.PASSWORD,
+          null,
+          Arrays.asList("delegate-service-principal@example.com"));
       fail("IllegalArgumentException expected.");
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains(CoreSocketFactory.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);

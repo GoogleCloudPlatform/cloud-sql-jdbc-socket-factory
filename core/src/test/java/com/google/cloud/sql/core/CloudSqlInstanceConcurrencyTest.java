@@ -49,6 +49,7 @@ public class CloudSqlInstanceConcurrencyTest {
       return this;
     }
 
+    @Override
     public void initialize(HttpRequest var1) throws IOException {
       // do nothing
     }
@@ -101,10 +102,9 @@ public class CloudSqlInstanceConcurrencyTest {
       instance.forceRefresh();
       // force Java to run a different thread now. That gives the refresh task an opportunity to
       // start.
-      Thread.yield();
+      Thread.sleep(0);
       instance.forceRefresh();
       instance.forceRefresh();
-      Thread.yield();
 
       Thread.sleep(DEFAULT_WAIT); // Wait for the refresh to occur
 
@@ -209,7 +209,7 @@ public class CloudSqlInstanceConcurrencyTest {
               inst.forceRefresh();
               inst.forceRefresh();
               inst.forceRefresh();
-              Thread.yield();
+              Thread.sleep(0);
               inst.getSslData();
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
