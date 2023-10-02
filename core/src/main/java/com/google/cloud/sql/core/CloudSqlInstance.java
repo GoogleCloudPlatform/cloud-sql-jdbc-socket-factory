@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,15 +134,16 @@ class CloudSqlInstance {
       // is already running) and make this and future requests to getInstanceData wait on the
       // refresh operation to complete.
       if (instanceDataFuture.isDone()) {
-        Date expiration;
+        Instant expiration;
         try {
           expiration = instanceDataFuture.get().getExpiration();
-          if (expiration == null || expiration.before(new Date())) {
+          if (expiration == null || expiration.isBefore(Instant.now())) {
             forceRefresh();
             currentInstanceData = nextInstanceData;
             instanceDataFuture = currentInstanceData;
           }
         } catch (ExecutionException | InterruptedException e) {
+          e.printStackTrace();
           forceRefresh();
         }
       }
@@ -216,12 +216,12 @@ class CloudSqlInstance {
    * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
    */
-  void forceRefresh() {
+  boolean forceRefresh() {
     synchronized (instanceDataGuard) {
       // Don't force a refresh until the current refresh operation
       // has produced a successful refresh.
       if (refreshRunning) {
-        return;
+        return false;
       }
       nextInstanceData.cancel(false);
       logger.fine(
@@ -231,6 +231,7 @@ class CloudSqlInstance {
               instanceName));
       nextInstanceData = this.startRefreshAttempt();
     }
+    return true;
   }
 
   /**
@@ -247,6 +248,12 @@ class CloudSqlInstance {
    *     com.google.common.util.concurrent.ListenableFuture)
    */
   private ListenableFuture<InstanceData> startRefreshAttempt() {
+    // As soon as we begin submitting refresh attempts to the executor, mark a refresh
+    // as "in-progress" so that subsequent forceRefresh() calls balk until this one completes.
+    synchronized (instanceDataGuard) {
+      refreshRunning = true;
+    }
+
     // To avoid unreasonable SQL Admin API usage, use a rate limit to throttle our usage.
     ListenableFuture rateLimit =
         executor.submit(
@@ -268,10 +275,6 @@ class CloudSqlInstance {
         Futures.whenAllComplete(rateLimit)
             .callAsync(
                 () -> {
-                  synchronized (instanceDataGuard) {
-                    refreshRunning = true;
-                  }
-
                   return instanceDataSupplier.getInstanceData(
                       this.instanceName,
                       this.accessTokenSupplier,

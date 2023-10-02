@@ -16,7 +16,10 @@
 
 package com.google.cloud.sql.core;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -36,15 +39,22 @@ class PauseCondition {
 
   final AtomicBoolean allowProceed = new AtomicBoolean(false);
   final AtomicBoolean afterPause = new AtomicBoolean(false);
+  final AtomicBoolean beforePause = new AtomicBoolean(false);
 
   /**
-   * Waits for the condition to become true, signaling the thread that is blocked on pause() to
-   * continue.
+   * Signals the thread blocked on pause() to proceed, then waits for the condition to become true.
    */
-  public void proceedWhen(Supplier<Boolean> cond) {
+  public void proceedWhen(Supplier<Boolean> cond) throws InterruptedException {
+    proceed();
     while (!cond.get()) {
-      proceed();
-      Thread.yield();
+      Thread.sleep(100);
+    }
+  }
+
+  /** Returns after the pause() method is called */
+  public void proceedWhenPaused() throws InterruptedException {
+    while (!beforePause.get()) {
+      Thread.sleep(10);
     }
   }
 
@@ -53,22 +63,23 @@ class PauseCondition {
    * blocked on pause(), then it will
    */
   public void proceed() {
+    lock.lock();
     try {
-      lock.lock();
       allowProceed.set(true);
       allowContinue.signal();
     } finally {
       lock.unlock();
     }
-    Thread.yield();
   }
 
-  /** Pause until signaled to proceed. */
+  /** Pause until allowed to proceed. */
   public void pause() throws InterruptedException {
+
+    lock.lock();
     try {
-      lock.lock();
+      beforePause.set(true);
       while (!allowProceed.get()) {
-        allowContinue.await();
+        allowContinue.await(100, TimeUnit.MILLISECONDS);
       }
       afterPause.set(true);
     } finally {
@@ -76,13 +87,17 @@ class PauseCondition {
     }
   }
 
-  public void waitForPauseToEnd(long waitMs) throws InterruptedException {
+  /** Wait for the pause with timeout. */
+  public void waitForPauseToEnd(long waitMs) throws InterruptedException, TimeoutException {
+    Instant until = Instant.now().plus(waitMs, ChronoUnit.MILLIS);
+    lock.lock();
     try {
-      lock.lock();
-      if (afterPause.get()) {
-        return;
+      while (!afterPause.get() && Instant.now().isBefore(until)) {
+        proceeded.await(waitMs, TimeUnit.MILLISECONDS);
       }
-      proceeded.await(waitMs, TimeUnit.MILLISECONDS);
+      if (!afterPause.get()) {
+        throw new TimeoutException();
+      }
     } finally {
       lock.unlock();
     }
