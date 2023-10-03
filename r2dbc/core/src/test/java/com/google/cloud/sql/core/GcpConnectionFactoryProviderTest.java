@@ -178,6 +178,12 @@ public class GcpConnectionFactoryProviderTest {
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     coreSocketFactoryStub =
-        new CoreSocketFactory(clientKeyPair, fetcher, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair,
+            fetcher,
+            credentialFactory,
+            3307,
+            CoreSocketFactory.DEFAULT_MAX_REFRESH_MS,
+            defaultExecutor);
   }
 }

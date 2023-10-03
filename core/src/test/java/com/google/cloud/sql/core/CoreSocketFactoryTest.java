@@ -43,6 +43,7 @@ import org.junit.runners.JUnit4;
 // TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
 public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
+  private final long TEST_MAX_REFRESH_MS = 5000L;
 
   ListeningScheduledExecutorService defaultExecutor;
 
@@ -62,7 +63,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
           "myProject",
@@ -95,7 +97,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
           "myProject:notMyRegion:myInstance",
@@ -125,7 +128,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance",
@@ -145,7 +149,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
 
       coreSocketFactory.createSslSocket(
@@ -168,7 +173,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
 
     Socket socket =
         coreSocketFactory.createSslSocket(
@@ -189,7 +195,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "example.com:myProject:myRegion:myInstance",
@@ -204,7 +211,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_adminApiNotEnabled() throws IOException {
     ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotConfiguredException());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
       coreSocketFactory.createSslSocket(
@@ -228,7 +236,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_notAuthorized() throws IOException {
     ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotAuthorizedException());
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, credentialFactory, 3307, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
       coreSocketFactory.createSslSocket(
@@ -262,7 +271,13 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair,
+            factory,
+            stubCredentialFactory,
+            port,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance",
@@ -285,7 +300,13 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair,
+            factory,
+            stubCredentialFactory,
+            port,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
             "myProject:myRegion:myInstance",
@@ -315,7 +336,13 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ApiFetcherFactory factory =
         new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(clientKeyPair, factory, stubCredentialFactory, port, defaultExecutor);
+        new CoreSocketFactory(
+            clientKeyPair,
+            factory,
+            stubCredentialFactory,
+            port,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     assertThrows(
         RuntimeException.class,
         () ->
