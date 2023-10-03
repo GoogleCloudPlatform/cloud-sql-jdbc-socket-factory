@@ -30,7 +30,7 @@ interface InstanceDataSupplier {
    * @throws ExecutionException if an exception is thrown during execution.
    * @throws InterruptedException if the executor is interrupted.
    */
-  InstanceData getInstanceData(
+  ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
