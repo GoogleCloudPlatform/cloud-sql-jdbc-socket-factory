@@ -101,6 +101,12 @@
         "^org.ow2.asm"
       ],
       "groupName": "org.ow2.asm dependencies"
+    },
+    {
+      "matchPackagePatterns": [
+        "^com.google.auth"
+      ],
+      "groupName": "com.google.auth dependencies"
     }
   ]
 }
