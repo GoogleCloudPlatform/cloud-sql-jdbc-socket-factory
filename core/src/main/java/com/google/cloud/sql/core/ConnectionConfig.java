@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
+package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectorConfig;
+import com.google.cloud.sql.IpType;
 import com.google.common.base.Splitter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
  * ConnectionConfig is an immutable configuration value object that holds the entire configuration
  * of a CloudSqlInstance connection.
+ *
+ * <p>WARNING: This is an internal class. The API is subject to change without notice.
  */
 public class ConnectionConfig {
 
   public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
+  public static final String CLOUD_SQL_NAMED_CONNECTOR_PROPERTY = "cloudSqlNamedConnector";
   public static final String CLOUD_SQL_DELEGATES_PROPERTY = "cloudSqlDelegates";
   public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY = "cloudSqlTargetPrincipal";
   public static final String CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY = "cloudSqlAdminRootUrl";
@@ -38,23 +45,26 @@ public class ConnectionConfig {
   public static final String UNIX_SOCKET_PATH_SUFFIX_PROPERTY = "cloudSqlUnixSocketPathSuffix";
   public static final String ENABLE_IAM_AUTH_PROPERTY = "enableIamAuth";
   public static final String IP_TYPES_PROPERTY = "ipTypes";
+  public static final AuthType DEFAULT_AUTH_TYPE = AuthType.PASSWORD;
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final List<IpType> DEFAULT_IP_TYPE_LIST =
       Arrays.asList(IpType.PUBLIC, IpType.PRIVATE);
-  public static final AuthType DEFAULT_AUTH_TYPE = AuthType.PASSWORD;
+
+  private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
-  private final String targetPrincipal;
-  private final List<String> delegates;
+  private final String namedConnector;
   private final String unixSocketPath;
-  private final AuthType authType;
   private final List<IpType> ipTypes;
-  private final String adminRootUrl;
-  private final String adminServicePath;
+
+  private final AuthType authType;
   private final String unixSocketPathSuffix;
 
   /** Create a new ConnectionConfig from the well known JDBC Connection properties. */
   public static ConnectionConfig fromConnectionProperties(Properties props) {
     final String csqlInstanceName = props.getProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY);
+    final String namedConnection =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY);
+
     final String unixSocketPath = props.getProperty(ConnectionConfig.UNIX_SOCKET_PROPERTY);
     final AuthType authType =
         Boolean.parseBoolean(props.getProperty(ConnectionConfig.ENABLE_IAM_AUTH_PROPERTY))
@@ -81,14 +91,17 @@ public class ConnectionConfig {
         props.getProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY);
     return new ConnectionConfig(
         csqlInstanceName,
-        targetPrincipal,
-        delegates,
+        namedConnection,
         unixSocketPath,
-        authType,
         ipTypes,
-        adminRootUrl,
-        adminServicePath,
-        unixSocketPathSuffix);
+        authType,
+        unixSocketPathSuffix,
+        new ConnectorConfig.Builder()
+            .withTargetPrincipal(targetPrincipal)
+            .withDelegates(delegates)
+            .withAdminRootUrl(adminRootUrl)
+            .withAdminServicePath(adminServicePath)
+            .build());
   }
 
   /**
@@ -114,88 +127,97 @@ public class ConnectionConfig {
     return result;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ConnectionConfig)) {
+      return false;
+    }
+    ConnectionConfig config = (ConnectionConfig) o;
+    return Objects.equals(cloudSqlInstance, config.cloudSqlInstance)
+        && Objects.equals(namedConnector, config.namedConnector)
+        && Objects.equals(unixSocketPath, config.unixSocketPath)
+        && Objects.equals(ipTypes, config.ipTypes)
+        && Objects.equals(authType, config.authType)
+        && Objects.equals(connectorConfig, config.connectorConfig);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        cloudSqlInstance, namedConnector, unixSocketPath, ipTypes, authType, connectorConfig);
+  }
+
   private ConnectionConfig(
       String cloudSqlInstance,
-      String targetPrincipal,
-      List<String> delegates,
+      String namedConnector,
       String unixSocketPath,
-      AuthType authType,
       List<IpType> ipTypes,
-      String adminRootUrl,
-      String adminServicePath,
-      String unixSocketPathSuffix) {
+      AuthType authType,
+      String unixSocketPathSuffix,
+      ConnectorConfig connectorConfig) {
     this.cloudSqlInstance = cloudSqlInstance;
-    this.targetPrincipal = targetPrincipal;
-    this.delegates = delegates;
+    this.namedConnector = namedConnector;
     this.unixSocketPath = unixSocketPath;
-    this.authType = authType;
     this.ipTypes = ipTypes;
-    this.adminRootUrl = adminRootUrl;
-    this.adminServicePath = adminServicePath;
     this.unixSocketPathSuffix = unixSocketPathSuffix;
+    this.connectorConfig = connectorConfig;
+    this.authType = authType;
+  }
+
+  public String getNamedConnector() {
+    return namedConnector;
   }
 
   public String getCloudSqlInstance() {
     return cloudSqlInstance;
   }
 
-  public String getTargetPrincipal() {
-    return targetPrincipal;
-  }
-
   public String getUnixSocketPath() {
     return unixSocketPath;
-  }
-
-  public AuthType getAuthType() {
-    return authType;
-  }
-
-  public List<String> getDelegates() {
-    return delegates;
   }
 
   public List<IpType> getIpTypes() {
     return ipTypes;
   }
 
-  public String getAdminRootUrl() {
-    return adminRootUrl;
-  }
-
-  public String getAdminServicePath() {
-    return adminServicePath;
-  }
-
   public String getUnixSocketPathSuffix() {
     return unixSocketPathSuffix;
+  }
+
+  public ConnectorConfig getConnectorConfig() {
+    return connectorConfig;
+  }
+
+  public AuthType getAuthType() {
+    return authType;
   }
 
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
     private String cloudSqlInstance;
-    private String targetPrincipal;
-    private List<String> delegates;
+    private String namedConnector;
     private String unixSocketPath;
-    private AuthType authType = DEFAULT_AUTH_TYPE;
     private List<IpType> ipTypes = DEFAULT_IP_TYPE_LIST;
-    private String adminRootUrl;
-    private String adminServicePath;
     private String unixSocketPathSuffix;
+    private ConnectorConfig connectorConfig = new ConnectorConfig.Builder().build();
+    private AuthType authType = DEFAULT_AUTH_TYPE;
 
     public Builder withCloudSqlInstance(String cloudSqlInstance) {
       this.cloudSqlInstance = cloudSqlInstance;
       return this;
     }
 
-    public Builder withTargetPrincipal(String targetPrincipal) {
-      this.targetPrincipal = targetPrincipal;
+    public Builder withNamedConnector(String namedConnector) {
+      this.namedConnector = namedConnector;
       return this;
     }
 
-    public Builder withDelegates(List<String> delegates) {
-      this.delegates = delegates;
+    public Builder withConnectorConfig(ConnectorConfig connectorConfig) {
+      this.connectorConfig = connectorConfig;
       return this;
     }
 
@@ -209,25 +231,15 @@ public class ConnectionConfig {
       return this;
     }
 
-    /** Use ipTypes as a comma-delimited string. */
+    /** Set ipTypes with a comma-delimited string. */
     public Builder withIpTypes(String ipTypes) {
       this.ipTypes = listIpTypes(ipTypes);
       return this;
     }
 
-    /** Use ipTypes as a comma-delimited string. */
+    /** Set ipTypes as a list of IpType. */
     public Builder withIpTypes(List<IpType> ipTypes) {
       this.ipTypes = ipTypes;
-      return this;
-    }
-
-    public Builder withAdminRootUrl(String adminRootUrl) {
-      this.adminRootUrl = adminRootUrl;
-      return this;
-    }
-
-    public Builder withAdminServicePath(String adminServicePath) {
-      this.adminServicePath = adminServicePath;
       return this;
     }
 
@@ -240,14 +252,12 @@ public class ConnectionConfig {
     public ConnectionConfig build() {
       return new ConnectionConfig(
           cloudSqlInstance,
-          targetPrincipal,
-          delegates,
+          namedConnector,
           unixSocketPath,
-          authType,
           ipTypes,
-          adminRootUrl,
-          adminServicePath,
-          unixSocketPathSuffix);
+          authType,
+          unixSocketPathSuffix,
+          connectorConfig);
     }
   }
 }

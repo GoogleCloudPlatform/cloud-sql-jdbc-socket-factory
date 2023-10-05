@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -52,7 +52,7 @@ public class DefaultConnectionInfoRepositoryTest {
           OperatorCreationException {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
-    ConnectionConfig config = new ConnectionConfig.Builder().build();
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
     DefaultConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
@@ -88,7 +88,7 @@ public class DefaultConnectionInfoRepositoryTest {
         DEFAULT_BASE_URL);
     mockAdminApi.addGenerateEphemeralCertResponse(
         INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
-    ConnectionConfig config = new ConnectionConfig.Builder().build();
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
 
     DefaultConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
@@ -123,7 +123,7 @@ public class DefaultConnectionInfoRepositoryTest {
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL);
-    ConnectionConfig config = new ConnectionConfig.Builder().build();
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
     DefaultConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
@@ -150,7 +150,7 @@ public class DefaultConnectionInfoRepositoryTest {
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
-    ConnectionConfig config = new ConnectionConfig.Builder().build();
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
     DefaultConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(new BadConnectionFactory())
             .create(new StubCredentialFactory().create(), config);
@@ -183,8 +183,8 @@ public class DefaultConnectionInfoRepositoryTest {
     String baseUrl = adminRootUrl + adminServicePath;
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, baseUrl);
-    ConnectionConfig config =
-        new ConnectionConfig.Builder()
+    ConnectorConfig config =
+        new ConnectorConfig.Builder()
             .withAdminRootUrl(adminRootUrl)
             .withAdminServicePath(adminServicePath)
             .build();

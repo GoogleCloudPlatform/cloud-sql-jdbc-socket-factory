@@ -21,7 +21,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 
 public class StubConnectionInfoRepositoryFactory implements ConnectionInfoRepositoryFactory {
 
@@ -33,7 +33,7 @@ public class StubConnectionInfoRepositoryFactory implements ConnectionInfoReposi
 
   @Override
   public DefaultConnectionInfoRepository create(
-      HttpRequestInitializer credentials, ConnectionConfig config) {
+      HttpRequestInitializer credentials, ConnectorConfig config) {
     SQLAdmin.Builder adminApiBuilder =
         new SQLAdmin.Builder(
                 httpTransport != null ? httpTransport : new MockHttpTransport(),

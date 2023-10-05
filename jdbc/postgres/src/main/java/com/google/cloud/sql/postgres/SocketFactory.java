@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.postgres;
 
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.core.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import java.io.IOException;
 import java.net.InetAddress;

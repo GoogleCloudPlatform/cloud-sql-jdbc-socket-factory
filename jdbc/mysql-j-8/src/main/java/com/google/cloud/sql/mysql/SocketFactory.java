@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.mysql;
 
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.core.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.protocol.ServerSession;

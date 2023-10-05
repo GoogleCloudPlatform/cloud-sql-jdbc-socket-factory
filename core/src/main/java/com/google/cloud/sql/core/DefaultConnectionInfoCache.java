@@ -17,7 +17,6 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.IpType;
 import com.google.common.util.concurrent.ListenableFuture;

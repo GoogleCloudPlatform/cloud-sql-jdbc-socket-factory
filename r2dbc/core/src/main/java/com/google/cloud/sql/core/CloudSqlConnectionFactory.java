@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 
-import com.google.cloud.sql.ConnectionConfig;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
