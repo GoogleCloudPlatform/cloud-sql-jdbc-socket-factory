@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
 
 /**
@@ -179,7 +180,8 @@ class CloudSqlInstance {
     throw new IllegalArgumentException(
         String.format(
             "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
-            instanceName.getConnectionName(), String.join(", ", preferredTypes)));
+            instanceName.getConnectionName(),
+            preferredTypes.stream().collect(Collectors.joining(","))));
   }
 
   /**

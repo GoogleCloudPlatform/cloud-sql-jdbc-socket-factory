@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
@@ -33,7 +34,6 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,11 +67,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
-          "myProject",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Collections.emptyList());
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject")
+              .withIpTypes("PRIMARY")
+              .build());
       fail();
     } catch (IllegalArgumentException | InterruptedException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
@@ -79,11 +78,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     try {
       coreSocketFactory.createSslSocket(
-          "myProject:myRegion",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Collections.emptyList());
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion")
+              .withIpTypes("PRIMARY")
+              .build());
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
@@ -101,11 +99,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       coreSocketFactory.createSslSocket(
-          "myProject:notMyRegion:myInstance",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Collections.emptyList());
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:notMyRegion:myInstance")
+              .withIpTypes("PRIMARY")
+              .build());
       fail();
     } catch (RuntimeException e) {
       assertThat(e)
@@ -132,11 +129,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance",
-            Collections.singletonList("PRIVATE"),
-            AuthType.PASSWORD,
-            null,
-            Collections.emptyList());
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("myProject:myRegion:myInstance")
+                .withIpTypes("PRIVATE")
+                .build());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -154,14 +150,14 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
 
       coreSocketFactory.createSslSocket(
-          "myProject:myRegion:myInstance",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Arrays.asList("delegate-service-principal@example.com"));
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:myInstance")
+              .withIpTypes("PRIMARY")
+              .withDelegates(Arrays.asList("delegate-service-principal@example.com"))
+              .build());
       fail("IllegalArgumentException expected.");
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains(CoreSocketFactory.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
+      assertThat(e.getMessage()).contains(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
     }
   }
 
@@ -178,11 +174,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance",
-            Collections.singletonList("PRIMARY"),
-            AuthType.PASSWORD,
-            null,
-            Collections.emptyList());
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("myProject:myRegion:myInstance")
+                .withIpTypes("PRIMARY")
+                .build());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -199,11 +194,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "example.com:myProject:myRegion:myInstance",
-            Collections.singletonList("PRIMARY"),
-            AuthType.PASSWORD,
-            null,
-            Collections.emptyList());
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
+                .withIpTypes("PRIMARY")
+                .build());
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
@@ -216,11 +210,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
       // Use a different project to get Api Not Enabled Error.
       coreSocketFactory.createSslSocket(
-          "NotMyProject:myRegion:myInstance",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Collections.emptyList());
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
+              .withIpTypes("PRIMARY")
+              .build());
       fail("Expected RuntimeException");
     } catch (RuntimeException | InterruptedException e) {
       assertThat(e)
@@ -241,11 +234,10 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     try {
       // Use a different instance to simulate incorrect permissions.
       coreSocketFactory.createSslSocket(
-          "myProject:myRegion:NotMyInstance",
-          Collections.singletonList("PRIMARY"),
-          AuthType.PASSWORD,
-          null,
-          Collections.emptyList());
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+              .withIpTypes("PRIMARY")
+              .build());
       fail();
     } catch (RuntimeException e) {
       assertThat(e)
@@ -280,11 +272,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance",
-            Collections.singletonList("PRIMARY"),
-            AuthType.IAM,
-            null,
-            Collections.emptyList());
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("myProject:myRegion:myInstance")
+                .withIpTypes("PRIMARY")
+                .withAuthType(AuthType.IAM)
+                .build());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -309,11 +301,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             defaultExecutor);
     Socket socket =
         coreSocketFactory.createSslSocket(
-            "myProject:myRegion:myInstance",
-            Collections.singletonList("PRIMARY"),
-            AuthType.IAM,
-            null,
-            Collections.emptyList());
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("myProject:myRegion:myInstance")
+                .withIpTypes("PRIMARY")
+                .withAuthType(AuthType.IAM)
+                .build());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -347,11 +339,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
         RuntimeException.class,
         () ->
             coreSocketFactory.createSslSocket(
-                "myProject:myRegion:myInstance",
-                Collections.singletonList("PRIMARY"),
-                AuthType.IAM,
-                null,
-                Collections.emptyList()));
+                new ConnectionConfig.Builder()
+                    .withCloudSqlInstance("myProject:myRegion:myInstance")
+                    .withIpTypes("PRIMARY")
+                    .withAuthType(AuthType.IAM)
+                    .build()));
   }
 
   @Test
