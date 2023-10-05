@@ -114,4 +114,29 @@ public class ConnectionConfigTest {
     assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
+
+  @Test
+  public void testWithConnectorConfig() {
+    final String wantCsqlInstance = "proj:region:inst";
+    final String wantNamedConnector = "my-connection";
+
+    ConnectorConfig cc = new ConnectorConfig.Builder().build();
+
+    ConnectionConfig c =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance(wantCsqlInstance)
+            .withNamedConnector(wantNamedConnector)
+            .build();
+
+    assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
+    assertThat(c.getNamedConnector()).isEqualTo(wantNamedConnector);
+    assertThat(c.getConnectorConfig()).isNotSameInstanceAs(cc);
+
+    ConnectionConfig c1 = c.withConnectorConfig(cc);
+
+    assertThat(c1).isNotSameInstanceAs(c);
+    assertThat(c1.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
+    assertThat(c1.getNamedConnector()).isEqualTo(wantNamedConnector);
+    assertThat(c1.getConnectorConfig()).isSameInstanceAs(cc);
+  }
 }

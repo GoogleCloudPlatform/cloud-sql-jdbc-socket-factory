@@ -24,7 +24,6 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.io.IOException;
 import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import reactor.util.annotation.NonNull;
@@ -50,30 +49,22 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @Override
   @NonNull
   public Publisher<? extends Connection> create() {
-    try {
-      String hostIp =
-          InternalConnectorRegistry.getInstance()
-              .getConnectionMetadata(config)
-              .getPreferredIpAddress();
-      builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
-      return supplier.get().create(builder.build()).create();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    String hostIp =
+        InternalConnectorRegistry.getInstance()
+            .getConnectionMetadata(config)
+            .getPreferredIpAddress();
+    builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
+    return supplier.get().create(builder.build()).create();
   }
 
   @Override
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
-    try {
-      String hostIp =
-          InternalConnectorRegistry.getInstance()
-              .getConnectionMetadata(config)
-              .getPreferredIpAddress();
-      builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
-      return supplier.get().create(builder.build()).getMetadata();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    String hostIp =
+        InternalConnectorRegistry.getInstance()
+            .getConnectionMetadata(config)
+            .getPreferredIpAddress();
+    builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
+    return supplier.get().create(builder.build()).getMetadata();
   }
 }

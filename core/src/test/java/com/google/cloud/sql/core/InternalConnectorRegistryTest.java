@@ -34,6 +34,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Properties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -313,12 +314,127 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         () -> InternalConnectorRegistry.setApplicationName("sample-app"));
   }
 
+  @Test
+  public void registerConnection() throws IOException, InterruptedException {
+
+    String adminRootUrl = "https://googleapis.example.com/";
+    String adminServicePath = "sqladmin/";
+    String baseUrl = adminRootUrl + adminServicePath;
+
+    // The mock AdminApi only responds to requests where the URL starts with a custom admin api
+    // root url: https://googleapis.example.com/sqladmin/
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory, baseUrl);
+
+    // Register a ConnectionConfig named "my-connection" that uses the custom admin api root url.
+    ConnectorConfig configWithDetails =
+        new ConnectorConfig.Builder()
+            .withAdminRootUrl(adminRootUrl)
+            .withAdminServicePath(adminServicePath)
+            .build();
+    registry.register("my-connection", configWithDetails);
+
+    // Assert that when the named connection config is used, the socket opens correctly.
+    Properties goodProps = new Properties();
+    goodProps.setProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY, "my-connection");
+    goodProps.setProperty(
+        ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, "myProject:myRegion:myInstance");
+    ConnectionConfig goodConfig = ConnectionConfig.fromConnectionProperties(goodProps);
+
+    Socket socket = registry.connect(goodConfig);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+
+    // Assert that when the named connection config is not used, the socket fails to open.
+    Properties badProps = new Properties();
+    badProps.setProperty(
+        ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, "myProject:myRegion:myInstance");
+    ConnectionConfig badConfig = ConnectionConfig.fromConnectionProperties(badProps);
+
+    assertThrows(RuntimeException.class, () -> registry.connect(badConfig));
+  }
+
+  @Test
+  public void registerConnectionFailsWithDuplicateName() throws InterruptedException {
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    // Register a ConnectionConfig named "my-connection"
+    ConnectorConfig configWithDetails = new ConnectorConfig.Builder().build();
+    registry.register("my-connection", configWithDetails);
+
+    // Assert that you can't register a connection with a duplicate name
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> registry.register("my-connection", configWithDetails));
+  }
+
+  @Test
+  public void registerConnectionFailsWithDuplicateNameAndDifferentConfig()
+      throws InterruptedException {
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+
+    ConnectorConfig config =
+        new ConnectorConfig.Builder().withTargetPrincipal("joe@test.com").build();
+    registry.register("my-connection", config);
+
+    ConnectorConfig config2 =
+        new ConnectorConfig.Builder().withTargetPrincipal("jane@test.com").build();
+
+    // Assert that you can't register a connection with a duplicate name
+    assertThrows(IllegalArgumentException.class, () -> registry.register("my-connection", config2));
+  }
+
+  @Test
+  public void closeNamedConnectionFailsWhenNotFound() throws InterruptedException {
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    // Assert that you can't close a connection that doesn't exist
+    assertThrows(IllegalArgumentException.class, () -> registry.close("my-connection"));
+  }
+
+  @Test
+  public void connectFailsOnClosedNamedConnection() throws InterruptedException {
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    // Register a ConnectionConfig named "my-connection"
+    ConnectorConfig configWithDetails = new ConnectorConfig.Builder().build();
+    registry.register("my-connection", configWithDetails);
+
+    // Close the named connection.
+    registry.close("my-connection");
+
+    // Attempt and fail to connect using the cloudSqlNamedConnection connection property
+    Properties connProps = new Properties();
+    connProps.setProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY, "my-connection");
+    ConnectionConfig nameOnlyConfig = ConnectionConfig.fromConnectionProperties(connProps);
+
+    // Assert that no connection is possible because the connector is closed.
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> registry.connect(nameOnlyConfig));
+    assertThat(ex).hasMessageThat().contains("Named connection my-connection does not exist.");
+  }
+
+  @Test
+  public void connectFailsOnUnknownNamedConnection() throws InterruptedException {
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+
+    // Attempt and fail to connect using the cloudSqlNamedConnection connection property
+    Properties connProps = new Properties();
+    connProps.setProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY, "my-connection");
+    ConnectionConfig nameOnlyConfig = ConnectionConfig.fromConnectionProperties(connProps);
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> registry.connect(nameOnlyConfig));
+    assertThat(ex).hasMessageThat().contains("Named connection my-connection does not exist.");
+  }
+
   private InternalConnectorRegistry createRegistry(
       String ipType, CredentialFactory credentialFactory) throws InterruptedException {
+    return createRegistry(ipType, credentialFactory, null);
+  }
+
+  private InternalConnectorRegistry createRegistry(
+      String ipType, CredentialFactory credentialFactory, String baseUrl)
+      throws InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(ipType);
     ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpTransport(Duration.ofSeconds(0), baseUrl));
     return new InternalConnectorRegistry(
         clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
   }

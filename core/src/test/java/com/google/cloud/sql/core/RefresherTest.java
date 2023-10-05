@@ -391,6 +391,57 @@ public class RefresherTest {
     goodRequest.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 2000);
   }
 
+  @Test
+  public void testClosedCloudSqlInstanceDataThrowsException() {
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+    Refresher r =
+        new Refresher(
+            "testcase", executorService, () -> Futures.immediateFuture(data), rateLimiter);
+    r.close();
+
+    assertThrows(IllegalStateException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
+    assertThrows(IllegalStateException.class, () -> r.forceRefresh());
+  }
+
+  @Test
+  public void testClosedCloudSqlInstanceDataStopsRefreshTasks() throws Exception {
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition refresh0 = new PauseCondition();
+
+    Refresher r =
+        new Refresher(
+            "testcase",
+            executorService,
+            () -> {
+              int c = refreshCount.get();
+              if (c == 0) {
+                refresh0.pause();
+              }
+              refreshCount.incrementAndGet();
+              return Futures.immediateFuture(data);
+            },
+            rateLimiter);
+
+    // Wait for the first refresh attempt to complete.
+    refresh0.proceed();
+    refresh0.waitForPauseToEnd(TEST_TIMEOUT_MS);
+
+    // Assert that refresh gets instance data before it is closed
+    refresh0.waitForCondition(() -> refreshCount.get() == 1, TEST_TIMEOUT_MS);
+
+    // Assert that the next refresh task is scheduled in the future
+    assertThat(r.getNext().isDone()).isFalse();
+
+    // Close the instance
+    r.close();
+
+    // Assert that the next refresh task is canceled
+    assertThat(r.getNext().isDone()).isTrue();
+    assertThat(r.getNext().isCancelled()).isTrue();
+  }
+
   private static class ExampleData extends ConnectionInfo {
 
     ExampleData(Instant expiration) {

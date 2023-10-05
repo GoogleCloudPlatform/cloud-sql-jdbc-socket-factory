@@ -167,6 +167,18 @@ public class ConnectionConfig {
     this.authType = authType;
   }
 
+  /** Creates a new instance of the ConnectionConfig with an updated connectorConfig. */
+  public ConnectionConfig withConnectorConfig(ConnectorConfig config) {
+    return new ConnectionConfig(
+        cloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        config);
+  }
+
   public String getNamedConnector() {
     return namedConnector;
   }

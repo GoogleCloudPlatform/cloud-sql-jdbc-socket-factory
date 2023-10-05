@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -43,8 +44,10 @@ class Connector {
       new ConcurrentHashMap<>();
   private final long refreshTimeoutMs;
   private final int serverProxyPort;
+  private final ConnectorConfig config;
 
   Connector(
+      ConnectorConfig config,
       DefaultConnectionInfoRepository adminApi,
       CredentialFactory instanceCredentialFactory,
       ListeningScheduledExecutorService executor,
@@ -52,6 +55,7 @@ class Connector {
       long minRefreshDelayMs,
       long refreshTimeoutMs,
       int serverProxyPort) {
+    this.config = config;
     this.adminApi = adminApi;
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
@@ -59,6 +63,10 @@ class Connector {
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.refreshTimeoutMs = refreshTimeoutMs;
     this.serverProxyPort = serverProxyPort;
+  }
+
+  public ConnectorConfig getConfig() {
+    return config;
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
@@ -125,5 +133,10 @@ class Connector {
   private DefaultConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     return new DefaultConnectionInfoCache(
         config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+  }
+
+  public void close() {
+    this.instances.forEach((key, c) -> c.close());
+    this.instances.clear();
   }
 }
