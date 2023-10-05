@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
@@ -108,13 +109,16 @@ class CloudSqlInstance {
    * Returns the current data related to the instance from {@link #performRefresh()}. May block if
    * no valid data is currently available.
    */
-  private InstanceData getInstanceData() {
+  private InstanceData getInstanceData(long timeoutMs) {
     ListenableFuture<InstanceData> instanceDataFuture;
     synchronized (instanceDataGuard) {
       instanceDataFuture = currentInstanceData;
     }
     try {
-      return Uninterruptibles.getUninterruptibly(instanceDataFuture);
+      return Uninterruptibles.getUninterruptibly(
+          instanceDataFuture, timeoutMs, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException ex) {
+      throw new RuntimeException(ex);
     } catch (ExecutionException ex) {
       Throwable cause = ex.getCause();
       Throwables.throwIfUnchecked(cause);
@@ -126,8 +130,8 @@ class CloudSqlInstance {
    * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
    * block until required instance data is available.
    */
-  SSLSocket createSslSocket() throws IOException {
-    return (SSLSocket) getInstanceData().getSslContext().getSocketFactory().createSocket();
+  SSLSocket createSslSocket(long timeoutMs) throws IOException {
+    return (SSLSocket) getInstanceData(timeoutMs).getSslContext().getSocketFactory().createSocket();
   }
 
   /**
@@ -140,8 +144,8 @@ class CloudSqlInstance {
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
-  String getPreferredIp(List<String> preferredTypes) {
-    Map<String, String> ipAddrs = getInstanceData().getIpAddrs();
+  String getPreferredIp(List<String> preferredTypes, long timeoutMs) {
+    Map<String, String> ipAddrs = getInstanceData(timeoutMs).getIpAddrs();
     for (String ipType : preferredTypes) {
       String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
@@ -237,8 +241,8 @@ class CloudSqlInstance {
     }
   }
 
-  SslData getSslData() {
-    return getInstanceData().getSslData();
+  SslData getSslData(long timeoutMs) {
+    return getInstanceData(timeoutMs).getSslData();
   }
 
   ListenableFuture<InstanceData> getNext() {

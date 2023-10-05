@@ -78,7 +78,7 @@ public class CloudSqlInstanceConcurrencyTest {
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
-    instances.forEach(CloudSqlInstance::getSslData);
+    instances.forEach((inst) -> inst.getSslData(2000L));
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
@@ -117,7 +117,7 @@ public class CloudSqlInstanceConcurrencyTest {
               inst.forceRefresh();
               inst.forceRefresh();
               Thread.sleep(0);
-              inst.getSslData();
+              inst.getSslData(2000L);
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
             }
