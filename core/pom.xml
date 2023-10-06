@@ -197,13 +197,13 @@
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-credentials</artifactId>
-      <version>1.19.0</version>
+      <version>1.20.0</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>1.19.0</version>
+      <version>1.20.0</version>
     </dependency>
 
     <dependency>
@@ -293,17 +293,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <!--
-        Ignore changes before 1.14.0. This is our first release with updated
-        methods.
-        -->
-        <configuration>
-          <comparisonVersion>1.14.0</comparisonVersion>
-        </configuration>
       </plugin>
     </plugins>
   </build>
