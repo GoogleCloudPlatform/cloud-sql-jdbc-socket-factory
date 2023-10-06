@@ -240,6 +240,23 @@
           </dependency>
         </dependencies>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>com/google/cloud/sql/CredentialFactory</includes>
+          <includes>com/google/cloud/sql/core/CoreSocketFactory</includes>
+          <includes>com/google/cloud/sql/mariadb/SocketFactory</includes>
+          <includes>com/google/cloud/sql/mysql/SocketFactory</includes>
+          <includes>com/google/cloud/sql/postgres/SocketFactory</includes>
+          <includes>com/google/cloud/sql/sqlserver/SocketFactory</includes>
+          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMysql</includes>
+          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderPostgres</includes>
+          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMssql</includes>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 
