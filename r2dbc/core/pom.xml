@@ -131,7 +131,7 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-      <version>3.5.10</version>
+      <version>3.5.11</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -160,7 +160,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20230831-2.0.0</version>
+      <version>v1beta4-rev20231004-2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
