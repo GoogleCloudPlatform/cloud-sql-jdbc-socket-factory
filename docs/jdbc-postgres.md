@@ -10,14 +10,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `gradle.build`
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.13.1'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.14.1'
 ```
 *Note*: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
 <!-- {x-release-please-end} -->

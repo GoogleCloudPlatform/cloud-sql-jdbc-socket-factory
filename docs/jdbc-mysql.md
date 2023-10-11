@@ -10,8 +10,8 @@ are unsure, it is recommended to use the latest version of `mysql-connector-java
 
 | JDBC Driver Version        | Cloud SQL Socket Factory Version         |
 | -------------------------- | ---------------------------------------- |
-| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.13.1 |
-| mysql-connector-java:5.1.x | mysql-socket-factory:1.13.1            |
+| mysql-connector-java:8.x   | mysql-socket-factory-connector-j-8:1.14.1 |
+| mysql-connector-java:5.1.x | mysql-socket-factory:1.14.1            |
 
 ##### Maven
 Include the following in the project's `pom.xml`: 
@@ -19,14 +19,14 @@ Include the following in the project's `pom.xml`:
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
 
 ##### Gradle
 Include the following the project's `build.gradle`
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.13.1'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.14.1'
 ```
 <!-- {x-release-please-end} -->
 
