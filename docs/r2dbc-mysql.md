@@ -4,7 +4,7 @@
 
 ### Adding the library as a dependency
 
-<!-- {x-release-please-start-version} -->
+<!-- {x-version-update-start:cloud-sql-connector-r2dbc-mysql:released} -->
 ##### Maven
 Include the following in the project's `pom.xml`: 
 ```maven-pom
@@ -22,7 +22,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.14.1'
 ```
 
 *Note: Also include the R2DBC Driver for MySQL, `io.asyncer:r2dbc-mysql:<LATEST-VERSION>`
-<!-- {x-release-please-end} -->
+<!-- {x-version-update-end} -->
 
 ### Creating the R2DBC URL
 

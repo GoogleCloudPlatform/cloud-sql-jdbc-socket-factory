@@ -3,7 +3,7 @@
 
 ### Adding the library as a dependency
 
-<!-- {x-release-please-start-version} -->
+<!-- {x-version-update-start:mariadb-socket-factory:released} -->
 ##### Maven
 Include the following in the project's `pom.xml`:
 ```maven-pom
@@ -20,7 +20,7 @@ Include the following the project's `gradle.build`
 compile 'com.google.cloud.sql:mariadb-socket-factory:1.14.1'
 ```
 *Note*: Also include the JDBC Driver for MariaDB, `org.mariadb.jdbc:mariadb-java-client:<LATEST-VERSION>`
-<!-- {x-release-please-end} -->
+<!-- {x-version-update-end} -->
 
 ### Creating the JDBC URL
 
