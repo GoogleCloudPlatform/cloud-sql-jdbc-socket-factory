@@ -4,120 +4,120 @@
 
 ### Adding the library as a dependency
 
+
+Include the following in the project's `pom.xml` if your project uses Maven, 
+or in `build.gradle` if your project uses Gradle.
+
 <!-- {x-release-please-start-version} -->
-
-
-#### Maven
-Include the following in the project's `pom.xml`:
-
 ##### Mysql
+
+<!-- {x-version-update-start:mysql-socket-factory-connector-j-8:released} -->
+Maven
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
+
+Gradle
+```gradle
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.14.1'
+```
+<!-- {x-version-update-end} -->
+
 ##### Maria DB
 
+<!-- {x-version-update-start:mariadb-socket-factory:released} -->
+Maven
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mariadb-socket-factory</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
+Gradle
+```gradle
+compile 'com.google.cloud.sql:mariadb-socket-factory:1.14.1'
+```
+**Note:** Also include the JDBC Driver for MariaDB, `org.mariadb.jdbc:mariadb-java-client:<LATEST-VERSION>`
+<!-- {x-version-update-end} -->
+
 ##### Postgres
 
+<!-- {x-version-update-start:postgres-socket-factory:released} -->
+Maven
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
+Gradle
+```gradle
+compile 'com.google.cloud.sql:postgres-socket-factory:1.14.1'
+```
+**Note:**  Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
+<!-- {x-version-update-end} -->
 
 ##### SQL Server
-
+<!-- {x-version-update-start:cloud-sql-connector-jdbc-sqlserver:released} -->
+Maven
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.1</version>
 </dependency>
 ```
-
-#### Gradle
-
-Include the following the project's `build.gradle`
-
-##### Mysql
+Gradle
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.13.1'
+compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.14.1'
 ```
-
-##### Maria DB
-```gradle
-compile 'com.google.cloud.sql:mariadb-socket-factory:1.13.1'
-```
-*Note*: Also include the JDBC Driver for MariaDB, `org.mariadb.jdbc:mariadb-java-client:<LATEST-VERSION>`
-
-##### Postgres
-```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.13.1'
-```
-
-*Note*: Also include the JDBC Driver for PostgreSQL, `org.postgresql:postgresql:<LATEST-VERSION>`
-
-##### SQL Server
-```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.13.1'
-```
-
-*Note*: Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
-
+**Note:**  Also include the JDBC Driver for SQL Server, `com.microsoft.sqlserver:mssql-jdbc:<LATEST-VERSION>`.
+<!-- {x-version-update-end} -->
 <!-- {x-release-please-end} -->
 
 ### Creating the JDBC URL
 
-#### Mysql
+When specifying the JDBC connection URL, add the additional parameters:
 
+| Property         | Value                                                             |
+| ---------------- |-------------------------------------------------------------------|
+| socketFactory    | <SOCKET_FACTORY_CLASS>                                            |
+| cloudSqlInstance | The instance connection name (found on the instance details page) |
+| user             | Database username                                                 |
+| password         | Database user's password                                          |
+
+Replace <SOCKET_FACTORY_CLASS> with the class name specific to your database.
+
+#### Mysql
 
 Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
-When specifying the JDBC connection URL, add the additional parameters:
-
-| Property         | Value         |
-| ---------------- | ------------- |
-| socketFactory    | com.google.cloud.sql.mysql.SocketFactory |
-| cloudSqlInstance | The instance connection name (found on the instance details page) |
-| user             | MySQL username |
-| password         | MySQL user's password |
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.mysql.SocketFactory`
 
 The full JDBC URL should look like this:
+
 ```
 jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg.
+**Note:** The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg.
 
 #### Maria DB
 
 Base JDBC URL: `jdbc:mariadb:///igoreme:123/<DATABASE_NAME>`
 
-**Note**: You have to provide a hostname and port, but they are ignored.
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.mariadb.SocketFactory`
 
-**Note**: You can use `mysql` as the scheme if you set `permitMysqlScheme` on the URL.
+**Note:** You have to provide a hostname and port, but they are ignored.
+
+**Note:** You can use `mysql` as the scheme if you set `permitMysqlScheme` on the URL.
 Please refer to the MariaDB [documentation](https://mariadb.com/kb/en/about-mariadb-connector-j/#jdbcmysql-scheme-compatibility).
-
-When specifying the JDBC connection URL, add the additional parameters:
-
-| Property         | Value                                                          |
-| ---------------- |----------------------------------------------------------------|
-| socketFactory    | com.google.cloud.sql.mariadb.SocketFactory                     |
-| cloudSqlInstance | The instance connection name (found on the instance details page) |
-| user             | MariaDB username                                               |
-| password         | MariaDB user's password                                        |
 
 The full JDBC URL should look like this:
 ```
@@ -131,35 +131,23 @@ Note: The host portion of the JDBC URL is currently unused, and has no effect on
 
 Base JDBC URL: `jdbc:postgresql:///<DATABASE_NAME>`
 
-When specifying the JDBC connection URL, add the additional parameters:
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.postgres.SocketFactory`
 
-| Property         | Value         |
-| ---------------- | ------------- |
-| socketFactory    | com.google.cloud.sql.postgres.SocketFactory |
-| cloudSqlInstance | The instance connection name (found on the instance details page) |
-| user             | PostgreSQL username |
-| password         | PostgreSQL user's password |
+When specifying the JDBC connection URL, add the additional parameters:
 
 The full JDBC URL should look like this:
 ```
 jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg.
+**Note:** The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `cloudSqlInstance` arg.
 
 
 #### SQL Server
 
 Base JDBC URL: `jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>`
 
-When specifying the JDBC connection URL, add the additional parameters:
-
-| Property         | Value         |
-| ---------------- | ------------- |
-| socketFactoryClass    | com.google.cloud.sql.sqlserver.SocketFactory |
-| socketFactoryConstructorArg | The instance connection name (found on the instance details page) |
-| user             | SQL Server username |
-| password         | SQL Server user's password |
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.sqlserver.SocketFactory`
 
 The full JDBC URL should look like this:
 
@@ -167,11 +155,11 @@ The full JDBC URL should look like this:
 jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
 ```
 
-Note: The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg.
+**Note:** The host portion of the JDBC URL is currently unused, and has no effect on the connection process. The SocketFactory will get your instances IP address based on the provided `socketFactoryConstructorArg` arg.
 
 ### Specifying IP Types
 
-"The `ipTypes` argument is used to specify a preferred order of IP types used
+The `ipTypes` argument is used to specify a preferred order of IP types used
 to connect via a comma delimited list. For example, `ipTypes=PUBLIC,PRIVATE`
 will use the instance's Public IP if it exists, otherwise private. The
 value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via
@@ -276,7 +264,6 @@ config.setConnectionTimeout(10000); // 10s
 HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
-
 ##### Maria DB
 
 ```java
@@ -299,10 +286,8 @@ config.setConnectionTimeout(10000); // 10s
 HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
-
 ##### Postgres
 
-Example:
 ```java
 // Set up URL parameters
 String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
@@ -387,7 +372,6 @@ config.setConnectionTimeout(10000); // 10s
 HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
-
 ##### Postgres
 
 ```java
@@ -415,7 +399,6 @@ HikariDataSource connectionPool = new HikariDataSource(config);
 
 Not Supported.
 
-
 #### Delegated Service Account Impersonation
 
 In addition, the `cloudSqlDelegates` property controls impersonation delegation.
@@ -430,7 +413,6 @@ the Token Creator on serviceAccountC. Finally, C must have Token Creator on
 must "Service Account Token Creator" capability granted that role on the
 cloudSqlTargetPrincipal service account.
 
-
 ```java
 connProps.setProperty("cloudSqlTargetPrincipal", "TARGET_SERVICE_ACCOUNT");
 connProps.setProperty("cloudSqlDelegates", "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2");
@@ -439,8 +421,6 @@ connProps.setProperty("cloudSqlDelegates", "SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2"
 In this example, the environment's application default principal impersonates
 SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
 impersonates the TARGET_SERVICE_ACCOUNT.
-
-
 
 ### Connection via Unix Sockets
 
@@ -479,25 +459,21 @@ Examples for using the Cloud SQL JDBC Connector for SQL Server can be found by l
 
 ## Reference Documentation
 
-#### Mysql & Maria DB
+### Mysql & Maria DB
 
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/mysql/connect-app-engine-standard)
 * [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/mysql/connect-app-engine-flexible)
 * [Connecting to Cloud SQL from Cloud Functions](https://cloud.google.com/sql/docs/mysql/connect-functions)
 * [Connecting to Cloud SQL from Cloud Run](https://cloud.google.com/sql/docs/mysql/connect-run)
 
-
-
-#### Postgres
+### Postgres
 
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/postgres/connect-app-engine-standard)
 * [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/postgres/connect-app-engine-flexible)
 * [Connecting to Cloud SQL from Cloud Functions](https://cloud.google.com/sql/docs/postgres/connect-functions)
 * [Connecting to Cloud SQL from Cloud Run](https://cloud.google.com/sql/docs/postgres/connect-run)
 
-
-#### SQL Server
-
+### SQL Server
 
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/sqlserver/connect-app-engine-standard)
 * [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/sqlserver/connect-app-engine-flexible)

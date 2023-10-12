@@ -10,12 +10,7 @@ The Cloud SQL Connector for Java is a library that provides IAM-based authorizat
 ## Usage
 For usage information specific to your database engine and driver, see the pages below:
 
-JDBC:
-* [Connecting to MySQL using JDBC](docs/jdbc-mysql.md)
-* [Connecting to Postgres using JDBC](docs/jdbc-postgres.md)
-* [Connecting to SQL Server using JDBC](docs/jdbc-sqlserver.md)
-
-R2DBC:
+* [Connecting to Cloud SQL using JDBC](docs/jdbc.md)
 * [Connecting to Cloud SQL using R2DBC](docs/r2dbc)
 
 For examples of this library being used in the context of an application, check out the sample applications located 
