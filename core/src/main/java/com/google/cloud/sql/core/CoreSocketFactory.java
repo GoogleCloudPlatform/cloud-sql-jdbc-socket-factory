@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -40,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -55,18 +57,42 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
 
+  /**
+   * Connection property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_INSTANCE_PROPERTY
+   */
   @Deprecated
   public static final String CLOUD_SQL_INSTANCE_PROPERTY =
       ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY;
 
+  /**
+   * Delegates property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_DELEGATES_PROPERTY
+   */
   @Deprecated
   public static final String CLOUD_SQL_DELEGATES_PROPERTY =
       ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY;
 
+  /**
+   * TargetPrincipal property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY
+   */
   @Deprecated
   public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY =
       ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY;
 
+  /**
+   * IpTypes default property value.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#DEFAULT_IP_TYPES
+   */
   @Deprecated public static final String DEFAULT_IP_TYPES = ConnectionConfig.DEFAULT_IP_TYPES;
 
   /**
@@ -224,7 +250,22 @@ public final class CoreSocketFactory {
     CoreSocketFactory instance = getInstance();
     return instance
         .getCloudSqlInstance(config)
-        .getPreferredIp(config.getIpTypes(), instance.refreshTimeoutMs);
+        .getPreferredIp(ipTypeStrings(config.getIpTypes()), instance.refreshTimeoutMs);
+  }
+
+  /**
+   * A function to convert from newer API that uses the IpType enum to the legacy ip type strings.
+   */
+  private static List<String> ipTypeStrings(List<IpType> ipTypes) {
+    return ipTypes.stream()
+        .map(
+            (t) -> {
+              if (t == IpType.PUBLIC) {
+                return "PRIMARY";
+              }
+              return t.toString();
+            })
+        .collect(Collectors.toList());
   }
 
   private static KeyPair generateRsaKeyPair() {
@@ -323,7 +364,8 @@ public final class CoreSocketFactory {
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getPreferredIp(config.getIpTypes(), refreshTimeoutMs);
+      String instanceIp =
+          instance.getPreferredIp(ipTypeStrings(config.getIpTypes()), refreshTimeoutMs);
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();

@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql.config;
+package com.google.cloud.sql;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
-import com.google.cloud.sql.IpType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -39,8 +36,7 @@ public class ConnectionConfigTest {
     final String wantUnixSocket = "/path/to/socket";
     final List<IpType> wantIpTypes =
         Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC); // PUBLIC is replaced with PRIMARY
-    final String ipTypes =
-        wantIpTypes.stream().map(IpType::toString).collect(Collectors.joining(","));
+    final String ipTypes = "psc,Private,PUBLIC";
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -57,8 +53,7 @@ public class ConnectionConfigTest {
     assertThat(c.getDelegates()).isEqualTo(wantDelegates);
     assertThat(c.getAuthType()).isEqualTo(AuthType.IAM);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
-    assertThat(c.getIpTypes())
-        .isEqualTo(wantIpTypes.stream().map(IpType::getApiName).collect(Collectors.toList()));
+    assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
   }
 
   @Test
@@ -67,8 +62,7 @@ public class ConnectionConfigTest {
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
     final String wantUnixSocket = "/path/to/socket";
-    final List<IpType> wantIpTypes =
-        Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC); // PUBLIC is replaced with PRIMARY
+    final List<IpType> wantIpTypes = Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC);
     final AuthType wantAuthType = AuthType.PASSWORD;
 
     ConnectionConfig c =
@@ -86,7 +80,6 @@ public class ConnectionConfigTest {
     assertThat(c.getDelegates()).isEqualTo(wantDelegates);
     assertThat(c.getAuthType()).isEqualTo(wantAuthType);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
-    assertThat(c.getIpTypes())
-        .isEqualTo(wantIpTypes.stream().map(IpType::getApiName).collect(Collectors.toList()));
+    assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
   }
 }

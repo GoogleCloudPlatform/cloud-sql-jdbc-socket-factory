@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 /**
  * ConnectionConfig is an immutable configuration value object that holds the entire configuration
@@ -131,8 +130,8 @@ public class ConnectionConfig {
     return delegates;
   }
 
-  public List<String> getIpTypes() {
-    return ipTypes.stream().map(IpType::getApiName).collect(Collectors.toList());
+  public List<IpType> getIpTypes() {
+    return ipTypes;
   }
 
   /** The builder for the ConnectionConfig. */

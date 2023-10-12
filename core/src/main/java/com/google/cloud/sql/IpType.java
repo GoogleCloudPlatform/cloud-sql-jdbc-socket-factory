@@ -18,16 +18,7 @@ package com.google.cloud.sql;
 
 /** IP types that for connecting to a Cloud SQL Database. */
 public enum IpType {
-  PUBLIC("PRIMARY"),
-  PRIVATE("PRIVATE"),
-  PSC("PSC");
-  private final String apiName;
-
-  IpType(String apiName) {
-    this.apiName = apiName;
-  }
-
-  public String getApiName() {
-    return apiName;
-  }
+  PUBLIC,
+  PRIVATE,
+  PSC;
 }

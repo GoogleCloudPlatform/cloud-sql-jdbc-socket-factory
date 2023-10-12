@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.postgres;
 
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.core.CoreSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -53,8 +54,8 @@ public class SocketFactory extends javax.net.SocketFactory {
           String.format(
               "The '%s' property has been deprecated. Please update your postgres driver and use"
                   + "the  '%s' property in your JDBC url instead.",
-              DEPRECATED_SOCKET_ARG, CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY));
-      info.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
+              DEPRECATED_SOCKET_ARG, ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY));
+      info.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, oldInstanceKey);
     }
     this.props = info;
   }
