@@ -16,9 +16,7 @@ JDBC:
 * [Connecting to SQL Server using JDBC](docs/jdbc-sqlserver.md)
 
 R2DBC:
-* [Connecting to MySQL using R2DBC](docs/r2dbc-mysql.md)
-* [Connecting to Postgres using R2DBC](docs/r2dbc-postgres.md)
-* [Connecting to SQL Server using R2DBC](docs/r2dbc-sqlserver.md)
+* [Connecting to Cloud SQL using R2DBC](docs/r2dbc)
 
 For examples of this library being used in the context of an application, check out the sample applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).

@@ -20,6 +20,4 @@ extraFiles:
   - docs/jdbc-mysql.md
   - docs/jdbc-postgres.md
   - docs/jdbc-sqlserver.md
-  - docs/r2dbc-mysql.md
-  - docs/r2dbc-postgres.md
-  - docs/r2dbc-sqlserver.md
+  - docs/r2dbc.md
