@@ -19,12 +19,12 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
+import com.google.cloud.sql.ConnectionConfig;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.mssql.MssqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MsSQL instances. */
@@ -44,24 +44,15 @@ public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvi
 
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
+      ConnectionConfig config,
       Builder builder,
-      String ipTypes,
-      String targetPrincipal,
-      List<String> delegates,
-      Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      Function<SslContextBuilder, SslContextBuilder> customizer) {
     builder
         .option(MssqlConnectionFactoryProvider.SSL_TUNNEL, customizer)
         .option(MssqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(MssqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        MssqlConnectionFactoryProvider::new,
-        ipTypes,
-        targetPrincipal,
-        delegates,
-        builder,
-        hostname);
+    return new CloudSqlConnectionFactory(config, MssqlConnectionFactoryProvider::new, builder);
   }
 
   @Override

@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.sqlserver;
 
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.core.CoreSocketFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
@@ -49,7 +50,7 @@ public class SocketFactory extends javax.net.SocketFactory {
    */
   public SocketFactory(String socketFactoryConstructorArg) throws UnsupportedEncodingException {
     List<String> s = Splitter.on('?').splitToList(socketFactoryConstructorArg);
-    this.props.setProperty(CoreSocketFactory.CLOUD_SQL_INSTANCE_PROPERTY, s.get(0));
+    this.props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, s.get(0));
     if (s.size() == 2 && s.get(1).length() > 0) {
       Iterable<String> queryParams = Splitter.on('&').split(s.get(1));
       for (String param : queryParams) {

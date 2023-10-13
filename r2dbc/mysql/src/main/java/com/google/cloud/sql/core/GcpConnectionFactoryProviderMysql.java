@@ -19,13 +19,13 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
+import com.google.cloud.sql.ConnectionConfig;
 import io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP MySQL instances. */
@@ -45,25 +45,16 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
 
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
+      ConnectionConfig config,
       Builder builder,
-      String ipTypes,
-      String targetPrincipal,
-      List<String> delegates,
-      Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      Function<SslContextBuilder, SslContextBuilder> customizer) {
     builder
         .option(MySqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(MySqlConnectionFactoryProvider.SSL_MODE, SslMode.TUNNEL)
         .option(MySqlConnectionFactoryProvider.TCP_NO_DELAY, true)
         .option(MySqlConnectionFactoryProvider.TCP_KEEP_ALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        MySqlConnectionFactoryProvider::new,
-        ipTypes,
-        targetPrincipal,
-        delegates,
-        builder,
-        hostname);
+    return new CloudSqlConnectionFactory(config, MySqlConnectionFactoryProvider::new, builder);
   }
 
   @Override

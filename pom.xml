@@ -245,6 +245,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
+          <includes>com/google/cloud/sql/*</includes>
           <includes>com/google/cloud/sql/CredentialFactory</includes>
           <includes>com/google/cloud/sql/core/CoreSocketFactory</includes>
           <includes>com/google/cloud/sql/mariadb/SocketFactory</includes>

@@ -19,13 +19,13 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 
+import com.google.cloud.sql.ConnectionConfig;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.io.IOException;
-import java.util.List;
 import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import reactor.util.annotation.NonNull;
@@ -36,32 +36,23 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   public static final int SERVER_PROXY_PORT = 3307;
   private final Supplier<ConnectionFactoryProvider> supplier;
   private final ConnectionFactoryOptions.Builder builder;
-  private final String hostname;
-  private final String ipTypes;
-  private final String targetPrincipal;
-  private final List<String> delegates;
+  private final ConnectionConfig config;
 
   /** Creates an instance of ConnectionFactory that pulls and sets host ip before delegating. */
   public CloudSqlConnectionFactory(
+      ConnectionConfig config,
       Supplier<ConnectionFactoryProvider> supplier,
-      String ipTypes,
-      String targetPrincipal,
-      List<String> delegates,
-      ConnectionFactoryOptions.Builder builder,
-      String hostname) {
+      ConnectionFactoryOptions.Builder builder) {
+    this.config = config;
     this.supplier = supplier;
-    this.ipTypes = ipTypes;
     this.builder = builder;
-    this.hostname = hostname;
-    this.targetPrincipal = targetPrincipal;
-    this.delegates = delegates;
   }
 
   @Override
   @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, targetPrincipal, delegates);
+      String hostIp = CoreSocketFactory.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
@@ -73,7 +64,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(hostname, ipTypes, targetPrincipal, delegates);
+      String hostIp = CoreSocketFactory.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {

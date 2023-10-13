@@ -17,11 +17,11 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -35,14 +35,13 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -58,9 +57,43 @@ import jnr.unixsocket.UnixSocketChannel;
  */
 public final class CoreSocketFactory {
 
-  public static final String CLOUD_SQL_INSTANCE_PROPERTY = "cloudSqlInstance";
-  public static final String CLOUD_SQL_DELEGATES_PROPERTY = "cloudSqlDelegates";
-  public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY = "cloudSqlTargetPrincipal";
+  /**
+   * Connection property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_INSTANCE_PROPERTY
+   */
+  @Deprecated
+  public static final String CLOUD_SQL_INSTANCE_PROPERTY =
+      ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY;
+
+  /**
+   * Delegates property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_DELEGATES_PROPERTY
+   */
+  @Deprecated
+  public static final String CLOUD_SQL_DELEGATES_PROPERTY =
+      ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY;
+
+  /**
+   * TargetPrincipal property name.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY
+   */
+  @Deprecated
+  public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY =
+      ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY;
+
+  /**
+   * IpTypes default property value.
+   *
+   * @deprecated Use the public API instead.
+   * @see com.google.cloud.sql.ConnectionConfig#DEFAULT_IP_TYPES
+   */
+  @Deprecated public static final String DEFAULT_IP_TYPES = ConnectionConfig.DEFAULT_IP_TYPES;
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -71,8 +104,6 @@ public final class CoreSocketFactory {
   @Deprecated public static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   static final long DEFAULT_MAX_REFRESH_MS = 30000;
-  public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
-  private static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
   private static final Logger logger = Logger.getLogger(CoreSocketFactory.class.getName());
 
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
@@ -144,8 +175,8 @@ public final class CoreSocketFactory {
   }
 
   /** Extracts the Unix socket argument from specified properties object. If unset, returns null. */
-  private static String getUnixSocketArg(Properties props) {
-    String unixSocketPath = props.getProperty(UNIX_SOCKET_PROPERTY);
+  private static String getUnixSocketArg(ConnectionConfig config) {
+    String unixSocketPath = config.getUnixSocketPath();
     if (unixSocketPath != null) {
       // Get the Unix socket file path from the properties object
       return unixSocketPath;
@@ -157,8 +188,8 @@ public final class CoreSocketFactory {
               "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
                   + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
                   + " instead.",
-              UNIX_SOCKET_PROPERTY));
-      return "/cloudsql/" + props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
+              ConnectionConfig.UNIX_SOCKET_PROPERTY));
+      return "/cloudsql/" + config.getCloudSqlInstance();
     }
     return null; // if unset, default to null
   }
@@ -181,25 +212,17 @@ public final class CoreSocketFactory {
   public static Socket connect(Properties props, String unixPathSuffix)
       throws IOException, InterruptedException {
     // Gather parameters
-    final String csqlInstanceName = props.getProperty(CLOUD_SQL_INSTANCE_PROPERTY);
-    final boolean enableIamAuth = Boolean.parseBoolean(props.getProperty("enableIamAuth"));
-    final String targetPrincipal = props.getProperty(CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
-    final String delegatesStr = props.getProperty(CLOUD_SQL_DELEGATES_PROPERTY);
-    final List<String> delegates;
-    if (delegatesStr != null && !delegatesStr.isEmpty()) {
-      delegates = Arrays.asList(delegatesStr.split(","));
-    } else {
-      delegates = Collections.emptyList();
-    }
+
+    ConnectionConfig config = ConnectionConfig.fromConnectionProperties(props);
 
     // Validate parameters
     Preconditions.checkArgument(
-        csqlInstanceName != null,
+        config.getCloudSqlInstance() != null,
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
     // Connect using the specified Unix socket
-    String unixSocket = getUnixSocketArg(props);
+    String unixSocket = getUnixSocketArg(config);
     if (unixSocket != null) {
       // Verify it ends with the correct suffix
       if (unixPathSuffix != null && !unixSocket.endsWith(unixPathSuffix)) {
@@ -208,68 +231,41 @@ public final class CoreSocketFactory {
       logger.info(
           String.format(
               "Connecting to Cloud SQL instance [%s] via unix socket at %s.",
-              csqlInstanceName, unixSocket));
+              config.getCloudSqlInstance(), unixSocket));
       UnixSocketAddress socketAddress = new UnixSocketAddress(new File(unixSocket));
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
-    final List<String> ipTypes = listIpTypes(props.getProperty("ipTypes", DEFAULT_IP_TYPES));
-    if (enableIamAuth) {
-      return getInstance()
-          .createSslSocket(csqlInstanceName, ipTypes, AuthType.IAM, targetPrincipal, delegates);
-    }
-    return getInstance()
-        .createSslSocket(csqlInstanceName, ipTypes, AuthType.PASSWORD, targetPrincipal, delegates);
+    return getInstance().createSslSocket(config);
   }
 
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  public static SslData getSslData(
-      String csqlInstanceName,
-      boolean enableIamAuth,
-      String targetPrincipal,
-      List<String> delegates)
-      throws IOException {
-    if (enableIamAuth) {
-      CoreSocketFactory factory = getInstance();
-      return factory
-          .getCloudSqlInstance(csqlInstanceName, AuthType.IAM, targetPrincipal, delegates)
-          .getSslData(factory.refreshTimeoutMs);
-    }
-    CoreSocketFactory factory = getInstance();
-    return factory
-        .getCloudSqlInstance(csqlInstanceName, AuthType.PASSWORD, targetPrincipal, delegates)
-        .getSslData(factory.refreshTimeoutMs);
+  public static SslData getSslData(ConnectionConfig config) throws IOException {
+    CoreSocketFactory instance = getInstance();
+    return instance.getCloudSqlInstance(config).getSslData(instance.refreshTimeoutMs);
   }
 
   /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(
-      String csqlInstanceName, String ipTypes, String targetPrincipal, List<String> delegates)
-      throws IOException {
-    return getInstance()
-        .getHostIp(csqlInstanceName, listIpTypes(ipTypes), targetPrincipal, delegates);
-  }
-
-  private String getHostIp(
-      String instanceName, List<String> ipTypes, String targetPrincipal, List<String> delegates) {
-    CloudSqlInstance instance =
-        getCloudSqlInstance(instanceName, AuthType.PASSWORD, targetPrincipal, delegates);
-    return instance.getPreferredIp(ipTypes, refreshTimeoutMs);
+  public static String getHostIp(ConnectionConfig config) throws IOException {
+    CoreSocketFactory instance = getInstance();
+    return instance
+        .getCloudSqlInstance(config)
+        .getPreferredIp(ipTypeStrings(config.getIpTypes()), instance.refreshTimeoutMs);
   }
 
   /**
-   * Converts the string property of IP types to a list by splitting by commas, and upper-casing.
+   * A function to convert from newer API that uses the IpType enum to the legacy ip type strings.
    */
-  private static List<String> listIpTypes(String cloudSqlIpTypes) {
-    List<String> rawTypes = Splitter.on(',').splitToList(cloudSqlIpTypes);
-    ArrayList<String> result = new ArrayList<>(rawTypes.size());
-    for (String type : rawTypes) {
-      if (type.trim().equalsIgnoreCase("PUBLIC")) {
-        result.add("PRIMARY");
-      } else {
-        result.add(type.trim().toUpperCase());
-      }
-    }
-    return result;
+  private static List<String> ipTypeStrings(List<IpType> ipTypes) {
+    return ipTypes.stream()
+        .map(
+            (t) -> {
+              if (t == IpType.PUBLIC) {
+                return "PRIMARY";
+              }
+              return t.toString();
+            })
+        .collect(Collectors.toList());
   }
 
   private static KeyPair generateRsaKeyPair() {
@@ -352,22 +348,13 @@ public final class CoreSocketFactory {
   /**
    * Creates a secure socket representing a connection to a Cloud SQL instance.
    *
-   * @param instanceName Name of the Cloud SQL instance.
-   * @param ipTypes Preferred type of IP to use ("PRIVATE", "PUBLIC", "PSC")
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
-  Socket createSslSocket(
-      String instanceName,
-      List<String> ipTypes,
-      AuthType authType,
-      String targetPrincipal,
-      List<String> delegates)
-      throws IOException, InterruptedException {
-    CloudSqlInstance instance =
-        getCloudSqlInstance(instanceName, authType, targetPrincipal, delegates);
+  Socket createSslSocket(ConnectionConfig config) throws IOException, InterruptedException {
+    CloudSqlInstance instance = getCloudSqlInstance(config);
 
     try {
       SSLSocket socket = instance.createSslSocket(this.refreshTimeoutMs);
@@ -377,7 +364,8 @@ public final class CoreSocketFactory {
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getPreferredIp(ipTypes, refreshTimeoutMs);
+      String instanceIp =
+          instance.getPreferredIp(ipTypeStrings(config.getIpTypes()), refreshTimeoutMs);
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();
@@ -390,26 +378,24 @@ public final class CoreSocketFactory {
     }
   }
 
-  CloudSqlInstance getCloudSqlInstance(
-      String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
-    return instances.computeIfAbsent(
-        instanceName, k -> apiFetcher(k, authType, targetPrincipal, delegates));
+  CloudSqlInstance getCloudSqlInstance(ConnectionConfig config) {
+    return instances.computeIfAbsent(config.getCloudSqlInstance(), k -> apiFetcher(config));
   }
 
-  private CloudSqlInstance apiFetcher(
-      String instanceName, AuthType authType, String targetPrincipal, List<String> delegates) {
+  private CloudSqlInstance apiFetcher(ConnectionConfig config) {
 
     final CredentialFactory instanceCredentialFactory;
-    if (targetPrincipal != null && !targetPrincipal.isEmpty()) {
+    if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {
       instanceCredentialFactory =
           new ServiceAccountImpersonatingCredentialFactory(
-              credentialFactory, targetPrincipal, delegates);
+              credentialFactory, config.getTargetPrincipal(), config.getDelegates());
     } else {
-      if (delegates != null && !delegates.isEmpty()) {
+      if (config.getDelegates() != null && !config.getDelegates().isEmpty()) {
         throw new IllegalArgumentException(
             String.format(
                 "Connection property %s must be when %s is set.",
-                CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY, CLOUD_SQL_DELEGATES_PROPERTY));
+                ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY,
+                ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY));
       }
       instanceCredentialFactory = credentialFactory;
     }
@@ -418,9 +404,9 @@ public final class CoreSocketFactory {
     SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
 
     return new CloudSqlInstance(
-        instanceName,
+        config.getCloudSqlInstance(),
         adminApi,
-        authType,
+        config.getAuthType(),
         instanceCredentialFactory,
         executor,
         localKeyPair,

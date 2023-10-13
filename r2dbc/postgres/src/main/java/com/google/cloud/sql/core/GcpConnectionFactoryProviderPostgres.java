@@ -19,13 +19,13 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
+import com.google.cloud.sql.ConnectionConfig;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.postgresql.client.SSLMode;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
-import java.util.List;
 import java.util.function.Function;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres instances. */
@@ -47,25 +47,16 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
 
   @Override
   ConnectionFactory tcpSocketConnectionFactory(
+      ConnectionConfig config,
       Builder builder,
-      String ipTypes,
-      String targetPrincipal,
-      List<String> delegates,
-      Function<SslContextBuilder, SslContextBuilder> customizer,
-      String hostname) {
+      Function<SslContextBuilder, SslContextBuilder> customizer) {
     builder
         .option(PostgresqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
         .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.TUNNEL)
         .option(PostgresqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
-    return new CloudSqlConnectionFactory(
-        PostgresqlConnectionFactoryProvider::new,
-        ipTypes,
-        targetPrincipal,
-        delegates,
-        builder,
-        hostname);
+    return new CloudSqlConnectionFactory(config, PostgresqlConnectionFactoryProvider::new, builder);
   }
 
   @Override
