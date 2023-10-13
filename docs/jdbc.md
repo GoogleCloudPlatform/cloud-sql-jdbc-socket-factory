@@ -231,23 +231,23 @@ Or in java code:
 
 ```java
 String jdbcURL=String.format("jdbc:sqlserver://localhost;databaseName=%s","<DATABASE_NAME>");
-    Properties connProps=new Properties();
-    connProps.setProperty("user","<USER_NAME>");
-    connProps.setProperty("password","<PASSWORD>");
-    connProps.setProperty("encrypt","false");
-    connProps.setProperty("socketFactory","com.google.cloud.sql.sqlserver.SocketFactory");
+Properties connProps=new Properties();
+connProps.setProperty("user","<USER_NAME>");
+connProps.setProperty("password","<PASSWORD>");
+connProps.setProperty("encrypt","false");
+connProps.setProperty("socketFactory","com.google.cloud.sql.sqlserver.SocketFactory");
 
-    connProps.setProperty("socketFactoryConstructorArg",
-    "<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE");
+connProps.setProperty("socketFactoryConstructorArg",
+"<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE");
 
 // Initialize connection pool
-    HikariConfig config=new HikariConfig();
-    config.setJdbcUrl(jdbcURL);
-    config.setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
-    config.setDataSourceProperties(connProps);
-    config.setConnectionTimeout(10000); // 10s
+HikariConfig config=new HikariConfig();
+config.setJdbcUrl(jdbcURL);
+config.setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
+config.setDataSourceProperties(connProps);
+config.setConnectionTimeout(10000); // 10s
 
-    HikariDataSource connectionPool=new HikariDataSource(config);
+HikariDataSource connectionPool=new HikariDataSource(config);
 ```
 
 ### IAM Authentication
@@ -289,11 +289,11 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 Replace these parameters in the example based on your database type:
 
-|                | Mysql                                    | MariaDB                                    | Postgres                                    |
-|----------------|------------------------------------------|--------------------------------------------|---------------------------------------------|
-| <JDBC_URL>     | jdbc:mysql:///<DB_NAME>                  | jdbc:mariadb://ignoreme:123/<DB_NAME>      | jdbc:postgresql:///<DB_NAME>                |  
-| <DRIVER_CLASS> | com.google.cloud.sql.mysql.SocketFactory | com.google.cloud.sql.mariadb.SocketFactory | com.google.cloud.sql.postgres.SocketFactory |  
-| <IAM_DB_USER>  | my-sa                                    | my-sa                                      | my-sa@my-project.iam                        |
+|          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          |
+|----------|---------------------------------------|---------------------------------------------|----------------------|
+| Mysql    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                |  
+| MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                |  
+| Postgres | jdbc:postgresql:///<DB_NAME>          | com.google.cloud.sql.postgres.SocketFactory | my-sa@my-project.iam |
 
 
 ```java
@@ -334,11 +334,11 @@ in [IAM Authentication](#iam-authentication)
 
 Replace these parameters in the example based on your database type:
 
-|               | Mysql & MariaDB                          | Postgres                                 |
-|---------------|------------------------------------------|------------------------------------------|
-| <PROTOCOL>    | mysql                                    | postgresql                               |  
-| <IAM_DB_USER> | my-sa                                    | my-sa@my-project.iam                     |
-| <IAM_EMAIL>   | my-sa@my-project.iam.gserviceaccount.com | my-sa@my-project.iam.gserviceaccount.com |
+|          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          | IAM_EMAIL                                |
+|----------|---------------------------------------|---------------------------------------------|----------------------|------------------------------------------|
+| Mysql    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| Postgres | jdbc:postgresql:///<DB_NAME>          | com.google.cloud.sql.postgres.SocketFactory | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
@@ -395,8 +395,13 @@ file instead of connecting directly over TCP.
 
 ##### Mysql
 
-```
-jdbc:mysql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```java 
+String jdbcUrl = "jdbc:mysql:///<DATABASE_NAME>?" 
+    + "unixSocketPath=</PATH/TO/UNIX/SOCKET>" 
+    + "&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&socketFactory=com.google.cloud.sql.mysql.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>"
+    + "&password=<MYSQL_USER_PASSWORD>";
 ```
 
 ##### Maria DB
@@ -405,8 +410,12 @@ Not Supported.
 
 ##### Postgres
 
-```
-jdbc:postgresql:///<DATABASE_NAME>?unixSocketPath=</PATH/TO/UNIX/SOCKET>&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:postgresql:///<DATABASE_NAME>" 
+    + "?unixSocketPath=</PATH/TO/UNIX/SOCKET>" 
+    + "&cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&socketFactory=com.google.cloud.sql.postgres.SocketFactory" 
+    + "&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>"
 ```
 
 ##### SQL Server

@@ -169,10 +169,10 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 Replace these parameters in the example based on your database type:
 
-|               | Mysql | Postgres             |
-|---------------|-------|----------------------|
-| <PROTOCOL>    | mysql | postgresql           |  
-| <IAM_DB_USER> | my-sa | my-sa@my-project.iam |
+|          | PROTOCOL   | IAM_DB_USER          |
+|----------|------------|----------------------|
+| Mysql    | mysql      | my-sa                |  
+| Postgres | postgresql | my-sa@my-project.iam |
 
 ```java
 // Set up ConnectionFactoryOptions
@@ -215,11 +215,10 @@ in [IAM Authentication](#iam-authentication)
 
 Replace these parameters in the example based on your database type:
 
-|               | Mysql                                    | Postgres                                 |
-|---------------|------------------------------------------|------------------------------------------|
-| <PROTOCOL>    | mysql                                    | postgresql                               |  
-| <IAM_DB_USER> | my-sa                                    | my-sa@my-project.iam                     |
-| <IAM_EMAIL>   | my-sa@my-project.iam.gserviceaccount.com | my-sa@my-project.iam.gserviceaccount.com |
+|          | PROTOCOL   | IAM_DB_USER          | IAM_EMAIL                                |
+|----------|------------|----------------------|------------------------------------------|
+| Mysql    | mysql      | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| Postgres | postgresql | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
@@ -277,9 +276,9 @@ impersonates the TARGET_SERVICE_ACCOUNT.
 
 ## Examples
 
-Examples for using the Cloud SQL JDBC Connector can be found by looking at the
+Examples for the Cloud SQL R2DBC Connector can be found by looking at the
 integration tests in this repository.
 
 * [Mysql usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
 * [Postgres usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
-* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlServerIntegrationTests.java)
+* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
