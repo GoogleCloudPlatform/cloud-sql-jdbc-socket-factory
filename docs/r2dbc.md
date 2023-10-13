@@ -157,19 +157,22 @@ username.
 * Postgres: If the IAM email ends with `.gserviceaccount.com`, remove
   the `.gserviceaccount.com` suffix from the email.
 
-For example, if the full IAM user account
-is `my-sa@my-project.iam.gserviceaccount.com`,
-You would update the code, replacing these examples with the appropriate values
-for your database engine:
+For example, if the full IAM user account is 
+`my-sa@my-project.iam.gserviceaccount.com`, then the shortened database username
+would be `my-sa` for Mysql, and `my-sa@my-project.iam` for Postgres. 
+
+**Note:** a non-empty string value for the `password` property must be set.
+While this property will be ignored when connecting with the Cloud SQL Connector
+using IAM auth, leaving it empty will cause driver-level validations to fail.
+
+#### Example
+
+Replace these parameters in the example based on your database type:
 
 |               | Mysql | Postgres             |
 |---------------|-------|----------------------|
 | <PROTOCOL>    | mysql | postgresql           |  
 | <IAM_DB_USER> | my-sa | my-sa@my-project.iam |
-
-**Note:** a non-empty string value for the `password` property must be set.
-While this property will be ignored when connecting with the Cloud SQL Connector
-using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 ```java
 // Set up ConnectionFactoryOptions
@@ -203,15 +206,19 @@ the supplied service account. The IAM principal must have the
 iam.serviceAccounts.getAccessToken permission or the role
 roles/iam.serviceAccounts.serviceAccountTokenCreator.
 
-For example, if the full IAM user account
-is `my-sa@my-project.iam.gserviceaccount.com`,
-You would update the code, replacing these examples with the appropriate values
-for your database engine:
+You must enable IAM Authentication to use service account impersonation.
+Set the `TARGET_PRINCIPAL` property to the full IAM email. Set
+the `USER` option to the shortened IAM email following the rules described
+in [IAM Authentication](#iam-authentication)
+
+#### Example
+
+Replace these parameters in the example based on your database type:
 
 |               | Mysql                                    | Postgres                                 |
 |---------------|------------------------------------------|------------------------------------------|
 | <PROTOCOL>    | mysql                                    | postgresql                               |  
-| <IAM_DB_USER> | my-sa                                    | my-sa@my-proeject.iam                    |
+| <IAM_DB_USER> | my-sa                                    | my-sa@my-project.iam                     |
 | <IAM_EMAIL>   | my-sa@my-project.iam.gserviceaccount.com | my-sa@my-project.iam.gserviceaccount.com |
 
 **Note:** a non-empty string value for the `password` property must be set.
