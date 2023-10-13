@@ -36,7 +36,7 @@ class InstanceData {
     this.expiration = expiration;
   }
 
-  Instant getExpiration() {
+  public Instant getExpiration() {
     return expiration;
   }
 

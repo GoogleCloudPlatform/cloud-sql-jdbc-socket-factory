@@ -19,23 +19,13 @@ package com.google.cloud.sql.core;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.IpType;
-import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
 
@@ -45,31 +35,11 @@ import javax.net.ssl.SSLSocket;
  * asynchronously, and this class should be considered threadsafe.
  */
 class CloudSqlInstance {
-
-  private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
-
-  private final ListeningScheduledExecutorService executor;
-  private final InstanceDataSupplier instanceDataSupplier;
   private final AuthType authType;
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
-  private final ListenableFuture<KeyPair> keyPair;
-  private final Object instanceDataGuard = new Object();
-  private final AsyncRateLimiter rateLimiter;
 
-  private final RefreshCalculator refreshCalculator = new RefreshCalculator();
-
-  @GuardedBy("instanceDataGuard")
-  private ListenableFuture<InstanceData> currentInstanceData;
-
-  @GuardedBy("instanceDataGuard")
-  private ListenableFuture<InstanceData> nextInstanceData;
-
-  @GuardedBy("instanceDataGuard")
-  private boolean refreshRunning;
-
-  @GuardedBy("instanceDataGuard")
-  private Throwable currentRefreshFailure;
+  private final Refresher refresher;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -88,13 +58,7 @@ class CloudSqlInstance {
       ListenableFuture<KeyPair> keyPair,
       long minRefreshDelayMs) {
     this.instanceName = new CloudSqlInstanceName(connectionName);
-    this.instanceDataSupplier = instanceDataSupplier;
     this.authType = authType;
-    this.executor = executor;
-    this.keyPair = keyPair;
-
-    // convert requests/second into milliseconds between requests.
-    this.rateLimiter = new AsyncRateLimiter(minRefreshDelayMs);
 
     if (authType == AuthType.IAM) {
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
@@ -102,17 +66,22 @@ class CloudSqlInstance {
       this.accessTokenSupplier = Optional::empty;
     }
 
-    synchronized (instanceDataGuard) {
-      this.currentInstanceData = this.startRefreshAttempt();
-      this.nextInstanceData = currentInstanceData;
-    }
+    // Initialize the data refresher to retrieve instance data.
+    refresher =
+        new Refresher(
+            connectionName,
+            executor,
+            () ->
+                instanceDataSupplier.getInstanceData(
+                    this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair),
+            new AsyncRateLimiter(minRefreshDelayMs));
   }
 
   /**
-   * Returns the current data related to the instance from {@link #startRefreshAttempt()}. May block
-   * if no valid data is currently available. This method is called by an application thread when it
-   * is trying to create a new connection to the database. (It is not called by a
-   * ListeningScheduledExecutorService task.) So it is OK to block waiting for a future to complete.
+   * Returns the current data related to the instance. May block if no valid data is currently
+   * available. This method is called by an application thread when it is trying to create a new
+   * connection to the database. (It is not called by a ListeningScheduledExecutorService task.) So
+   * it is OK to block waiting for a future to complete.
    *
    * <p>When no refresh attempt is in progress, this returns immediately. Otherwise, it waits up to
    * timeoutMs milliseconds. If a refresh attempt succeeds, returns immediately at the end of that
@@ -120,35 +89,12 @@ class CloudSqlInstance {
    * the exception from the last failed refresh attempt as the cause.
    */
   private InstanceData getInstanceData(long timeoutMs) {
-    ListenableFuture<InstanceData> instanceDataFuture;
-    synchronized (instanceDataGuard) {
-      instanceDataFuture = currentInstanceData;
-    }
+    return refresher.getData(timeoutMs);
+  }
 
-    try {
-      return instanceDataFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException e) {
-      synchronized (instanceDataGuard) {
-        if (currentRefreshFailure != null) {
-          throw new RuntimeException(
-              String.format(
-                      "Unable to get valid instance data within %d ms."
-                          + " Last refresh attempt failed:",
-                      timeoutMs)
-                  + currentRefreshFailure.getMessage(),
-              currentRefreshFailure);
-        }
-      }
-      throw new RuntimeException(
-          String.format(
-              "Unable to get valid instance data within %d ms. No refresh has completed.",
-              timeoutMs),
-          e);
-    } catch (ExecutionException | InterruptedException ex) {
-      Throwable cause = ex.getCause();
-      Throwables.throwIfUnchecked(cause);
-      throw new RuntimeException(cause);
-    }
+  /** Returns SslData to establish mTLS connections. */
+  SslData getSslData(long timeoutMs) {
+    return getInstanceData(timeoutMs).getSslData();
   }
 
   /**
@@ -184,142 +130,16 @@ class CloudSqlInstance {
             preferredTypes.stream().map(IpType::toString).collect(Collectors.joining(","))));
   }
 
-  /**
-   * Attempts to force a new refresh of the instance data. May fail if called too frequently or if a
-   * new refresh is already in progress. If successful, other methods will block until refresh has
-   * been completed.
-   */
   void forceRefresh() {
-    synchronized (instanceDataGuard) {
-      // Don't force a refresh until the current refresh operation
-      // has produced a successful refresh.
-      if (refreshRunning) {
-        return;
-      }
-      nextInstanceData.cancel(false);
-      logger.fine(
-          String.format(
-              "[%s] Force Refresh: the next refresh operation was cancelled."
-                  + " Scheduling new refresh operation immediately.",
-              instanceName));
-      nextInstanceData = this.startRefreshAttempt();
-    }
-  }
-
-  /**
-   * Triggers an update of internal information obtained from the Cloud SQL Admin API, returning a
-   * future that resolves once a valid InstanceData has been acquired. This sets up a chain of
-   * futures that will 1. Acquire a rate limiter. 2. Attempt to fetch instance data. 3. Schedule the
-   * next attempt to get instance data based on the success/failure of this attempt.
-   *
-   * @see com.google.cloud.sql.core.CloudSqlInstance#handleRefreshResult(
-   *     com.google.common.util.concurrent.ListenableFuture)
-   */
-  private ListenableFuture<InstanceData> startRefreshAttempt() {
-    // As soon as we begin submitting refresh attempts to the executor, mark a refresh
-    // as "in-progress" so that subsequent forceRefresh() calls balk until this one completes.
-    synchronized (instanceDataGuard) {
-      refreshRunning = true;
-    }
-
-    logger.fine(
-        String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
-    ListenableFuture<?> delay = rateLimiter.acquireAsync(executor);
-    delay.addListener(
-        () ->
-            logger.fine(
-                String.format(
-                    "[%s] Refresh Operation: Rate limiter permit acquired.", instanceName)),
-        executor);
-
-    // Once rate limiter is done, attempt to getInstanceData.
-    ListenableFuture<InstanceData> dataFuture =
-        Futures.whenAllComplete(delay)
-            .callAsync(
-                () ->
-                    instanceDataSupplier.getInstanceData(
-                        this.instanceName,
-                        this.accessTokenSupplier,
-                        this.authType,
-                        executor,
-                        keyPair),
-                executor);
-
-    // Finally, reschedule refresh after getInstanceData is complete.
-    return Futures.whenAllComplete(dataFuture)
-        .callAsync(() -> handleRefreshResult(dataFuture), executor);
-  }
-
-  private ListenableFuture<InstanceData> handleRefreshResult(
-      ListenableFuture<InstanceData> dataFuture) {
-    try {
-      // This does not block, because it only gets called when dataFuture has completed.
-      // This will throw an exception if the refresh attempt has failed.
-      InstanceData data = dataFuture.get();
-
-      logger.fine(
-          String.format(
-              "[%s] Refresh Operation: Completed refresh with new certificate expiration at %s.",
-              instanceName, data.getExpiration().toString()));
-      long secondsToRefresh =
-          refreshCalculator.calculateSecondsUntilNextRefresh(Instant.now(), data.getExpiration());
-
-      logger.fine(
-          String.format(
-              "[%s] Refresh Operation: Next operation scheduled at %s.",
-              instanceName,
-              Instant.now()
-                  .plus(secondsToRefresh, ChronoUnit.SECONDS)
-                  .truncatedTo(ChronoUnit.SECONDS)
-                  .toString()));
-
-      synchronized (instanceDataGuard) {
-        // Refresh completed successfully, reset forceRefreshRunning.
-        refreshRunning = false;
-        currentRefreshFailure = null;
-        currentInstanceData = Futures.immediateFuture(data);
-
-        // Now update nextInstanceData to perform a refresh after the
-        // scheduled delay
-        nextInstanceData =
-            Futures.scheduleAsync(
-                this::startRefreshAttempt, secondsToRefresh, TimeUnit.SECONDS, executor);
-
-        // Resolves to an InstanceData immediately
-        return currentInstanceData;
-      }
-
-    } catch (ExecutionException | InterruptedException e) {
-      logger.log(
-          Level.FINE,
-          String.format(
-              "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.",
-              instanceName),
-          e);
-      synchronized (instanceDataGuard) {
-        currentRefreshFailure = e;
-        nextInstanceData = this.startRefreshAttempt();
-
-        // Resolves after the next successful refresh attempt.
-        return nextInstanceData;
-      }
-    }
-  }
-
-  SslData getSslData(long timeoutMs) {
-    return getInstanceData(timeoutMs).getSslData();
+    this.refresher.forceRefresh();
   }
 
   ListenableFuture<InstanceData> getNext() {
-    synchronized (instanceDataGuard) {
-      return this.nextInstanceData;
-    }
+    return refresher.getNext();
   }
 
   ListenableFuture<InstanceData> getCurrent() {
-    synchronized (instanceDataGuard) {
-      return this.currentInstanceData;
-    }
+    return refresher.getCurrent();
   }
 
   public CloudSqlInstanceName getInstanceName() {

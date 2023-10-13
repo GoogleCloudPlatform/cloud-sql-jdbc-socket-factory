@@ -48,7 +48,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -89,20 +88,14 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
         + "-----END RSA PUBLIC KEY-----\n";
   }
 
-  /**
-   * Internal Use Only: Gets the instance data for the CloudSqlInstance from the API.
-   *
-   * @throws ExecutionException if an exception is thrown during execution.
-   * @throws InterruptedException if the executor is interrupted.
-   */
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
   @Override
   public ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair) {
 
     ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
