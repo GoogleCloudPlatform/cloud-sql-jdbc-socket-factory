@@ -10,16 +10,16 @@
 Include the following in the project's `pom.xml` if your project uses Maven,
 or in `build.gradle` if your project uses Gradle.
 
-##### Mysql
+##### MySQL
 <!-- {x-version-update-start:cloud-sql-connector-r2dbc-mysql:released} -->
 Maven
 
 ```maven-pom
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-      <version>1.14.1</version>
-    </dependency>
+<dependency>
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
+  <version>1.14.1</version>
+</dependency>
 ```
 
 Gradle
@@ -38,11 +38,11 @@ MySQL, `io.asyncer:r2dbc-mysql:<LATEST-VERSION>`
 Maven
 
 ```maven-pom
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
-      <version>1.14.1</version>
-    </dependency>
+<dependency>
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
+  <version>1.14.1</version>
+</dependency>
 ```
 
 Gradle
@@ -61,11 +61,11 @@ PostgreSQL, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
 Maven
 
 ```maven-pom
-    <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
-      <version>1.14.1</version>
-    </dependency>
+<dependency>
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
+  <version>1.14.1</version>
+</dependency>
 ```
 
 Gradle
@@ -91,7 +91,7 @@ Add the following connection properties:
 
 R2DBC URL template:
 
-#### Mysql
+#### MySQL
 
 ```
 r2dbc:gcp:mysql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>
@@ -113,7 +113,7 @@ r2dbc:gcp:mssql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME
 
 ```java
 // Set up URL parameters
-ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(DRIVER,"gcp")
     .option(PROTOCOL,"mysql") // OR "postgres" or "mssql"
     .option(PASSWORD,"<DB_PASSWORD>")
@@ -122,22 +122,22 @@ ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
     .option(HOST,"<CLOUD_SQL_CONNECTION_NAME>")
     .build();
 
-    ConnectionFactory connectionFactory=ConnectionFactories.get(options);
-    ConnectionPoolConfiguration configuration=ConnectionPoolConfiguration
+ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
     .builder(connectionFactory)
     .build();
 
-    ConnectionPool connectionPool=new ConnectionPool(configuration);
+ConnectionPool connectionPool = new ConnectionPool(configuration);
 ```
 
 ### IAM Authentication
 
-**Note:** This feature is currently only supported for Mysql and Postgres
+**Note:** This feature is currently only supported for MySQL and Postgres
 drivers.
 
 Connections using
 [IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins)
-are supported when connecting to Mysql or Postgres instances.
+are supported when connecting to MySQL or Postgres instances.
 This feature is unsupported for SQL Server. First, make sure to
 [configure your Cloud SQL Instance to allow IAM authentication](https://cloud.google.com/sql/docs/postgres/create-edit-iam-instances#configure-iam-db-instance)
 and
@@ -149,31 +149,34 @@ to `true` and `user`
 to the email address associated with your IAM user.
 
 You must shorten the full IAM user email into a database username. Due to
-different constraints on allowed characters in the database username, Mysql and
+different constraints on allowed characters in the database username, MySQL and
 postgres differ in how they shorten an IAM email address into a database
 username.
 
-* Mysql: Truncate the IAM email removing the `@` and everything that follows.
+* MySQL: Truncate the IAM email removing the `@` and everything that follows.
 * Postgres: If the IAM email ends with `.gserviceaccount.com`, remove
   the `.gserviceaccount.com` suffix from the email.
 
-For example, if the full IAM user account
-is `my-sa@my-project.iam.gserviceaccount.com`,
-You would update the code, replacing these examples with the appropriate values
-for your database engine:
-
-|               | Mysql | Postgres             |
-|---------------|-------|----------------------|
-| <PROTOCOL>    | mysql | postgresql           |  
-| <IAM_DB_USER> | my-sa | my-sa@my-project.iam |
+For example, if the full IAM user account is 
+`my-sa@my-project.iam.gserviceaccount.com`, then the shortened database username
+would be `my-sa` for MySQL, and `my-sa@my-project.iam` for Postgres. 
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
 using IAM auth, leaving it empty will cause driver-level validations to fail.
 
+#### Example
+
+Replace these parameters in the example based on your database type:
+
+| Database | PROTOCOL   | IAM_DB_USER          |
+|----------|------------|----------------------|
+| MySQL    | mysql      | my-sa                |  
+| Postgres | postgresql | my-sa@my-project.iam |
+
 ```java
 // Set up ConnectionFactoryOptions
-ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(DRIVER,"gcp")
     .option(PROTOCOL,"<PROTOCOL>")
     .option(PASSWORD,"password")
@@ -184,17 +187,17 @@ ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
     .build();
 
 // Initialize connection pool
-    ConnectionFactory connectionFactory=ConnectionFactories.get(options);
-    ConnectionPoolConfiguration configuration=ConnectionPoolConfiguration
+ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
     .builder(connectionFactory)
     .build();
 
-    this.connectionPool=new ConnectionPool(configuration);
+ConnectionPool connectionPool = new ConnectionPool(configuration);
 ```
 
 ## Service Account Impersonation
 
-**Note:** Only Mysql and Postgres support service account impersonation. SQL 
+**Note:** Only MySQL and Postgres support service account impersonation. SQL 
 Server does not support Service Account Impersonation.
 
 The Java Connector supports service account impersonation with the
@@ -203,16 +206,19 @@ the supplied service account. The IAM principal must have the
 iam.serviceAccounts.getAccessToken permission or the role
 roles/iam.serviceAccounts.serviceAccountTokenCreator.
 
-For example, if the full IAM user account
-is `my-sa@my-project.iam.gserviceaccount.com`,
-You would update the code, replacing these examples with the appropriate values
-for your database engine:
+You must enable IAM Authentication to use service account impersonation.
+Set the `TARGET_PRINCIPAL` property to the full IAM email. Set
+the `USER` option to the shortened IAM email following the rules described
+in [IAM Authentication](#iam-authentication)
 
-|               | Mysql                                    | Postgres                                 |
-|---------------|------------------------------------------|------------------------------------------|
-| <PROTOCOL>    | mysql                                    | postgresql                               |  
-| <IAM_DB_USER> | my-sa                                    | my-sa@my-proeject.iam                    |
-| <IAM_EMAIL>   | my-sa@my-project.iam.gserviceaccount.com | my-sa@my-project.iam.gserviceaccount.com |
+#### Example
+
+Replace these parameters in the example based on your database type:
+
+| Database | PROTOCOL   | IAM_DB_USER          | IAM_EMAIL                                |
+|----------|------------|----------------------|------------------------------------------|
+| MySQL    | mysql      | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| Postgres | postgresql | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
@@ -220,7 +226,7 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 ```java
 // Set up ConnectionFactoryOptions
-ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(DRIVER,"gcp")
     .option(PROTOCOL,"<PROTOCOL>")
     .option(PASSWORD,"password")
@@ -232,12 +238,12 @@ ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
     .build();
 
 // Initialize connection pool
-    ConnectionFactory connectionFactory=ConnectionFactories.get(options);
-    ConnectionPoolConfiguration configuration=ConnectionPoolConfiguration
+ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
     .builder(connectionFactory)
     .build();
 
-    this.connectionPool=new ConnectionPool(configuration);
+ConnectionPool connectionPool = new ConnectionPool(configuration);
 ```
 
 ### Delegated Service Account Impersonation
@@ -257,7 +263,7 @@ target principal service account.
 #### Example
 
 ```java
-ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(TARGET_PRINCIPAL,"TARGET_SERVICE_ACCOUNT");
     .option(DELEGATES,"SERVICE_ACCOUNT_1,SERVICE_ACCOUNT_2")
     // ...more connection options
@@ -270,9 +276,9 @@ impersonates the TARGET_SERVICE_ACCOUNT.
 
 ## Examples
 
-Examples for using the Cloud SQL JDBC Connector can be found by looking at the
+Examples for the Cloud SQL R2DBC Connector can be found by looking at the
 integration tests in this repository.
 
-* [Mysql usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
+* [MySQL usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
 * [Postgres usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
-* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlServerIntegrationTests.java)
+* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)

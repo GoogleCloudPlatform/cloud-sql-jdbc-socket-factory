@@ -16,8 +16,5 @@ bumpMinorPreMajor: true
 handleGHRelease: true
 releaseType: java-yoshi
 extraFiles:
-  - docs/jdbc-mariadb.md
-  - docs/jdbc-mysql.md
-  - docs/jdbc-postgres.md
-  - docs/jdbc-sqlserver.md
+  - docs/jdbc.md
   - docs/r2dbc.md
