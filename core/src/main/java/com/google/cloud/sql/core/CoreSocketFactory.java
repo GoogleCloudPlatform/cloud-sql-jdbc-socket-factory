@@ -401,7 +401,7 @@ public final class CoreSocketFactory {
     }
 
     HttpRequestInitializer credential = instanceCredentialFactory.create();
-    SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential);
+    SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential, config);
 
     return new CloudSqlInstance(
         config.getCloudSqlInstance(),

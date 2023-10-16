@@ -274,6 +274,24 @@ The environment's application default principal impersonates
 SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
 impersonates the TARGET_SERVICE_ACCOUNT.
 
+## SQL Admin API URL
+
+The Java Connector supports setting the SQL Admin API URL with the
+`ADMIN_ROOT_URL` and `ADMIN_SERVICE_PATH` options. The `ADMIN_ROOT_URL`
+option specifies the URL-encoded root URL of the service and the
+`ADMIN_SERVICE_PATH` option specifies the URL-encoded service path of the
+service.
+
+### Example
+
+```java
+ConnectionFactoryOptions options=ConnectionFactoryOptions.builder()
+    .option(ADMIN_ROOT_URL, "https://www.googleapis.com/");
+    .option(ADMIN_SERVICE_PATH, "tasks/v1/")
+    // ...more connection options
+    .build;
+```
+
 ## Examples
 
 Examples for the Cloud SQL R2DBC Connector can be found by looking at the
