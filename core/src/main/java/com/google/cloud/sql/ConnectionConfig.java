@@ -220,6 +220,7 @@ public class ConnectionConfig {
       return this;
     }
 
+    /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectionConfig build() {
       return new ConnectionConfig(
           cloudSqlInstance,
