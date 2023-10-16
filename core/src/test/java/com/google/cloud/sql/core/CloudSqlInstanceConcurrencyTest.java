@@ -55,6 +55,7 @@ public class CloudSqlInstanceConcurrencyTest {
 
   @Test(timeout = 20000) // 45 seconds timeout in case of deadlock
   public void testForceRefreshDoesNotCauseADeadlockOrBrokenRefreshLoop() throws Exception {
+    final long refreshDelayMs = 50;
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
@@ -73,7 +74,7 @@ public class CloudSqlInstanceConcurrencyTest {
               new TestCredentialFactory(),
               executor,
               keyPairFuture,
-              50L));
+              refreshDelayMs));
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.

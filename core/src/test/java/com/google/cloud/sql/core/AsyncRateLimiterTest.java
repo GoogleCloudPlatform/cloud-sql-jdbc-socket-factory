@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.cloud.sql.core.AsyncRateLimiter.RateLimitTracker;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -30,43 +31,40 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
-public class RateLimitCalculatorTest {
+public class AsyncRateLimiterTest {
 
   @Test
   public void firstCallShouldReturnNoDelay() {
-    RateLimitCalculator c = new RateLimitCalculator(100);
-    assertThat(c.acquire()).isEqualTo(-1);
+    long now = System.currentTimeMillis();
+    AsyncRateLimiter c = new AsyncRateLimiter(100);
+    assertThat(c.nextDelayMs(now)).isEqualTo(0);
   }
 
   @Test
   public void subsequentCallsShouldReturnDelays() {
-    RateLimitCalculator c = new RateLimitCalculator(100);
-    assertThat(c.acquire()).isEqualTo(-1);
-    long next1 = c.acquire();
-    assertThat(next1).isGreaterThan(95);
-    assertThat(next1).isLessThan(105);
-    long next2 = c.acquire();
-    assertThat(next2).isGreaterThan(95);
-    assertThat(next2).isLessThan(105);
+    long now = System.currentTimeMillis();
+    AsyncRateLimiter c = new AsyncRateLimiter(100);
+    assertThat(c.nextDelayMs(now)).isEqualTo(0);
+    assertThat(c.nextDelayMs(now)).isEqualTo(100);
+    assertThat(c.nextDelayMs(now)).isEqualTo(100);
   }
 
   @Test
   public void onlyOneShouldProceedAfterDelay() throws InterruptedException {
-    RateLimitCalculator c = new RateLimitCalculator(20);
-    assertThat(c.acquire()).isEqualTo(-1);
-    assertThat(c.acquire()).isGreaterThan(0);
-    assertThat(c.acquire()).isGreaterThan(0);
+    long now = System.currentTimeMillis();
 
-    // Wait for the 20ms delay to expire
-    Thread.sleep(30);
+    AsyncRateLimiter c = new AsyncRateLimiter(20);
+    assertThat(c.nextDelayMs(now)).isEqualTo(0);
+    assertThat(c.nextDelayMs(now)).isGreaterThan(0);
+    assertThat(c.nextDelayMs(now)).isGreaterThan(0);
 
-    // Attempt to acquire the rate limit again.
+    // Attempt to acquire the rate limit again once the delay has expired
     // First call succeeds
-    assertThat(c.acquire()).isEqualTo(-1);
+    assertThat(c.nextDelayMs(now + 20)).isEqualTo(0);
 
     // Second and third calls return another delay
-    assertThat(c.acquire()).isGreaterThan(0);
-    assertThat(c.acquire()).isGreaterThan(0);
+    assertThat(c.nextDelayMs(now + 20)).isGreaterThan(0);
+    assertThat(c.nextDelayMs(now + 20)).isGreaterThan(0);
   }
 
   @Test
@@ -88,17 +86,20 @@ public class RateLimitCalculatorTest {
     long delay = 200;
 
     // Set up a rate limiter that enforces 100ms minimum time between requests.
-    RateLimitCalculator c = new RateLimitCalculator(delay);
+    AsyncRateLimiter c = new AsyncRateLimiter(delay);
 
-    List<Long> offsets = new ArrayList<>();
+    List<AsyncRateLimiter.RateLimitTracker> trackers = new ArrayList<>();
     List<ListenableFuture<?>> futures = new ArrayList<>();
-    final long start = System.currentTimeMillis();
 
     for (int i = 0; i < 10; i++) {
-      ListenableFuture<Long> f = c.acquireAsync(ex);
+      ListenableFuture<AsyncRateLimiter.RateLimitTracker> f = c.acquireAsync(ex);
       f.addListener(
           () -> {
-            offsets.add(System.currentTimeMillis() - start);
+            try {
+              trackers.add(f.get());
+            } catch (InterruptedException | ExecutionException e) {
+              throw new RuntimeException(e);
+            }
           },
           executor);
       futures.add(f);
@@ -114,21 +115,31 @@ public class RateLimitCalculatorTest {
     // ...etc
 
     // Find the offset from start for the first and last request processed
-    offsets.sort((Long a, Long b) -> (int) (a.longValue() - b.longValue()));
+    trackers.sort((a, b) -> (int) (a.getDoneTimestampMs() - b.getDoneTimestampMs()));
+
     System.out.println(
-        "Offsets: " + offsets.stream().map(Object::toString).collect(Collectors.joining(",")));
+        "Trackers: " + trackers.stream().map(Object::toString).collect(Collectors.joining(",")));
 
-    long firstOffset = offsets.get(0); // Time from start to first request.
-    int numberOfDelays =
-        offsets.size() - 1; // Number of requests that were delayed by the rate limiter
-    long lastOffset = offsets.get(numberOfDelays); // Time from start to last request.
+    RateLimitTracker firstAttempt = trackers.get(0);
 
-    // Assert that the first delay is almost immediately
-    assertThat(firstOffset).isLessThan(40);
+    // Assert that the first attempt went right away.
+    assertThat(firstAttempt.getAcquireAttempts()).isEqualTo(0);
 
-    // Assert that the total delay for all requests was within +/-20% of expected rate limiter's
-    // delayBetweenAttempts. Note: busy github action executors can cause a lot of variation.
-    assertThat(lastOffset).isGreaterThan((long) (numberOfDelays * delay * 0.8));
-    assertThat(lastOffset).isLessThan((long) (numberOfDelays * delay * 1.2));
+    // Assert that the first attempt did not have to wait a full delay to run.
+    assertThat(firstAttempt.getElapsedMs()).isLessThan((long) (delay * .8));
+
+    // For the rest of the attempts, make sure that the tracker
+    // waited longer than the prior attempt before running
+    for (int i = 1; i < trackers.size(); i++) {
+      RateLimitTracker tracker = trackers.get(i);
+      RateLimitTracker priorTracker = trackers.get(i - 1);
+
+      // It had to make at least 1 attempt to acquire the tracker
+      assertThat(tracker.getAcquireAttempts()).isGreaterThan(0);
+
+      // It happened after the prior attempt.
+      assertThat(tracker.getDoneTimestampMs() - priorTracker.getDoneTimestampMs())
+          .isGreaterThan((long) (delay * .8));
+    }
   }
 }

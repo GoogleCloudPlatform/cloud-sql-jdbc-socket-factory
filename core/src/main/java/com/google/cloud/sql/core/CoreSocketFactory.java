@@ -107,6 +107,7 @@ public final class CoreSocketFactory {
   private static final int RSA_KEY_SIZE = 2048;
   private static final List<String> userAgents = new ArrayList<>();
   private static final String version = getVersion();
+  private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static CoreSocketFactory coreSocketFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
@@ -391,6 +392,6 @@ public final class CoreSocketFactory {
         instanceCredentialFactory,
         executor,
         localKeyPair,
-        30 * 1000); // 1 refresh attempt every 30 seconds
+        MIN_REFRESH_DELAY_MS);
   }
 }

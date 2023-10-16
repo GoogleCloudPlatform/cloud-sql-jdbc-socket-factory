@@ -55,7 +55,7 @@ class CloudSqlInstance {
   private final CloudSqlInstanceName instanceName;
   private final ListenableFuture<KeyPair> keyPair;
   private final Object instanceDataGuard = new Object();
-  private final RateLimitCalculator rateLimitCalculator;
+  private final AsyncRateLimiter rateLimitCalculator;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
 
@@ -94,7 +94,7 @@ class CloudSqlInstance {
     this.keyPair = keyPair;
 
     // convert requests/second into milliseconds between requests.
-    this.rateLimitCalculator = new RateLimitCalculator(minRefreshDelayMs);
+    this.rateLimitCalculator = new AsyncRateLimiter(minRefreshDelayMs);
 
     if (authType == AuthType.IAM) {
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
@@ -224,7 +224,7 @@ class CloudSqlInstance {
 
     logger.fine(
         String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", instanceName));
-    ListenableFuture<Long> delay = rateLimitCalculator.acquireAsync(executor);
+    ListenableFuture<?> delay = rateLimitCalculator.acquireAsync(executor);
     delay.addListener(
         () ->
             logger.fine(
