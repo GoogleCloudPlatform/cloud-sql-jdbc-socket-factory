@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -169,9 +170,9 @@ class CloudSqlInstance {
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
-  String getPreferredIp(List<String> preferredTypes, long timeoutMs) {
-    Map<String, String> ipAddrs = getInstanceData(timeoutMs).getIpAddrs();
-    for (String ipType : preferredTypes) {
+  String getPreferredIp(List<IpType> preferredTypes, long timeoutMs) {
+    Map<IpType, String> ipAddrs = getInstanceData(timeoutMs).getIpAddrs();
+    for (IpType ipType : preferredTypes) {
       String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
         return preferredIp;
@@ -181,7 +182,7 @@ class CloudSqlInstance {
         String.format(
             "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
             instanceName.getConnectionName(),
-            preferredTypes.stream().collect(Collectors.joining(","))));
+            preferredTypes.stream().map(IpType::toString).collect(Collectors.joining(","))));
   }
 
   /**

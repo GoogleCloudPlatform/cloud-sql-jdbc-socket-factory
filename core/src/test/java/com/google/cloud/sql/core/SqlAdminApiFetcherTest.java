@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.IpType;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -40,7 +41,6 @@ public class SqlAdminApiFetcherTest {
 
   public static final String SAMPLE_PUBLIC_IP = "34.1.2.3";
   public static final String SAMPLE_PRIVATE_IP = "10.0.0.1";
-  public static final String SAMPLE_PSC_IP = "10.0.0.2";
   public static final String SAMPLE_PCS_DNS_NAME = "abcde.12345.us-central1.sql.goog";
   public static final String INSTANCE_CONNECTION_NAME = "p:r:i";
   public static final String DATABASE_VERSION = "POSTGRES14";
@@ -68,10 +68,10 @@ public class SqlAdminApiFetcherTest {
             .get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<String, String> ipAddrs = instanceData.getIpAddrs();
-    assertThat(ipAddrs.get("PRIMARY")).isEqualTo(SAMPLE_PUBLIC_IP);
-    assertThat(ipAddrs.get("PRIVATE")).isEqualTo(SAMPLE_PRIVATE_IP);
-    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
+    assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
   }
 
   @Test
@@ -106,8 +106,8 @@ public class SqlAdminApiFetcherTest {
             .get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<String, String> ipAddrs = instanceData.getIpAddrs();
-    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
 
@@ -207,10 +207,10 @@ public class SqlAdminApiFetcherTest {
             .get();
     assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<String, String> ipAddrs = instanceData.getIpAddrs();
-    assertThat(ipAddrs.get("PRIMARY")).isEqualTo(SAMPLE_PUBLIC_IP);
-    assertThat(ipAddrs.get("PRIVATE")).isEqualTo(SAMPLE_PRIVATE_IP);
-    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
+    assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
   }
 
   @SuppressWarnings("SameParameterValue")

@@ -16,21 +16,22 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.IpType;
 import java.security.cert.Certificate;
 import java.util.Map;
 
 /** Represents the results of @link #fetchMetadata(). */
 class Metadata {
 
-  private final Map<String, String> ipAddrs;
+  private final Map<IpType, String> ipAddrs;
   private final Certificate instanceCaCertificate;
 
-  Metadata(Map<String, String> ipAddrs, Certificate instanceCaCertificate) {
+  Metadata(Map<IpType, String> ipAddrs, Certificate instanceCaCertificate) {
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificate = instanceCaCertificate;
   }
 
-  Map<String, String> getIpAddrs() {
+  Map<IpType, String> getIpAddrs() {
     return ipAddrs;
   }
 

@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.IpType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -36,9 +37,9 @@ class TestDataSupplier implements InstanceDataSupplier {
       new InstanceData(
           new Metadata(
               ImmutableMap.of(
-                  "PUBLIC", "10.1.2.3",
-                  "PRIVATE", "10.10.10.10",
-                  "PSC", "abcde.12345.us-central1.sql.goog"),
+                  IpType.PUBLIC, "10.1.2.3",
+                  IpType.PRIVATE, "10.10.10.10",
+                  IpType.PSC, "abcde.12345.us-central1.sql.goog"),
               null),
           new SslData(null, null, null),
           Instant.now().plus(1, ChronoUnit.HOURS));

@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.IpType;
 import java.time.Instant;
 import java.util.Map;
 import javax.net.ssl.SSLContext;
@@ -43,7 +44,7 @@ class InstanceData {
     return sslContext;
   }
 
-  Map<String, String> getIpAddrs() {
+  Map<IpType, String> getIpAddrs() {
     return metadata.getIpAddrs();
   }
 
