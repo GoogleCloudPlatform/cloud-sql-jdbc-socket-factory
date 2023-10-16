@@ -9,7 +9,7 @@ or in `build.gradle` if your project uses Gradle.
 
 <!-- {x-release-please-start-version} -->
 
-##### Mysql
+##### MySQL
 
 <!-- {x-version-update-start:mysql-socket-factory-connector-j-8:released} -->
 Maven
@@ -113,7 +113,7 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 Replace <SOCKET_FACTORY_CLASS> with the class name specific to your database.
 
-#### Mysql
+#### MySQL
 
 Base JDBC URL: `jdbc:mysql:///<DATABASE_NAME>`
 
@@ -121,8 +121,12 @@ SOCKET_FACTORY_CLASS: `com.google.cloud.sql.mysql.SocketFactory`
 
 The full JDBC URL should look like this:
 
-```
-jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:mysql:///<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&socketFactory=com.google.cloud.sql.mysql.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>" 
+    + "&password=<MYSQL_USER_PASSWORD>";
 ```
 
 **Note:** The host portion of the JDBC URL is currently unused, and has no
@@ -144,8 +148,12 @@ MariaDB [documentation](https://mariadb.com/kb/en/about-mariadb-connector-j/#jdb
 
 The full JDBC URL should look like this:
 
-```
-jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mariadb.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&socketFactory=com.google.cloud.sql.mariadb.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>" 
+    + "&password=<MYSQL_USER_PASSWORD>";
 ```
 
 Note: The host portion of the JDBC URL is currently unused, and has no effect on
@@ -162,8 +170,12 @@ When specifying the JDBC connection URL, add the additional parameters:
 
 The full JDBC URL should look like this:
 
-```
-jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:postgresql:///<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&socketFactory=com.google.cloud.sql.postgres.SocketFactory" 
+    + "&user=<POSTGRESQL_USER_NAME>" 
+    + "&password=<POSTGRESQL_USER_PASSWORD>";
 ```
 
 **Note:** The host portion of the JDBC URL is currently unused, and has no
@@ -178,8 +190,13 @@ SOCKET_FACTORY_CLASS: `com.google.cloud.sql.sqlserver.SocketFactory`
 
 The full JDBC URL should look like this:
 
-```
-jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;user=<USER_NAME>;password=<PASSWORD>
+```java
+String jdbcUrl = "jdbc:sqlserver://localhost;" 
+    + "databaseName=<DATABASE_NAME>;" 
+    + "socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;" 
+    + "socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>;" 
+    + "user=<USER_NAME>;" 
+    + "password=<PASSWORD>";
 ```
 
 **Note:** The host portion of the JDBC URL is currently unused, and has no
@@ -195,27 +212,41 @@ value `ipTypes=PRIVATE` will force the Cloud SQL instance to connect via
 it's private IP. The value `ipTypes=PSC` will force the Cloud SQL instance to
 connect to the database
 via [Private Service Connect](https://cloud.google.com/vpc/docs/private-service-connect).
-If not specified, the default used is `ipTypes=PUBLIC,PRIVATE`.
+If not specified, the connector will default to `ipTypes=PUBLIC,PRIVATE`.
 
 For more info on connecting using a private IP address,
 see [Requirements for Private IP](https://cloud.google.com/sql/docs/mysql/private-ip#requirements_for_private_ip).
 
-#### Mysql
+#### MySQL
 
-```
-jdbc:mysql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&ipTypes=PRIVATE&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:mysql:///<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&ipTypes=PRIVATE" 
+    + "&socketFactory=com.google.cloud.sql.mysql.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>";
 ```
 
 #### Maria DB
 
-```
-jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&ipTypes=PRIVATE&socketFactory=com.google.cloud.sql.mariadb.SocketFactory&user=<MYSQL_USER_NAME>&password=<MYSQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:mariadb://ignoreme:1234/<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&ipTypes=PRIVATE" 
+    + "&socketFactory=com.google.cloud.sql.mariadb.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>" 
+    + "&password=<MYSQL_USER_PASSWORD>";
 ```
 
 #### Postgres
 
-```
-jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&ipTypes=PRIVATE&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=<POSTGRESQL_USER_NAME>&password=<POSTGRESQL_USER_PASSWORD>
+```java
+String jdbcUrl = "jdbc:postgresql:///<DATABASE_NAME>?" 
+    + "cloudSqlInstance=<INSTANCE_CONNECTION_NAME>" 
+    + "&ipTypes=PRIVATE" 
+    + "&socketFactory=com.google.cloud.sql.postgres.SocketFactory" 
+    + "&user=<POSTGRESQL_USER_NAME>" 
+    + "&password=<POSTGRESQL_USER_PASSWORD>";
 ```
 
 #### SQL Server
@@ -223,15 +254,20 @@ jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&i
 IP types can be specified by appending the ipTypes argument
 to `socketFactoryConstructorArg` using query syntax, such as:
 
-```
-jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE;user=<USER_NAME>;password=<PASSWORD>
+```java
+String jdbcUrl = "jdbc:sqlserver://localhost;" 
+    + "databaseName=<DATABASE_NAME>;" 
+    + "socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;" 
+    + "socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE;" 
+    + "user=<USER_NAME>;" 
+    + "password=<PASSWORD>";
 ```
 
 Or in java code:
 
 ```java
-String jdbcURL=String.format("jdbc:sqlserver://localhost;databaseName=%s","<DATABASE_NAME>");
-Properties connProps=new Properties();
+String jdbcURL = String.format("jdbc:sqlserver://localhost;databaseName=%s","<DATABASE_NAME>");
+Properties connProps = new Properties();
 connProps.setProperty("user","<USER_NAME>");
 connProps.setProperty("password","<PASSWORD>");
 connProps.setProperty("encrypt","false");
@@ -241,23 +277,23 @@ connProps.setProperty("socketFactoryConstructorArg",
 "<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE");
 
 // Initialize connection pool
-HikariConfig config=new HikariConfig();
+HikariConfig config = new HikariConfig();
 config.setJdbcUrl(jdbcURL);
 config.setDataSourceClassName("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
 config.setDataSourceProperties(connProps);
 config.setConnectionTimeout(10000); // 10s
 
-HikariDataSource connectionPool=new HikariDataSource(config);
+HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
 ### IAM Authentication
 
-**Note:** This feature is currently only supported for Mysql and Postgres
+**Note:** This feature is currently only supported for MySQL and Postgres
 drivers.
 
 Connections using
 [IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins)
-are supported when connecting to Mysql or Postgres instances.
+are supported when connecting to MySQL or Postgres instances.
 This feature is unsupported for SQL Server. First, make sure to
 [configure your Cloud SQL Instance to allow IAM authentication](https://cloud.google.com/sql/docs/postgres/create-edit-iam-instances#configure-iam-db-instance)
 and
@@ -269,17 +305,17 @@ to `true` and `user`
 to the email address associated with your IAM user.
 
 You must shorten the full IAM user email into a database username. Due to
-different constraints on allowed characters in the database username, Mysql and
+different constraints on allowed characters in the database username, MySQL and
 postgres differ in how they shorten an IAM email address into a database
 username.
 
-* Mysql: Truncate the IAM email removing the `@` and everything that follows.
+* MySQL: Truncate the IAM email removing the `@` and everything that follows.
 * Postgres: If the IAM email ends with `.gserviceaccount.com`, remove
   the `.gserviceaccount.com` suffix from the email.
 
 For example, if the full IAM user account is
 `my-sa@my-project.iam.gserviceaccount.com`, then the shortened database username
-would be `my-sa` for Mysql, and `my-sa@my-project.iam` for Postgres.
+would be `my-sa` for MySQL, and `my-sa@my-project.iam` for Postgres.
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
@@ -291,14 +327,14 @@ Replace these parameters in the example based on your database type:
 
 |          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          |
 |----------|---------------------------------------|---------------------------------------------|----------------------|
-| Mysql    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                |  
+| MySQL    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                |  
 | MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                |  
 | Postgres | jdbc:postgresql:///<DB_NAME>          | com.google.cloud.sql.postgres.SocketFactory | my-sa@my-project.iam |
 
 
 ```java
 // Set up URL parameters
-Properties connProps=new Properties();
+Properties connProps = new Properties();
 connProps.setProperty("user","<IAM_DB_USER>");
 connProps.setProperty("sslmode","disable");
 connProps.setProperty("socketFactory","<DRIVER_CLASS>");
@@ -306,17 +342,17 @@ connProps.setProperty("cloudSqlInstance","project:region:instance");
 connProps.setProperty("enableIamAuth","true");
 
 // Initialize connection pool
-HikariConfig config=new HikariConfig();
+HikariConfig config = new HikariConfig();
 config.setJdbcUrl("<JDBC_URL>");
 config.setDataSourceProperties(connProps);
 config.setConnectionTimeout(10000); // 10s
 
-HikariDataSource connectionPool=new HikariDataSource(config);
+HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
 ### Service Account Impersonation
 
-**Note:** Only Mysql and Postgres support service account impersonation. SQL
+**Note:** Only MySQL and Postgres support service account impersonation. SQL
 Server does not support Service Account Impersonation.
 
 The Java Connector supports service account impersonation with the
@@ -336,7 +372,7 @@ Replace these parameters in the example based on your database type:
 
 |          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          | IAM_EMAIL                                |
 |----------|---------------------------------------|---------------------------------------------|----------------------|------------------------------------------|
-| Mysql    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| MySQL    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
 | MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
 | Postgres | jdbc:postgresql:///<DB_NAME>          | com.google.cloud.sql.postgres.SocketFactory | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
 
@@ -346,7 +382,7 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 ```java
 // Set up URL parameters
-Properties connProps=new Properties();
+Properties connProps = new Properties();
 connProps.setProperty("user","<IAM_DB_USER>");
 connProps.setProperty("sslmode","disable");
 connProps.setProperty("socketFactory","<DRIVER_CLASS>");
@@ -355,12 +391,12 @@ connProps.setProperty("enableIamAuth","true");
 connProps.setProperty("cloudSqlTargetPrincipal","<IAM_EMAIL>");
 
 // Initialize connection pool
-HikariConfig config=new HikariConfig();
+HikariConfig config = new HikariConfig();
 config.setJdbcUrl("<JDBC_URL>");
 config.setDataSourceProperties(connProps);
 config.setConnectionTimeout(10000); // 10s
 
-HikariDataSource connectionPool=new HikariDataSource(config);
+HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
 #### Delegated Service Account Impersonation
@@ -393,7 +429,7 @@ To connect using a Unix domain socket (such as the one created by the Cloud SQL
 proxy), you can use the `unixSocketPath` property to specify a path to a local
 file instead of connecting directly over TCP.
 
-##### Mysql
+##### MySQL
 
 ```java 
 String jdbcUrl = "jdbc:mysql:///<DATABASE_NAME>?" 
@@ -434,7 +470,7 @@ looking at the integration tests in this repository.
 
 ## Reference Documentation
 
-### Mysql & Maria DB
+### MySQL & Maria DB
 
 * [Connecting to Cloud SQL from App Engine Standard](https://cloud.google.com/sql/docs/mysql/connect-app-engine-standard)
 * [Connecting to Cloud SQL from App Engine Flexible](https://cloud.google.com/sql/docs/mysql/connect-app-engine-flexible)
