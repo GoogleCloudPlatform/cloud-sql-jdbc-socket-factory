@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.IpType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -482,9 +483,9 @@ public class CloudSqlInstanceTest {
         new InstanceData(
             new Metadata(
                 ImmutableMap.of(
-                    "PUBLIC", "10.1.2.3",
-                    "PRIVATE", "10.10.10.10",
-                    "PSC", "abcde.12345.us-central1.sql.goog"),
+                    IpType.PUBLIC, "10.1.2.3",
+                    IpType.PRIVATE, "10.10.10.10",
+                    IpType.PSC, "abcde.12345.us-central1.sql.goog"),
                 null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
@@ -507,15 +508,17 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             TEST_RATE_LIMITER);
 
-    assertThat(instance.getPreferredIp(Arrays.asList("PUBLIC", "PRIVATE"), TEST_TIMEOUT_MS))
+    assertThat(
+            instance.getPreferredIp(Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), TEST_TIMEOUT_MS))
         .isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PUBLIC"), TEST_TIMEOUT_MS))
+    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PUBLIC), TEST_TIMEOUT_MS))
         .isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Arrays.asList("PRIVATE", "PUBLIC"), TEST_TIMEOUT_MS))
+    assertThat(
+            instance.getPreferredIp(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), TEST_TIMEOUT_MS))
         .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PRIVATE"), TEST_TIMEOUT_MS))
+    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS))
         .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList("PSC"), TEST_TIMEOUT_MS))
+    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PSC), TEST_TIMEOUT_MS))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
@@ -524,7 +527,7 @@ public class CloudSqlInstanceTest {
     SslData sslData = new SslData(null, null, null);
     InstanceData data =
         new InstanceData(
-            new Metadata(ImmutableMap.of("PUBLIC", "10.1.2.3"), null),
+            new Metadata(ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"), null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
@@ -547,7 +550,7 @@ public class CloudSqlInstanceTest {
             TEST_RATE_LIMITER);
     Assert.assertThrows(
         IllegalArgumentException.class,
-        () -> instance.getPreferredIp(Collections.singletonList("PRIVATE"), TEST_TIMEOUT_MS));
+        () -> instance.getPreferredIp(Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

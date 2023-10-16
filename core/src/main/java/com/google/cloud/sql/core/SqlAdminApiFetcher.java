@@ -24,6 +24,7 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.IpType;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
@@ -199,17 +200,22 @@ class SqlAdminApiFetcher implements InstanceDataSupplier {
 
       checkDatabaseCompatibility(instanceMetadata, authType, instanceName.getConnectionName());
 
-      Map<String, String> ipAddrs = new HashMap<>();
+      Map<IpType, String> ipAddrs = new HashMap<>();
       if (instanceMetadata.getIpAddresses() != null) {
         // Update the IP addresses and types need to connect with the instance.
         for (IpMapping addr : instanceMetadata.getIpAddresses()) {
-          ipAddrs.put(addr.getType(), addr.getIpAddress());
+          if ("PRIVATE".equals(addr.getType())) {
+            ipAddrs.put(IpType.PRIVATE, addr.getIpAddress());
+          } else if ("PRIMARY".equals(addr.getType())) {
+            ipAddrs.put(IpType.PUBLIC, addr.getIpAddress());
+          }
+          // otherwise, we don't know how to handle this type, ignore it.
         }
       }
 
       // resolve DnsName into IP address for PSC
       if (instanceMetadata.getDnsName() != null && !instanceMetadata.getDnsName().isEmpty()) {
-        ipAddrs.put("PSC", instanceMetadata.getDnsName());
+        ipAddrs.put(IpType.PSC, instanceMetadata.getDnsName());
       }
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
