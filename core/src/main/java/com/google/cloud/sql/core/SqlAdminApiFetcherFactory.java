@@ -56,8 +56,8 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
     if (config.getAdminRootUrl() != null) {
       adminApiBuilder.setRootUrl(config.getAdminRootUrl());
     }
-    if (config.getlAdminServicePath() != null) {
-      adminApiBuilder.setServicePath(config.getlAdminServicePath());
+    if (config.getAdminServicePath() != null) {
+      adminApiBuilder.setServicePath(config.getAdminServicePath());
     }
     return new SqlAdminApiFetcher(adminApiBuilder.build());
   }

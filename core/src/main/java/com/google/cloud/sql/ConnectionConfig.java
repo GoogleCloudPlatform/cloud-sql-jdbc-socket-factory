@@ -157,7 +157,7 @@ public class ConnectionConfig {
     return adminRootUrl;
   }
 
-  public String getlAdminServicePath() {
+  public String getAdminServicePath() {
     return adminServicePath;
   }
 

@@ -182,8 +182,8 @@ public class SqlAdminApiFetcherTest {
       throws ExecutionException, InterruptedException, GeneralSecurityException,
           OperatorCreationException {
 
-    String adminRootUrl = "https://www.googleapis.com/";
-    String adminServicePath = "tasks/v1/";
+    String adminRootUrl = "https://googleapis.example.com/";
+    String adminServicePath = "sqladmin/";
     String baseUrl = adminRootUrl + adminServicePath;
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, baseUrl);
