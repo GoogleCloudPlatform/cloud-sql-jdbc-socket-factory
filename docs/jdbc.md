@@ -458,6 +458,64 @@ String jdbcUrl = "jdbc:postgresql:///<DATABASE_NAME>"
 
 Not Supported.
 
+### SQL Admin API URL
+
+The Java Connector supports setting the SQL Admin API URL with the 
+`cloudSqlAdminRootUrl` and `cloudSqlAdminServicePath` JDBC connection 
+properties. This feature is used by applications that need to connect 
+to a Google Cloud API other than the GCP public API.
+
+The `cloudSqlAdminRootUrl` property specifies the URL-encoded root URL of the 
+service, for example `"https://googleapis.example.com/"`. If the specified 
+root URL does not end with a "/" then a "/" is added to the end.
+
+The `cloudSqlAdminServicePath` property specifies the URL-encoded service path 
+of the service, for example `"sqladmin/"`. It is allowed to be an empty 
+string "" or a forward slash "/", if it is a forward slash then it is treated 
+as an empty string. If the specified service path does not end with a "/" then 
+a "/" is added to the end. If the specified service path begins with a "/" 
+then the "/" is removed.
+
+If these options are not set, the connector will use the public Google Cloud 
+API as follows:
+
+```
+DEFAULT_ROOT_URL = "https://sqladmin.googleapis.com/"
+DEFAULT_SERVICE_PATH = ""
+```
+
+For more information, see the [underlying driver class documentation](https://cloud.google.com/java/docs/reference/google-api-client/latest/com.google.api.client.googleapis.services.AbstractGoogleClient.Builder#com_google_api_client_googleapis_services_AbstractGoogleClient_Builder_setRootUrl_java_lang_String_).
+
+### Example
+
+Replace these parameters in the example based on your database type:
+
+| Database | JDBC_URL                              | DRIVER_CLASS                                |
+|----------|---------------------------------------|---------------------------------------------|
+| MySQL    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | 
+| MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  |
+| Postgres | jdbc:postgresql:///<DB_NAME>          | com.google.cloud.sql.postgres.SocketFactory |
+
+
+```java
+// Set up URL parameters
+Properties connProps = new Properties();
+connProps.setProperty("user","<IAM_DB_USER>");
+connProps.setProperty("sslmode","disable");
+connProps.setProperty("socketFactory","<DRIVER_CLASS>");
+connProps.setProperty("cloudSqlInstance","project:region:instance");
+connProps.setProperty("cloudSqlAdminRootUrl","https://googleapis.example.com/");
+connProps.setProperty("cloudSqlAdminServicePath","sqladmin/");
+
+// Initialize connection pool
+HikariConfig config = new HikariConfig();
+config.setJdbcUrl("<JDBC_URL>");
+config.setDataSourceProperties(connProps);
+config.setConnectionTimeout(10000); // 10s
+
+HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for SQL Server can be found by

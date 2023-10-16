@@ -274,6 +274,44 @@ The environment's application default principal impersonates
 SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
 impersonates the TARGET_SERVICE_ACCOUNT.
 
+## SQL Admin API URL
+
+The Java Connector supports setting the SQL Admin API URL with the 
+`ADMIN_ROOT_URL` and `ADMIN_SERVICE_PATH` options. This feature is used 
+by applications that need to connect to a Google Cloud API other than 
+the GCP public API.
+
+The `ADMIN_ROOT_URL` option specifies the URL-encoded root URL of the 
+service, for example `"https://googleapis.example.com/"`. If the specified 
+root URL does not end with a "/" then a "/" is added to the end.
+
+The `ADMIN_SERVICE_PATH` option specifies the URL-encoded service path of the 
+service, for example `"sqladmin/"`. It is allowed to be an empty string "" 
+or a forward slash "/", if it is a forward slash then it is treated as an 
+empty string. If the specified service path does not end with a "/" then a 
+"/" is added to the end. If the specified service path begins with a "/" then 
+the "/" is removed.
+
+If these options are not set, the connector will use the public Google Cloud 
+API as follows:
+
+```
+DEFAULT_ROOT_URL = "https://sqladmin.googleapis.com/"
+DEFAULT_SERVICE_PATH = ""
+```
+
+For more information, see the [underlying driver class documentation](https://cloud.google.com/java/docs/reference/google-api-client/latest/com.google.api.client.googleapis.services.AbstractGoogleClient.Builder#com_google_api_client_googleapis_services_AbstractGoogleClient_Builder_setRootUrl_java_lang_String_).
+
+### Example
+
+```java
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(ADMIN_ROOT_URL, "https://googleapis.example.com/");
+    .option(ADMIN_SERVICE_PATH, "sqladmin/")
+    // ...more connection options
+    .build;
+```
+
 ## Examples
 
 Examples for the Cloud SQL R2DBC Connector can be found by looking at the

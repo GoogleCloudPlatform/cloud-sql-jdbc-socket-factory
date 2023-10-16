@@ -66,10 +66,10 @@ public class MockAdminApi {
 
   private static final Pattern CONNECT_SETTINGS_PATTERN =
       Pattern.compile(
-          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
+          "(?<baseUrl>.*)sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
   private static final Pattern GENERATE_EPHEMERAL_CERT_PATTERN =
       Pattern.compile(
-          ".*/sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
+          "(?<baseUrl>.*)sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
   private final KeyPair clientKeyPair;
   private final PrivateKey proxyServerPrivateKey;
   private final List<ConnectSettingsRequest> connectSettingsRequests;
@@ -117,7 +117,8 @@ public class MockAdminApi {
       String publicIp,
       String privateIp,
       String databaseVersion,
-      String pscHostname) {
+      String pscHostname,
+      String baseUrl) {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     ArrayList<IpMapping> ipMappings = new ArrayList<>();
@@ -140,11 +141,12 @@ public class MockAdminApi {
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
 
-    connectSettingsRequests.add(new ConnectSettingsRequest(cloudSqlInstanceName, settings));
+    connectSettingsRequests.add(
+        new ConnectSettingsRequest(cloudSqlInstanceName, settings, baseUrl));
   }
 
   public void addGenerateEphemeralCertResponse(
-      String instanceConnectionName, Duration ephemeralCertExpiration)
+      String instanceConnectionName, Duration ephemeralCertExpiration, String baseUrl)
       throws GeneralSecurityException, OperatorCreationException {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
@@ -155,7 +157,8 @@ public class MockAdminApi {
     generateEphemeralCertResponse.setFactory(GsonFactory.getDefaultInstance());
 
     generateEphemeralCertRequests.add(
-        new GenerateEphemeralCertRequest(cloudSqlInstanceName, generateEphemeralCertResponse));
+        new GenerateEphemeralCertRequest(
+            cloudSqlInstanceName, generateEphemeralCertResponse, baseUrl));
   }
 
   public HttpTransport getHttpTransport() {
@@ -171,7 +174,9 @@ public class MockAdminApi {
               int i = allConnectSettingsRequestsIndex.getAndIncrement();
               ConnectSettingsRequest connectSettingsRequest = connectSettingsRequests.get(i);
               if (isRequestUnknown(
-                  connectSettingsMatcher, connectSettingsRequest.getCloudSqlInstanceName())) {
+                  connectSettingsMatcher,
+                  connectSettingsRequest.getCloudSqlInstanceName(),
+                  connectSettingsRequest.getBaseUrl())) {
                 throw new RuntimeException("Unrecognized request: GET " + url);
               }
               return new MockLowLevelHttpResponse()
@@ -188,7 +193,8 @@ public class MockAdminApi {
                   generateEphemeralCertRequests.get(i);
               if (isRequestUnknown(
                   generateEphemeralMatcher,
-                  generateEphemeralCertRequest.getCloudSqlInstanceName())) {
+                  generateEphemeralCertRequest.getCloudSqlInstanceName(),
+                  generateEphemeralCertRequest.getBaseUrl())) {
                 throw new RuntimeException("Unrecognized request: GET " + url);
               }
               return new MockLowLevelHttpResponse()
@@ -237,20 +243,24 @@ public class MockAdminApi {
         + "-----END CERTIFICATE-----\n";
   }
 
-  private boolean isRequestUnknown(Matcher urlMatcher, CloudSqlInstanceName cloudSqlInstanceName) {
+  private boolean isRequestUnknown(
+      Matcher urlMatcher, CloudSqlInstanceName cloudSqlInstanceName, String baseUrl) {
     return !urlMatcher.group("project").equals(cloudSqlInstanceName.getProjectId())
-        || !urlMatcher.group("instance").equals(cloudSqlInstanceName.getInstanceId());
+        || !urlMatcher.group("instance").equals(cloudSqlInstanceName.getInstanceId())
+        || !urlMatcher.group("baseUrl").equals(baseUrl);
   }
 
   private static class ConnectSettingsRequest {
 
     private final CloudSqlInstanceName cloudSqlInstanceName;
     private final ConnectSettings settings;
+    private final String baseUrl;
 
     public ConnectSettingsRequest(
-        CloudSqlInstanceName cloudSqlInstanceName, ConnectSettings settings) {
+        CloudSqlInstanceName cloudSqlInstanceName, ConnectSettings settings, String baseUrl) {
       this.cloudSqlInstanceName = cloudSqlInstanceName;
       this.settings = settings;
+      this.baseUrl = baseUrl;
     }
 
     public ConnectSettings getSettings() {
@@ -260,18 +270,25 @@ public class MockAdminApi {
     public CloudSqlInstanceName getCloudSqlInstanceName() {
       return cloudSqlInstanceName;
     }
+
+    public String getBaseUrl() {
+      return baseUrl;
+    }
   }
 
   private static class GenerateEphemeralCertRequest {
 
     private final CloudSqlInstanceName cloudSqlInstanceName;
     private final GenerateEphemeralCertResponse generateEphemeralCertResponse;
+    private final String baseUrl;
 
     public GenerateEphemeralCertRequest(
         CloudSqlInstanceName instanceConnectionName,
-        GenerateEphemeralCertResponse generateEphemeralCertResponse) {
+        GenerateEphemeralCertResponse generateEphemeralCertResponse,
+        String baseUrl) {
       this.cloudSqlInstanceName = instanceConnectionName;
       this.generateEphemeralCertResponse = generateEphemeralCertResponse;
+      this.baseUrl = baseUrl;
     }
 
     public CloudSqlInstanceName getCloudSqlInstanceName() {
@@ -280,6 +297,10 @@ public class MockAdminApi {
 
     public GenerateEphemeralCertResponse getGenerateEphemeralCertResponse() {
       return generateEphemeralCertResponse;
+    }
+
+    public String getBaseUrl() {
+      return baseUrl;
     }
   }
 

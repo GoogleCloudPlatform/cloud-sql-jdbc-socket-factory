@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -43,15 +44,18 @@ public class SqlAdminApiFetcherTest {
   public static final String SAMPLE_PCS_DNS_NAME = "abcde.12345.us-central1.sql.goog";
   public static final String INSTANCE_CONNECTION_NAME = "p:r:i";
   public static final String DATABASE_VERSION = "POSTGRES14";
+  public static final String DEFAULT_BASE_URL = "https://sqladmin.googleapis.com/";
 
   @Test
   public void testFetchInstanceData_returnsIpAddresses()
       throws ExecutionException, InterruptedException, GeneralSecurityException,
           OperatorCreationException {
-    MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
+    MockAdminApi mockAdminApi =
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
+    ConnectionConfig config = new ConnectionConfig.Builder().build();
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().create(), config);
 
     InstanceData instanceData =
         fetcher
@@ -77,12 +81,19 @@ public class SqlAdminApiFetcherTest {
 
     MockAdminApi mockAdminApi = new MockAdminApi();
     mockAdminApi.addConnectSettingsResponse(
-        INSTANCE_CONNECTION_NAME, null, null, DATABASE_VERSION, SAMPLE_PCS_DNS_NAME);
-    mockAdminApi.addGenerateEphemeralCertResponse(INSTANCE_CONNECTION_NAME, Duration.ofHours(1));
+        INSTANCE_CONNECTION_NAME,
+        null,
+        null,
+        DATABASE_VERSION,
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
+    ConnectionConfig config = new ConnectionConfig.Builder().build();
 
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().create(), config);
 
     InstanceData instanceData =
         fetcher
@@ -113,10 +124,11 @@ public class SqlAdminApiFetcherTest {
   public void testFetchInstanceData_throwsException_whenIamAuthnIsNotSupported()
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi =
-        buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD");
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL);
+    ConnectionConfig config = new ConnectionConfig.Builder().build();
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().create(), config);
 
     ExecutionException ex =
         assertThrows(
@@ -139,10 +151,12 @@ public class SqlAdminApiFetcherTest {
   @Test
   public void testFetchInstanceData_throwsException_whenRequestsTimeout()
       throws GeneralSecurityException, OperatorCreationException {
-    MockAdminApi mockAdminApi = buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION);
+    MockAdminApi mockAdminApi =
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
+    ConnectionConfig config = new ConnectionConfig.Builder().build();
     SqlAdminApiFetcher fetcher =
         new StubApiFetcherFactory(new BadConnectionFactory())
-            .create(new StubCredentialFactory().create());
+            .create(new StubCredentialFactory().create(), config);
 
     ExecutionException ex =
         assertThrows(
@@ -163,8 +177,45 @@ public class SqlAdminApiFetcherTest {
     assertThat(ex.getCause()).hasMessageThat().contains("Fake connect timeout");
   }
 
+  @Test
+  public void testSetAdminUrl_FetchInstanceData_returnsIpAddresses()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+
+    String adminRootUrl = "https://googleapis.example.com/";
+    String adminServicePath = "sqladmin/";
+    String baseUrl = adminRootUrl + adminServicePath;
+    MockAdminApi mockAdminApi =
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, baseUrl);
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withAdminRootUrl(adminRootUrl)
+            .withAdminServicePath(adminServicePath)
+            .build();
+    SqlAdminApiFetcher fetcher =
+        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    InstanceData instanceData =
+        fetcher
+            .getInstanceData(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
+    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<String, String> ipAddrs = instanceData.getIpAddrs();
+    assertThat(ipAddrs.get("PRIMARY")).isEqualTo(SAMPLE_PUBLIC_IP);
+    assertThat(ipAddrs.get("PRIVATE")).isEqualTo(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get("PSC")).isEqualTo(SAMPLE_PCS_DNS_NAME);
+  }
+
   @SuppressWarnings("SameParameterValue")
-  private MockAdminApi buildMockAdminApi(String instanceConnectionName, String databaseVersion)
+  private MockAdminApi buildMockAdminApi(
+      String instanceConnectionName, String databaseVersion, String baseUrl)
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi = new MockAdminApi();
     mockAdminApi.addConnectSettingsResponse(
@@ -172,8 +223,10 @@ public class SqlAdminApiFetcherTest {
         SAMPLE_PUBLIC_IP,
         SAMPLE_PRIVATE_IP,
         databaseVersion,
-        SAMPLE_PCS_DNS_NAME);
-    mockAdminApi.addGenerateEphemeralCertResponse(instanceConnectionName, Duration.ofHours(1));
+        SAMPLE_PCS_DNS_NAME,
+        baseUrl);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        instanceConnectionName, Duration.ofHours(1), baseUrl);
     return mockAdminApi;
   }
 }

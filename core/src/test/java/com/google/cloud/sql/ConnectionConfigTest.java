@@ -37,6 +37,8 @@ public class ConnectionConfigTest {
     final List<IpType> wantIpTypes =
         Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC); // PUBLIC is replaced with PRIMARY
     final String ipTypes = "psc,Private,PUBLIC";
+    final String wantAdminRootUrl = "https://googleapis.example.com/";
+    final String wantAdminServicePath = "sqladmin/";
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -45,6 +47,8 @@ public class ConnectionConfigTest {
     props.setProperty(ConnectionConfig.ENABLE_IAM_AUTH_PROPERTY, iamAuthN);
     props.setProperty(ConnectionConfig.UNIX_SOCKET_PROPERTY, wantUnixSocket);
     props.setProperty(ConnectionConfig.IP_TYPES_PROPERTY, ipTypes);
+    props.setProperty(ConnectionConfig.CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY, wantAdminRootUrl);
+    props.setProperty(ConnectionConfig.CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY, wantAdminServicePath);
 
     ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
 
@@ -54,6 +58,8 @@ public class ConnectionConfigTest {
     assertThat(c.getAuthType()).isEqualTo(AuthType.IAM);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
+    assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
+    assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
   }
 
   @Test
@@ -64,6 +70,8 @@ public class ConnectionConfigTest {
     final String wantUnixSocket = "/path/to/socket";
     final List<IpType> wantIpTypes = Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC);
     final AuthType wantAuthType = AuthType.PASSWORD;
+    final String wantAdminRootUrl = "https://googleapis.example.com/";
+    final String wantAdminServicePath = "sqladmin/";
 
     ConnectionConfig c =
         new ConnectionConfig.Builder()
@@ -73,6 +81,8 @@ public class ConnectionConfigTest {
             .withIpTypes(wantIpTypes)
             .withUnixSocketPath(wantUnixSocket)
             .withAuthType(wantAuthType)
+            .withAdminRootUrl(wantAdminRootUrl)
+            .withAdminServicePath(wantAdminServicePath)
             .build();
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
@@ -81,5 +91,7 @@ public class ConnectionConfigTest {
     assertThat(c.getAuthType()).isEqualTo(wantAuthType);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
+    assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
+    assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
   }
 }

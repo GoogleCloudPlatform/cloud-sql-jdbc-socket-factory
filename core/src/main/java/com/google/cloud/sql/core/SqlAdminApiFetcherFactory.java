@@ -22,17 +22,12 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.cloud.sql.ConnectionConfig;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 /** Factory for creating a SQLAdmin client that interacts with the real SQL Admin API. */
 public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
-  // Test properties, not for end-user use. May be changed or removed without notice.
-  private static final String API_ROOT_URL_PROPERTY = "_CLOUD_SQL_API_ROOT_URL";
-  private static final String API_SERVICE_PATH_PROPERTY = "_CLOUD_SQL_API_SERVICE_PATH";
-
-  private final String rootUrl;
-  private final String servicePath;
   private final String userAgents;
 
   /**
@@ -42,12 +37,11 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
    */
   public SqlAdminApiFetcherFactory(String userAgents) {
     this.userAgents = userAgents;
-    this.rootUrl = System.getProperty(API_ROOT_URL_PROPERTY);
-    this.servicePath = System.getProperty(API_SERVICE_PATH_PROPERTY);
   }
 
   @Override
-  public SqlAdminApiFetcher create(HttpRequestInitializer requestInitializer) {
+  public SqlAdminApiFetcher create(
+      HttpRequestInitializer requestInitializer, ConnectionConfig config) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -59,11 +53,11 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
     SQLAdmin.Builder adminApiBuilder =
         new SQLAdmin.Builder(httpTransport, jsonFactory, requestInitializer)
             .setApplicationName(userAgents);
-    if (rootUrl != null) {
-      adminApiBuilder.setRootUrl(rootUrl);
+    if (config.getAdminRootUrl() != null) {
+      adminApiBuilder.setRootUrl(config.getAdminRootUrl());
     }
-    if (servicePath != null) {
-      adminApiBuilder.setServicePath(servicePath);
+    if (config.getAdminServicePath() != null) {
+      adminApiBuilder.setServicePath(config.getAdminServicePath());
     }
     return new SqlAdminApiFetcher(adminApiBuilder.build());
   }
