@@ -325,7 +325,7 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 Replace these parameters in the example based on your database type:
 
-|          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          |
+| Database | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          |
 |----------|---------------------------------------|---------------------------------------------|----------------------|
 | MySQL    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                |  
 | MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                |  
@@ -370,7 +370,7 @@ in [IAM Authentication](#iam-authentication)
 
 Replace these parameters in the example based on your database type:
 
-|          | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          | IAM_EMAIL                                |
+| Database | JDBC_URL                              | DRIVER_CLASS                                | IAM_DB_USER          | IAM_EMAIL                                |
 |----------|---------------------------------------|---------------------------------------------|----------------------|------------------------------------------|
 | MySQL    | jdbc:mysql:///<DB_NAME>               | com.google.cloud.sql.mysql.SocketFactory    | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
 | MariaDB  | jdbc:mariadb://ignoreme:123/<DB_NAME> | com.google.cloud.sql.mariadb.SocketFactory  | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  

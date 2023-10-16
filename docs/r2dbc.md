@@ -169,7 +169,7 @@ using IAM auth, leaving it empty will cause driver-level validations to fail.
 
 Replace these parameters in the example based on your database type:
 
-|          | PROTOCOL   | IAM_DB_USER          |
+| Database | PROTOCOL   | IAM_DB_USER          |
 |----------|------------|----------------------|
 | MySQL    | mysql      | my-sa                |  
 | Postgres | postgresql | my-sa@my-project.iam |
@@ -215,7 +215,7 @@ in [IAM Authentication](#iam-authentication)
 
 Replace these parameters in the example based on your database type:
 
-|          | PROTOCOL   | IAM_DB_USER          | IAM_EMAIL                                |
+| Database | PROTOCOL   | IAM_DB_USER          | IAM_EMAIL                                |
 |----------|------------|----------------------|------------------------------------------|
 | MySQL    | mysql      | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
 | Postgres | postgresql | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
