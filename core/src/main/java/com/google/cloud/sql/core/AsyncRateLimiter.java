@@ -54,67 +54,42 @@ class AsyncRateLimiter {
    *
    * @param executor the executor to use to schedule future checks for available rate limits.
    */
-  public ListenableFuture<RateLimitTracker> acquireAsync(ScheduledExecutorService executor) {
-    RateLimitTracker t = new RateLimitTracker(System.currentTimeMillis());
-    return acquireWithTracker(t, executor);
+  public ListenableFuture<?> acquireAsync(ScheduledExecutorService executor) {
+    return acquireAsync(new RateLimitAcquisition(), executor);
   }
 
-  private ListenableFuture<RateLimitTracker> acquireWithTracker(
-      RateLimitTracker t, ScheduledExecutorService executor) {
+  @VisibleForTesting
+  ListenableFuture<RateLimitAcquisition> acquireAsync(
+      RateLimitAcquisition rla, ScheduledExecutorService executor) {
     long limit = this.nextDelayMs(System.currentTimeMillis());
     if (limit > 0) {
       return Futures.scheduleAsync(
-          () -> this.acquireWithTracker(t.nextAttempt(), executor),
-          limit,
-          TimeUnit.MILLISECONDS,
-          executor);
+          () -> this.acquireAsync(rla.retry(), executor), limit, TimeUnit.MILLISECONDS, executor);
     }
-    return Futures.immediateFuture(t.done());
+    return Futures.immediateFuture(rla.done());
   }
 
-  public static class RateLimitTracker {
-    final long startTimestampMs;
-    long acquireAttempts;
-    long doneTimestampMs;
+  @VisibleForTesting
+  static class RateLimitAcquisition {
+    long attempts;
+    long acquireTimestampMs;
 
-    private RateLimitTracker(long startTimestampMs) {
-      this.startTimestampMs = startTimestampMs;
-    }
-
-    private RateLimitTracker nextAttempt() {
-      acquireAttempts++;
+    private RateLimitAcquisition retry() {
+      attempts++;
       return this;
     }
 
-    private RateLimitTracker done() {
-      this.doneTimestampMs = System.currentTimeMillis();
+    private RateLimitAcquisition done() {
+      acquireTimestampMs = System.currentTimeMillis();
       return this;
     }
 
-    public long getStartTimestampMs() {
-      return startTimestampMs;
+    long getAttempts() {
+      return attempts;
     }
 
-    public long getAcquireAttempts() {
-      return acquireAttempts;
-    }
-
-    public long getDoneTimestampMs() {
-      return doneTimestampMs;
-    }
-
-    public long getElapsedMs() {
-      return doneTimestampMs - startTimestampMs;
-    }
-
-    @Override
-    public String toString() {
-      return "RateLimitTracker{"
-          + "elapsedMs="
-          + (doneTimestampMs - startTimestampMs)
-          + ", acquireAttempts="
-          + acquireAttempts
-          + '}';
+    long getAcquireTimestampMs() {
+      return acquireTimestampMs;
     }
   }
 }
