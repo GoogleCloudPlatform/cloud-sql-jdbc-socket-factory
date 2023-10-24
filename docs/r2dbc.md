@@ -1,4 +1,4 @@
-# Connecting to SQL Server using R2DBC
+# Connecting to Cloud SQL using R2DBC
 
 ## Setup and Usage
 
