@@ -77,7 +77,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
-    caches.forEach((inst) -> inst.getSslData(2000L));
+    caches.forEach((inst) -> inst.getConnectionMetadata(2000L));
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
@@ -116,7 +116,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
               connectionInfoCache.forceRefresh();
               connectionInfoCache.forceRefresh();
               Thread.sleep(0);
-              connectionInfoCache.getSslData(2000L);
+              connectionInfoCache.getConnectionMetadata(2000L);
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
             }

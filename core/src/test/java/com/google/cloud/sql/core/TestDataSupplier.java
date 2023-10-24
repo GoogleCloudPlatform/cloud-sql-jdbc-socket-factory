@@ -22,10 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.KeyManagerFactory;
 
 class TestDataSupplier implements ConnectionInfoRepository {
 
@@ -35,14 +37,22 @@ class TestDataSupplier implements ConnectionInfoRepository {
   final AtomicInteger successCounter = new AtomicInteger();
   final ConnectionInfo response =
       new ConnectionInfo(
-          new Metadata(
+          new InstanceMetadata(
               ImmutableMap.of(
                   IpType.PUBLIC, "10.1.2.3",
                   IpType.PRIVATE, "10.10.10.10",
                   IpType.PSC, "abcde.12345.us-central1.sql.goog"),
               null),
-          new SslData(null, null, null),
+          new SslData(null, createKeyManagerFactory(), null),
           Instant.now().plus(1, ChronoUnit.HOURS));
+
+  private static KeyManagerFactory createKeyManagerFactory() {
+    try {
+      return KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   TestDataSupplier(boolean flaky) {
     this.flaky = flaky;

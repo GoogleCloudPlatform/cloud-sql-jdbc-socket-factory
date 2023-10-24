@@ -24,8 +24,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
@@ -39,6 +37,7 @@ class DefaultConnectionInfoCache {
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
   private final Refresher refresher;
+  private final ConnectionConfig config;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
@@ -56,6 +55,7 @@ class DefaultConnectionInfoCache {
       ListenableFuture<KeyPair> keyPair,
       long minRefreshDelayMs) {
     this.instanceName = new CloudSqlInstanceName(config.getCloudSqlInstance());
+    this.config = config;
 
     if (config.getAuthType() == AuthType.IAM) {
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
@@ -93,11 +93,6 @@ class DefaultConnectionInfoCache {
     return refresher.getConnectionInfo(timeoutMs);
   }
 
-  /** Returns SslData to establish mTLS connections. */
-  SslData getSslData(long timeoutMs) {
-    return getConnectionInfo(timeoutMs).getSslData();
-  }
-
   /**
    * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
    * block until required instance data is available.
@@ -108,28 +103,34 @@ class DefaultConnectionInfoCache {
   }
 
   /**
-   * Returns the first IP address for the instance, in order of the preference supplied by
-   * preferredTypes.
+   * Returns metadata needed to create a connection to the instance.
    *
-   * @param preferredTypes Preferred instance IP types to use. Valid IP types include "Public" and
-   *     "Private".
-   * @return returns a string representing the IP address for the instance
+   * @return returns ConnectionMetadata containing the preferred IP and SSL connection data.
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
-  String getPreferredIp(List<IpType> preferredTypes, long timeoutMs) {
-    Map<IpType, String> ipAddrs = getConnectionInfo(timeoutMs).getIpAddrs();
-    for (IpType ipType : preferredTypes) {
-      String preferredIp = ipAddrs.get(ipType);
+  ConnectionMetadata getConnectionMetadata(long timeoutMs) {
+    ConnectionInfo info = getConnectionInfo(timeoutMs);
+    String preferredIp = null;
+
+    for (IpType ipType : config.getIpTypes()) {
+      preferredIp = info.getIpAddrs().get(ipType);
       if (preferredIp != null) {
-        return preferredIp;
+        break;
       }
     }
-    throw new IllegalArgumentException(
-        String.format(
-            "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
-            instanceName.getConnectionName(),
-            preferredTypes.stream().map(IpType::toString).collect(Collectors.joining(","))));
+    if (preferredIp == null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
+              instanceName.getConnectionName(),
+              config.getIpTypes().stream().map(IpType::toString).collect(Collectors.joining(","))));
+    }
+
+    return new ConnectionMetadata(
+        preferredIp,
+        info.getSslData().getKeyManagerFactory(),
+        info.getSslData().getTrustManagerFactory());
   }
 
   void forceRefresh() {

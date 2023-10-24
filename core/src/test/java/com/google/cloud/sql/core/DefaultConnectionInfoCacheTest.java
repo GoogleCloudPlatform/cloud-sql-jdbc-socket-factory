@@ -16,6 +16,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectionConfig;
@@ -26,15 +27,19 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.KeyManagerFactory;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -76,8 +81,9 @@ public class DefaultConnectionInfoCacheTest {
             keyPairFuture,
             MIN_REFERSH_DELAY_MS);
 
-    SslData gotSslData = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
-    assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
+    ConnectionMetadata gotMetadata = connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
+    assertThat(gotMetadata.getKeyManagerFactory())
+        .isSameInstanceAs(instanceDataSupplier.response.getSslData().getKeyManagerFactory());
     assertThat(instanceDataSupplier.counter.get()).isEqualTo(1);
   }
 
@@ -106,8 +112,9 @@ public class DefaultConnectionInfoCacheTest {
             MIN_REFERSH_DELAY_MS);
 
     RuntimeException ex =
-        Assert.assertThrows(
-            RuntimeException.class, () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS));
+        assertThrows(
+            RuntimeException.class,
+            () -> connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS));
     assertThat(ex).hasMessageThat().contains("always fails");
   }
 
@@ -136,7 +143,7 @@ public class DefaultConnectionInfoCacheTest {
             100);
 
     RuntimeException ex =
-        Assert.assertThrows(RuntimeException.class, () -> connectionInfoCache.getSslData(2000));
+        assertThrows(RuntimeException.class, () -> connectionInfoCache.getConnectionMetadata(2000));
     assertThat(ex).hasMessageThat().contains("No refresh has completed");
   }
 
@@ -164,7 +171,7 @@ public class DefaultConnectionInfoCacheTest {
             keyPairFuture,
             MIN_REFERSH_DELAY_MS);
 
-    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Force refresh, which will start, but not finish the refresh process.
@@ -172,7 +179,7 @@ public class DefaultConnectionInfoCacheTest {
 
     // Then immediately getSslData() and assert that the refresh count has not changed.
     // Refresh count hasn't changed because we re-use the existing connection info.
-    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Allow the second refresh operation to complete
@@ -181,7 +188,7 @@ public class DefaultConnectionInfoCacheTest {
     cond.waitForCondition(() -> refreshCount.get() >= 2, 1000L);
 
     // getSslData again, and assert the refresh operation completed.
-    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -209,13 +216,14 @@ public class DefaultConnectionInfoCacheTest {
 
     // Get the first connectionInfo that is about to expire
     long until = System.currentTimeMillis() + 3000;
-    while (connectionInfoCache.getSslData(TEST_TIMEOUT_MS) != connectionInfo.getSslData()
+    while (connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory()
+            != connectionInfo.getSslData().getKeyManagerFactory()
         && System.currentTimeMillis() < until) {
       Thread.sleep(100);
     }
     assertThat(refreshCount.get()).isEqualTo(2);
-    assertThat(connectionInfoCache.getSslData(TEST_TIMEOUT_MS))
-        .isEqualTo(connectionInfo.getSslData());
+    assertThat(connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory())
+        .isEqualTo(connectionInfo.getSslData().getKeyManagerFactory());
   }
 
   private static ConnectionInfo newFutureConnectionInfo() {
@@ -223,8 +231,16 @@ public class DefaultConnectionInfoCacheTest {
   }
 
   private static ConnectionInfo newConnectionInfo(long amount, ChronoUnit unit) {
-    return new ConnectionInfo(
-        null, new SslData(null, null, null), Instant.now().plus(amount, unit));
+    Map<IpType, String> ips = Collections.singletonMap(IpType.PUBLIC, "10.1.1.1");
+    try {
+      return new ConnectionInfo(
+          new InstanceMetadata(ips, null),
+          new SslData(
+              null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
+          Instant.now().plus(amount, unit));
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
@@ -261,9 +277,10 @@ public class DefaultConnectionInfoCacheTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
-    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    ConnectionMetadata d = connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(initial.getSslData());
+    assertThat(d.getKeyManagerFactory())
+        .isSameInstanceAs(initial.getSslData().getKeyManagerFactory());
 
     // Wait for the connectionInfoCache to expire
     while (Instant.now().isBefore(initial.getExpiration())) {
@@ -276,7 +293,10 @@ public class DefaultConnectionInfoCacheTest {
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
+        () ->
+            connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory()
+                == info.getSslData().getKeyManagerFactory(),
+        1000L);
   }
 
   @Test
@@ -320,8 +340,9 @@ public class DefaultConnectionInfoCacheTest {
     refresh0.waitForCondition(() -> refreshCount.get() > 0, 1000);
     // Get the first info that is about to expire
     assertThat(refreshCount.get()).isEqualTo(1);
-    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
-    assertThat(d).isSameInstanceAs(expiresInOneMinute.getSslData());
+    ConnectionMetadata d = connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
+    assertThat(d.getKeyManagerFactory())
+        .isSameInstanceAs(expiresInOneMinute.getSslData().getKeyManagerFactory());
 
     // Because the info is about to expire, scheduled refresh will begin immediately.
     // Wait until refresh is in progress.
@@ -340,7 +361,10 @@ public class DefaultConnectionInfoCacheTest {
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
+        () ->
+            connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory()
+                == info.getSslData().getKeyManagerFactory(),
+        1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -375,9 +399,10 @@ public class DefaultConnectionInfoCacheTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first info that is about to expire
-    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    ConnectionMetadata d = connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(initialData.getSslData());
+    assertThat(d.getKeyManagerFactory())
+        .isSameInstanceAs(initialData.getSslData().getKeyManagerFactory());
 
     // call forceRefresh twice, this should only result in 1 refresh fetch
     connectionInfoCache.forceRefresh();
@@ -394,7 +419,10 @@ public class DefaultConnectionInfoCacheTest {
     // assert the refresh operation completed exactly once after
     // forceRefresh was called multiple times.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
+        () ->
+            connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory()
+                == info.getSslData().getKeyManagerFactory(),
+        1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -438,9 +466,10 @@ public class DefaultConnectionInfoCacheTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first info that is about to expire
-    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
+    ConnectionMetadata d = connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(aboutToExpire.getSslData());
+    assertThat(d.getKeyManagerFactory())
+        .isSameInstanceAs(aboutToExpire.getSslData().getKeyManagerFactory());
 
     // Don't force a refresh, this should automatically schedule a refresh right away because
     // the token returned in the first request had less than 4 minutes before it expired.
@@ -467,7 +496,10 @@ public class DefaultConnectionInfoCacheTest {
 
     // Try getSslData() again, and assert the refresh operation eventually completes.
     goodRequest.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 2000);
+        () ->
+            connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS).getKeyManagerFactory()
+                == info.getSslData().getKeyManagerFactory(),
+        2000);
   }
 
   @Test
@@ -475,7 +507,7 @@ public class DefaultConnectionInfoCacheTest {
     SslData sslData = new SslData(null, null, null);
     ConnectionInfo info =
         new ConnectionInfo(
-            new Metadata(
+            new InstanceMetadata(
                 ImmutableMap.of(
                     IpType.PUBLIC, "10.1.2.3",
                     IpType.PRIVATE, "10.10.10.10",
@@ -491,36 +523,34 @@ public class DefaultConnectionInfoCacheTest {
           return Futures.immediateFuture(info);
         };
 
-    // initialize connectionInfoCache after mocks are set up
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
-            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            connectionInfoRepository,
-            stubCredentialFactory,
-            executorService,
-            keyPairFuture,
-            MIN_REFERSH_DELAY_MS);
+    Map<List<IpType>, String> values = new LinkedHashMap<>();
+    values.put(Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), "10.1.2.3");
+    values.put(Arrays.asList(IpType.PUBLIC), "10.1.2.3");
+    values.put(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), "10.10.10.10");
+    values.put(Arrays.asList(IpType.PRIVATE), "10.10.10.10");
+    values.put(Arrays.asList(IpType.PSC), "abcde.12345.us-central1.sql.goog");
 
-    assertThat(
-            connectionInfoCache.getPreferredIp(
-                Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), TEST_TIMEOUT_MS))
-        .isEqualTo("10.1.2.3");
-    assertThat(
-            connectionInfoCache.getPreferredIp(
-                Collections.singletonList(IpType.PUBLIC), TEST_TIMEOUT_MS))
-        .isEqualTo("10.1.2.3");
-    assertThat(
-            connectionInfoCache.getPreferredIp(
-                Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), TEST_TIMEOUT_MS))
-        .isEqualTo("10.10.10.10");
-    assertThat(
-            connectionInfoCache.getPreferredIp(
-                Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS))
-        .isEqualTo("10.10.10.10");
-    assertThat(
-            connectionInfoCache.getPreferredIp(
-                Collections.singletonList(IpType.PSC), TEST_TIMEOUT_MS))
-        .isEqualTo("abcde.12345.us-central1.sql.goog");
+    values.forEach(
+        (ipTypes, wantsIp) -> {
+          // initialize connectionInfoCache after mocks are set up
+          DefaultConnectionInfoCache connectionInfoCache =
+              new DefaultConnectionInfoCache(
+                  new ConnectionConfig.Builder()
+                      .withCloudSqlInstance("project:region:instance")
+                      .withIpTypes(ipTypes)
+                      .build(),
+                  connectionInfoRepository,
+                  stubCredentialFactory,
+                  executorService,
+                  keyPairFuture,
+                  MIN_REFERSH_DELAY_MS);
+
+          assertThat(
+                  connectionInfoCache
+                      .getConnectionMetadata(TEST_TIMEOUT_MS)
+                      .getPreferredIpAddress())
+              .isEqualTo(wantsIp);
+        });
   }
 
   @Test
@@ -528,7 +558,7 @@ public class DefaultConnectionInfoCacheTest {
     SslData sslData = new SslData(null, null, null);
     ConnectionInfo info =
         new ConnectionInfo(
-            new Metadata(ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"), null),
+            new InstanceMetadata(ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"), null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
@@ -542,17 +572,18 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+                .build(),
             connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
             MIN_REFERSH_DELAY_MS);
-    Assert.assertThrows(
+    assertThrows(
         IllegalArgumentException.class,
-        () ->
-            connectionInfoCache.getPreferredIp(
-                Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS));
+        () -> connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

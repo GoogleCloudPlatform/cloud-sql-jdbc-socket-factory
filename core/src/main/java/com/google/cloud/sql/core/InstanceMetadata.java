@@ -21,12 +21,12 @@ import java.security.cert.Certificate;
 import java.util.Map;
 
 /** Represents the results of @link #fetchMetadata(). */
-class Metadata {
+class InstanceMetadata {
 
   private final Map<IpType, String> ipAddrs;
   private final Certificate instanceCaCertificate;
 
-  Metadata(Map<IpType, String> ipAddrs, Certificate instanceCaCertificate) {
+  InstanceMetadata(Map<IpType, String> ipAddrs, Certificate instanceCaCertificate) {
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificate = instanceCaCertificate;
   }
