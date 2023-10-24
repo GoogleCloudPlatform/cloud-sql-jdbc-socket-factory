@@ -56,7 +56,7 @@ public final class InternalConnectorRegistry {
   private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static InternalConnectorRegistry internalConnectorRegistry;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<String, Connector> connectors = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<ConnectorKey, Connector> connectors = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
@@ -241,7 +241,7 @@ public final class InternalConnectorRegistry {
   }
 
   private Connector getConnector(ConnectionConfig config) {
-    return connectors.computeIfAbsent(config.getCloudSqlInstance(), k -> createConnector(config));
+    return connectors.computeIfAbsent(new ConnectorKey(config), k -> createConnector(config));
   }
 
   private Connector createConnector(ConnectionConfig config) {
