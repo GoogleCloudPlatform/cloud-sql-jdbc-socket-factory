@@ -37,7 +37,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CloudSqlInstanceTest {
+public class DefaultConnectionInfoCacheTest {
 
   public static final long TEST_TIMEOUT_MS = 3000;
 
@@ -65,9 +65,9 @@ public class CloudSqlInstanceTest {
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() {
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    // initialize connectionInfoCache after mocks are set up
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             instanceDataSupplier,
             AuthType.PASSWORD,
@@ -76,7 +76,7 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             MIN_REFERSH_DELAY_MS);
 
-    SslData gotSslData = instance.getSslData(TEST_TIMEOUT_MS);
+    SslData gotSslData = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(gotSslData).isSameInstanceAs(instanceDataSupplier.response.getSslData());
     assertThat(instanceDataSupplier.counter.get()).isEqualTo(1);
   }
@@ -95,9 +95,9 @@ public class CloudSqlInstanceTest {
                   throw new RuntimeException("always fails");
                 });
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    // initialize connectionInfoCache after mocks are set up
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             connectionInfoRepository,
             AuthType.PASSWORD,
@@ -107,7 +107,8 @@ public class CloudSqlInstanceTest {
             MIN_REFERSH_DELAY_MS);
 
     RuntimeException ex =
-        Assert.assertThrows(RuntimeException.class, () -> instance.getSslData(TEST_TIMEOUT_MS));
+        Assert.assertThrows(
+            RuntimeException.class, () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS));
     assertThat(ex).hasMessageThat().contains("always fails");
   }
 
@@ -125,9 +126,9 @@ public class CloudSqlInstanceTest {
           throw new RuntimeException("fake read timeout");
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    // initialize connectionInfoCache after mocks are set up
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             connectionInfoRepository,
             AuthType.PASSWORD,
@@ -137,7 +138,7 @@ public class CloudSqlInstanceTest {
             100);
 
     RuntimeException ex =
-        Assert.assertThrows(RuntimeException.class, () -> instance.getSslData(2000));
+        Assert.assertThrows(RuntimeException.class, () -> connectionInfoCache.getSslData(2000));
     assertThat(ex).hasMessageThat().contains("No refresh has completed");
   }
 
@@ -147,8 +148,8 @@ public class CloudSqlInstanceTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition cond = new PauseCondition();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -166,15 +167,15 @@ public class CloudSqlInstanceTest {
             keyPairFuture,
             MIN_REFERSH_DELAY_MS);
 
-    instance.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Force refresh, which will start, but not finish the refresh process.
-    instance.forceRefresh();
+    connectionInfoCache.forceRefresh();
 
     // Then immediately getSslData() and assert that the refresh count has not changed.
     // Refresh count hasn't changed because we re-use the existing connection info.
-    instance.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Allow the second refresh operation to complete
@@ -183,7 +184,7 @@ public class CloudSqlInstanceTest {
     cond.waitForCondition(() -> refreshCount.get() >= 2, 1000L);
 
     // getSslData again, and assert the refresh operation completed.
-    instance.getSslData(TEST_TIMEOUT_MS);
+    connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -193,8 +194,8 @@ public class CloudSqlInstanceTest {
 
     AtomicInteger refreshCount = new AtomicInteger();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -212,12 +213,12 @@ public class CloudSqlInstanceTest {
 
     // Get the first data that is about to expire
     long until = System.currentTimeMillis() + 3000;
-    while (instance.getSslData(TEST_TIMEOUT_MS) != data.getSslData()
+    while (connectionInfoCache.getSslData(TEST_TIMEOUT_MS) != data.getSslData()
         && System.currentTimeMillis() < until) {
       Thread.sleep(100);
     }
     assertThat(refreshCount.get()).isEqualTo(2);
-    assertThat(instance.getSslData(TEST_TIMEOUT_MS)).isEqualTo(data.getSslData());
+    assertThat(connectionInfoCache.getSslData(TEST_TIMEOUT_MS)).isEqualTo(data.getSslData());
   }
 
   private static InstanceData newFutureInstanceData() {
@@ -236,8 +237,8 @@ public class CloudSqlInstanceTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -263,11 +264,11 @@ public class CloudSqlInstanceTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
-    SslData d = instance.getSslData(TEST_TIMEOUT_MS);
+    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData.getSslData());
 
-    // Wait for the instance to expire
+    // Wait for the connectionInfoCache to expire
     while (Instant.now().isBefore(initialData.getExpiration())) {
       Thread.sleep(10);
     }
@@ -278,7 +279,7 @@ public class CloudSqlInstanceTest {
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> instance.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
   }
 
   @Test
@@ -294,8 +295,8 @@ public class CloudSqlInstanceTest {
     final PauseCondition refresh0 = new PauseCondition();
     final PauseCondition refresh1 = new PauseCondition();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -323,7 +324,7 @@ public class CloudSqlInstanceTest {
     refresh0.waitForCondition(() -> refreshCount.get() > 0, 1000);
     // Get the first data that is about to expire
     assertThat(refreshCount.get()).isEqualTo(1);
-    SslData d = instance.getSslData(TEST_TIMEOUT_MS);
+    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(d).isSameInstanceAs(expiresInOneMinute.getSslData());
 
     // Because the data is about to expire, scheduled refresh will begin immediately.
@@ -331,7 +332,7 @@ public class CloudSqlInstanceTest {
     refresh1.waitForPauseToStart(1000);
 
     // Then call forceRefresh(), which should balk because a refresh attempt is in progress.
-    instance.forceRefresh();
+    connectionInfoCache.forceRefresh();
 
     // Finally, allow the scheduled refresh operation to complete
     refresh1.proceed();
@@ -343,7 +344,7 @@ public class CloudSqlInstanceTest {
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> instance.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -355,8 +356,8 @@ public class CloudSqlInstanceTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -379,13 +380,13 @@ public class CloudSqlInstanceTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
-    SslData d = instance.getSslData(TEST_TIMEOUT_MS);
+    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData.getSslData());
 
     // call forceRefresh twice, this should only result in 1 refresh fetch
-    instance.forceRefresh();
-    instance.forceRefresh();
+    connectionInfoCache.forceRefresh();
+    connectionInfoCache.forceRefresh();
 
     // Allow the refresh operation to complete
     refresh1.proceed();
@@ -398,7 +399,7 @@ public class CloudSqlInstanceTest {
     // assert the refresh operation completed exactly once after
     // forceRefresh was called multiple times.
     refresh1.waitForCondition(
-        () -> instance.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -413,8 +414,8 @@ public class CloudSqlInstanceTest {
     final PauseCondition badRequest2 = new PauseCondition();
     final PauseCondition goodRequest = new PauseCondition();
 
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
@@ -443,7 +444,7 @@ public class CloudSqlInstanceTest {
             RATE_LIMIT_BETWEEN_REQUESTS);
 
     // Get the first data that is about to expire
-    SslData d = instance.getSslData(TEST_TIMEOUT_MS);
+    SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(aboutToExpireData.getSslData());
 
@@ -472,7 +473,7 @@ public class CloudSqlInstanceTest {
 
     // Try getSslData() again, and assert the refresh operation eventually completes.
     goodRequest.waitForCondition(
-        () -> instance.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 2000);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 2000);
   }
 
   @Test
@@ -496,9 +497,9 @@ public class CloudSqlInstanceTest {
           return Futures.immediateFuture(data);
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    // initialize connectionInfoCache after mocks are set up
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             connectionInfoRepository,
             AuthType.PASSWORD,
@@ -508,16 +509,24 @@ public class CloudSqlInstanceTest {
             MIN_REFERSH_DELAY_MS);
 
     assertThat(
-            instance.getPreferredIp(Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), TEST_TIMEOUT_MS))
-        .isEqualTo("10.1.2.3");
-    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PUBLIC), TEST_TIMEOUT_MS))
+            connectionInfoCache.getPreferredIp(
+                Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), TEST_TIMEOUT_MS))
         .isEqualTo("10.1.2.3");
     assertThat(
-            instance.getPreferredIp(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), TEST_TIMEOUT_MS))
+            connectionInfoCache.getPreferredIp(
+                Collections.singletonList(IpType.PUBLIC), TEST_TIMEOUT_MS))
+        .isEqualTo("10.1.2.3");
+    assertThat(
+            connectionInfoCache.getPreferredIp(
+                Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), TEST_TIMEOUT_MS))
         .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS))
+    assertThat(
+            connectionInfoCache.getPreferredIp(
+                Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS))
         .isEqualTo("10.10.10.10");
-    assertThat(instance.getPreferredIp(Collections.singletonList(IpType.PSC), TEST_TIMEOUT_MS))
+    assertThat(
+            connectionInfoCache.getPreferredIp(
+                Collections.singletonList(IpType.PSC), TEST_TIMEOUT_MS))
         .isEqualTo("abcde.12345.us-central1.sql.goog");
   }
 
@@ -537,9 +546,9 @@ public class CloudSqlInstanceTest {
           return Futures.immediateFuture(data);
         };
 
-    // initialize instance after mocks are set up
-    CloudSqlInstance instance =
-        new CloudSqlInstance(
+    // initialize connectionInfoCache after mocks are set up
+    DefaultConnectionInfoCache connectionInfoCache =
+        new DefaultConnectionInfoCache(
             "project:region:instance",
             connectionInfoRepository,
             AuthType.PASSWORD,
@@ -549,7 +558,9 @@ public class CloudSqlInstanceTest {
             MIN_REFERSH_DELAY_MS);
     Assert.assertThrows(
         IllegalArgumentException.class,
-        () -> instance.getPreferredIp(Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS));
+        () ->
+            connectionInfoCache.getPreferredIp(
+                Collections.singletonList(IpType.PRIVATE), TEST_TIMEOUT_MS));
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {

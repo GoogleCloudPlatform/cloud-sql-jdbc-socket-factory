@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 
 /** Handles periodic refresh operations for an instance. */
 class Refresher {
-  private static final Logger logger = Logger.getLogger(CloudSqlInstance.class.getName());
+  private static final Logger logger = Logger.getLogger(Refresher.class.getName());
 
   private final ListeningScheduledExecutorService executor;
 
