@@ -1,4 +1,4 @@
-# Connecting to SQL Server using JDBC
+# Connecting to Cloud SQL using JDBC
 
 ## Setup and Usage
 
