@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.IpType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
@@ -68,9 +69,8 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             instanceDataSupplier,
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -98,9 +98,8 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -129,9 +128,8 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -150,7 +148,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               // Allow the first execution to complete immediately.
@@ -161,7 +159,6 @@ public class DefaultConnectionInfoCacheTest {
               refreshCount.incrementAndGet();
               return Futures.immediateFuture(connectionInfo);
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -196,7 +193,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               refreshCount.incrementAndGet();
@@ -205,7 +202,6 @@ public class DefaultConnectionInfoCacheTest {
               }
               return Futures.immediateFuture(connectionInfo);
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -241,7 +237,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               ConnectionInfo refreshResult = info;
@@ -259,7 +255,6 @@ public class DefaultConnectionInfoCacheTest {
               refreshCount.incrementAndGet();
               return Futures.immediateFuture(refreshResult);
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -299,7 +294,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               ConnectionInfo refreshResult = info;
@@ -315,7 +310,6 @@ public class DefaultConnectionInfoCacheTest {
               refreshCount.incrementAndGet();
               return Futures.immediateFuture(refreshResult);
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -360,7 +354,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               switch (c) {
@@ -375,7 +369,6 @@ public class DefaultConnectionInfoCacheTest {
                   return Futures.immediateFuture(info);
               }
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -418,7 +411,7 @@ public class DefaultConnectionInfoCacheTest {
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
               switch (c) {
@@ -439,7 +432,6 @@ public class DefaultConnectionInfoCacheTest {
                   return Futures.immediateFuture(info);
               }
             },
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -502,9 +494,8 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -551,9 +542,8 @@ public class DefaultConnectionInfoCacheTest {
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
-            "project:region:instance",
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
-            AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
             keyPairFuture,

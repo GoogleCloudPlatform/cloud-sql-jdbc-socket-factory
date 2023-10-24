@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.mariadb;
 
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,7 +49,8 @@ public class SocketFactory extends ConfigurableSocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return InternalConnectorRegistry.connect(conf.nonMappedOptions());
+      return InternalConnectorRegistry.getInstance()
+          .connect(ConnectionConfig.fromConnectionProperties(conf.nonMappedOptions()));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

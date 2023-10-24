@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -68,9 +68,8 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     for (int i = 0; i < instanceCount; i++) {
       caches.add(
           new DefaultConnectionInfoCache(
-              "a:b:instance" + i,
+              new ConnectionConfig.Builder().withCloudSqlInstance("a:b:instance" + i).build(),
               supplier,
-              AuthType.PASSWORD,
               new TestCredentialFactory(),
               executor,
               keyPairFuture,

@@ -66,7 +66,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject")
               .withIpTypes("PRIMARY")
@@ -77,7 +77,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     }
 
     try {
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion")
               .withIpTypes("PRIMARY")
@@ -98,7 +98,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:notMyRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -128,7 +128,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
-        internalConnectorRegistry.createSslSocket(
+        internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIVATE")
@@ -149,7 +149,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
 
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -173,7 +173,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
 
     Socket socket =
-        internalConnectorRegistry.createSslSocket(
+        internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -193,7 +193,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
-        internalConnectorRegistry.createSslSocket(
+        internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -210,7 +210,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -235,7 +235,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
-      internalConnectorRegistry.createSslSocket(
+      internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
               .withIpTypes("PRIMARY")
@@ -273,7 +273,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
     Socket socket =
-        internalConnectorRegistry.createSslSocket(
+        internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -302,7 +302,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
     Socket socket =
-        internalConnectorRegistry.createSslSocket(
+        internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -340,7 +340,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     assertThrows(
         RuntimeException.class,
         () ->
-            internalConnectorRegistry.createSslSocket(
+            internalConnectorRegistry.connect(
                 new ConnectionConfig.Builder()
                     .withCloudSqlInstance("myProject:myRegion:myInstance")
                     .withIpTypes("PRIMARY")
