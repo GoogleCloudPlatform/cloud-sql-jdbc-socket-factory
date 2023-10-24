@@ -33,8 +33,8 @@ class TestDataSupplier implements ConnectionInfoRepository {
 
   final AtomicInteger counter = new AtomicInteger();
   final AtomicInteger successCounter = new AtomicInteger();
-  final InstanceData response =
-      new InstanceData(
+  final ConnectionInfo response =
+      new ConnectionInfo(
           new Metadata(
               ImmutableMap.of(
                   IpType.PUBLIC, "10.1.2.3",
@@ -49,7 +49,7 @@ class TestDataSupplier implements ConnectionInfoRepository {
   }
 
   @Override
-  public ListenableFuture<InstanceData> getInstanceData(
+  public ListenableFuture<ConnectionInfo> getConnectionInfo(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
@@ -62,7 +62,7 @@ class TestDataSupplier implements ConnectionInfoRepository {
     // When `this.flaky` is set, every other call to getInstanceData()
     // throw an ExecutionException, as if DefaultConnectionInfoRepository made an API request,
     // and then failed.
-    ListenableFuture<InstanceData> f =
+    ListenableFuture<ConnectionInfo> f =
         executor.submit(
             () -> {
               Thread.sleep(100);

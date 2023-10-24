@@ -91,7 +91,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
   @Override
-  public ListenableFuture<InstanceData> getInstanceData(
+  public ListenableFuture<ConnectionInfo> getConnectionInfo(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
@@ -127,7 +127,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                 executor);
 
     // Once both the SSLContext and Metadata are complete, return the results
-    ListenableFuture<InstanceData> done =
+    ListenableFuture<ConnectionInfo> done =
         Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
             .call(
                 () -> {
@@ -151,7 +151,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
                   logger.fine(String.format("[%s] INSTANCE DATA DONE", instanceName));
 
-                  return new InstanceData(
+                  return new ConnectionInfo(
                       Futures.getDone(metadataFuture),
                       Futures.getDone(sslContextFuture),
                       expiration);

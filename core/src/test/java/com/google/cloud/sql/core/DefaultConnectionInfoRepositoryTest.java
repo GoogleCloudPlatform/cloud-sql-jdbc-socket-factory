@@ -57,17 +57,17 @@ public class DefaultConnectionInfoRepositoryTest {
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
-    InstanceData instanceData =
-        repo.getInstanceData(
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,
                 newTestExecutor(),
                 Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
             .get();
-    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
     assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
     assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
     assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
@@ -94,17 +94,17 @@ public class DefaultConnectionInfoRepositoryTest {
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
-    InstanceData instanceData =
-        repo.getInstanceData(
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,
                 newTestExecutor(),
                 Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
             .get();
-    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
     assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
@@ -132,7 +132,7 @@ public class DefaultConnectionInfoRepositoryTest {
         assertThrows(
             ExecutionException.class,
             () -> {
-              repo.getInstanceData(
+              repo.getConnectionInfo(
                       new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                       () -> Optional.empty(),
                       AuthType.IAM,
@@ -159,7 +159,7 @@ public class DefaultConnectionInfoRepositoryTest {
         assertThrows(
             ExecutionException.class,
             () -> {
-              repo.getInstanceData(
+              repo.getConnectionInfo(
                       new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                       () -> {
                         throw new IOException("Fake connect timeout");
@@ -192,17 +192,17 @@ public class DefaultConnectionInfoRepositoryTest {
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
-    InstanceData instanceData =
-        repo.getInstanceData(
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,
                 newTestExecutor(),
                 Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
             .get();
-    assertThat(instanceData.getSslContext()).isInstanceOf(SSLContext.class);
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = instanceData.getIpAddrs();
+    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
     assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
     assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
     assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);

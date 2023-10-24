@@ -72,7 +72,7 @@ class DefaultConnectionInfoCache {
             connectionName,
             executor,
             () ->
-                connectionInfoRepository.getInstanceData(
+                connectionInfoRepository.getConnectionInfo(
                     this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair),
             new AsyncRateLimiter(minRefreshDelayMs));
   }
@@ -88,13 +88,13 @@ class DefaultConnectionInfoCache {
    * successful attempt. If no attempts succeed within the timeout, throws a RuntimeException with
    * the exception from the last failed refresh attempt as the cause.
    */
-  private InstanceData getInstanceData(long timeoutMs) {
-    return refresher.getData(timeoutMs);
+  private ConnectionInfo getConnectionInfo(long timeoutMs) {
+    return refresher.getConnectionInfo(timeoutMs);
   }
 
   /** Returns SslData to establish mTLS connections. */
   SslData getSslData(long timeoutMs) {
-    return getInstanceData(timeoutMs).getSslData();
+    return getConnectionInfo(timeoutMs).getSslData();
   }
 
   /**
@@ -102,7 +102,8 @@ class DefaultConnectionInfoCache {
    * block until required instance data is available.
    */
   SSLSocket createSslSocket(long timeoutMs) throws IOException {
-    return (SSLSocket) getInstanceData(timeoutMs).getSslContext().getSocketFactory().createSocket();
+    return (SSLSocket)
+        getConnectionInfo(timeoutMs).getSslContext().getSocketFactory().createSocket();
   }
 
   /**
@@ -116,7 +117,7 @@ class DefaultConnectionInfoCache {
    *     preferences.
    */
   String getPreferredIp(List<IpType> preferredTypes, long timeoutMs) {
-    Map<IpType, String> ipAddrs = getInstanceData(timeoutMs).getIpAddrs();
+    Map<IpType, String> ipAddrs = getConnectionInfo(timeoutMs).getIpAddrs();
     for (IpType ipType : preferredTypes) {
       String preferredIp = ipAddrs.get(ipType);
       if (preferredIp != null) {
@@ -134,11 +135,11 @@ class DefaultConnectionInfoCache {
     this.refresher.forceRefresh();
   }
 
-  ListenableFuture<InstanceData> getNext() {
+  ListenableFuture<ConnectionInfo> getNext() {
     return refresher.getNext();
   }
 
-  ListenableFuture<InstanceData> getCurrent() {
+  ListenableFuture<ConnectionInfo> getCurrent() {
     return refresher.getCurrent();
   }
 

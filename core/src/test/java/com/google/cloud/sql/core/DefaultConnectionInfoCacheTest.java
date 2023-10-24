@@ -144,7 +144,7 @@ public class DefaultConnectionInfoCacheTest {
 
   @Test
   public void testCloudSqlInstanceForcesRefresh() throws Exception {
-    InstanceData data = newFutureInstanceData();
+    ConnectionInfo connectionInfo = newFutureConnectionInfo();
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition cond = new PauseCondition();
 
@@ -159,7 +159,7 @@ public class DefaultConnectionInfoCacheTest {
                 cond.pause();
               }
               refreshCount.incrementAndGet();
-              return Futures.immediateFuture(data);
+              return Futures.immediateFuture(connectionInfo);
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -190,7 +190,7 @@ public class DefaultConnectionInfoCacheTest {
 
   @Test
   public void testCloudSqlInstanceRetriesOnInitialFailures() throws Exception {
-    InstanceData data = newFutureInstanceData();
+    ConnectionInfo connectionInfo = newFutureConnectionInfo();
 
     AtomicInteger refreshCount = new AtomicInteger();
 
@@ -203,7 +203,7 @@ public class DefaultConnectionInfoCacheTest {
               if (c == 0) {
                 throw new RuntimeException("bad request 0");
               }
-              return Futures.immediateFuture(data);
+              return Futures.immediateFuture(connectionInfo);
             },
             AuthType.PASSWORD,
             stubCredentialFactory,
@@ -211,28 +211,30 @@ public class DefaultConnectionInfoCacheTest {
             keyPairFuture,
             RATE_LIMIT_BETWEEN_REQUESTS);
 
-    // Get the first data that is about to expire
+    // Get the first connectionInfo that is about to expire
     long until = System.currentTimeMillis() + 3000;
-    while (connectionInfoCache.getSslData(TEST_TIMEOUT_MS) != data.getSslData()
+    while (connectionInfoCache.getSslData(TEST_TIMEOUT_MS) != connectionInfo.getSslData()
         && System.currentTimeMillis() < until) {
       Thread.sleep(100);
     }
     assertThat(refreshCount.get()).isEqualTo(2);
-    assertThat(connectionInfoCache.getSslData(TEST_TIMEOUT_MS)).isEqualTo(data.getSslData());
+    assertThat(connectionInfoCache.getSslData(TEST_TIMEOUT_MS))
+        .isEqualTo(connectionInfo.getSslData());
   }
 
-  private static InstanceData newFutureInstanceData() {
-    return newInstanceDataExpiringIn(1, ChronoUnit.HOURS);
+  private static ConnectionInfo newFutureConnectionInfo() {
+    return newConnectionInfo(1, ChronoUnit.HOURS);
   }
 
-  private static InstanceData newInstanceDataExpiringIn(long amount, ChronoUnit unit) {
-    return new InstanceData(null, new SslData(null, null, null), Instant.now().plus(amount, unit));
+  private static ConnectionInfo newConnectionInfo(long amount, ChronoUnit unit) {
+    return new ConnectionInfo(
+        null, new SslData(null, null, null), Instant.now().plus(amount, unit));
   }
 
   @Test
   public void testCloudSqlRefreshesExpiredData() throws Exception {
-    InstanceData initialData = newInstanceDataExpiringIn(2, ChronoUnit.SECONDS);
-    InstanceData data = newFutureInstanceData();
+    ConnectionInfo initial = newConnectionInfo(2, ChronoUnit.SECONDS);
+    ConnectionInfo info = newFutureConnectionInfo();
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
@@ -242,11 +244,11 @@ public class DefaultConnectionInfoCacheTest {
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
-              InstanceData refreshResult = data;
+              ConnectionInfo refreshResult = info;
               switch (c) {
                 case 0:
-                  // refresh 0 should return initialData immediately
-                  refreshResult = initialData;
+                  // refresh 0 should return initial immediately
+                  refreshResult = initial;
                   break;
                 case 1:
                   // refresh 1 should pause
@@ -266,10 +268,10 @@ public class DefaultConnectionInfoCacheTest {
     // Get the first data that is about to expire
     SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(initialData.getSslData());
+    assertThat(d).isSameInstanceAs(initial.getSslData());
 
     // Wait for the connectionInfoCache to expire
-    while (Instant.now().isBefore(initialData.getExpiration())) {
+    while (Instant.now().isBefore(initial.getExpiration())) {
       Thread.sleep(10);
     }
 
@@ -279,17 +281,17 @@ public class DefaultConnectionInfoCacheTest {
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
   }
 
   @Test
   public void testThatForceRefreshBalksWhenAScheduledRefreshIsInProgress() throws Exception {
     // Set expiration 1 minute in the future, so that it will trigger a scheduled refresh
     // and won't expire during this testcase.
-    InstanceData expiresInOneMinute = newInstanceDataExpiringIn(1, ChronoUnit.MINUTES);
+    ConnectionInfo expiresInOneMinute = newConnectionInfo(1, ChronoUnit.MINUTES);
 
-    // Set the next refresh data expiration 1 hour in the future.
-    InstanceData data = newFutureInstanceData();
+    // Set the next refresh info expiration 1 hour in the future.
+    ConnectionInfo info = newFutureConnectionInfo();
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh0 = new PauseCondition();
@@ -300,7 +302,7 @@ public class DefaultConnectionInfoCacheTest {
             "project:region:instance",
             (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
               int c = refreshCount.get();
-              InstanceData refreshResult = data;
+              ConnectionInfo refreshResult = info;
               switch (c) {
                 case 0:
                   refresh0.pause();
@@ -322,12 +324,12 @@ public class DefaultConnectionInfoCacheTest {
     refresh0.proceed();
     refresh0.waitForPauseToEnd(1000);
     refresh0.waitForCondition(() -> refreshCount.get() > 0, 1000);
-    // Get the first data that is about to expire
+    // Get the first info that is about to expire
     assertThat(refreshCount.get()).isEqualTo(1);
     SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(d).isSameInstanceAs(expiresInOneMinute.getSslData());
 
-    // Because the data is about to expire, scheduled refresh will begin immediately.
+    // Because the info is about to expire, scheduled refresh will begin immediately.
     // Wait until refresh is in progress.
     refresh1.waitForPauseToStart(1000);
 
@@ -339,19 +341,19 @@ public class DefaultConnectionInfoCacheTest {
     refresh1.waitForPauseToEnd(5000);
     refresh1.waitForCondition(() -> refreshCount.get() > 1, 1000);
 
-    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // Now that the InstanceData has expired, this getSslData should pause until new info
     // has been retrieved.
 
     // getSslData again, and assert the refresh operation completed.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
   @Test
   public void testThatForceRefreshBalksWhenAForceRefreshIsInProgress() throws Exception {
-    InstanceData initialData = newFutureInstanceData();
-    InstanceData data = newFutureInstanceData();
+    ConnectionInfo initialData = newFutureConnectionInfo();
+    ConnectionInfo info = newFutureConnectionInfo();
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
@@ -368,9 +370,9 @@ public class DefaultConnectionInfoCacheTest {
                 case 1:
                   refresh1.pause();
                   refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(data);
+                  return Futures.immediateFuture(info);
                 default:
-                  return Futures.immediateFuture(data);
+                  return Futures.immediateFuture(info);
               }
             },
             AuthType.PASSWORD,
@@ -379,7 +381,7 @@ public class DefaultConnectionInfoCacheTest {
             keyPairFuture,
             RATE_LIMIT_BETWEEN_REQUESTS);
 
-    // Get the first data that is about to expire
+    // Get the first info that is about to expire
     SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData.getSslData());
@@ -391,7 +393,7 @@ public class DefaultConnectionInfoCacheTest {
     // Allow the refresh operation to complete
     refresh1.proceed();
 
-    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // Now that the InstanceData has expired, this getSslData should pause until new info
     // has been retrieved.
     refresh1.waitForPauseToEnd(1000);
     refresh1.waitForCondition(() -> refreshCount.get() >= 2, 1000);
@@ -399,15 +401,15 @@ public class DefaultConnectionInfoCacheTest {
     // assert the refresh operation completed exactly once after
     // forceRefresh was called multiple times.
     refresh1.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 1000L);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
   @Test
   public void testRefreshRetriesOnAfterFailedAttempts() throws Exception {
-    InstanceData aboutToExpireData = newInstanceDataExpiringIn(10, ChronoUnit.MILLIS);
+    ConnectionInfo aboutToExpire = newConnectionInfo(10, ChronoUnit.MILLIS);
 
-    InstanceData data = newFutureInstanceData();
+    ConnectionInfo info = newFutureConnectionInfo();
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition badRequest1 = new PauseCondition();
@@ -422,7 +424,7 @@ public class DefaultConnectionInfoCacheTest {
               switch (c) {
                 case 0:
                   refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(aboutToExpireData);
+                  return Futures.immediateFuture(aboutToExpire);
                 case 1:
                   badRequest1.pause();
                   refreshCount.incrementAndGet();
@@ -434,7 +436,7 @@ public class DefaultConnectionInfoCacheTest {
                 default:
                   goodRequest.pause();
                   refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(data);
+                  return Futures.immediateFuture(info);
               }
             },
             AuthType.PASSWORD,
@@ -443,16 +445,16 @@ public class DefaultConnectionInfoCacheTest {
             keyPairFuture,
             RATE_LIMIT_BETWEEN_REQUESTS);
 
-    // Get the first data that is about to expire
+    // Get the first info that is about to expire
     SslData d = connectionInfoCache.getSslData(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(aboutToExpireData.getSslData());
+    assertThat(d).isSameInstanceAs(aboutToExpire.getSslData());
 
     // Don't force a refresh, this should automatically schedule a refresh right away because
     // the token returned in the first request had less than 4 minutes before it expired.
 
     // Wait for the current InstanceData to actually expire.
-    while (Instant.now().isBefore(aboutToExpireData.getExpiration())) {
+    while (Instant.now().isBefore(aboutToExpire.getExpiration())) {
       Thread.sleep(10);
     }
 
@@ -473,14 +475,14 @@ public class DefaultConnectionInfoCacheTest {
 
     // Try getSslData() again, and assert the refresh operation eventually completes.
     goodRequest.waitForCondition(
-        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == data.getSslData(), 2000);
+        () -> connectionInfoCache.getSslData(TEST_TIMEOUT_MS) == info.getSslData(), 2000);
   }
 
   @Test
   public void testGetPreferredIpTypes() {
     SslData sslData = new SslData(null, null, null);
-    InstanceData data =
-        new InstanceData(
+    ConnectionInfo info =
+        new ConnectionInfo(
             new Metadata(
                 ImmutableMap.of(
                     IpType.PUBLIC, "10.1.2.3",
@@ -494,7 +496,7 @@ public class DefaultConnectionInfoCacheTest {
     ConnectionInfoRepository connectionInfoRepository =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           refreshCount.incrementAndGet();
-          return Futures.immediateFuture(data);
+          return Futures.immediateFuture(info);
         };
 
     // initialize connectionInfoCache after mocks are set up
@@ -533,8 +535,8 @@ public class DefaultConnectionInfoCacheTest {
   @Test
   public void testGetPreferredIpTypesThrowsException() {
     SslData sslData = new SslData(null, null, null);
-    InstanceData data =
-        new InstanceData(
+    ConnectionInfo info =
+        new ConnectionInfo(
             new Metadata(ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"), null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
@@ -543,7 +545,7 @@ public class DefaultConnectionInfoCacheTest {
     ConnectionInfoRepository connectionInfoRepository =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           refreshCount.incrementAndGet();
-          return Futures.immediateFuture(data);
+          return Futures.immediateFuture(info);
         };
 
     // initialize connectionInfoCache after mocks are set up
