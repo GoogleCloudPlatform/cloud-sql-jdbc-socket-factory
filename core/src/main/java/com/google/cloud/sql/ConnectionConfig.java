@@ -35,6 +35,7 @@ public class ConnectionConfig {
   public static final String CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY = "cloudSqlAdminRootUrl";
   public static final String CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY = "cloudSqlAdminServicePath";
   public static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
+  public static final String UNIX_SOCKET_PATH_SUFFIX_PROPERTY = "cloudSqlUnixSocketPathSuffix";
   public static final String ENABLE_IAM_AUTH_PROPERTY = "enableIamAuth";
   public static final String IP_TYPES_PROPERTY = "ipTypes";
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
@@ -49,6 +50,7 @@ public class ConnectionConfig {
   private final List<IpType> ipTypes;
   private final String adminRootUrl;
   private final String adminServicePath;
+  private final String unixSocketPathSuffix;
 
   /** Create a new ConnectionConfig from the well known JDBC Connection properties. */
   public static ConnectionConfig fromConnectionProperties(Properties props) {
@@ -75,7 +77,8 @@ public class ConnectionConfig {
         props.getProperty(ConnectionConfig.CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY);
     final String adminServicePath =
         props.getProperty(ConnectionConfig.CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY);
-
+    final String unixSocketPathSuffix =
+        props.getProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY);
     return new ConnectionConfig(
         csqlInstanceName,
         targetPrincipal,
@@ -84,7 +87,8 @@ public class ConnectionConfig {
         authType,
         ipTypes,
         adminRootUrl,
-        adminServicePath);
+        adminServicePath,
+        unixSocketPathSuffix);
   }
 
   /**
@@ -118,7 +122,8 @@ public class ConnectionConfig {
       AuthType authType,
       List<IpType> ipTypes,
       String adminRootUrl,
-      String adminServicePath) {
+      String adminServicePath,
+      String unixSocketPathSuffix) {
     this.cloudSqlInstance = cloudSqlInstance;
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
@@ -127,6 +132,7 @@ public class ConnectionConfig {
     this.ipTypes = ipTypes;
     this.adminRootUrl = adminRootUrl;
     this.adminServicePath = adminServicePath;
+    this.unixSocketPathSuffix = unixSocketPathSuffix;
   }
 
   public String getCloudSqlInstance() {
@@ -161,6 +167,10 @@ public class ConnectionConfig {
     return adminServicePath;
   }
 
+  public String getUnixSocketPathSuffix() {
+    return unixSocketPathSuffix;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -172,6 +182,7 @@ public class ConnectionConfig {
     private List<IpType> ipTypes = DEFAULT_IP_TYPE_LIST;
     private String adminRootUrl;
     private String adminServicePath;
+    private String unixSocketPathSuffix;
 
     public Builder withCloudSqlInstance(String cloudSqlInstance) {
       this.cloudSqlInstance = cloudSqlInstance;
@@ -220,6 +231,11 @@ public class ConnectionConfig {
       return this;
     }
 
+    public Builder withUnixSocketPathSuffix(String unixSocketPathSuffix) {
+      this.unixSocketPathSuffix = unixSocketPathSuffix;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectionConfig build() {
       return new ConnectionConfig(
@@ -230,7 +246,8 @@ public class ConnectionConfig {
           authType,
           ipTypes,
           adminRootUrl,
-          adminServicePath);
+          adminServicePath,
+          unixSocketPathSuffix);
     }
   }
 }
