@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 /** Factory for creating a SQLAdmin client that interacts with the real SQL Admin API. */
-public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
+public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRepositoryFactory {
   private final String userAgents;
 
   /**
@@ -35,12 +35,12 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
    *
    * @param userAgents string representing userAgents for the admin API client
    */
-  public SqlAdminApiFetcherFactory(String userAgents) {
+  public DefaultConnectionInfoRepositoryFactory(String userAgents) {
     this.userAgents = userAgents;
   }
 
   @Override
-  public SqlAdminApiFetcher create(
+  public DefaultConnectionInfoRepository create(
       HttpRequestInitializer requestInitializer, ConnectionConfig config) {
     HttpTransport httpTransport;
     try {
@@ -59,6 +59,6 @@ public class SqlAdminApiFetcherFactory implements ApiFetcherFactory {
     if (config.getAdminServicePath() != null) {
       adminApiBuilder.setServicePath(config.getAdminServicePath());
     }
-    return new SqlAdminApiFetcher(adminApiBuilder.build());
+    return new DefaultConnectionInfoRepository(adminApiBuilder.build());
   }
 }

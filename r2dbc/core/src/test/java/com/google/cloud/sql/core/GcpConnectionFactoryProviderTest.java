@@ -174,13 +174,13 @@ public class GcpConnectionFactoryProviderTest {
 
     defaultExecutor = CoreSocketFactory.getDefaultExecutor();
 
-    ApiFetcherFactory fetcher =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory repo =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     coreSocketFactoryStub =
         new CoreSocketFactory(
             clientKeyPair,
-            fetcher,
+            repo,
             credentialFactory,
             3307,
             CoreSocketFactory.DEFAULT_MAX_REFRESH_MS,

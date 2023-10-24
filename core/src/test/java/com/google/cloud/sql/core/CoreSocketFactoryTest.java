@@ -60,8 +60,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -92,8 +92,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -122,8 +122,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PRIVATE_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -142,8 +142,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -166,8 +166,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -187,8 +187,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -203,7 +203,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_adminApiNotEnabled() throws IOException {
-    ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotConfiguredException());
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -227,7 +228,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_notAuthorized() throws IOException {
-    ApiFetcherFactory factory = new StubApiFetcherFactory(fakeNotAuthorizedException());
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
@@ -259,8 +261,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
@@ -289,8 +291,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair,
@@ -325,8 +327,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ApiFetcherFactory factory =
-        new StubApiFetcherFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     CoreSocketFactory coreSocketFactory =
         new CoreSocketFactory(
             clientKeyPair,

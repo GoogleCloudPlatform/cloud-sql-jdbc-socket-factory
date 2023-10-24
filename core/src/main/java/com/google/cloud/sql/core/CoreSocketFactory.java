@@ -115,17 +115,17 @@ public final class CoreSocketFactory {
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
   private final long refreshTimeoutMs;
-  private final ApiFetcherFactory apiFetcherFactory;
+  private final ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory;
 
   @VisibleForTesting
   CoreSocketFactory(
       ListenableFuture<KeyPair> localKeyPair,
-      ApiFetcherFactory apiFetcherFactory,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
       CredentialFactory credentialFactory,
       int serverProxyPort,
       long refreshTimeoutMs,
       ListeningScheduledExecutorService executor) {
-    this.apiFetcherFactory = apiFetcherFactory;
+    this.connectionInfoRepositoryFactory = connectionInfoRepositoryFactory;
     this.credentialFactory = credentialFactory;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
@@ -145,7 +145,7 @@ public final class CoreSocketFactory {
       coreSocketFactory =
           new CoreSocketFactory(
               executor.submit(CoreSocketFactory::generateRsaKeyPair),
-              new SqlAdminApiFetcherFactory(getUserAgents()),
+              new DefaultConnectionInfoRepositoryFactory(getUserAgents()),
               credentialFactory,
               DEFAULT_SERVER_PROXY_PORT,
               CoreSocketFactory.DEFAULT_MAX_REFRESH_MS,
@@ -383,7 +383,8 @@ public final class CoreSocketFactory {
     }
 
     HttpRequestInitializer credential = instanceCredentialFactory.create();
-    SqlAdminApiFetcher adminApi = apiFetcherFactory.create(credential, config);
+    DefaultConnectionInfoRepository adminApi =
+        connectionInfoRepositoryFactory.create(credential, config);
 
     return new CloudSqlInstance(
         config.getCloudSqlInstance(),

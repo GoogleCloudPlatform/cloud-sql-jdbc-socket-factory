@@ -37,7 +37,7 @@ import javax.net.ssl.SSLContext;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.Test;
 
-public class SqlAdminApiFetcherTest {
+public class DefaultConnectionInfoRepositoryTest {
 
   public static final String SAMPLE_PUBLIC_IP = "34.1.2.3";
   public static final String SAMPLE_PRIVATE_IP = "10.0.0.1";
@@ -53,13 +53,12 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
     ConnectionConfig config = new ConnectionConfig.Builder().build();
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+    DefaultConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
     InstanceData instanceData =
-        fetcher
-            .getInstanceData(
+        repo.getInstanceData(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,
@@ -91,13 +90,12 @@ public class SqlAdminApiFetcherTest {
         INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
     ConnectionConfig config = new ConnectionConfig.Builder().build();
 
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+    DefaultConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
     InstanceData instanceData =
-        fetcher
-            .getInstanceData(
+        repo.getInstanceData(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,
@@ -126,16 +124,15 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL);
     ConnectionConfig config = new ConnectionConfig.Builder().build();
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+    DefaultConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
     ExecutionException ex =
         assertThrows(
             ExecutionException.class,
             () -> {
-              fetcher
-                  .getInstanceData(
+              repo.getInstanceData(
                       new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                       () -> Optional.empty(),
                       AuthType.IAM,
@@ -154,16 +151,15 @@ public class SqlAdminApiFetcherTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
     ConnectionConfig config = new ConnectionConfig.Builder().build();
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(new BadConnectionFactory())
+    DefaultConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(new BadConnectionFactory())
             .create(new StubCredentialFactory().create(), config);
 
     ExecutionException ex =
         assertThrows(
             ExecutionException.class,
             () -> {
-              fetcher
-                  .getInstanceData(
+              repo.getInstanceData(
                       new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                       () -> {
                         throw new IOException("Fake connect timeout");
@@ -192,13 +188,12 @@ public class SqlAdminApiFetcherTest {
             .withAdminRootUrl(adminRootUrl)
             .withAdminServicePath(adminServicePath)
             .build();
-    SqlAdminApiFetcher fetcher =
-        new StubApiFetcherFactory(mockAdminApi.getHttpTransport())
+    DefaultConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
     InstanceData instanceData =
-        fetcher
-            .getInstanceData(
+        repo.getInstanceData(
                 new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
                 () -> Optional.empty(),
                 AuthType.PASSWORD,

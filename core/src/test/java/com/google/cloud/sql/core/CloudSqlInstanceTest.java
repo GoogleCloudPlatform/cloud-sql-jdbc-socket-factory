@@ -84,7 +84,7 @@ public class CloudSqlInstanceTest {
   @Test
   public void testInstanceFailsOnConnectionError() {
 
-    InstanceDataSupplier instanceDataSupplier =
+    ConnectionInfoRepository connectionInfoRepository =
         (CloudSqlInstanceName instanceName,
             AccessTokenSupplier accessTokenSupplier,
             AuthType authType,
@@ -99,7 +99,7 @@ public class CloudSqlInstanceTest {
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
-            instanceDataSupplier,
+            connectionInfoRepository,
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
@@ -114,7 +114,7 @@ public class CloudSqlInstanceTest {
   @Test
   public void testInstanceFailsOnTooLongToRetrieve() {
     PauseCondition cond = new PauseCondition();
-    InstanceDataSupplier instanceDataSupplier =
+    ConnectionInfoRepository connectionInfoRepository =
         (CloudSqlInstanceName instanceName,
             AccessTokenSupplier accessTokenSupplier,
             AuthType authType,
@@ -129,7 +129,7 @@ public class CloudSqlInstanceTest {
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
-            instanceDataSupplier,
+            connectionInfoRepository,
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
@@ -490,7 +490,7 @@ public class CloudSqlInstanceTest {
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
 
-    InstanceDataSupplier instanceDataSupplier =
+    ConnectionInfoRepository connectionInfoRepository =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           refreshCount.incrementAndGet();
           return Futures.immediateFuture(data);
@@ -500,7 +500,7 @@ public class CloudSqlInstanceTest {
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
-            instanceDataSupplier,
+            connectionInfoRepository,
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
@@ -531,7 +531,7 @@ public class CloudSqlInstanceTest {
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
 
-    InstanceDataSupplier instanceDataSupplier =
+    ConnectionInfoRepository connectionInfoRepository =
         (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
           refreshCount.incrementAndGet();
           return Futures.immediateFuture(data);
@@ -541,7 +541,7 @@ public class CloudSqlInstanceTest {
     CloudSqlInstance instance =
         new CloudSqlInstance(
             "project:region:instance",
-            instanceDataSupplier,
+            connectionInfoRepository,
             AuthType.PASSWORD,
             stubCredentialFactory,
             executorService,
