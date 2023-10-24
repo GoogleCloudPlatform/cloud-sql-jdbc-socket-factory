@@ -18,131 +18,120 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.cloud.sql.core.AsyncRateLimiter.RateLimitAcquisition;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Test;
 
 public class AsyncRateLimiterTest {
 
   @Test
   public void firstCallShouldReturnNoDelay() {
-    long now = System.currentTimeMillis();
-    AsyncRateLimiter c = new AsyncRateLimiter(100);
-    assertThat(c.nextDelayMs(now)).isEqualTo(0);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(100);
+    ListenableFuture<?> f = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f.isDone()).isTrue();
   }
 
   @Test
   public void subsequentCallsShouldReturnDelays() {
-    long now = System.currentTimeMillis();
-    AsyncRateLimiter c = new AsyncRateLimiter(100);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(100);
+    ListenableFuture<?> f1 = th.rateLimiter.acquireAsync(th.ex);
+    ListenableFuture<?> f2 = th.rateLimiter.acquireAsync(th.ex);
     // When calls occur at the same timestamp, one will return 0 and
     // the other will return the full delay.
-    assertThat(c.nextDelayMs(now)).isEqualTo(0);
-    assertThat(c.nextDelayMs(now)).isEqualTo(100);
+    assertThat(f1.isDone()).isTrue();
+    assertThat(f2.isDone()).isFalse();
   }
 
   @Test
   public void delayBeforeExpiration() throws InterruptedException {
-    long now = System.currentTimeMillis();
-    AsyncRateLimiter c = new AsyncRateLimiter(20);
-    assertThat(c.nextDelayMs(now)).isEqualTo(0);
-    // delay before the expiration will result in the difference between
-    // time passed and the delay.
-    assertThat(c.nextDelayMs(now + 15)).isEqualTo(5);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(100);
+    ListenableFuture<?> f1 = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f1.isDone()).isTrue();
+
+    // Before the expiration, isDone should be false
+    th.tickMs(99);
+    ListenableFuture<?> f2 = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f2.isDone()).isFalse();
+
+    // Exactly at the expiration, isDone should be true
+    th.tickMs(1);
+    assertThat(f2.isDone()).isTrue();
   }
 
   @Test
   public void noDelayExactlyAtExpiration() throws InterruptedException {
-    long now = System.currentTimeMillis();
-    AsyncRateLimiter c = new AsyncRateLimiter(20);
-    assertThat(c.nextDelayMs(now)).isEqualTo(0);
-    // delay at exactly the expiration time is 0 for the first call,
-    assertThat(c.nextDelayMs(now + 20)).isEqualTo(0);
-    // and the full delay for subsequent calls
-    assertThat(c.nextDelayMs(now + 20)).isEqualTo(20);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(100);
+    ListenableFuture<?> f1 = th.rateLimiter.acquireAsync(th.ex);
+    ListenableFuture<?> f2 = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f1.isDone()).isTrue();
+    assertThat(f2.isDone()).isFalse();
+
+    th.tickMs(50);
+    assertThat(f2.isDone()).isFalse();
+
+    th.tickMs(100);
+    assertThat(f2.isDone()).isTrue();
   }
 
   @Test
   public void noDelayAfterExpiration() throws InterruptedException {
-    long now = System.currentTimeMillis();
-    AsyncRateLimiter c = new AsyncRateLimiter(20);
-    assertThat(c.nextDelayMs(now)).isEqualTo(0);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(100);
+    ListenableFuture<?> f1 = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f1.isDone()).isTrue();
 
-    // delay after the expiration time is 0 for the first call,
-    assertThat(c.nextDelayMs(now + 22)).isEqualTo(0);
-    // and the full delay for subsequent calls
-    assertThat(c.nextDelayMs(now + 22)).isEqualTo(20);
+    th.tickMs(101);
+    ListenableFuture<?> f2 = th.rateLimiter.acquireAsync(th.ex);
+    assertThat(f2.isDone()).isTrue();
   }
 
   @Test
-  public void asyncWorks() throws InterruptedException, ExecutionException {
-    // During refresh, each instance consumes 2 threads from the thread pool. By using 8 threads,
-    // there should be enough free threads so that there will not be a deadlock. Most users
-    // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
-    // this to 8, it's enough threads for most users, plus a safety factor of 2.
+  public void testAsyncWorks() {
+    final long delay = 100;
 
-    ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
+    RateLimiterTestHarness th = new RateLimiterTestHarness(delay);
 
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-
-    ListeningScheduledExecutorService ex =
-        MoreExecutors.listeningDecorator(
-            MoreExecutors.getExitingScheduledExecutorService(executor));
-    long delay = 200;
-
-    // Set up a rate limiter that enforces 100ms minimum time between requests.
-    AsyncRateLimiter c = new AsyncRateLimiter(delay);
-
-    final long start = System.currentTimeMillis();
-    List<ListenableFuture<RateLimitAcquisition>> futures = new ArrayList<>();
-
-    for (int i = 0; i < 10; i++) {
-      futures.add(c.acquireAsync(new RateLimitAcquisition(), ex));
+    List<ListenableFuture<?>> futures = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      futures.add(th.rateLimiter.acquireAsync(th.ex));
     }
 
-    // Wait for all futures to finish.
-    Futures.whenAllComplete(futures).run(() -> {}, executor).get();
+    // First attempt happens without any delay, because nothing is run yet.
+    assertThat(futures.stream().mapToInt(f -> f.isDone() ? 1 : 0).sum()).isEqualTo(1);
 
-    // Make 3 async attempts to acquire the rate limit.
-    // these should each resolve 1 second appart.
-    // futures[0] should resolve immediately
-    // futures[1] should resolve after ~200ms
-    // futures[2] should resolve after ~400ms
-    // ...etc
+    // Tick forward less than the delay.
+    th.tickMs(50);
 
-    // Find the offset from start for the first and last request processed
-    List<RateLimitAcquisition> trackers = new ArrayList<>();
-    for (ListenableFuture<RateLimitAcquisition> future : futures) {
-      RateLimitAcquisition rla = future.get();
-      trackers.add(rla);
+    // When all futures are evaluated again immediately, still only 1 request has finished.
+    // because not enough time has elapsed.
+    assertThat(futures.stream().mapToInt(f -> f.isDone() ? 1 : 0).sum()).isEqualTo(1);
+
+    // Tick forward more than the delay. Now 2 attempts should have finished.
+    th.tickMs(100);
+
+    assertThat(futures.stream().mapToInt(f -> f.isDone() ? 1 : 0).sum()).isEqualTo(2);
+
+    // Tick forward more than the delay. Now 3 attempts should have finished.
+    th.tickMs(100);
+    assertThat(futures.stream().mapToInt(f -> f.isDone() ? 1 : 0).sum()).isEqualTo(3);
+  }
+
+  private static class RateLimiterTestHarness {
+
+    final AtomicLong now = new AtomicLong(System.currentTimeMillis());
+    final DeterministicScheduler ex = new DeterministicScheduler();
+    final AsyncRateLimiter rateLimiter;
+
+    RateLimiterTestHarness(long delay) {
+      rateLimiter = new AsyncRateLimiter(delay, now::get);
     }
-    trackers.sort((a, b) -> (int) (a.getAcquireTimestampMs() - b.getAcquireTimestampMs()));
 
-    // Assert that the first attempt did not have to wait a full delay to run.
-    long firstAttempt = trackers.get(0).getAcquireTimestampMs();
-    assertThat(firstAttempt - start).isLessThan((long) (delay * .8));
-
-    // For the rest of the attempts, make sure that the tracker
-    // waited longer than the prior attempt before running
-    for (int i = 1; i < trackers.size(); i++) {
-      long doneTs = trackers.get(i).getAcquireTimestampMs();
-      long priorDoneTs = trackers.get(i - 1).getAcquireTimestampMs();
-
-      // It had to retry at least once
-      assertThat(trackers.get(i).getAttempts()).isGreaterThan(0);
-
-      // It happened after the prior attempt.
-      assertThat(doneTs - priorDoneTs).isGreaterThan((long) (delay * .8));
+    private void tickMs(long ms) {
+      now.addAndGet(ms);
+      ex.tick(ms, TimeUnit.MILLISECONDS);
     }
   }
 }

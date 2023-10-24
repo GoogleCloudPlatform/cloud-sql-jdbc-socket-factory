@@ -16,11 +16,11 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 
 /**
  * A simple, constant-time rate limit calculator. Ensures that there is always at least
@@ -29,17 +29,33 @@ import java.util.concurrent.TimeUnit;
 class AsyncRateLimiter {
   private long nextOperationTimestamp;
   private final long delayBetweenAttempts;
+  private final LongSupplier currentTimestampMs;
 
+  /**
+   * Creates a new AsyncRateLimiter uses the System.currentTimeMillis() as the current time.
+   *
+   * @param delayBetweenAttempts the required delay in milliseconds between attempts.
+   */
   AsyncRateLimiter(long delayBetweenAttempts) {
+    this(delayBetweenAttempts, System::currentTimeMillis);
+  }
+
+  /**
+   * Creates a new AsyncRateLimiter which uses a custom function for the current time.
+   *
+   * @param delayBetweenAttempts the required delay in milliseconds between attempts.
+   * @param currentTimestampMs A function that supplies the current time in milliseconds
+   */
+  AsyncRateLimiter(long delayBetweenAttempts, LongSupplier currentTimestampMs) {
     this.delayBetweenAttempts = delayBetweenAttempts;
+    this.currentTimestampMs = currentTimestampMs;
   }
 
   /**
    * Returns the number of milliseconds to delay before proceeding with the rate limited operation.
    * If this returns > 0, the operation must call "acquire" again until it returns 0.
    */
-  @VisibleForTesting
-  synchronized long nextDelayMs(long nowTimestampMs) {
+  private synchronized long nextDelayMs(long nowTimestampMs) {
     // allow exactly 1 operation to pass the timestamp.
     if (nextOperationTimestamp <= nowTimestampMs) {
       nextOperationTimestamp = nowTimestampMs + delayBetweenAttempts;
@@ -55,41 +71,11 @@ class AsyncRateLimiter {
    * @param executor the executor to use to schedule future checks for available rate limits.
    */
   public ListenableFuture<?> acquireAsync(ScheduledExecutorService executor) {
-    return acquireAsync(new RateLimitAcquisition(), executor);
-  }
-
-  @VisibleForTesting
-  ListenableFuture<RateLimitAcquisition> acquireAsync(
-      RateLimitAcquisition rla, ScheduledExecutorService executor) {
-    long limit = this.nextDelayMs(System.currentTimeMillis());
+    long limit = this.nextDelayMs(currentTimestampMs.getAsLong());
     if (limit > 0) {
       return Futures.scheduleAsync(
-          () -> this.acquireAsync(rla.retry(), executor), limit, TimeUnit.MILLISECONDS, executor);
+          () -> this.acquireAsync(executor), limit, TimeUnit.MILLISECONDS, executor);
     }
-    return Futures.immediateFuture(rla.done());
-  }
-
-  @VisibleForTesting
-  static class RateLimitAcquisition {
-    long attempts;
-    long acquireTimestampMs;
-
-    private RateLimitAcquisition retry() {
-      attempts++;
-      return this;
-    }
-
-    private RateLimitAcquisition done() {
-      acquireTimestampMs = System.currentTimeMillis();
-      return this;
-    }
-
-    long getAttempts() {
-      return attempts;
-    }
-
-    long getAcquireTimestampMs() {
-      return acquireTimestampMs;
-    }
+    return Futures.immediateFuture(null);
   }
 }
