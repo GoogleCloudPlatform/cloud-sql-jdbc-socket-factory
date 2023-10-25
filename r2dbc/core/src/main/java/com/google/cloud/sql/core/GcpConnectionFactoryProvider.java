@@ -122,7 +122,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     try {
       // Precompute SSL Data to trigger the initial refresh to happen immediately,
       // and ensure enableIAMAuth is set correctly.
-      CoreSocketFactory.getSslData(config);
+      InternalConnectorRegistry.getSslData(config);
 
       String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
       if (socket != null) {
@@ -136,7 +136,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                 Mono.fromSupplier(
                         () -> {
                           try {
-                            return CoreSocketFactory.getSslData(config);
+                            return InternalConnectorRegistry.getSslData(config);
                           } catch (IOException e) {
                             throw new RuntimeException(e);
                           }

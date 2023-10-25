@@ -17,7 +17,7 @@
 package com.google.cloud.sql.postgres;
 
 import com.google.cloud.sql.ConnectionConfig;
-import com.google.cloud.sql.core.CoreSocketFactory;
+import com.google.cloud.sql.core.InternalConnectorRegistry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
  * using ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link InternalConnectorRegistry} class.
  */
 public class SocketFactory extends javax.net.SocketFactory {
 
@@ -40,7 +40,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private final Properties props;
 
   static {
-    CoreSocketFactory.addArtifactId("postgres-socket-factory");
+    InternalConnectorRegistry.addArtifactId("postgres-socket-factory");
   }
 
   /**
@@ -75,7 +75,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return CoreSocketFactory.connect(props, POSTGRES_SUFFIX);
+      return InternalConnectorRegistry.connect(props, POSTGRES_SUFFIX);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

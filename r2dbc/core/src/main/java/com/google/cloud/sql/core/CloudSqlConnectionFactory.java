@@ -52,7 +52,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public Publisher<? extends Connection> create() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(config);
+      String hostIp = InternalConnectorRegistry.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).create();
     } catch (IOException e) {
@@ -64,7 +64,7 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     try {
-      String hostIp = CoreSocketFactory.getHostIp(config);
+      String hostIp = InternalConnectorRegistry.getHostIp(config);
       builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
       return supplier.get().create(builder.build()).getMetadata();
     } catch (IOException e) {

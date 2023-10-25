@@ -37,7 +37,7 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
   private static final String LEGACY_POSTGRESQL_DRIVER = "postgres";
 
   static {
-    CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-postgres");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-r2dbc-postgres");
   }
 
   @Override

@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.mariadb;
 
-import com.google.cloud.sql.core.CoreSocketFactory;
+import com.google.cloud.sql.core.InternalConnectorRegistry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -27,12 +27,12 @@ import org.mariadb.jdbc.util.ConfigurableSocketFactory;
  * A MariaDB {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
  * using ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link InternalConnectorRegistry} class.
  */
 public class SocketFactory extends ConfigurableSocketFactory {
 
   static {
-    CoreSocketFactory.addArtifactId("mariadb-socket-factory");
+    InternalConnectorRegistry.addArtifactId("mariadb-socket-factory");
   }
 
   private Configuration conf;
@@ -48,7 +48,7 @@ public class SocketFactory extends ConfigurableSocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return CoreSocketFactory.connect(conf.nonMappedOptions());
+      return InternalConnectorRegistry.connect(conf.nonMappedOptions());
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
