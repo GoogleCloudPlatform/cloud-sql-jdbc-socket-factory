@@ -33,11 +33,11 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
-public class CloudSqlInstanceConcurrencyTest {
+public class DefaultConnectionInfoCacheConcurrencyTest {
 
   public static final int DEFAULT_WAIT = 200;
   private static final Logger logger =
-      Logger.getLogger(CloudSqlInstanceConcurrencyTest.class.getName());
+      Logger.getLogger(DefaultConnectionInfoCacheConcurrencyTest.class.getName());
   public static final int FORCE_REFRESH_COUNT = 10;
 
   private static class TestCredentialFactory implements CredentialFactory, HttpRequestInitializer {
@@ -61,13 +61,13 @@ public class CloudSqlInstanceConcurrencyTest {
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
-    List<CloudSqlInstance> instances = new ArrayList<>();
+    List<DefaultConnectionInfoCache> caches = new ArrayList<>();
 
     final int instanceCount = 5;
 
     for (int i = 0; i < instanceCount; i++) {
-      instances.add(
-          new CloudSqlInstance(
+      caches.add(
+          new DefaultConnectionInfoCache(
               "a:b:instance" + i,
               supplier,
               AuthType.PASSWORD,
@@ -78,7 +78,7 @@ public class CloudSqlInstanceConcurrencyTest {
     }
 
     // Get SSL Data for each instance, forcing the first refresh to complete.
-    instances.forEach((inst) -> inst.getSslData(2000L));
+    caches.forEach((inst) -> inst.getSslData(2000L));
 
     assertThat(supplier.counter.get()).isEqualTo(instanceCount);
 
@@ -88,7 +88,7 @@ public class CloudSqlInstanceConcurrencyTest {
     // Start a thread for each instance that will force refresh and get InstanceData
     // 50 times.
     List<Thread> threads =
-        instances.stream().map(this::startForceRefreshThread).collect(Collectors.toList());
+        caches.stream().map(this::startForceRefreshThread).collect(Collectors.toList());
 
     for (Thread t : threads) {
       // If threads don't complete in 10 seconds, throw an exception,
@@ -98,26 +98,26 @@ public class CloudSqlInstanceConcurrencyTest {
 
     // Check if there is a scheduled future
     int brokenLoop = 0;
-    for (CloudSqlInstance inst : instances) {
-      if (inst.getCurrent().isDone() && inst.getNext().isDone()) {
-        logger.warning("No future scheduled thing for instance " + inst.getInstanceName());
+    for (DefaultConnectionInfoCache i : caches) {
+      if (i.getCurrent().isDone() && i.getNext().isDone()) {
+        logger.warning("No future scheduled thing for instance " + i.getInstanceName());
         brokenLoop++;
       }
     }
     assertThat(brokenLoop).isEqualTo(0);
   }
 
-  private Thread startForceRefreshThread(CloudSqlInstance inst) {
+  private Thread startForceRefreshThread(DefaultConnectionInfoCache connectionInfoCache) {
     Runnable forceRefreshRepeat =
         () -> {
           for (int i = 0; i < 10; i++) {
             try {
               Thread.sleep(100);
-              inst.forceRefresh();
-              inst.forceRefresh();
-              inst.forceRefresh();
+              connectionInfoCache.forceRefresh();
+              connectionInfoCache.forceRefresh();
+              connectionInfoCache.forceRefresh();
               Thread.sleep(0);
-              inst.getSslData(2000L);
+              connectionInfoCache.getSslData(2000L);
             } catch (Exception e) {
               logger.info("Exception in force refresh loop.");
             }
@@ -126,7 +126,7 @@ public class CloudSqlInstanceConcurrencyTest {
         };
 
     Thread t = new Thread(forceRefreshRepeat);
-    t.setName("test-" + inst.getInstanceName());
+    t.setName("test-" + connectionInfoCache.getInstanceName());
     t.start();
     return t;
   }

@@ -110,7 +110,8 @@ public final class CoreSocketFactory {
   private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static CoreSocketFactory coreSocketFactory;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<String, CloudSqlInstance> instances = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, DefaultConnectionInfoCache> connectionInfoCaches =
+      new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
@@ -240,14 +241,14 @@ public final class CoreSocketFactory {
   /** Returns data that can be used to establish Cloud SQL SSL connection. */
   public static SslData getSslData(ConnectionConfig config) throws IOException {
     CoreSocketFactory instance = getInstance();
-    return instance.getCloudSqlInstance(config).getSslData(instance.refreshTimeoutMs);
+    return instance.getConnectionInfoCache(config).getSslData(instance.refreshTimeoutMs);
   }
 
   /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
   public static String getHostIp(ConnectionConfig config) throws IOException {
     CoreSocketFactory instance = getInstance();
     return instance
-        .getCloudSqlInstance(config)
+        .getConnectionInfoCache(config)
         .getPreferredIp(config.getIpTypes(), instance.refreshTimeoutMs);
   }
 
@@ -337,17 +338,17 @@ public final class CoreSocketFactory {
   // TODO(berezv): separate creating socket and performing connection to make it easier to test
   @VisibleForTesting
   Socket createSslSocket(ConnectionConfig config) throws IOException, InterruptedException {
-    CloudSqlInstance instance = getCloudSqlInstance(config);
+    DefaultConnectionInfoCache connectionInfoCache = getConnectionInfoCache(config);
 
     try {
-      SSLSocket socket = instance.createSslSocket(this.refreshTimeoutMs);
+      SSLSocket socket = connectionInfoCache.createSslSocket(this.refreshTimeoutMs);
 
       // TODO(kvg): Support all socket related options listed here:
       // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration-properties.html
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getPreferredIp(config.getIpTypes(), refreshTimeoutMs);
+      String instanceIp = connectionInfoCache.getPreferredIp(config.getIpTypes(), refreshTimeoutMs);
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();
@@ -355,16 +356,17 @@ public final class CoreSocketFactory {
       return socket;
     } catch (Exception ex) {
       // TODO(kvg): Let user know about the rate limit
-      instance.forceRefresh();
+      connectionInfoCache.forceRefresh();
       throw ex;
     }
   }
 
-  CloudSqlInstance getCloudSqlInstance(ConnectionConfig config) {
-    return instances.computeIfAbsent(config.getCloudSqlInstance(), k -> apiFetcher(config));
+  DefaultConnectionInfoCache getConnectionInfoCache(ConnectionConfig config) {
+    return connectionInfoCaches.computeIfAbsent(
+        config.getCloudSqlInstance(), k -> newConnectionInfoCache(config));
   }
 
-  private CloudSqlInstance apiFetcher(ConnectionConfig config) {
+  private DefaultConnectionInfoCache newConnectionInfoCache(ConnectionConfig config) {
 
     final CredentialFactory instanceCredentialFactory;
     if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {
@@ -386,7 +388,7 @@ public final class CoreSocketFactory {
     DefaultConnectionInfoRepository adminApi =
         connectionInfoRepositoryFactory.create(credential, config);
 
-    return new CloudSqlInstance(
+    return new DefaultConnectionInfoCache(
         config.getCloudSqlInstance(),
         adminApi,
         config.getAuthType(),
