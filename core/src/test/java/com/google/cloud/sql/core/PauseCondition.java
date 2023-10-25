@@ -56,14 +56,18 @@ class PauseCondition {
   /**
    * Pause until proceed() is called. If proceed() was called in the past, this returns immediately.
    */
-  public void pause() throws InterruptedException {
+  public void pause() {
 
     lock.lock();
     try {
       beforePause.set(true);
       proceeded.signalAll();
       while (!allowProceed.get()) {
-        allowContinue.await(100, TimeUnit.MILLISECONDS);
+        try {
+          allowContinue.await(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
       }
       afterPause.set(true);
       proceeded.signalAll();

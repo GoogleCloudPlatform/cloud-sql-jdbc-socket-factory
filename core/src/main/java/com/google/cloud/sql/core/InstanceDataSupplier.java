@@ -20,21 +20,14 @@ import com.google.cloud.sql.AuthType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.KeyPair;
-import java.util.concurrent.ExecutionException;
 
 /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
 interface InstanceDataSupplier {
-  /**
-   * Internal Use Only: Gets the instance data for the CloudSqlInstance from the API.
-   *
-   * @throws ExecutionException if an exception is thrown during execution.
-   * @throws InterruptedException if the executor is interrupted.
-   */
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
   ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException, InterruptedException;
+      ListenableFuture<KeyPair> keyPair);
 }

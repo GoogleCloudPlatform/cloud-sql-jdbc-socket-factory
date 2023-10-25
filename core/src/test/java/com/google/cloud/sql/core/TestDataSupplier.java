@@ -54,8 +54,7 @@ class TestDataSupplier implements InstanceDataSupplier {
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       ListeningScheduledExecutorService executor,
-      ListenableFuture<KeyPair> keyPair)
-      throws ExecutionException, InterruptedException {
+      ListenableFuture<KeyPair> keyPair) {
 
     // This method mimics the behavior of SqlAdminApiFetcher under flaky network conditions.
     // It schedules a future on the executor to produces the result InstanceData.
