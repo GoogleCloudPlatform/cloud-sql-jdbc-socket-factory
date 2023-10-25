@@ -24,7 +24,7 @@ import java.security.KeyPair;
 /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
 interface ConnectionInfoRepository {
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
-  ListenableFuture<InstanceData> getInstanceData(
+  ListenableFuture<ConnectionInfo> getConnectionInfo(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,

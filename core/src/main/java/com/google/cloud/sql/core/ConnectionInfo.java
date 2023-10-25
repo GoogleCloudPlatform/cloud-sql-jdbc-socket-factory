@@ -22,14 +22,14 @@ import java.util.Map;
 import javax.net.ssl.SSLContext;
 
 /** Represents the results of a certificate and metadata refresh operation. */
-class InstanceData {
+class ConnectionInfo {
 
   private final Metadata metadata;
   private final SSLContext sslContext;
   private final SslData sslData;
   private final Instant expiration;
 
-  InstanceData(Metadata metadata, SslData sslData, Instant expiration) {
+  ConnectionInfo(Metadata metadata, SslData sslData, Instant expiration) {
     this.metadata = metadata;
     this.sslData = sslData;
     this.sslContext = sslData.getSslContext();

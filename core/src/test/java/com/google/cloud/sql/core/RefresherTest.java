@@ -56,8 +56,8 @@ public class RefresherTest {
     Refresher r =
         new Refresher(
             "testcase", executorService, () -> Futures.immediateFuture(data), rateLimiter);
-    InstanceData gotData = r.getData(TEST_TIMEOUT_MS);
-    assertThat(gotData).isSameInstanceAs(data);
+    ConnectionInfo gotInfo = r.getConnectionInfo(TEST_TIMEOUT_MS);
+    assertThat(gotInfo).isSameInstanceAs(data);
   }
 
   @Test
@@ -68,7 +68,8 @@ public class RefresherTest {
             executorService,
             () -> Futures.immediateFailedFuture(new RuntimeException("always fails")),
             rateLimiter);
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> r.getData(TEST_TIMEOUT_MS));
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
     assertThat(ex).hasMessageThat().contains("always fails");
   }
 
@@ -85,7 +86,8 @@ public class RefresherTest {
               return Futures.immediateFuture(data);
             },
             rateLimiter);
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> r.getData(TEST_TIMEOUT_MS));
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
     assertThat(ex).hasMessageThat().contains("No refresh has completed");
   }
 
@@ -109,7 +111,7 @@ public class RefresherTest {
               return Futures.immediateFuture(data);
             },
             rateLimiter);
-    r.getData(TEST_TIMEOUT_MS);
+    r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Force refresh, which will start, but not finish the refresh process.
@@ -117,7 +119,7 @@ public class RefresherTest {
 
     // Then immediately getSslData() and assert that the refresh count has not changed.
     // Refresh count hasn't changed because we re-use the existing connection info.
-    r.getData(TEST_TIMEOUT_MS);
+    r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
 
     // Allow the second refresh operation to complete
@@ -126,7 +128,7 @@ public class RefresherTest {
     cond.waitForCondition(() -> refreshCount.get() >= 2, 1000L);
 
     // getSslData again, and assert the refresh operation completed.
-    r.getData(TEST_TIMEOUT_MS);
+    r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -152,11 +154,11 @@ public class RefresherTest {
 
     // Get the first data that is about to expire
     long until = System.currentTimeMillis() + 3000;
-    while (r.getData(TEST_TIMEOUT_MS) != data && System.currentTimeMillis() < until) {
+    while (r.getConnectionInfo(TEST_TIMEOUT_MS) != data && System.currentTimeMillis() < until) {
       Thread.sleep(100);
     }
     assertThat(refreshCount.get()).isEqualTo(2);
-    assertThat(r.getData(TEST_TIMEOUT_MS)).isEqualTo(data);
+    assertThat(r.getConnectionInfo(TEST_TIMEOUT_MS)).isEqualTo(data);
   }
 
   @Test
@@ -191,9 +193,9 @@ public class RefresherTest {
             rateLimiter);
 
     // Get the first data that is about to expire
-    InstanceData d = r.getData(TEST_TIMEOUT_MS);
+    ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
-    assertThat(d).isSameInstanceAs(r.getData(TEST_TIMEOUT_MS));
+    assertThat(d).isSameInstanceAs(r.getConnectionInfo(TEST_TIMEOUT_MS));
 
     // Wait for the instance to expire
     while (Instant.now().isBefore(initialData.getExpiration())) {
@@ -205,7 +207,7 @@ public class RefresherTest {
     refresh1.waitForPauseToEnd(1000L);
 
     // getSslData again, and assert the refresh operation completed.
-    refresh1.waitForCondition(() -> r.getData(TEST_TIMEOUT_MS) == data, 1000L);
+    refresh1.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 1000L);
   }
 
   @Test
@@ -247,7 +249,7 @@ public class RefresherTest {
     refresh0.waitForCondition(() -> refreshCount.get() > 0, 1000);
     // Get the first data that is about to expire
     assertThat(refreshCount.get()).isEqualTo(1);
-    InstanceData d = r.getData(TEST_TIMEOUT_MS);
+    ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(d).isSameInstanceAs(expiresInOneMinute);
 
     // Because the data is about to expire, scheduled refresh will begin immediately.
@@ -262,11 +264,11 @@ public class RefresherTest {
     refresh1.waitForPauseToEnd(5000);
     refresh1.waitForCondition(() -> refreshCount.get() > 1, 1000);
 
-    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // Now that the ConnectionInfo has expired, this getSslData should pause until new data
     // has been retrieved.
 
     // getSslData again, and assert the refresh operation completed.
-    refresh1.waitForCondition(() -> r.getData(TEST_TIMEOUT_MS) == data, 1000L);
+    refresh1.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -299,7 +301,7 @@ public class RefresherTest {
             rateLimiter);
 
     // Get the first data that is about to expire
-    InstanceData d = r.getData(TEST_TIMEOUT_MS);
+    ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData);
 
@@ -310,14 +312,14 @@ public class RefresherTest {
     // Allow the refresh operation to complete
     refresh1.proceed();
 
-    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // Now that the ConnectionInfo has expired, this getSslData should pause until new data
     // has been retrieved.
     refresh1.waitForPauseToEnd(1000);
     refresh1.waitForCondition(() -> refreshCount.get() >= 2, 1000);
 
     // assert the refresh operation completed exactly once after
     // forceRefresh was called multiple times.
-    refresh1.waitForCondition(() -> r.getData(TEST_TIMEOUT_MS) == data, 1000L);
+    refresh1.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 1000L);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
@@ -358,14 +360,14 @@ public class RefresherTest {
             rateLimiter);
 
     // Get the first data that is about to expire
-    InstanceData d = r.getData(TEST_TIMEOUT_MS);
+    ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(aboutToExpireData);
 
     // Don't force a refresh, this should automatically schedule a refresh right away because
     // the token returned in the first request had less than 4 minutes before it expired.
 
-    // Wait for the current InstanceData to actually expire.
+    // Wait for the current ConnectionInfo to actually expire.
     while (Instant.now().isBefore(aboutToExpireData.getExpiration())) {
       Thread.sleep(10);
     }
@@ -386,10 +388,10 @@ public class RefresherTest {
     goodRequest.waitForCondition(() -> refreshCount.get() == 4, 2000);
 
     // Try getSslData() again, and assert the refresh operation eventually completes.
-    goodRequest.waitForCondition(() -> r.getData(TEST_TIMEOUT_MS) == data, 2000);
+    goodRequest.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 2000);
   }
 
-  private static class ExampleData extends InstanceData {
+  private static class ExampleData extends ConnectionInfo {
 
     ExampleData(Instant expiration) {
       super(new Metadata(null, null), new SslData(null, null, null), expiration);
