@@ -20,7 +20,8 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.ConnectionConfig;
 
 /** Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API. */
-public interface ApiFetcherFactory {
+public interface ConnectionInfoRepositoryFactory {
 
-  SqlAdminApiFetcher create(HttpRequestInitializer credentials, ConnectionConfig config);
+  DefaultConnectionInfoRepository create(
+      HttpRequestInitializer credentials, ConnectionConfig config);
 }

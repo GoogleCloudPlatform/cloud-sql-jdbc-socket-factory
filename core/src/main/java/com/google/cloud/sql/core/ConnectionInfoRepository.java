@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.security.KeyPair;
 
 /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
-interface InstanceDataSupplier {
+interface ConnectionInfoRepository {
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
   ListenableFuture<InstanceData> getInstanceData(
       CloudSqlInstanceName instanceName,

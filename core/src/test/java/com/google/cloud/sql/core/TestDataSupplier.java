@@ -27,7 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class TestDataSupplier implements InstanceDataSupplier {
+class TestDataSupplier implements ConnectionInfoRepository {
 
   volatile boolean flaky;
 
@@ -56,10 +56,11 @@ class TestDataSupplier implements InstanceDataSupplier {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
 
-    // This method mimics the behavior of SqlAdminApiFetcher under flaky network conditions.
+    // This method mimics the behavior of DefaultConnectionInfoRepository under flaky network
+    // conditions.
     // It schedules a future on the executor to produces the result InstanceData.
     // When `this.flaky` is set, every other call to getInstanceData()
-    // throw an ExecutionException, as if SqlAdminApiFetcher made an API request,
+    // throw an ExecutionException, as if DefaultConnectionInfoRepository made an API request,
     // and then failed.
     ListenableFuture<InstanceData> f =
         executor.submit(

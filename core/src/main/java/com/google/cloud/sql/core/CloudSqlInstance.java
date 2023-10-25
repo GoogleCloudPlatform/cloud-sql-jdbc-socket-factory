@@ -45,13 +45,13 @@ class CloudSqlInstance {
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
    * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
-   * @param instanceDataSupplier Service class for interacting with the Cloud SQL Admin API
+   * @param connectionInfoRepository Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
   CloudSqlInstance(
       String connectionName,
-      InstanceDataSupplier instanceDataSupplier,
+      ConnectionInfoRepository connectionInfoRepository,
       AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
@@ -72,7 +72,7 @@ class CloudSqlInstance {
             connectionName,
             executor,
             () ->
-                instanceDataSupplier.getInstanceData(
+                connectionInfoRepository.getInstanceData(
                     this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair),
             new AsyncRateLimiter(minRefreshDelayMs));
   }

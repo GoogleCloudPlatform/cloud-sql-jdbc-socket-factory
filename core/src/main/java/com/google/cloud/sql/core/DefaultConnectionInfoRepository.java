@@ -54,12 +54,13 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
-class SqlAdminApiFetcher implements InstanceDataSupplier {
+class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
-  private static final Logger logger = Logger.getLogger(SqlAdminApiFetcher.class.getName());
+  private static final Logger logger =
+      Logger.getLogger(DefaultConnectionInfoRepository.class.getName());
   private final SQLAdmin apiClient;
 
-  SqlAdminApiFetcher(SQLAdmin apiClient) {
+  DefaultConnectionInfoRepository(SQLAdmin apiClient) {
     this.apiClient = apiClient;
   }
 
