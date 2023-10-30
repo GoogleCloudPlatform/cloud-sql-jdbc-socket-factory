@@ -50,7 +50,7 @@ import jnr.unixsocket.UnixSocketChannel;
  * <p>This class should not be used directly, but only through the JDBC driver specific {@code
  * SocketFactory} implementations.
  *
- * <p>The API of this class is subject to change without notice.
+ * <p>WARNING: This is an internal class. The API is subject to change without notice.
  */
 public final class InternalConnectorRegistry {
   static final long DEFAULT_MAX_REFRESH_MS = 30000;
