@@ -19,9 +19,8 @@ package com.google.cloud.sql.core;
 import com.google.cloud.sql.ConnectionConfig;
 
 /**
- * WARNING: This class is not a stable, public Java API. The class definition may change without
- * notice. Implementation of informally used java API to preserve compatibility with older code that
- * uses CoreSocketFactory.
+ * Implementation of informally used Java API to preserve compatibility with older code that uses
+ * CoreSocketFactory.
  *
  * @deprecated This will soon be replaced.
  */

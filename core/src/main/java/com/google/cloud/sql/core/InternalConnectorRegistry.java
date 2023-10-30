@@ -44,11 +44,8 @@ import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
 
 /**
- * Factory responsible for obtaining an ephemeral certificate, if necessary, and establishing a
- * secure connecting to a Cloud SQL instance.
- *
- * <p>This class should not be used directly, but only through the JDBC driver specific {@code
- * SocketFactory} implementations.
+ * InternalConnectorRegistry keeps track of connectors. This class should not be used directly, but
+ * only through the JDBC driver specific {@code SocketFactory} implementations.
  *
  * <p>WARNING: This is an internal class. The API is subject to change without notice.
  */
