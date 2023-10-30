@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.mysql;
 
-import com.google.cloud.sql.core.CoreSocketFactory;
+import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.protocol.ServerSession;
 import com.mysql.cj.protocol.SocketConnection;
@@ -28,12 +28,12 @@ import java.util.Properties;
  * A MySQL {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance using
  * ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link InternalConnectorRegistry} class.
  */
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
   static {
-    CoreSocketFactory.addArtifactId("mysql-socket-factory-connector-j-8");
+    InternalConnectorRegistry.addArtifactId("mysql-socket-factory-connector-j-8");
   }
 
   @Override
@@ -56,7 +56,7 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
       String host, int portNumber, Properties props, int loginTimeout)
       throws IOException, InterruptedException {
     @SuppressWarnings("unchecked")
-    T socket = (T) CoreSocketFactory.connect(props);
+    T socket = (T) InternalConnectorRegistry.connect(props);
     return socket;
   }
 

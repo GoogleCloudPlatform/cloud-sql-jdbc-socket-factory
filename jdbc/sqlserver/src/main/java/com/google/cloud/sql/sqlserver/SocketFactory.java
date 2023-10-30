@@ -17,7 +17,7 @@
 package com.google.cloud.sql.sqlserver;
 
 import com.google.cloud.sql.ConnectionConfig;
-import com.google.cloud.sql.core.CoreSocketFactory;
+import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import java.io.IOException;
@@ -33,12 +33,12 @@ import java.util.Properties;
  * A Microsoft SQL Server {@link SocketFactory} that establishes a secure connection to a Cloud SQL
  * instance using ephemeral certificates.
  *
- * <p>The heavy lifting is done by the singleton {@link CoreSocketFactory} class.
+ * <p>The heavy lifting is done by the singleton {@link InternalConnectorRegistry} class.
  */
 public class SocketFactory extends javax.net.SocketFactory {
 
   static {
-    CoreSocketFactory.addArtifactId("cloud-sql-connector-jdbc-sqlserver");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-jdbc-sqlserver");
   }
 
   // props are protected, not private, so that they can be accessed from unit tests
@@ -74,7 +74,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return CoreSocketFactory.connect(props);
+      return InternalConnectorRegistry.connect(props);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

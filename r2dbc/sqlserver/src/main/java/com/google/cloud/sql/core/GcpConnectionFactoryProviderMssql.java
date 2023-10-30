@@ -31,7 +31,7 @@ import java.util.function.Function;
 public class GcpConnectionFactoryProviderMssql extends GcpConnectionFactoryProvider {
 
   static {
-    CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mssql");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-r2dbc-mssql");
   }
 
   /** MsSQL driver option value. */

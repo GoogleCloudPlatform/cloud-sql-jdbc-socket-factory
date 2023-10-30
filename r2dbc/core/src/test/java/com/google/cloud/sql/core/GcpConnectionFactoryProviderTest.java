@@ -66,7 +66,7 @@ public class GcpConnectionFactoryProviderTest {
   private final CredentialFactory credentialFactory = new StubCredentialFactory();
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
-  CoreSocketFactory coreSocketFactoryStub;
+  InternalConnectorRegistry internalConnectorRegistryStub;
 
   String fakeInstanceName = "myProject:myRegion:myInstance";
 
@@ -172,18 +172,18 @@ public class GcpConnectionFactoryProviderTest {
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
 
-    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
+    defaultExecutor = InternalConnectorRegistry.getDefaultExecutor();
 
     ConnectionInfoRepositoryFactory repo =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
-    coreSocketFactoryStub =
-        new CoreSocketFactory(
+    internalConnectorRegistryStub =
+        new InternalConnectorRegistry(
             clientKeyPair,
             repo,
             credentialFactory,
             3307,
-            CoreSocketFactory.DEFAULT_MAX_REFRESH_MS,
+            InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
             defaultExecutor);
   }
 }

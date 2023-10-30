@@ -59,7 +59,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     MockAdminApi mockAdminApi = new MockAdminApi();
     ListenableFuture<KeyPair> keyPairFuture =
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
-    ListeningScheduledExecutorService executor = CoreSocketFactory.getDefaultExecutor();
+    ListeningScheduledExecutorService executor = InternalConnectorRegistry.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
     List<DefaultConnectionInfoCache> caches = new ArrayList<>();
 

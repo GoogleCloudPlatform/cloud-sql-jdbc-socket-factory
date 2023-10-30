@@ -1,11 +1,11 @@
 /*
- * Copyright 2016 Google Inc.
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,7 +42,7 @@ import org.junit.runners.JUnit4;
 
 // TODO(berezv): add multithreaded test
 @RunWith(JUnit4.class)
-public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
+public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   private final long TEST_MAX_REFRESH_MS = 5000L;
 
   ListeningScheduledExecutorService defaultExecutor;
@@ -50,7 +50,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   @Before
   public void setUp() throws Exception {
     super.setup();
-    defaultExecutor = CoreSocketFactory.getDefaultExecutor();
+    defaultExecutor = InternalConnectorRegistry.getDefaultExecutor();
   }
 
   @After
@@ -62,11 +62,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_throwsErrorForInvalidInstanceName() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject")
               .withIpTypes("PRIMARY")
@@ -77,7 +77,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     }
 
     try {
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion")
               .withIpTypes("PRIMARY")
@@ -94,11 +94,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:notMyRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -124,11 +124,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(
+        internalConnectorRegistry.createSslSocket(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIVATE")
@@ -144,12 +144,12 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
 
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -168,12 +168,12 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
 
     Socket socket =
-        coreSocketFactory.createSslSocket(
+        internalConnectorRegistry.createSslSocket(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -189,11 +189,11 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(
+        internalConnectorRegistry.createSslSocket(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -205,12 +205,12 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_adminApiNotEnabled() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
@@ -230,12 +230,12 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
   public void create_notAuthorized() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
-      coreSocketFactory.createSslSocket(
+      internalConnectorRegistry.createSslSocket(
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
               .withIpTypes("PRIMARY")
@@ -264,8 +264,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
 
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair,
             factory,
             stubCredentialFactory,
@@ -273,7 +273,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(
+        internalConnectorRegistry.createSslSocket(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -293,8 +293,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair,
             factory,
             stubCredentialFactory,
@@ -302,7 +302,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
     Socket socket =
-        coreSocketFactory.createSslSocket(
+        internalConnectorRegistry.createSslSocket(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("myProject:myRegion:myInstance")
                 .withIpTypes("PRIMARY")
@@ -329,8 +329,8 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    CoreSocketFactory coreSocketFactory =
-        new CoreSocketFactory(
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
             clientKeyPair,
             factory,
             stubCredentialFactory,
@@ -340,7 +340,7 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
     assertThrows(
         RuntimeException.class,
         () ->
-            coreSocketFactory.createSslSocket(
+            internalConnectorRegistry.createSslSocket(
                 new ConnectionConfig.Builder()
                     .withCloudSqlInstance("myProject:myRegion:myInstance")
                     .withIpTypes("PRIMARY")
@@ -350,20 +350,21 @@ public class CoreSocketFactoryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void testGetApplicationNameWithApplicationName() {
-    CoreSocketFactory.resetUserAgent();
-    CoreSocketFactory.setApplicationName("sample-app");
-    CoreSocketFactory.addArtifactId("unit-test");
-    CoreSocketFactory.getInstance();
-    assertThat(CoreSocketFactory.getUserAgents()).startsWith("unit-test/");
-    assertThat(CoreSocketFactory.getUserAgents()).endsWith(" sample-app");
+    InternalConnectorRegistry.resetUserAgent();
+    InternalConnectorRegistry.setApplicationName("sample-app");
+    InternalConnectorRegistry.addArtifactId("unit-test");
+    InternalConnectorRegistry.getInstance();
+    assertThat(InternalConnectorRegistry.getUserAgents()).startsWith("unit-test/");
+    assertThat(InternalConnectorRegistry.getUserAgents()).endsWith(" sample-app");
   }
 
   @Test
   public void testGetApplicationNameFailsAfterInitialization() {
-    CoreSocketFactory.resetUserAgent();
-    CoreSocketFactory.getInstance();
+    InternalConnectorRegistry.resetUserAgent();
+    InternalConnectorRegistry.getInstance();
     assertThrows(
-        IllegalStateException.class, () -> CoreSocketFactory.setApplicationName("sample-app"));
+        IllegalStateException.class,
+        () -> InternalConnectorRegistry.setApplicationName("sample-app"));
   }
 
   private String readLine(Socket socket) throws IOException {

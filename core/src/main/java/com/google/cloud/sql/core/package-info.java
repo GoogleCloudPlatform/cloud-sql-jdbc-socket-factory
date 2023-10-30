@@ -15,8 +15,10 @@
  */
 
 /**
- * Package com.google.cloud.sql.core holds internal shared packages that implement logic to create a
- * socket to a Cloud SQL database. Classes in this package are considered internal and subject to
+ * WARNING: This package does not contain any stable, public Java API. The class definitions may
  * change without notice.
+ *
+ * <p>Package com.google.cloud.sql.core holds internal shared packages that implement logic to
+ * create a socket to a Cloud SQL database.
  */
 package com.google.cloud.sql.core;

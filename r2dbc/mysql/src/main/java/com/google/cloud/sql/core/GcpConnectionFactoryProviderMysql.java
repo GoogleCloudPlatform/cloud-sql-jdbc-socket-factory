@@ -35,7 +35,7 @@ public class GcpConnectionFactoryProviderMysql extends GcpConnectionFactoryProvi
   private static final String MYSQL_DRIVER = "mysql";
 
   static {
-    CoreSocketFactory.addArtifactId("cloud-sql-connector-r2dbc-mysql");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-r2dbc-mysql");
   }
 
   @Override
