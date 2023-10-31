@@ -511,6 +511,7 @@
               <buildArgs>
                 <buildArg>--no-fallback</buildArg>
                 <buildArg>--no-server</buildArg>
+                <buildArg>-Ob</buildArg>
               </buildArgs>
             </configuration>
           </plugin>
