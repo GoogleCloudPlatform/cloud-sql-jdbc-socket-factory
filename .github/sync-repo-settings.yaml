@@ -45,7 +45,6 @@ branchProtectionRules:
   - "lint"
   - "units (8)"
   - "units (11)"
-  - "graalvm17"
   - "units + e2e"
   - "cla/google"
   # Wait until we make the repo public before bringing this back
