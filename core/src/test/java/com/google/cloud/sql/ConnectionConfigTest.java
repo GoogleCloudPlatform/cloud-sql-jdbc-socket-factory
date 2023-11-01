@@ -39,6 +39,7 @@ public class ConnectionConfigTest {
     final String ipTypes = "psc,Private,PUBLIC";
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantAdminServicePath = "sqladmin/";
+    final String wantUnixSuffix = ".psql.5432";
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -49,6 +50,7 @@ public class ConnectionConfigTest {
     props.setProperty(ConnectionConfig.IP_TYPES_PROPERTY, ipTypes);
     props.setProperty(ConnectionConfig.CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY, wantAdminRootUrl);
     props.setProperty(ConnectionConfig.CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY, wantAdminServicePath);
+    props.setProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY, wantUnixSuffix);
 
     ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
 
@@ -60,6 +62,7 @@ public class ConnectionConfigTest {
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
     assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
     assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 
   @Test
@@ -72,6 +75,7 @@ public class ConnectionConfigTest {
     final AuthType wantAuthType = AuthType.PASSWORD;
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantAdminServicePath = "sqladmin/";
+    final String wantUnixSuffix = ".psql.5432";
 
     ConnectionConfig c =
         new ConnectionConfig.Builder()
@@ -83,6 +87,7 @@ public class ConnectionConfigTest {
             .withAuthType(wantAuthType)
             .withAdminRootUrl(wantAdminRootUrl)
             .withAdminServicePath(wantAdminServicePath)
+            .withUnixSocketPathSuffix(wantUnixSuffix)
             .build();
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
@@ -93,5 +98,6 @@ public class ConnectionConfigTest {
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
     assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
     assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 }

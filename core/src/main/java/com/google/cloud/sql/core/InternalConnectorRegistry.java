@@ -151,23 +151,16 @@ public final class InternalConnectorRegistry {
     return null; // if unset, default to null
   }
 
-  /** Creates a socket representing a connection to a Cloud SQL instance. */
-  public static Socket connect(Properties props) throws IOException, InterruptedException {
-    return connect(props, null);
-  }
-
   /**
    * Creates a socket representing a connection to a Cloud SQL instance.
    *
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
    * @param props Properties used to configure the connection.
-   * @param unixPathSuffix suffix to add the the Unix socket path. Unused if null.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
-  public static Socket connect(Properties props, String unixPathSuffix)
-      throws IOException, InterruptedException {
+  public static Socket connect(Properties props) throws IOException, InterruptedException {
     // Gather parameters
 
     ConnectionConfig config = ConnectionConfig.fromConnectionProperties(props);
@@ -182,6 +175,7 @@ public final class InternalConnectorRegistry {
     String unixSocket = getUnixSocketArg(config);
     if (unixSocket != null) {
       // Verify it ends with the correct suffix
+      String unixPathSuffix = config.getUnixSocketPathSuffix();
       if (unixPathSuffix != null && !unixSocket.endsWith(unixPathSuffix)) {
         unixSocket = unixSocket + unixPathSuffix;
       }

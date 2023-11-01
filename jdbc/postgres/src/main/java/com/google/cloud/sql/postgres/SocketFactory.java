@@ -69,13 +69,14 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static Properties createDefaultProperties(String instanceName) {
     Properties info = new Properties();
     info.setProperty(DEPRECATED_SOCKET_ARG, instanceName);
+    info.setProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY, POSTGRES_SUFFIX);
     return info;
   }
 
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return InternalConnectorRegistry.connect(props, POSTGRES_SUFFIX);
+      return InternalConnectorRegistry.connect(props);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
