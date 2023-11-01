@@ -22,7 +22,8 @@ import com.google.cloud.sql.ConnectionConfig;
  * Implementation of informally used Java API to preserve compatibility with older code that uses
  * CoreSocketFactory.
  *
- * @deprecated This will soon be replaced.
+ * @deprecated Use the official java API instead.
+ * @see com.google.cloud.sql.ConnectorRegistry
  */
 @Deprecated
 public final class CoreSocketFactory {
@@ -75,6 +76,12 @@ public final class CoreSocketFactory {
   public static final String USER_TOKEN_PROPERTY_NAME =
       InternalConnectorRegistry.USER_TOKEN_PROPERTY_NAME;
 
+  /**
+   * Sets the application name for the user agent.
+   *
+   * @deprecated Use the official java API instead.
+   * @see com.google.cloud.sql.ConnectorRegistry
+   */
   static void setApplicationName(String artifactId) {
     InternalConnectorRegistry.setApplicationName(artifactId);
   }

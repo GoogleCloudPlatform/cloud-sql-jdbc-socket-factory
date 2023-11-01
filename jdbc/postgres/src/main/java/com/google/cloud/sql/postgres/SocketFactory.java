@@ -76,7 +76,8 @@ public class SocketFactory extends javax.net.SocketFactory {
   @Override
   public Socket createSocket() throws IOException {
     try {
-      return InternalConnectorRegistry.connect(props);
+      return InternalConnectorRegistry.getInstance()
+          .connect(ConnectionConfig.fromConnectionProperties(props));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

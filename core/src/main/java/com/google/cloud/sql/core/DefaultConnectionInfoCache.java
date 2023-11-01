@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.IpType;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -35,32 +36,28 @@ import javax.net.ssl.SSLSocket;
  * asynchronously, and this class should be considered threadsafe.
  */
 class DefaultConnectionInfoCache {
-  private final AuthType authType;
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
-
   private final Refresher refresher;
 
   /**
    * Initializes a new Cloud SQL instance based on the given connection name.
    *
-   * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
+   * @param config instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param connectionInfoRepository Service class for interacting with the Cloud SQL Admin API
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
   DefaultConnectionInfoCache(
-      String connectionName,
+      ConnectionConfig config,
       ConnectionInfoRepository connectionInfoRepository,
-      AuthType authType,
       CredentialFactory tokenSourceFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
       long minRefreshDelayMs) {
-    this.instanceName = new CloudSqlInstanceName(connectionName);
-    this.authType = authType;
+    this.instanceName = new CloudSqlInstanceName(config.getCloudSqlInstance());
 
-    if (authType == AuthType.IAM) {
+    if (config.getAuthType() == AuthType.IAM) {
       this.accessTokenSupplier = new DefaultAccessTokenSupplier(tokenSourceFactory);
     } else {
       this.accessTokenSupplier = Optional::empty;
@@ -69,11 +66,15 @@ class DefaultConnectionInfoCache {
     // Initialize the data refresher to retrieve instance data.
     refresher =
         new Refresher(
-            connectionName,
+            config.getCloudSqlInstance(),
             executor,
             () ->
                 connectionInfoRepository.getConnectionInfo(
-                    this.instanceName, this.accessTokenSupplier, this.authType, executor, keyPair),
+                    this.instanceName,
+                    this.accessTokenSupplier,
+                    config.getAuthType(),
+                    executor,
+                    keyPair),
             new AsyncRateLimiter(minRefreshDelayMs));
   }
 

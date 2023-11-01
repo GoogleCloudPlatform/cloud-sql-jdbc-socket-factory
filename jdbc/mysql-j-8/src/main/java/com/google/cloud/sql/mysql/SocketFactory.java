@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.mysql;
 
+import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.protocol.ServerSession;
@@ -56,7 +57,10 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
       String host, int portNumber, Properties props, int loginTimeout)
       throws IOException, InterruptedException {
     @SuppressWarnings("unchecked")
-    T socket = (T) InternalConnectorRegistry.connect(props);
+    T socket =
+        (T)
+            InternalConnectorRegistry.getInstance()
+                .connect(ConnectionConfig.fromConnectionProperties(props));
     return socket;
   }
 
