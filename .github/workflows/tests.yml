@@ -275,8 +275,8 @@ jobs:
         chmod +x ./flakybot
         ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   graalvm:
-    # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
-    if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
+    # run job on periodic (schedule) event
+    if: "${{ github.event_name == 'schedule' }}"
     name: graalvm native / linux
     runs-on: ubuntu-latest
     permissions:
