@@ -24,13 +24,13 @@ import javax.net.ssl.SSLContext;
 /** Represents the results of a certificate and metadata refresh operation. */
 class ConnectionInfo {
 
-  private final Metadata metadata;
+  private final InstanceMetadata instanceMetadata;
   private final SSLContext sslContext;
   private final SslData sslData;
   private final Instant expiration;
 
-  ConnectionInfo(Metadata metadata, SslData sslData, Instant expiration) {
-    this.metadata = metadata;
+  ConnectionInfo(InstanceMetadata instanceMetadata, SslData sslData, Instant expiration) {
+    this.instanceMetadata = instanceMetadata;
     this.sslData = sslData;
     this.sslContext = sslData.getSslContext();
     this.expiration = expiration;
@@ -45,7 +45,7 @@ class ConnectionInfo {
   }
 
   Map<IpType, String> getIpAddrs() {
-    return metadata.getIpAddrs();
+    return instanceMetadata.getIpAddrs();
   }
 
   SslData getSslData() {

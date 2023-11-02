@@ -145,22 +145,8 @@ public final class InternalConnectorRegistry {
     return getConnector(config).connect(config);
   }
 
-  /** Returns data that can be used to establish Cloud SQL SSL connection. */
-  public static SslData getSslData(ConnectionConfig config) throws IOException {
-    InternalConnectorRegistry instance = getInstance();
-    return instance
-        .getConnector(config)
-        .getConnection(config)
-        .getSslData(instance.refreshTimeoutMs);
-  }
-
-  /** Returns preferred ip address that can be used to establish Cloud SQL connection. */
-  public static String getHostIp(ConnectionConfig config) throws IOException {
-    InternalConnectorRegistry instance = getInstance();
-    return instance
-        .getConnector(config)
-        .getConnection(config)
-        .getPreferredIp(config.getIpTypes(), instance.refreshTimeoutMs);
+  public ConnectionMetadata getConnectionMetadata(ConnectionConfig config) throws IOException {
+    return getConnector(config).getConnection(config).getConnectionMetadata(refreshTimeoutMs);
   }
 
   private static KeyPair generateRsaKeyPair() {

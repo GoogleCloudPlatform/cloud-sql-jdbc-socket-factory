@@ -122,7 +122,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     try {
       // Precompute SSL Data to trigger the initial refresh to happen immediately,
       // and ensure enableIAMAuth is set correctly.
-      InternalConnectorRegistry.getSslData(config);
+      InternalConnectorRegistry.getInstance().getConnectionMetadata(config);
 
       String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
       if (socket != null) {
@@ -132,11 +132,12 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       Function<SslContextBuilder, SslContextBuilder> sslFunction =
           sslContextBuilder -> {
             // Execute in a default scheduler to prevent it from blocking event loop
-            SslData sslData =
+            ConnectionMetadata connectionMetadata =
                 Mono.fromSupplier(
                         () -> {
                           try {
-                            return InternalConnectorRegistry.getSslData(config);
+                            return InternalConnectorRegistry.getInstance()
+                                .getConnectionMetadata(config);
                           } catch (IOException e) {
                             throw new RuntimeException(e);
                           }
@@ -144,8 +145,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                     .subscribeOn(Schedulers.boundedElastic())
                     .share()
                     .block();
-            sslContextBuilder.keyManager(sslData.getKeyManagerFactory());
-            sslContextBuilder.trustManager(sslData.getTrustManagerFactory());
+            sslContextBuilder.keyManager(connectionMetadata.getKeyManagerFactory());
+            sslContextBuilder.trustManager(connectionMetadata.getTrustManagerFactory());
             sslContextBuilder.protocols("TLSv1.2");
 
             return sslContextBuilder;

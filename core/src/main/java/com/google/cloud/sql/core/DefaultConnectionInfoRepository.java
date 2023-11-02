@@ -101,7 +101,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
     // Fetch the metadata
-    ListenableFuture<Metadata> metadataFuture =
+    ListenableFuture<InstanceMetadata> metadataFuture =
         executor.submit(() -> fetchMetadata(instanceName, authType));
 
     // Fetch the ephemeral certificates
@@ -168,7 +168,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
-  private Metadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
+  private InstanceMetadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
     try {
       ConnectSettings instanceMetadata =
           apiClient
@@ -228,7 +228,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
         logger.fine(String.format("[%s] METADATA DONE", instanceName));
 
-        return new Metadata(ipAddrs, instanceCaCertificate);
+        return new InstanceMetadata(ipAddrs, instanceCaCertificate);
       } catch (CertificateException ex) {
         throw new RuntimeException(
             String.format(
@@ -310,7 +310,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
    */
   private SslData createSslData(
       KeyPair keyPair,
-      Metadata metadata,
+      InstanceMetadata instanceMetadata,
       Certificate ephemeralCertificate,
       CloudSqlInstanceName instanceName,
       AuthType authType) {
@@ -326,7 +326,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
       KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustedKeyStore.load(null, null);
-      trustedKeyStore.setCertificateEntry("instance", metadata.getInstanceCaCertificate());
+      trustedKeyStore.setCertificateEntry("instance", instanceMetadata.getInstanceCaCertificate());
       TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
       tmf.init(trustedKeyStore);
       SSLContext sslContext;

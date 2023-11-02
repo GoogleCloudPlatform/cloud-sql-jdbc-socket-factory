@@ -107,7 +107,7 @@ class Connector {
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getPreferredIp(config.getIpTypes(), refreshTimeoutMs);
+      String instanceIp = instance.getConnectionMetadata(refreshTimeoutMs).getPreferredIpAddress();
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();

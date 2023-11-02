@@ -394,7 +394,7 @@ public class RefresherTest {
   private static class ExampleData extends ConnectionInfo {
 
     ExampleData(Instant expiration) {
-      super(new Metadata(null, null), new SslData(null, null, null), expiration);
+      super(new InstanceMetadata(null, null), new SslData(null, null, null), expiration);
     }
   }
 
