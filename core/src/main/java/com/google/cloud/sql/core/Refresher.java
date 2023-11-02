@@ -98,7 +98,7 @@ class Refresher {
       if (closed) {
         throw new IllegalStateException("Named connection closed");
       }
-      f = current;
+      f = currentConnectionInfo();
     }
 
     try {
@@ -124,6 +124,57 @@ class Refresher {
       Throwable cause = ex.getCause();
       Throwables.throwIfUnchecked(cause);
       throw new RuntimeException(cause);
+    }
+  }
+
+  /**
+   * Returns the current connection info, checking if it has expired and forcing a refresh if
+   * necessary.
+   */
+  private ListenableFuture<ConnectionInfo> currentConnectionInfo() {
+    synchronized (instanceDataGuard) {
+
+      // If current is done, but the data has expired, then force refresh (which will balk if a
+      // refresh is already running) and make this and future requests to for ConnectionInfo wait on
+      // the refresh operation to complete.
+      if (current.isDone()) {
+        Instant expiration;
+        try {
+
+          // Get the currentInstanceData expiration date. This will throw an ExecutionException if
+          // currentInstanceData future has failed.
+          expiration = current.get().getExpiration();
+
+          if (expiration == null || expiration.isBefore(Instant.now())) {
+            // currentInstanceData is invalid. forceRefresh (this sets nextInstanceData)
+            // and set currentInstanceData to nextInstanceData so that subsequent calls
+            // to getInstanceData() will block until the refresh succeeds.
+            logger.log(
+                Level.FINE,
+                String.format(
+                    "[%s] Instance data is invalid because the certificate expired.", name));
+            // Current is invalid, so we replace it with the in-progress refresh
+            // attempt in this.next.
+            forceRefresh();
+            current = next;
+          }
+        } catch (ExecutionException | InterruptedException e) {
+          // currentInstanceData has a failed future, so currentInstanceData is invalid.
+          // forceRefresh (this sets nextInstanceData) and set currentInstanceData to
+          // nextInstanceData so that subsequent calls to getInstanceData() will block until the
+          // refresh succeeds.
+          logger.log(
+              Level.FINE,
+              String.format("[%s] Instance data is invalid due to a failed refresh attempt.", name),
+              e);
+          // Current is invalid, so we replace it with the now in-progress refresh
+          // attempt in this.next.
+          forceRefresh();
+          current = next;
+        }
+      }
+
+      return current;
     }
   }
 

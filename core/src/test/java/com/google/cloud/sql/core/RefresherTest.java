@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -202,6 +203,12 @@ public class RefresherTest {
       Thread.sleep(10);
     }
 
+    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // has been retrieved. In this case, the new data has not yet been retrieved, so the operation
+    // should time out after 100ms and throw an exception.
+    assertThrows(RuntimeException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
+    assertThat(refreshCount.get()).isEqualTo(1);
+
     // Allow the second refresh operation to complete
     refresh1.proceed();
     refresh1.waitForPauseToEnd(1000L);
@@ -372,12 +379,23 @@ public class RefresherTest {
       Thread.sleep(10);
     }
 
+    // Start a thread to getSslData(). This will eventually return after the
+    // failed attempts.
+    AtomicReference<ConnectionInfo> earlyFetchAttempt = new AtomicReference<>();
+    Thread t = new Thread(() -> earlyFetchAttempt.set(r.getConnectionInfo(TEST_TIMEOUT_MS)));
+    t.start();
+
     // Orchestrate the failed attempts
 
     // Allow the second refresh operation to complete
     badRequest1.proceed();
     badRequest1.waitForPauseToEnd(5000);
     badRequest1.waitForCondition(() -> refreshCount.get() == 2, 2000);
+
+    // Now that the InstanceData has expired, this getSslData should pause until new data
+    // has been retrieved. In this case, the new data has not yet been retrieved, so the operation
+    // should time out after 10ms.
+    assertThrows(RuntimeException.class, () -> r.getConnectionInfo(10));
 
     // Allow the second bad request completes
     badRequest2.proceed();
@@ -389,6 +407,12 @@ public class RefresherTest {
 
     // Try getSslData() again, and assert the refresh operation eventually completes.
     goodRequest.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 2000);
+
+    // Wait for the thread to exit, meaning getSslData() finally returned
+    // after several failed attempts. Assert that the correct InstanceData
+    // eventually returned.
+    t.join();
+    assertThat(earlyFetchAttempt.get()).isSameInstanceAs(data);
   }
 
   @Test
