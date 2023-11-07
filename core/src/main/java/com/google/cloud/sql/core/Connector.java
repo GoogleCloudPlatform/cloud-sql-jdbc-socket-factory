@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;

@@ -22,7 +22,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
@@ -41,7 +41,7 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
 
   @Override
   public DefaultConnectionInfoRepository create(
-      HttpRequestInitializer requestInitializer, ConnectionConfig config) {
+      HttpRequestInitializer requestInitializer, ConnectorConfig config) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();

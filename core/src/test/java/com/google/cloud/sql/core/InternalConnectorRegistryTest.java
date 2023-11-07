@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
@@ -33,7 +33,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.Collections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -153,7 +153,11 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
           new ConnectionConfig.Builder()
               .withCloudSqlInstance("myProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
-              .withDelegates(Arrays.asList("delegate-service-principal@example.com"))
+              .withConnectorConfig(
+                  new ConnectorConfig.Builder()
+                      .withDelegates(
+                          Collections.singletonList("delegate-service-principal@example.com"))
+                      .build())
               .build());
       fail("IllegalArgumentException expected.");
     } catch (IllegalArgumentException e) {

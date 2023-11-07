@@ -22,7 +22,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 
 import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -114,10 +114,13 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
             .withCloudSqlInstance(cloudSqlInstance)
             .withAuthType(enableIamAuth ? AuthType.IAM : AuthType.PASSWORD)
             .withIpTypes(ipTypes)
-            .withTargetPrincipal(targetPrincipal)
-            .withDelegates(delegates)
-            .withAdminRootUrl(adminRootUrl)
-            .withAdminServicePath(adminServicePath)
+            .withConnectorConfig(
+                new ConnectorConfig.Builder()
+                    .withTargetPrincipal(targetPrincipal)
+                    .withDelegates(delegates)
+                    .withAdminRootUrl(adminRootUrl)
+                    .withAdminServicePath(adminServicePath)
+                    .build())
             .build();
     try {
       // Precompute SSL Data to trigger the initial refresh to happen immediately,

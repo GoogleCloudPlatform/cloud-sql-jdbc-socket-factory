@@ -17,11 +17,11 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 
 /** Factory interface for creating SQLAdmin clients to interact with Cloud SQL Admin API. */
 public interface ConnectionInfoRepositoryFactory {
 
   DefaultConnectionInfoRepository create(
-      HttpRequestInitializer credentials, ConnectionConfig config);
+      HttpRequestInitializer credentials, ConnectorConfig config);
 }

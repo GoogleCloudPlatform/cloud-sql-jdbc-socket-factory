@@ -17,7 +17,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -56,7 +56,8 @@ public final class InternalConnectorRegistry {
   private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static InternalConnectorRegistry internalConnectorRegistry;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<ConnectorKey, Connector> connectors = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<ConnectorConfig, Connector> connectors =
+      new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
@@ -227,10 +228,11 @@ public final class InternalConnectorRegistry {
   }
 
   private Connector getConnector(ConnectionConfig config) {
-    return connectors.computeIfAbsent(new ConnectorKey(config), k -> createConnector(config));
+    return connectors.computeIfAbsent(
+        config.getConnectorConfig(), k -> createConnector(config.getConnectorConfig()));
   }
 
-  private Connector createConnector(ConnectionConfig config) {
+  private Connector createConnector(ConnectorConfig config) {
 
     final CredentialFactory instanceCredentialFactory;
     if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {

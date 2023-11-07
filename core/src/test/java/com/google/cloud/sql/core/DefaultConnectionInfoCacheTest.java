@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
-import com.google.cloud.sql.ConnectionConfig;
 import com.google.cloud.sql.IpType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;

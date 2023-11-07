@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql;
+package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectorConfig;
+import com.google.cloud.sql.IpType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -29,6 +32,7 @@ public class ConnectionConfigTest {
   @Test
   public void testConfigFromProps() {
     final String wantCsqlInstance = "proj:region:inst";
+    final String wantNamedConnector = "my-connection";
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
     final String delegates = wantDelegates.stream().collect(Collectors.joining(","));
@@ -43,6 +47,7 @@ public class ConnectionConfigTest {
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
+    props.setProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY, wantNamedConnector);
     props.setProperty(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY, wantTargetPrincipal);
     props.setProperty(ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY, delegates);
     props.setProperty(ConnectionConfig.ENABLE_IAM_AUTH_PROPERTY, iamAuthN);
@@ -55,19 +60,21 @@ public class ConnectionConfigTest {
     ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
-    assertThat(c.getTargetPrincipal()).isEqualTo(wantTargetPrincipal);
-    assertThat(c.getDelegates()).isEqualTo(wantDelegates);
+    assertThat(c.getNamedConnector()).isEqualTo(wantNamedConnector);
+    assertThat(c.getConnectorConfig().getTargetPrincipal()).isEqualTo(wantTargetPrincipal);
+    assertThat(c.getConnectorConfig().getDelegates()).isEqualTo(wantDelegates);
     assertThat(c.getAuthType()).isEqualTo(AuthType.IAM);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
-    assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
-    assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(c.getConnectorConfig().getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
+    assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 
   @Test
   public void testConfigFromBuilder() {
     final String wantCsqlInstance = "proj:region:inst";
+    final String wantNamedConnector = "my-connection";
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
     final String wantUnixSocket = "/path/to/socket";
@@ -77,27 +84,34 @@ public class ConnectionConfigTest {
     final String wantAdminServicePath = "sqladmin/";
     final String wantUnixSuffix = ".psql.5432";
 
+    ConnectorConfig cc =
+        new ConnectorConfig.Builder()
+            .withTargetPrincipal(wantTargetPrincipal)
+            .withDelegates(wantDelegates)
+            .withAdminRootUrl(wantAdminRootUrl)
+            .withAdminServicePath(wantAdminServicePath)
+            .build();
+
     ConnectionConfig c =
         new ConnectionConfig.Builder()
             .withCloudSqlInstance(wantCsqlInstance)
-            .withTargetPrincipal(wantTargetPrincipal)
-            .withDelegates(wantDelegates)
+            .withNamedConnector(wantNamedConnector)
             .withIpTypes(wantIpTypes)
-            .withUnixSocketPath(wantUnixSocket)
             .withAuthType(wantAuthType)
-            .withAdminRootUrl(wantAdminRootUrl)
-            .withAdminServicePath(wantAdminServicePath)
+            .withUnixSocketPath(wantUnixSocket)
             .withUnixSocketPathSuffix(wantUnixSuffix)
+            .withConnectorConfig(cc)
             .build();
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
-    assertThat(c.getTargetPrincipal()).isEqualTo(wantTargetPrincipal);
-    assertThat(c.getDelegates()).isEqualTo(wantDelegates);
+    assertThat(c.getNamedConnector()).isEqualTo(wantNamedConnector);
+    assertThat(c.getConnectorConfig().getTargetPrincipal()).isEqualTo(wantTargetPrincipal);
+    assertThat(c.getConnectorConfig().getDelegates()).isEqualTo(wantDelegates);
     assertThat(c.getAuthType()).isEqualTo(wantAuthType);
     assertThat(c.getUnixSocketPath()).isEqualTo(wantUnixSocket);
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
-    assertThat(c.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
-    assertThat(c.getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(c.getConnectorConfig().getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
+    assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 }

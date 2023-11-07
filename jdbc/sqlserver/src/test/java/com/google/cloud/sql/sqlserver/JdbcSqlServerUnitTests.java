@@ -18,7 +18,7 @@ package com.google.cloud.sql.sqlserver;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.core.ConnectionConfig;
 import java.io.UnsupportedEncodingException;
 import org.junit.Test;
 import org.junit.runner.RunWith;

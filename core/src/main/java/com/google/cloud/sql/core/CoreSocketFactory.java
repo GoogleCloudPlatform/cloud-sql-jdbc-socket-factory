@@ -16,8 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.cloud.sql.ConnectionConfig;
-
 /**
  * Implementation of informally used Java API to preserve compatibility with older code that uses
  * CoreSocketFactory.
@@ -32,7 +30,7 @@ public final class CoreSocketFactory {
    * Connection property name.
    *
    * @deprecated Use the public API instead.
-   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_INSTANCE_PROPERTY
+   * @see ConnectionConfig#CLOUD_SQL_INSTANCE_PROPERTY
    */
   @Deprecated
   public static final String CLOUD_SQL_INSTANCE_PROPERTY =
@@ -42,7 +40,7 @@ public final class CoreSocketFactory {
    * Delegates property name.
    *
    * @deprecated Use the public API instead.
-   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_DELEGATES_PROPERTY
+   * @see ConnectionConfig#CLOUD_SQL_DELEGATES_PROPERTY
    */
   @Deprecated
   public static final String CLOUD_SQL_DELEGATES_PROPERTY =
@@ -52,7 +50,7 @@ public final class CoreSocketFactory {
    * TargetPrincipal property name.
    *
    * @deprecated Use the public API instead.
-   * @see com.google.cloud.sql.ConnectionConfig#CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY
+   * @see ConnectionConfig#CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY
    */
   @Deprecated
   public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY =
@@ -62,7 +60,7 @@ public final class CoreSocketFactory {
    * IpTypes default property value.
    *
    * @deprecated Use the public API instead.
-   * @see com.google.cloud.sql.ConnectionConfig#DEFAULT_IP_TYPES
+   * @see ConnectionConfig#DEFAULT_IP_TYPES
    */
   @Deprecated public static final String DEFAULT_IP_TYPES = ConnectionConfig.DEFAULT_IP_TYPES;
 

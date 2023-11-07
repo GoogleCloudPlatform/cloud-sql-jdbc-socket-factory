@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.Builder;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 
-import com.google.cloud.sql.ConnectionConfig;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.postgresql.client.SSLMode;

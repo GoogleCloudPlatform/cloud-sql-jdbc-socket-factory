@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.sqlserver;
 
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.core.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;

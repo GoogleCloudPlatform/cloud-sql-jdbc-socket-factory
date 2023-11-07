@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.fail;
 
-import com.google.cloud.sql.ConnectionConfig;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             .withIpTypes("PRIMARY")
             .build();
 
-    Connector c = newConnector(config, DEFAULT_SERVER_PROXY_PORT);
+    Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
     try {
       c.connect(config);
       fail();
@@ -91,14 +91,14 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
     int port = sslServer.start(PRIVATE_IP);
 
-    Connector connector = newConnector(config, port);
+    Connector connector = newConnector(config.getConnectorConfig(), port);
 
     Socket socket = connector.connect(config);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
-  private Connector newConnector(ConnectionConfig config, int port) {
+  private Connector newConnector(ConnectorConfig config, int port) {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     Connector connector =
