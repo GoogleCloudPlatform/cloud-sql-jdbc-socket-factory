@@ -160,6 +160,23 @@ public class ConnectorConfig {
 
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
+      // validate only one GoogleCredentials configuration field set
+      int googleCredsCount = 0;
+      if (googleCredentials != null) {
+        googleCredsCount++;
+      }
+      if (googleCredentialsPath != null) {
+        googleCredsCount++;
+      }
+      if (googleCredentialsSupplier != null) {
+        googleCredsCount++;
+      }
+      if (googleCredsCount > 1) {
+        throw new IllegalStateException(
+            "Invalid configuration, more than one GoogleCredentials field has a value "
+                + "(googleCredentials, googleCredentialsPath, googleCredentialsSupplier)");
+      }
+
       return new ConnectorConfig(
           targetPrincipal,
           delegates,
