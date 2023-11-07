@@ -119,14 +119,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
    */
   @Test
   public void create_successfulPrivateConnection() throws IOException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PRIVATE_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
+        createRegistry(PRIVATE_IP, credentialFactory);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -139,14 +133,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_failOnEmptyTargetPrincipal() throws IOException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
+        createRegistry(PUBLIC_IP, credentialFactory);
     try {
 
       internalConnectorRegistry.connect(
@@ -167,14 +155,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_successfulConnection() throws IOException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
+        createRegistry(PUBLIC_IP, credentialFactory);
 
     Socket socket =
         internalConnectorRegistry.connect(
@@ -188,14 +170,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
+        createRegistry(PUBLIC_IP, credentialFactory);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -262,20 +238,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     CredentialFactory stubCredentialFactory =
         new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli());
 
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactory,
-            port,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
+        createRegistry(PUBLIC_IP, stubCredentialFactory);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -292,19 +256,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
       throws InterruptedException, IOException {
     CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", null);
 
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactory,
-            port,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
+        createRegistry(PUBLIC_IP, stubCredentialFactory);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -328,19 +281,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
     CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
 
-    FakeSslServer sslServer = new FakeSslServer();
-    int port = sslServer.start(PUBLIC_IP);
-
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactory,
-            port,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
+        createRegistry(PUBLIC_IP, stubCredentialFactory);
     assertThrows(
         RuntimeException.class,
         () ->
@@ -369,6 +311,16 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     assertThrows(
         IllegalStateException.class,
         () -> InternalConnectorRegistry.setApplicationName("sample-app"));
+  }
+
+  private InternalConnectorRegistry createRegistry(
+      String ipType, CredentialFactory credentialFactory) throws InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start(ipType);
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    return new InternalConnectorRegistry(
+        clientKeyPair, factory, credentialFactory, port, TEST_MAX_REFRESH_MS, defaultExecutor);
   }
 
   private String readLine(Socket socket) throws IOException {
