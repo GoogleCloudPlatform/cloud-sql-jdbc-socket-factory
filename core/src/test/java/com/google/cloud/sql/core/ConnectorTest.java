@@ -103,6 +103,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     Connector connector =
         new Connector(
+            config,
             factory.create(credentialFactory.create(), config),
             credentialFactory,
             defaultExecutor,

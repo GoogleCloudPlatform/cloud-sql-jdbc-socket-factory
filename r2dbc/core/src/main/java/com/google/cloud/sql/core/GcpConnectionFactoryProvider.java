@@ -28,7 +28,6 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +43,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<String> IP_TYPES = Option.valueOf("IP_TYPES");
   public static final Option<Boolean> ENABLE_IAM_AUTH = Option.valueOf("ENABLE_IAM_AUTH");
   public static final Option<String> DELEGATES = Option.valueOf("DELEGATES");
+  public static final Option<String> NAMED_CONNECTOR = Option.valueOf("NAMED_CONNECTOR");
   public static final Option<String> TARGET_PRINCIPAL = Option.valueOf("TARGET_PRINCIPAL");
   public static final Option<String> ADMIN_ROOT_URL = Option.valueOf("ADMIN_ROOT_URL");
   public static final Option<String> ADMIN_SERVICE_PATH = Option.valueOf("ADMIN_SERVICE_PATH");
@@ -103,6 +103,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
       delegates = Collections.emptyList();
     }
     final String targetPrincipal = (String) connectionFactoryOptions.getValue(TARGET_PRINCIPAL);
+    final String namedConnector = (String) connectionFactoryOptions.getValue(NAMED_CONNECTOR);
 
     final String adminRootUrl = (String) connectionFactoryOptions.getValue(ADMIN_ROOT_URL);
     final String adminServicePath = (String) connectionFactoryOptions.getValue(ADMIN_SERVICE_PATH);
@@ -114,6 +115,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
             .withCloudSqlInstance(cloudSqlInstance)
             .withAuthType(enableIamAuth ? AuthType.IAM : AuthType.PASSWORD)
             .withIpTypes(ipTypes)
+            .withNamedConnector(namedConnector)
             .withConnectorConfig(
                 new ConnectorConfig.Builder()
                     .withTargetPrincipal(targetPrincipal)
@@ -122,42 +124,31 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                     .withAdminServicePath(adminServicePath)
                     .build())
             .build();
-    try {
-      // Precompute SSL Data to trigger the initial refresh to happen immediately,
-      // and ensure enableIAMAuth is set correctly.
-      InternalConnectorRegistry.getInstance().getConnectionMetadata(config);
+    // Precompute SSL Data to trigger the initial refresh to happen immediately,
+    // and ensure enableIAMAuth is set correctly.
+    InternalConnectorRegistry.getInstance().getConnectionMetadata(config);
 
-      String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
-      if (socket != null) {
-        return unixSocketConnectionFactory(optionBuilder, socket);
-      }
-
-      Function<SslContextBuilder, SslContextBuilder> sslFunction =
-          sslContextBuilder -> {
-            // Execute in a default scheduler to prevent it from blocking event loop
-            ConnectionMetadata connectionMetadata =
-                Mono.fromSupplier(
-                        () -> {
-                          try {
-                            return InternalConnectorRegistry.getInstance()
-                                .getConnectionMetadata(config);
-                          } catch (IOException e) {
-                            throw new RuntimeException(e);
-                          }
-                        })
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .share()
-                    .block();
-            sslContextBuilder.keyManager(connectionMetadata.getKeyManagerFactory());
-            sslContextBuilder.trustManager(connectionMetadata.getTrustManagerFactory());
-            sslContextBuilder.protocols("TLSv1.2");
-
-            return sslContextBuilder;
-          };
-      return tcpSocketConnectionFactory(config, optionBuilder, sslFunction);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
+    if (socket != null) {
+      return unixSocketConnectionFactory(optionBuilder, socket);
     }
+
+    Function<SslContextBuilder, SslContextBuilder> sslFunction =
+        sslContextBuilder -> {
+          // Execute in a default scheduler to prevent it from blocking event loop
+          ConnectionMetadata connectionMetadata =
+              Mono.fromSupplier(
+                      () -> InternalConnectorRegistry.getInstance().getConnectionMetadata(config))
+                  .subscribeOn(Schedulers.boundedElastic())
+                  .share()
+                  .block();
+          sslContextBuilder.keyManager(connectionMetadata.getKeyManagerFactory());
+          sslContextBuilder.trustManager(connectionMetadata.getTrustManagerFactory());
+          sslContextBuilder.protocols("TLSv1.2");
+
+          return sslContextBuilder;
+        };
+    return tcpSocketConnectionFactory(config, optionBuilder, sslFunction);
   }
 
   @Override

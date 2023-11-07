@@ -56,8 +56,9 @@ public final class InternalConnectorRegistry {
   private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static InternalConnectorRegistry internalConnectorRegistry;
   private final ListenableFuture<KeyPair> localKeyPair;
-  private final ConcurrentHashMap<ConnectorConfig, Connector> connectors =
+  private final ConcurrentHashMap<ConnectorConfig, Connector> unnamedConnectors =
       new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Connector> namedConnectors = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactory credentialFactory;
   private final int serverProxyPort;
@@ -109,6 +110,18 @@ public final class InternalConnectorRegistry {
     return internalConnectorRegistry;
   }
 
+  /**
+   * Calls shutdown on the singleton and removes the singleton. After calling shutdownInstance(),
+   * the next call to getInstance() will start a new singleton instance.
+   */
+  public static synchronized void shutdownInstance() {
+    if (internalConnectorRegistry != null) {
+      InternalConnectorRegistry old = internalConnectorRegistry;
+      internalConnectorRegistry = null;
+      old.shutdown();
+    }
+  }
+
   // TODO(kvg): Figure out better executor to use for testing
   @VisibleForTesting
   // Returns a listenable, scheduled executor that exits upon shutdown.
@@ -128,15 +141,20 @@ public final class InternalConnectorRegistry {
   }
 
   /**
-   * Creates a socket representing a connection to a Cloud SQL instance.
+   * Internal use only: Creates a socket representing a connection to a Cloud SQL instance.
    *
    * <p>Depending on the given properties, it may return either a SSL Socket or a Unix Socket.
    *
-   * @param config Configuration used to configure the connection.
+   * @param config used to configure the connection.
    * @return the newly created Socket.
    * @throws IOException if error occurs during socket creation.
    */
   public Socket connect(ConnectionConfig config) throws IOException, InterruptedException {
+    if (config.getNamedConnector() != null) {
+      Connector connector = getNamedConnector(config.getNamedConnector());
+      return connector.connect(config.withConnectorConfig(connector.getConfig()));
+    }
+
     // Validate parameters
     Preconditions.checkArgument(
         config.getCloudSqlInstance() != null,
@@ -146,7 +164,15 @@ public final class InternalConnectorRegistry {
     return getConnector(config).connect(config);
   }
 
-  public ConnectionMetadata getConnectionMetadata(ConnectionConfig config) throws IOException {
+  /** Internal use only: Returns ConnectionMetadata for a connection. */
+  public ConnectionMetadata getConnectionMetadata(ConnectionConfig config) {
+    if (config.getNamedConnector() != null) {
+      Connector connector = getNamedConnector(config.getNamedConnector());
+      return connector
+          .getConnection(config.withConnectorConfig(connector.getConfig()))
+          .getConnectionMetadata(refreshTimeoutMs);
+    }
+
     return getConnector(config).getConnection(config).getConnectionMetadata(refreshTimeoutMs);
   }
 
@@ -228,7 +254,7 @@ public final class InternalConnectorRegistry {
   }
 
   private Connector getConnector(ConnectionConfig config) {
-    return connectors.computeIfAbsent(
+    return unnamedConnectors.computeIfAbsent(
         config.getConnectorConfig(), k -> createConnector(config.getConnectorConfig()));
   }
 
@@ -255,6 +281,7 @@ public final class InternalConnectorRegistry {
         connectionInfoRepositoryFactory.create(credential, config);
 
     return new Connector(
+        config,
         adminApi,
         instanceCredentialFactory,
         executor,
@@ -262,5 +289,39 @@ public final class InternalConnectorRegistry {
         MIN_REFRESH_DELAY_MS,
         refreshTimeoutMs,
         serverProxyPort);
+  }
+
+  /** Register the configuration for a named connector. */
+  public void register(String name, ConnectorConfig config) {
+    if (this.namedConnectors.containsKey(name)) {
+      throw new IllegalArgumentException("Named connection " + name + " exists.");
+    }
+    this.namedConnectors.put(name, createConnector(config));
+  }
+
+  /** Close a named connector, stopping the refresh process and removing it from the registry. */
+  public void close(String name) {
+    Connector connector = namedConnectors.remove(name);
+    if (connector == null) {
+      throw new IllegalArgumentException("Named connection " + name + " does not exist.");
+    }
+    connector.close();
+  }
+
+  /** Shutdown all connectors and remove the singleton instance. */
+  public void shutdown() {
+    this.unnamedConnectors.forEach((key, c) -> c.close());
+    this.unnamedConnectors.clear();
+    this.namedConnectors.forEach((key, c) -> c.close());
+    this.namedConnectors.clear();
+    this.executor.shutdown();
+  }
+
+  private Connector getNamedConnector(String name) {
+    Connector connector = namedConnectors.get(name);
+    if (connector == null) {
+      throw new IllegalArgumentException("Named connection " + name + " does not exist.");
+    }
+    return connector;
   }
 }

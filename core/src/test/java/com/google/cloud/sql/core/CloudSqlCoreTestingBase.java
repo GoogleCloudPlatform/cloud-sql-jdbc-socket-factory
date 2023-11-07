@@ -145,6 +145,10 @@ public class CloudSqlCoreTestingBase {
   }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
+    return fakeSuccessHttpTransport(certDuration, null);
+  }
+
+  HttpTransport fakeSuccessHttpTransport(Duration certDuration, String baseUrl) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -152,6 +156,9 @@ public class CloudSqlCoreTestingBase {
         return new MockLowLevelHttpRequest() {
           @Override
           public LowLevelHttpResponse execute() throws IOException {
+            if (baseUrl != null && !url.startsWith(baseUrl)) {
+              throw new RuntimeException("url " + url + " does not start with baseUrl " + baseUrl);
+            }
             MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
             if (method.equals("GET") && url.contains("connectSettings")) {
               ConnectSettings settings =

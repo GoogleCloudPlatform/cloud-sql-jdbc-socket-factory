@@ -585,6 +585,68 @@ public class DefaultConnectionInfoCacheTest {
         () -> connectionInfoCache.getConnectionMetadata(TEST_TIMEOUT_MS));
   }
 
+  @Test
+  public void testClosedCloudSqlInstanceDataThrowsException() throws Exception {
+    TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
+    // initialize instance after mocks are set up
+    DefaultConnectionInfoCache instance =
+        new DefaultConnectionInfoCache(
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
+            instanceDataSupplier,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+    instance.close();
+
+    assertThrows(
+        IllegalStateException.class, () -> instance.getConnectionMetadata(TEST_TIMEOUT_MS));
+    assertThrows(IllegalStateException.class, () -> instance.forceRefresh());
+  }
+
+  @Test
+  public void testClosedCloudSqlInstanceDataStopsRefreshTasks() throws Exception {
+    ConnectionInfo initialData =
+        new ConnectionInfo(
+            null, new SslData(null, null, null), Instant.now().plus(1, ChronoUnit.HOURS));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition refresh0 = new PauseCondition();
+
+    DefaultConnectionInfoCache instance =
+        new DefaultConnectionInfoCache(
+            new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
+            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
+              int c = refreshCount.get();
+              if (c == 0) {
+                refresh0.pause();
+              }
+              refreshCount.incrementAndGet();
+              return Futures.immediateFuture(initialData);
+            },
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+
+    // Wait for the first refresh attempt to complete.
+    refresh0.proceed();
+    refresh0.waitForPauseToEnd(TEST_TIMEOUT_MS);
+
+    // Assert that refresh gets instance data before it is closed
+    refresh0.waitForCondition(() -> refreshCount.get() == 1, TEST_TIMEOUT_MS);
+
+    // Assert that the next refresh task is scheduled in the future
+    assertThat(instance.getNext().isDone()).isFalse();
+
+    // Close the instance
+    instance.close();
+
+    // Assert that the next refresh task is canceled
+    assertThat(instance.getNext().isDone()).isTrue();
+    assertThat(instance.getNext().isCancelled()).isTrue();
+  }
+
   private ListeningScheduledExecutorService newTestExecutor() {
     ScheduledThreadPoolExecutor executor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2);
