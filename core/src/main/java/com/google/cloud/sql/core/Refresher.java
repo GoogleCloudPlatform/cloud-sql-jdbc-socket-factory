@@ -36,23 +36,23 @@ class Refresher {
 
   private final ListeningScheduledExecutorService executor;
 
-  private final Object instanceDataGuard = new Object();
+  private final Object connectionInfoGuard = new Object();
   private final AsyncRateLimiter rateLimiter;
 
   private final RefreshCalculator refreshCalculator = new RefreshCalculator();
   private final Supplier<ListenableFuture<ConnectionInfo>> refreshOperation;
   private final String name;
 
-  @GuardedBy("instanceDataGuard")
+  @GuardedBy("connectionInfoGuard")
   private ListenableFuture<ConnectionInfo> current;
 
-  @GuardedBy("instanceDataGuard")
+  @GuardedBy("connectionInfoGuard")
   private ListenableFuture<ConnectionInfo> next;
 
-  @GuardedBy("instanceDataGuard")
+  @GuardedBy("connectionInfoGuard")
   private boolean refreshRunning;
 
-  @GuardedBy("instanceDataGuard")
+  @GuardedBy("connectionInfoGuard")
   private Throwable currentRefreshFailure;
 
   /**
@@ -72,7 +72,7 @@ class Refresher {
     this.executor = executor;
     this.refreshOperation = refreshOperation;
     this.rateLimiter = rateLimiter;
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       forceRefresh();
       this.current = this.next;
     }
@@ -91,14 +91,14 @@ class Refresher {
    */
   ConnectionInfo getConnectionInfo(long timeoutMs) {
     ListenableFuture<ConnectionInfo> f;
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       f = current;
     }
 
     try {
       return f.get(timeoutMs, TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
-      synchronized (instanceDataGuard) {
+      synchronized (connectionInfoGuard) {
         if (currentRefreshFailure != null) {
           throw new RuntimeException(
               String.format(
@@ -127,7 +127,7 @@ class Refresher {
    * been completed.
    */
   void forceRefresh() {
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       // Don't force a refresh until the current refresh operation
       // has produced a successful refresh.
       if (refreshRunning) {
@@ -159,7 +159,7 @@ class Refresher {
   private ListenableFuture<ConnectionInfo> startRefreshAttempt() {
     // As soon as we begin submitting refresh attempts to the executor, mark a refresh
     // as "in-progress" so that subsequent forceRefresh() calls balk until this one completes.
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       refreshRunning = true;
     }
 
@@ -202,7 +202,7 @@ class Refresher {
                   .truncatedTo(ChronoUnit.SECONDS)
                   .toString()));
 
-      synchronized (instanceDataGuard) {
+      synchronized (connectionInfoGuard) {
         // Refresh completed successfully, reset forceRefreshRunning.
         refreshRunning = false;
         currentRefreshFailure = null;
@@ -224,7 +224,7 @@ class Refresher {
           String.format(
               "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.", name),
           e);
-      synchronized (instanceDataGuard) {
+      synchronized (connectionInfoGuard) {
         currentRefreshFailure = e;
         next = this.startRefreshAttempt();
 
@@ -235,13 +235,13 @@ class Refresher {
   }
 
   ListenableFuture<ConnectionInfo> getNext() {
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       return this.next;
     }
   }
 
   ListenableFuture<ConnectionInfo> getCurrent() {
-    synchronized (instanceDataGuard) {
+    synchronized (connectionInfoGuard) {
       return this.current;
     }
   }
