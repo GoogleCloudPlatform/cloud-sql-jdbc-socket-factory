@@ -105,7 +105,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         new Connector(
             config,
             factory,
-            credentialFactory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config),
             defaultExecutor,
             clientKeyPair,
             10,

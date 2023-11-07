@@ -31,7 +31,7 @@ public class CredentialFactoryProviderTest {
 
   @Test
   public void returnsDefaultCredentialFactory() {
-    CredentialFactory factory = CredentialFactoryProvider.getCredentialFactory();
+    CredentialFactory factory = new CredentialFactoryProvider().getDefaultCredentialFactory();
     assertThat(factory).isInstanceOf(ApplicationDefaultCredentialFactory.class);
   }
 
@@ -39,30 +39,28 @@ public class CredentialFactoryProviderTest {
   public void returnsUserSpecifiedCredentialFactory() {
     System.setProperty(
         CredentialFactory.CREDENTIAL_FACTORY_PROPERTY, StubCredentialFactory.class.getName());
-    CredentialFactory factory = CredentialFactoryProvider.getCredentialFactory();
+    CredentialFactory factory = new CredentialFactoryProvider().getDefaultCredentialFactory();
     assertThat(factory).isInstanceOf(StubCredentialFactory.class);
     System.clearProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
   }
 
   @Test
   public void getInstanceCredentialFactory_returnsDefaultWithNoSettings() {
-    CredentialFactory wantFactory = CredentialFactoryProvider.getCredentialFactory();
     ConnectorConfig config = new ConnectorConfig.Builder().build();
 
-    CredentialFactory got =
-        CredentialFactoryProvider.getInstanceCredentialFactory(wantFactory, config);
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
 
-    assertThat(got).isSameInstanceAs(wantFactory);
+    assertThat(got).isSameInstanceAs(f.getDefaultCredentialFactory());
   }
 
   @Test
   public void getInstanceCredentialFactory_returnsFileCredentialFactory() {
     String path = FileCredentialFactoryTest.class.getResource("/sample-credentials.json").getFile();
-    CredentialFactory wantFactory = CredentialFactoryProvider.getCredentialFactory();
     ConnectorConfig config = new ConnectorConfig.Builder().withGoogleCredentialsPath(path).build();
 
-    CredentialFactory got =
-        CredentialFactoryProvider.getInstanceCredentialFactory(wantFactory, config);
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
 
     assertThat(got.getCredentials().getQuotaProjectId()).isEqualTo("sample");
   }
@@ -70,11 +68,10 @@ public class CredentialFactoryProviderTest {
   @Test
   public void getInstanceCredentialFactory_returnsConstantCredentialFactory() {
     GoogleCredentials c = GoogleCredentials.create(null);
-    CredentialFactory wantFactory = CredentialFactoryProvider.getCredentialFactory();
     ConnectorConfig config = new ConnectorConfig.Builder().withGoogleCredentials(c).build();
 
-    CredentialFactory got =
-        CredentialFactoryProvider.getInstanceCredentialFactory(wantFactory, config);
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
 
     assertThat(got.getCredentials()).isSameInstanceAs(c);
   }
@@ -82,12 +79,11 @@ public class CredentialFactoryProviderTest {
   @Test
   public void getInstanceCredentialFactory_returnsSupplierCredentialFactory() {
     GoogleCredentials c = GoogleCredentials.create(null);
-    CredentialFactory wantFactory = CredentialFactoryProvider.getCredentialFactory();
     ConnectorConfig config =
         new ConnectorConfig.Builder().withGoogleCredentialsSupplier(() -> c).build();
 
-    CredentialFactory got =
-        CredentialFactoryProvider.getInstanceCredentialFactory(wantFactory, config);
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
 
     assertThat(got.getCredentials()).isSameInstanceAs(c);
   }
@@ -95,15 +91,14 @@ public class CredentialFactoryProviderTest {
   @Test
   public void getInstanceCredentialFactory_returnsImpersonatingCredentialFactory() {
     GoogleCredentials c = new GoogleCredentials(null);
-    CredentialFactory wantFactory = CredentialFactoryProvider.getCredentialFactory();
     ConnectorConfig config =
         new ConnectorConfig.Builder()
             .withGoogleCredentials(c)
             .withTargetPrincipal("test@project.iam.googleapis.com")
             .build();
 
-    CredentialFactory got =
-        CredentialFactoryProvider.getInstanceCredentialFactory(wantFactory, config);
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
 
     assertThat(got).isInstanceOf(ServiceAccountImpersonatingCredentialFactory.class);
     ServiceAccountImpersonatingCredentialFactory impersonatedFactory =

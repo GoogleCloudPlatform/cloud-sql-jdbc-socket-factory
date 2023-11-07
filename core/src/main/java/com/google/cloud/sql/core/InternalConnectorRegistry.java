@@ -59,7 +59,7 @@ public final class InternalConnectorRegistry {
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Connector> namedConnectors = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
-  private final CredentialFactory credentialFactory;
+  private final CredentialFactoryProvider credentialFactoryProvider;
   private final int serverProxyPort;
   private final long refreshTimeoutMs;
   private final ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory;
@@ -76,12 +76,12 @@ public final class InternalConnectorRegistry {
   InternalConnectorRegistry(
       ListenableFuture<KeyPair> localKeyPair,
       ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
-      CredentialFactory credentialFactory,
+      CredentialFactoryProvider credentialFactoryProvider,
       int serverProxyPort,
       long refreshTimeoutMs,
       ListeningScheduledExecutorService executor) {
     this.connectionInfoRepositoryFactory = connectionInfoRepositoryFactory;
-    this.credentialFactory = credentialFactory;
+    this.credentialFactoryProvider = credentialFactoryProvider;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -93,7 +93,7 @@ public final class InternalConnectorRegistry {
     if (internalConnectorRegistry == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
-      CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
+      CredentialFactoryProvider credentialFactoryProvider = new CredentialFactoryProvider();
 
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
@@ -101,7 +101,7 @@ public final class InternalConnectorRegistry {
           new InternalConnectorRegistry(
               executor.submit(InternalConnectorRegistry::generateRsaKeyPair),
               new DefaultConnectionInfoRepositoryFactory(getUserAgents()),
-              credentialFactory,
+              credentialFactoryProvider,
               DEFAULT_SERVER_PROXY_PORT,
               InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
               executor);
@@ -260,7 +260,7 @@ public final class InternalConnectorRegistry {
   private Connector createConnector(ConnectorConfig config) {
 
     CredentialFactory instanceCredentialFactory =
-        CredentialFactoryProvider.getInstanceCredentialFactory(credentialFactory, config);
+        credentialFactoryProvider.getInstanceCredentialFactory(config);
 
     return new Connector(
         config,

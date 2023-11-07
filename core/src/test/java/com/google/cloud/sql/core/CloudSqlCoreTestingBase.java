@@ -33,7 +33,6 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -71,7 +70,8 @@ public class CloudSqlCoreTestingBase {
 
   static final String SERVER_MESSAGE = "HELLO";
 
-  final CredentialFactory credentialFactory = new StubCredentialFactory();
+  final CredentialFactoryProvider stubCredentialFactoryProvider =
+      new CredentialFactoryProvider(new StubCredentialFactory());
 
   ListenableFuture<KeyPair> clientKeyPair;
 

@@ -25,8 +25,22 @@ import com.google.cloud.sql.CredentialFactory;
  */
 class CredentialFactoryProvider {
 
+  private final CredentialFactory defaultCredentialFactory;
+
+  CredentialFactoryProvider() {
+    this.defaultCredentialFactory = createDefaultCredentialFactory();
+  }
+
+  CredentialFactoryProvider(CredentialFactory defaultCredentialFactory) {
+    this.defaultCredentialFactory = defaultCredentialFactory;
+  }
+
+  CredentialFactory getDefaultCredentialFactory() {
+    return defaultCredentialFactory;
+  }
+
   /** Returns a CredentialFactory instance based on whether CREDENTIAL_FACTORY_PROPERTY is set. */
-  static CredentialFactory getCredentialFactory() {
+  private static CredentialFactory createDefaultCredentialFactory() {
     String userCredentialFactoryClassName =
         System.getProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
 
@@ -47,8 +61,7 @@ class CredentialFactoryProvider {
     return credentialFactory;
   }
 
-  static CredentialFactory getInstanceCredentialFactory(
-      CredentialFactory defaultCredentialFactory, ConnectorConfig config) {
+  CredentialFactory getInstanceCredentialFactory(ConnectorConfig config) {
 
     CredentialFactory instanceCredentialFactory;
     if (config.getGoogleCredentialsSupplier() != null) {
@@ -59,7 +72,7 @@ class CredentialFactoryProvider {
     } else if (config.getGoogleCredentialsPath() != null) {
       instanceCredentialFactory = new FileCredentialFactory(config.getGoogleCredentialsPath());
     } else {
-      instanceCredentialFactory = defaultCredentialFactory;
+      instanceCredentialFactory = getDefaultCredentialFactory();
     }
 
     // Validate targetPrincipal and delegates
