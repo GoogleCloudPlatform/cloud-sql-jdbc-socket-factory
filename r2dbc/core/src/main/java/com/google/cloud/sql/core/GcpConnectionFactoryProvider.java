@@ -47,6 +47,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<String> TARGET_PRINCIPAL = Option.valueOf("TARGET_PRINCIPAL");
   public static final Option<String> ADMIN_ROOT_URL = Option.valueOf("ADMIN_ROOT_URL");
   public static final Option<String> ADMIN_SERVICE_PATH = Option.valueOf("ADMIN_SERVICE_PATH");
+  public static final Option<String> GOOGLE_CREDENTIALS_PATH =
+      Option.valueOf("GOOGLE_CREDENTIALS_PATH");
 
   /**
    * Creates a ConnectionFactory that creates an SSL connection over a TCP socket, using
@@ -107,6 +109,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
 
     final String adminRootUrl = (String) connectionFactoryOptions.getValue(ADMIN_ROOT_URL);
     final String adminServicePath = (String) connectionFactoryOptions.getValue(ADMIN_SERVICE_PATH);
+    final String googleCredentialsPath =
+        (String) connectionFactoryOptions.getValue(GOOGLE_CREDENTIALS_PATH);
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
     String cloudSqlInstance = (String) connectionFactoryOptions.getRequiredValue(HOST);
@@ -122,6 +126,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                     .withDelegates(delegates)
                     .withAdminRootUrl(adminRootUrl)
                     .withAdminServicePath(adminServicePath)
+                    .withGoogleCredentialsPath(googleCredentialsPath)
                     .build())
             .build();
     // Precompute SSL Data to trigger the initial refresh to happen immediately,

@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -260,29 +259,12 @@ public final class InternalConnectorRegistry {
 
   private Connector createConnector(ConnectorConfig config) {
 
-    final CredentialFactory instanceCredentialFactory;
-    if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {
-      instanceCredentialFactory =
-          new ServiceAccountImpersonatingCredentialFactory(
-              credentialFactory, config.getTargetPrincipal(), config.getDelegates());
-    } else {
-      if (config.getDelegates() != null && !config.getDelegates().isEmpty()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Connection property %s must be when %s is set.",
-                ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY,
-                ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY));
-      }
-      instanceCredentialFactory = credentialFactory;
-    }
-
-    HttpRequestInitializer credential = instanceCredentialFactory.create();
-    DefaultConnectionInfoRepository adminApi =
-        connectionInfoRepositoryFactory.create(credential, config);
+    CredentialFactory instanceCredentialFactory =
+        CredentialFactoryProvider.getInstanceCredentialFactory(credentialFactory, config);
 
     return new Connector(
         config,
-        adminApi,
+        connectionInfoRepositoryFactory,
         instanceCredentialFactory,
         executor,
         localKeyPair,

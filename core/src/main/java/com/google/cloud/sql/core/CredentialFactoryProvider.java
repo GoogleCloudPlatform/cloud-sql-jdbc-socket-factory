@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 
 /**
@@ -44,5 +45,41 @@ class CredentialFactoryProvider {
       credentialFactory = new ApplicationDefaultCredentialFactory();
     }
     return credentialFactory;
+  }
+
+  static CredentialFactory getInstanceCredentialFactory(
+      CredentialFactory defaultCredentialFactory, ConnectorConfig config) {
+
+    CredentialFactory instanceCredentialFactory;
+    if (config.getGoogleCredentialsSupplier() != null) {
+      instanceCredentialFactory =
+          new SupplierCredentialFactory(config.getGoogleCredentialsSupplier());
+    } else if (config.getGoogleCredentials() != null) {
+      instanceCredentialFactory = new ConstantCredentialFactory(config.getGoogleCredentials());
+    } else if (config.getGoogleCredentialsPath() != null) {
+      instanceCredentialFactory = new FileCredentialFactory(config.getGoogleCredentialsPath());
+    } else {
+      instanceCredentialFactory = defaultCredentialFactory;
+    }
+
+    // Validate targetPrincipal and delegates
+    if (config.getTargetPrincipal() == null
+        && config.getDelegates() != null
+        && !config.getDelegates().isEmpty()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Connection property %s must be when %s is set.",
+              ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY,
+              ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY));
+    }
+
+    // If targetPrincipal and delegates are set, then
+    if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {
+      instanceCredentialFactory =
+          new ServiceAccountImpersonatingCredentialFactory(
+              instanceCredentialFactory, config.getTargetPrincipal(), config.getDelegates());
+    }
+
+    return instanceCredentialFactory;
   }
 }

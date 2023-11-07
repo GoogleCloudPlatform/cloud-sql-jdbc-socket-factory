@@ -48,7 +48,7 @@ class Connector {
 
   Connector(
       ConnectorConfig config,
-      DefaultConnectionInfoRepository adminApi,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
       CredentialFactory instanceCredentialFactory,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> localKeyPair,
@@ -56,7 +56,9 @@ class Connector {
       long refreshTimeoutMs,
       int serverProxyPort) {
     this.config = config;
-    this.adminApi = adminApi;
+
+    this.adminApi =
+        connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;

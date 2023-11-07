@@ -49,6 +49,7 @@ public class ConnectionConfig {
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final List<IpType> DEFAULT_IP_TYPE_LIST =
       Arrays.asList(IpType.PUBLIC, IpType.PRIVATE);
+  public static final String CLOUD_SQL_GOOGLE_CREDENTIALS_PATH = "cloudSqlGoogleCredentialsPath";
 
   private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
@@ -89,6 +90,8 @@ public class ConnectionConfig {
         props.getProperty(ConnectionConfig.CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY);
     final String unixSocketPathSuffix =
         props.getProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY);
+    final String googleCredentialsPath =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_GOOGLE_CREDENTIALS_PATH);
     return new ConnectionConfig(
         csqlInstanceName,
         namedConnection,
@@ -101,6 +104,7 @@ public class ConnectionConfig {
             .withDelegates(delegates)
             .withAdminRootUrl(adminRootUrl)
             .withAdminServicePath(adminServicePath)
+            .withGoogleCredentialsPath(googleCredentialsPath)
             .build());
   }
 
