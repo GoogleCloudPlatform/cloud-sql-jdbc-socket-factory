@@ -516,6 +516,10 @@ config.setConnectionTimeout(10000); // 10s
 HikariDataSource connectionPool = new HikariDataSource(config);
 ```
 
+## Configuration Reference
+
+- See [Configuration Reference](configuration.md)
+
 ## Examples
 
 Examples for using the Cloud SQL JDBC Connector for SQL Server can be found by

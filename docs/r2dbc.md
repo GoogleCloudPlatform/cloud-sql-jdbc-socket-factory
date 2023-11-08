@@ -311,6 +311,9 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     // ...more connection options
     .build;
 ```
+## Configuration Reference
+
+- See [Configuration Reference](configuration.md)
 
 ## Examples
 
