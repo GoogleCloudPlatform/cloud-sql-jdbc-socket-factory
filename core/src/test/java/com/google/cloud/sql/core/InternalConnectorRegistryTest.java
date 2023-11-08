@@ -65,7 +65,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
         new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            3307,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     try {
       internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
@@ -97,7 +102,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
     InternalConnectorRegistry internalConnectorRegistry =
         new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            3307,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     try {
       internalConnectorRegistry.connect(
           new ConnectionConfig.Builder()
@@ -121,7 +131,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_successfulPrivateConnection() throws IOException, InterruptedException {
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PRIVATE_IP, credentialFactory);
+        createRegistry(PRIVATE_IP, stubCredentialFactoryProvider);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -135,7 +145,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_failOnEmptyTargetPrincipal() throws IOException, InterruptedException {
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactory);
+        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     try {
 
       internalConnectorRegistry.connect(
@@ -157,7 +167,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_successfulConnection() throws IOException, InterruptedException {
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactory);
+        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
 
     Socket socket =
         internalConnectorRegistry.connect(
@@ -172,7 +182,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactory);
+        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -188,7 +198,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
     InternalConnectorRegistry internalConnectorRegistry =
         new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            3307,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     try {
       // Use a different project to get Api Not Enabled Error.
       internalConnectorRegistry.connect(
@@ -213,7 +228,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
         new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
     InternalConnectorRegistry internalConnectorRegistry =
         new InternalConnectorRegistry(
-            clientKeyPair, factory, credentialFactory, 3307, TEST_MAX_REFRESH_MS, defaultExecutor);
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            3307,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
     try {
       // Use a different instance to simulate incorrect permissions.
       internalConnectorRegistry.connect(
@@ -236,11 +256,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
-    CredentialFactory stubCredentialFactory =
-        new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli());
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(
+            new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli()));
 
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactory);
+        createRegistry(PUBLIC_IP, credentialFactoryProvider);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -255,10 +276,11 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void supportsCustomCredentialFactoryWithNoExpirationTime()
       throws InterruptedException, IOException {
-    CredentialFactory stubCredentialFactory = new StubCredentialFactory("foo", null);
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
 
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactory);
+        createRegistry(PUBLIC_IP, credentialFactoryProvider);
     Socket socket =
         internalConnectorRegistry.connect(
             new ConnectionConfig.Builder()
@@ -281,9 +303,11 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     }
 
     CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(stubCredentialFactory);
 
     InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactory);
+        createRegistry(PUBLIC_IP, credentialFactoryProvider);
     assertThrows(
         RuntimeException.class,
         () ->
@@ -323,7 +347,8 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
     // The mock AdminApi only responds to requests where the URL starts with a custom admin api
     // root url: https://googleapis.example.com/sqladmin/
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory, baseUrl);
+    InternalConnectorRegistry registry =
+        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider, baseUrl);
 
     // Register a ConnectionConfig named "my-connection" that uses the custom admin api root url.
     ConnectorConfig configWithDetails =
@@ -354,7 +379,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void registerConnectionFailsWithDuplicateName() throws InterruptedException {
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     // Register a ConnectionConfig named "my-connection"
     ConnectorConfig configWithDetails = new ConnectorConfig.Builder().build();
     registry.register("my-connection", configWithDetails);
@@ -368,7 +393,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   @Test
   public void registerConnectionFailsWithDuplicateNameAndDifferentConfig()
       throws InterruptedException {
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
 
     ConnectorConfig config =
         new ConnectorConfig.Builder().withTargetPrincipal("joe@test.com").build();
@@ -383,14 +408,14 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void closeNamedConnectionFailsWhenNotFound() throws InterruptedException {
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     // Assert that you can't close a connection that doesn't exist
     assertThrows(IllegalArgumentException.class, () -> registry.close("my-connection"));
   }
 
   @Test
   public void connectFailsOnClosedNamedConnection() throws InterruptedException {
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     // Register a ConnectionConfig named "my-connection"
     ConnectorConfig configWithDetails = new ConnectorConfig.Builder().build();
     registry.register("my-connection", configWithDetails);
@@ -411,7 +436,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void connectFailsOnUnknownNamedConnection() throws InterruptedException {
-    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, credentialFactory);
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
 
     // Attempt and fail to connect using the cloudSqlNamedConnection connection property
     Properties connProps = new Properties();
@@ -423,12 +448,12 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   }
 
   private InternalConnectorRegistry createRegistry(
-      String ipType, CredentialFactory credentialFactory) throws InterruptedException {
+      String ipType, CredentialFactoryProvider credentialFactory) throws InterruptedException {
     return createRegistry(ipType, credentialFactory, null);
   }
 
   private InternalConnectorRegistry createRegistry(
-      String ipType, CredentialFactory credentialFactory, String baseUrl)
+      String ipType, CredentialFactoryProvider credentialFactory, String baseUrl)
       throws InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     int port = sslServer.start(ipType);

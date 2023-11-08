@@ -18,6 +18,9 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ImpersonatedCredentials;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,7 +31,7 @@ public class CredentialFactoryProviderTest {
 
   @Test
   public void returnsDefaultCredentialFactory() {
-    CredentialFactory factory = CredentialFactoryProvider.getCredentialFactory();
+    CredentialFactory factory = new CredentialFactoryProvider().getDefaultCredentialFactory();
     assertThat(factory).isInstanceOf(ApplicationDefaultCredentialFactory.class);
   }
 
@@ -36,8 +39,74 @@ public class CredentialFactoryProviderTest {
   public void returnsUserSpecifiedCredentialFactory() {
     System.setProperty(
         CredentialFactory.CREDENTIAL_FACTORY_PROPERTY, StubCredentialFactory.class.getName());
-    CredentialFactory factory = CredentialFactoryProvider.getCredentialFactory();
+    CredentialFactory factory = new CredentialFactoryProvider().getDefaultCredentialFactory();
     assertThat(factory).isInstanceOf(StubCredentialFactory.class);
     System.clearProperty(CredentialFactory.CREDENTIAL_FACTORY_PROPERTY);
+  }
+
+  @Test
+  public void getInstanceCredentialFactory_returnsDefaultWithNoSettings() {
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
+
+    assertThat(got).isSameInstanceAs(f.getDefaultCredentialFactory());
+  }
+
+  @Test
+  public void getInstanceCredentialFactory_returnsFileCredentialFactory() {
+    String path = FileCredentialFactoryTest.class.getResource("/sample-credentials.json").getFile();
+    ConnectorConfig config = new ConnectorConfig.Builder().withGoogleCredentialsPath(path).build();
+
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
+
+    assertThat(got.getCredentials().getQuotaProjectId()).isEqualTo("sample");
+  }
+
+  @Test
+  public void getInstanceCredentialFactory_returnsConstantCredentialFactory() {
+    GoogleCredentials c = GoogleCredentials.create(null);
+    ConnectorConfig config = new ConnectorConfig.Builder().withGoogleCredentials(c).build();
+
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
+
+    assertThat(got.getCredentials()).isSameInstanceAs(c);
+  }
+
+  @Test
+  public void getInstanceCredentialFactory_returnsSupplierCredentialFactory() {
+    GoogleCredentials c = GoogleCredentials.create(null);
+    ConnectorConfig config =
+        new ConnectorConfig.Builder().withGoogleCredentialsSupplier(() -> c).build();
+
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
+
+    assertThat(got.getCredentials()).isSameInstanceAs(c);
+  }
+
+  @Test
+  public void getInstanceCredentialFactory_returnsImpersonatingCredentialFactory() {
+    GoogleCredentials c = new GoogleCredentials(null);
+    ConnectorConfig config =
+        new ConnectorConfig.Builder()
+            .withGoogleCredentials(c)
+            .withTargetPrincipal("test@project.iam.googleapis.com")
+            .build();
+
+    CredentialFactoryProvider f = new CredentialFactoryProvider();
+    CredentialFactory got = f.getInstanceCredentialFactory(config);
+
+    assertThat(got).isInstanceOf(ServiceAccountImpersonatingCredentialFactory.class);
+    ServiceAccountImpersonatingCredentialFactory impersonatedFactory =
+        (ServiceAccountImpersonatingCredentialFactory) got;
+
+    assertThat(impersonatedFactory.getCredentials()).isInstanceOf(ImpersonatedCredentials.class);
+    ImpersonatedCredentials ic = (ImpersonatedCredentials) impersonatedFactory.getCredentials();
+    assertThat(ic.getAccount()).isEqualTo("test@project.iam.googleapis.com");
+    assertThat(ic.getSourceCredentials()).isSameInstanceAs(c);
   }
 }

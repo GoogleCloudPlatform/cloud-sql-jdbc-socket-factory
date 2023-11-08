@@ -29,7 +29,6 @@ import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
-import com.google.cloud.sql.CredentialFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -63,7 +62,8 @@ public class GcpConnectionFactoryProviderTest {
 
   static final String PUBLIC_IP = "127.0.0.1";
   static final String PRIVATE_IP = "10.0.0.1";
-  private final CredentialFactory credentialFactory = new StubCredentialFactory();
+  final CredentialFactoryProvider stubCredentialFactoryProvider =
+      new CredentialFactoryProvider(new StubCredentialFactory());
   ListeningScheduledExecutorService defaultExecutor;
   ListenableFuture<KeyPair> clientKeyPair;
   InternalConnectorRegistry internalConnectorRegistryStub;
@@ -181,7 +181,7 @@ public class GcpConnectionFactoryProviderTest {
         new InternalConnectorRegistry(
             clientKeyPair,
             repo,
-            credentialFactory,
+            stubCredentialFactoryProvider,
             3307,
             InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
             defaultExecutor);

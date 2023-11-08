@@ -16,8 +16,10 @@
 
 package com.google.cloud.sql;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Objects;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * ConnectorConfig is an immutable configuration value object that holds the entire configuration of
@@ -30,16 +32,25 @@ public class ConnectorConfig {
   private final List<String> delegates;
   private final String adminRootUrl;
   private final String adminServicePath;
+  private final Supplier<GoogleCredentials> googleCredentialsSupplier;
+  private final GoogleCredentials googleCredentials;
+  private final String googleCredentialsPath;
 
   private ConnectorConfig(
       String targetPrincipal,
       List<String> delegates,
       String adminRootUrl,
-      String adminServicePath) {
+      String adminServicePath,
+      Supplier<GoogleCredentials> googleCredentialsSupplier,
+      GoogleCredentials googleCredentials,
+      String googleCredentialsPath) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
     this.adminServicePath = adminServicePath;
+    this.googleCredentialsSupplier = googleCredentialsSupplier;
+    this.googleCredentials = googleCredentials;
+    this.googleCredentialsPath = googleCredentialsPath;
   }
 
   @Override
@@ -54,12 +65,22 @@ public class ConnectorConfig {
     return Objects.equal(targetPrincipal, that.targetPrincipal)
         && Objects.equal(delegates, that.delegates)
         && Objects.equal(adminRootUrl, that.adminRootUrl)
-        && Objects.equal(adminServicePath, that.adminServicePath);
+        && Objects.equal(adminServicePath, that.adminServicePath)
+        && Objects.equal(googleCredentialsSupplier, that.googleCredentialsSupplier)
+        && Objects.equal(googleCredentials, that.googleCredentials)
+        && Objects.equal(googleCredentialsPath, that.googleCredentialsPath);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(targetPrincipal, delegates, adminRootUrl, adminServicePath);
+    return Objects.hashCode(
+        targetPrincipal,
+        delegates,
+        adminRootUrl,
+        adminServicePath,
+        googleCredentialsSupplier,
+        googleCredentials,
+        googleCredentialsPath);
   }
 
   public String getTargetPrincipal() {
@@ -78,6 +99,18 @@ public class ConnectorConfig {
     return adminServicePath;
   }
 
+  public Supplier<GoogleCredentials> getGoogleCredentialsSupplier() {
+    return googleCredentialsSupplier;
+  }
+
+  public GoogleCredentials getGoogleCredentials() {
+    return googleCredentials;
+  }
+
+  public String getGoogleCredentialsPath() {
+    return googleCredentialsPath;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -85,9 +118,28 @@ public class ConnectorConfig {
     private List<String> delegates;
     private String adminRootUrl;
     private String adminServicePath;
+    private Supplier<GoogleCredentials> googleCredentialsSupplier;
+    private GoogleCredentials googleCredentials;
+    private String googleCredentialsPath;
 
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
+      return this;
+    }
+
+    public Builder withGoogleCredentialsSupplier(
+        Supplier<GoogleCredentials> googleCredentialsSupplier) {
+      this.googleCredentialsSupplier = googleCredentialsSupplier;
+      return this;
+    }
+
+    public Builder withGoogleCredentials(GoogleCredentials googleCredentials) {
+      this.googleCredentials = googleCredentials;
+      return this;
+    }
+
+    public Builder withGoogleCredentialsPath(String googleCredentialsPath) {
+      this.googleCredentialsPath = googleCredentialsPath;
       return this;
     }
 
@@ -108,7 +160,31 @@ public class ConnectorConfig {
 
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
-      return new ConnectorConfig(targetPrincipal, delegates, adminRootUrl, adminServicePath);
+      // validate only one GoogleCredentials configuration field set
+      int googleCredsCount = 0;
+      if (googleCredentials != null) {
+        googleCredsCount++;
+      }
+      if (googleCredentialsPath != null) {
+        googleCredsCount++;
+      }
+      if (googleCredentialsSupplier != null) {
+        googleCredsCount++;
+      }
+      if (googleCredsCount > 1) {
+        throw new IllegalStateException(
+            "Invalid configuration, more than one GoogleCredentials field has a value "
+                + "(googleCredentials, googleCredentialsPath, googleCredentialsSupplier)");
+      }
+
+      return new ConnectorConfig(
+          targetPrincipal,
+          delegates,
+          adminRootUrl,
+          adminServicePath,
+          googleCredentialsSupplier,
+          googleCredentials,
+          googleCredentialsPath);
     }
   }
 }

@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -60,7 +59,7 @@ public final class InternalConnectorRegistry {
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Connector> namedConnectors = new ConcurrentHashMap<>();
   private final ListeningScheduledExecutorService executor;
-  private final CredentialFactory credentialFactory;
+  private final CredentialFactoryProvider credentialFactoryProvider;
   private final int serverProxyPort;
   private final long refreshTimeoutMs;
   private final ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory;
@@ -77,12 +76,12 @@ public final class InternalConnectorRegistry {
   InternalConnectorRegistry(
       ListenableFuture<KeyPair> localKeyPair,
       ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
-      CredentialFactory credentialFactory,
+      CredentialFactoryProvider credentialFactoryProvider,
       int serverProxyPort,
       long refreshTimeoutMs,
       ListeningScheduledExecutorService executor) {
     this.connectionInfoRepositoryFactory = connectionInfoRepositoryFactory;
-    this.credentialFactory = credentialFactory;
+    this.credentialFactoryProvider = credentialFactoryProvider;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -94,7 +93,7 @@ public final class InternalConnectorRegistry {
     if (internalConnectorRegistry == null) {
       logger.info("First Cloud SQL connection, generating RSA key pair.");
 
-      CredentialFactory credentialFactory = CredentialFactoryProvider.getCredentialFactory();
+      CredentialFactoryProvider credentialFactoryProvider = new CredentialFactoryProvider();
 
       ListeningScheduledExecutorService executor = getDefaultExecutor();
 
@@ -102,7 +101,7 @@ public final class InternalConnectorRegistry {
           new InternalConnectorRegistry(
               executor.submit(InternalConnectorRegistry::generateRsaKeyPair),
               new DefaultConnectionInfoRepositoryFactory(getUserAgents()),
-              credentialFactory,
+              credentialFactoryProvider,
               DEFAULT_SERVER_PROXY_PORT,
               InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
               executor);
@@ -260,29 +259,12 @@ public final class InternalConnectorRegistry {
 
   private Connector createConnector(ConnectorConfig config) {
 
-    final CredentialFactory instanceCredentialFactory;
-    if (config.getTargetPrincipal() != null && !config.getTargetPrincipal().isEmpty()) {
-      instanceCredentialFactory =
-          new ServiceAccountImpersonatingCredentialFactory(
-              credentialFactory, config.getTargetPrincipal(), config.getDelegates());
-    } else {
-      if (config.getDelegates() != null && !config.getDelegates().isEmpty()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Connection property %s must be when %s is set.",
-                ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY,
-                ConnectionConfig.CLOUD_SQL_DELEGATES_PROPERTY));
-      }
-      instanceCredentialFactory = credentialFactory;
-    }
-
-    HttpRequestInitializer credential = instanceCredentialFactory.create();
-    DefaultConnectionInfoRepository adminApi =
-        connectionInfoRepositoryFactory.create(credential, config);
+    CredentialFactory instanceCredentialFactory =
+        credentialFactoryProvider.getInstanceCredentialFactory(config);
 
     return new Connector(
         config,
-        adminApi,
+        connectionInfoRepositoryFactory,
         instanceCredentialFactory,
         executor,
         localKeyPair,
