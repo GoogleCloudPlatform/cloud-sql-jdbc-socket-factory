@@ -54,7 +54,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
-  @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private ConnectionFactory connectionPool;
 

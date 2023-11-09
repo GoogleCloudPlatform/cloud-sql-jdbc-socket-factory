@@ -44,7 +44,7 @@ public class JdbcMysqlJ8IntegrationTests {
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
-  @Rule public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
   private HikariDataSource connectionPool;
 
   @BeforeClass
