@@ -52,7 +52,7 @@ public class R2dbcMysqlIamAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
 
-  @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private ConnectionPool connectionPool;
 

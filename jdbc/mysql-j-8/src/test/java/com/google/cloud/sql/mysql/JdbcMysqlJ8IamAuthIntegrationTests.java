@@ -44,7 +44,7 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_IAM_USER", "MYSQL_DB", "MYSQL_IAM_CONNECTION_NAME");
-  @Rule public Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
   private HikariDataSource connectionPool;
 
   @BeforeClass

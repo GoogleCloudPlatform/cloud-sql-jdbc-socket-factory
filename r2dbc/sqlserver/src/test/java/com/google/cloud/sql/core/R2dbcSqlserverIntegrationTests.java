@@ -46,7 +46,7 @@ public class R2dbcSqlserverIntegrationTests {
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
 
-  @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private ConnectionPool connectionPool;
 

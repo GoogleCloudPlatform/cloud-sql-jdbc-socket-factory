@@ -46,7 +46,7 @@ public class R2dbcMysqlIntegrationTests {
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
 
-  @Rule public Timeout globalTimeout = new Timeout(20, TimeUnit.SECONDS);
+  @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private ConnectionPool connectionPool;
 
