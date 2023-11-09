@@ -208,9 +208,9 @@ gcp-releasetool==1.16.0 \
     --hash=sha256:27bf19d2e87aaa884096ff941aa3c592c482be3d6a2bfe6f06afafa6af2353e3 \
     --hash=sha256:a316b197a543fd036209d0caba7a8eb4d236d8e65381c80cbc6d7efaa7606d63
     # via -r requirements.in
-google-api-core==2.13.0 \
-    --hash=sha256:44ed591f6c3a0c1ac7a91867d2b3841f92839f860f3d3fe26c464dbd50f97094 \
-    --hash=sha256:abc1da067c9026c6cd15dfbd4f6ad07735a62eeadc541d1cc296314447fc3aad
+google-api-core==2.13.1 \
+    --hash=sha256:e24c3a20799df3ee08a10d1d44d7df2d2ef2bc986cca80edfd982f3e415edd20 \
+    --hash=sha256:f2bcb43c98329f558dd13b3cd745cef04f07a107446f4f2bfc69adf09b02b994
     # via
     #   google-cloud-core
     #   google-cloud-storage
