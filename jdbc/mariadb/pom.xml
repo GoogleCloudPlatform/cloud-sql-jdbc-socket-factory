@@ -135,7 +135,7 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -168,7 +168,7 @@
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </dependency>
       </dependencies>
     </profile>
@@ -182,7 +182,7 @@
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </dependency>
       </dependencies>
     </profile>
