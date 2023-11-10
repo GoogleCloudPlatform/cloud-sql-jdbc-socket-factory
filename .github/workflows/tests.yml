@@ -125,7 +125,26 @@ jobs:
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
       shell: bash
-    
+    - name: FlakyBot (Linux)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Linux' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot -o flakybot -s -L
+        chmod +x ./flakybot
+        ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+    - name: FlakyBot (Windows)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Windows' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot.exe -o flakybot.exe -s -L
+        ./flakybot.exe --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+    - name: FlakyBot (macOS)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'macOS' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot-darwin-amd64 -o flakybot -s -L
+        chmod +x ./flakybot
+        ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   unit-e2e-java8:
     # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
     if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
@@ -235,7 +254,26 @@ jobs:
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
       shell: bash
-    
+    - name: FlakyBot (Linux)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Linux' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot -o flakybot -s -L
+        chmod +x ./flakybot
+        ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+    - name: FlakyBot (Windows)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Windows' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot.exe -o flakybot.exe -s -L
+        ./flakybot.exe --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+    - name: FlakyBot (macOS)
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'macOS' && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot-darwin-amd64 -o flakybot -s -L
+        chmod +x ./flakybot
+        ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   graalvm:
     # run job on periodic (schedule) event
     if: "${{ github.event_name == 'schedule' }}"
@@ -332,3 +370,10 @@ jobs:
     - name: Check Coverage
       run: .kokoro/check_coverage.sh
       shell: bash
+    - name: FlakyBot
+      # only run flakybot on periodic (schedule) and continuous (push) events
+      if: ${{ (github.event_name == 'schedule' || github.event_name == 'push')  && always() }}
+      run: |
+        curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot -o flakybot -s -L
+        chmod +x ./flakybot
+        ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
