@@ -28,15 +28,17 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultConnectionInfoCacheConcurrencyTest {
 
   public static final int DEFAULT_WAIT = 200;
+
   private static final Logger logger =
-      Logger.getLogger(DefaultConnectionInfoCacheConcurrencyTest.class.getName());
+      LoggerFactory.getLogger(DefaultConnectionInfoCacheConcurrencyTest.class);
   public static final int FORCE_REFRESH_COUNT = 10;
 
   private static class TestCredentialFactory implements CredentialFactory, HttpRequestInitializer {
@@ -98,7 +100,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     int brokenLoop = 0;
     for (DefaultConnectionInfoCache i : caches) {
       if (i.getCurrent().isDone() && i.getNext().isDone()) {
-        logger.warning("No future scheduled thing for instance " + i.getInstanceName());
+        logger.debug("No future scheduled thing for instance " + i.getInstanceName());
         brokenLoop++;
       }
     }
@@ -120,7 +122,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
               logger.info("Exception in force refresh loop.");
             }
           }
-          logger.info("Done spamming");
+          logger.debug("Done spamming");
         };
 
     Thread t = new Thread(forceRefreshRepeat);

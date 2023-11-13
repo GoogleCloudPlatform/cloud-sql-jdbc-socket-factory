@@ -48,16 +48,17 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
 class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
   private static final Logger logger =
-      Logger.getLogger(DefaultConnectionInfoRepository.class.getName());
+      LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
@@ -149,7 +150,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                             .orElse(x509Certificate.getNotAfter().toInstant());
                   }
 
-                  logger.fine(String.format("[%s] INSTANCE DATA DONE", instanceName));
+                  logger.debug(String.format("[%s] INSTANCE DATA DONE", instanceName));
 
                   return new ConnectionInfo(
                       Futures.getDone(metadataFuture),
@@ -159,7 +160,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                 executor);
 
     done.addListener(
-        () -> logger.fine(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
+        () -> logger.debug(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
     return done;
   }
 
@@ -226,7 +227,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         Certificate instanceCaCertificate =
             createCertificate(instanceMetadata.getServerCaCert().getCert());
 
-        logger.fine(String.format("[%s] METADATA DONE", instanceName));
+        logger.debug(String.format("[%s] METADATA DONE", instanceName));
 
         return new InstanceMetadata(ipAddrs, instanceCaCertificate);
       } catch (CertificateException ex) {
@@ -297,7 +298,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           ex);
     }
 
-    logger.fine(String.format("[%s %d] CERT DONE", instanceName, Thread.currentThread().getId()));
+    logger.debug(String.format("[%s %d] CERT DONE", instanceName, Thread.currentThread().getId()));
 
     return ephemeralCertificate;
   }
@@ -343,14 +344,14 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                   + " using IAM authentication",
               ex);
         } else {
-          logger.warning("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
+          logger.debug("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
           sslContext = SSLContext.getInstance("TLSv1.2");
         }
       }
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
-      logger.fine(
+      logger.debug(
           String.format("[%s %d] SSL CONTEXT", instanceName, Thread.currentThread().getId()));
 
       return new SslData(sslContext, kmf, tmf);

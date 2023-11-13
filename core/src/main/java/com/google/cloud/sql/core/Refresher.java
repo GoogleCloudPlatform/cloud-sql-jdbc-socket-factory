@@ -27,12 +27,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Handles periodic refresh operations for an instance. */
 class Refresher {
-  private static final Logger logger = Logger.getLogger(Refresher.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(Refresher.class);
 
   private final ListeningScheduledExecutorService executor;
 
@@ -147,7 +147,7 @@ class Refresher {
         next.cancel(false);
       }
 
-      logger.fine(
+      logger.debug(
           String.format(
               "[%s] Force Refresh: the next refresh operation was cancelled."
                   + " Scheduling new refresh operation immediately.",
@@ -172,11 +172,11 @@ class Refresher {
       refreshRunning = true;
     }
 
-    logger.fine(String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", name));
+    logger.debug(String.format("[%s] Refresh Operation: Acquiring rate limiter permit.", name));
     ListenableFuture<?> delay = rateLimiter.acquireAsync(executor);
     delay.addListener(
         () ->
-            logger.fine(
+            logger.debug(
                 String.format("[%s] Refresh Operation: Rate limiter permit acquired.", name)),
         executor);
 
@@ -195,14 +195,14 @@ class Refresher {
       // This will throw an exception if the refresh attempt has failed.
       ConnectionInfo info = connectionInfoFuture.get();
 
-      logger.fine(
+      logger.debug(
           String.format(
               "[%s] Refresh Operation: Completed refresh with new certificate expiration at %s.",
               name, info.getExpiration().toString()));
       long secondsToRefresh =
           refreshCalculator.calculateSecondsUntilNextRefresh(Instant.now(), info.getExpiration());
 
-      logger.fine(
+      logger.debug(
           String.format(
               "[%s] Refresh Operation: Next operation scheduled at %s.",
               name,
@@ -229,8 +229,7 @@ class Refresher {
       }
 
     } catch (ExecutionException | InterruptedException e) {
-      logger.log(
-          Level.FINE,
+      logger.info(
           String.format(
               "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.", name),
           e);

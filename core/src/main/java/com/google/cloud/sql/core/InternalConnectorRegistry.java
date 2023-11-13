@@ -35,7 +35,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * InternalConnectorRegistry keeps track of connectors. This class should not be used directly, but
@@ -46,7 +47,7 @@ import java.util.logging.Logger;
 public final class InternalConnectorRegistry {
 
   static final long DEFAULT_MAX_REFRESH_MS = 30000;
-  private static final Logger logger = Logger.getLogger(InternalConnectorRegistry.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(InternalConnectorRegistry.class);
 
   static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int RSA_KEY_SIZE = 2048;
@@ -91,7 +92,7 @@ public final class InternalConnectorRegistry {
   /** Returns the {@link InternalConnectorRegistry} singleton. */
   public static synchronized InternalConnectorRegistry getInstance() {
     if (internalConnectorRegistry == null) {
-      logger.info("First Cloud SQL connection, generating RSA key pair.");
+      logger.debug("First Cloud SQL connection, generating RSA key pair.");
 
       CredentialFactoryProvider credentialFactoryProvider = new CredentialFactoryProvider();
 

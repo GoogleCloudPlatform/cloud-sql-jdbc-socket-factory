@@ -124,8 +124,8 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-      <version>1.16.0</version>
-    </dependency>
+        <version>1.16.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -284,6 +284,18 @@
       <version>1.70</version>
       <scope>test</scope>
     </dependency>
+    <!-- Logging -->
+    <dependency> 
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.9</version>
+    </dependency>
+    <dependency> 
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.3.11</version>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -300,6 +312,16 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- This dependency is not used at compile-time. -->
+            <dependency>ch.qos.logback:logback-classic</dependency>
+          </usedDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -26,13 +26,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.KeyPair;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class Connector {
-  private static final Logger logger = Logger.getLogger(Connector.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(Connector.class);
 
   private final DefaultConnectionInfoRepository adminApi;
   private final CredentialFactory instanceCredentialFactory;
@@ -80,7 +81,7 @@ class Connector {
     } else if (System.getenv("CLOUD_SQL_FORCE_UNIX_SOCKET") != null) {
       // If the deprecated env var is set, warn and use `/cloudsql/INSTANCE_CONNECTION_NAME`
       // A socket factory is provided at this path for GAE, GCF, and Cloud Run
-      logger.warning(
+      logger.debug(
           String.format(
               "\"CLOUD_SQL_FORCE_UNIX_SOCKET\" env var has been deprecated. Please use"
                   + " '%s=\"/cloudsql/INSTANCE_CONNECTION_NAME\"' property in your JDBC url"
@@ -100,7 +101,7 @@ class Connector {
       if (unixPathSuffix != null && !unixSocket.endsWith(unixPathSuffix)) {
         unixSocket = unixSocket + unixPathSuffix;
       }
-      logger.info(
+      logger.debug(
           String.format(
               "Connecting to Cloud SQL instance [%s] via unix socket at %s.",
               config.getCloudSqlInstance(), unixSocket));

@@ -13,7 +13,8 @@
     "com.coveo:fmt-maven-plugin", 
     "com.zaxxer:HikariCP", 
     "com.google.googlejavaformat:google-java-format",
-    "com.google.errorprone:error_prone_core"
+    "com.google.errorprone:error_prone_core",
+    "ch.qos.logback:logback-classic"
   ],
   "packageRules": [
     {

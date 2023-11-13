@@ -26,7 +26,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultAccessTokenSupplier produces access tokens using credentials produced by this connector's
@@ -34,7 +35,7 @@ import java.util.logging.Logger;
  */
 class DefaultAccessTokenSupplier implements AccessTokenSupplier {
 
-  private static final Logger logger = Logger.getLogger(DefaultAccessTokenSupplier.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(DefaultAccessTokenSupplier.class);
 
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
@@ -91,7 +92,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                   || "".equals(credentials.getAccessToken().getTokenValue())) {
 
                 String errorMessage = "Access Token has length of zero";
-                logger.warning(errorMessage);
+                logger.debug(errorMessage);
 
                 throw new IllegalStateException(errorMessage);
               }
@@ -118,7 +119,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                 if (downscoped.getAccessToken() == null
                     || "".equals(downscoped.getAccessToken().getTokenValue())) {
                   String errorMessage = "Downscoped access token has length of zero";
-                  logger.warning(errorMessage);
+                  logger.debug(errorMessage);
 
                   throw new IllegalStateException(
                       errorMessage
@@ -161,7 +162,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                 + nowFormat
                 + " Expiration = "
                 + expirationFormat;
-        logger.warning(errorMessage);
+        logger.debug(errorMessage);
         throw new IllegalStateException(errorMessage);
       }
     }
