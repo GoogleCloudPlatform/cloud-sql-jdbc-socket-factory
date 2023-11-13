@@ -160,7 +160,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-sqladmin</artifactId>
-      <version>v1beta4-rev20231029-2.0.0</version>
+      <version>v1beta4-rev20231108-2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
