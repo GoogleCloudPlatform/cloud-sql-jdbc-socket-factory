@@ -182,6 +182,20 @@ No updates to the database connection pool are required.
 Existing open connections in the pool will continue to work until they are
 closed. New connections will be established using the new configuration.
 
+### Reset The Connector Registry
+
+The application may shut down the ConnectorRegistry. This closes all existing
+named and unnamed connectors, and stops internal background threads.
+
+```java
+ConnectorRegistry.reset();
+```
+
+After calling `ConnectorRegistry.reset()`, the next attempt to connect to a
+database using a SocketFactory or R2DBC ConnectionFactory, or
+to `ConnectorRegistry.register()` will start a new connector registry, restart
+the background threads, and create a new connector.
+
 ### Shutdown The Connector Registry
 
 The application may shut down the ConnectorRegistry. This closes all existing
@@ -191,10 +205,9 @@ named and unnamed connectors, and stops internal background threads.
 ConnectorRegistry.shutdown();
 ```
 
-After calling `ConnectorRegistry.shutdown()`, the next attempt to connect to a
-database using a SocketFactory or R2DBC ConnectionFactory, or
-to `ConnectorRegistry.register()` will start a new connector registry, restart
-the background threads, and create a new connector.
+After calling `ConnectorRegistry.shutdown()`, subsequent attempts to connect to
+a database using a SocketFactory or R2DBC ConnectionFactory, or
+to `ConnectorRegistry.register()` will fail, throwing `IllegalStateException`.
 
 ## Configuring Google Credentials
 

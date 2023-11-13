@@ -50,6 +50,14 @@ public final class ConnectorRegistry {
   }
 
   /**
+   * Resets the entire CloudSQL JDBC Connector. This will stop all background threads. The next
+   * attempt to open a connection or register a configuration will start a new ConnectorRegistry.
+   */
+  public static void reset() {
+    InternalConnectorRegistry.resetInstance();
+  }
+
+  /**
    * Adds an external application name to the user agent string for tracking. This is known to be
    * used by the spring-cloud-gcp project.
    *
