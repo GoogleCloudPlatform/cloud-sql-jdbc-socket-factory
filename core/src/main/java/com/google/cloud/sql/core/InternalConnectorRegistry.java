@@ -55,6 +55,7 @@ public final class InternalConnectorRegistry {
   private static final String version = getVersion();
   private static final long MIN_REFRESH_DELAY_MS = 30000; // Minimum 30 seconds between refresh.
   private static InternalConnectorRegistry internalConnectorRegistry;
+  private static boolean shutdown = false;
   private final ListenableFuture<KeyPair> localKeyPair;
   private final ConcurrentHashMap<ConnectorConfig, Connector> unnamedConnectors =
       new ConcurrentHashMap<>();
@@ -91,6 +92,10 @@ public final class InternalConnectorRegistry {
 
   /** Returns the {@link InternalConnectorRegistry} singleton. */
   public static synchronized InternalConnectorRegistry getInstance() {
+    if (shutdown) {
+      throw new IllegalStateException("ConnectorRegistry was shut down.");
+    }
+
     if (internalConnectorRegistry == null) {
       logger.debug("First Cloud SQL connection, generating RSA key pair.");
 
@@ -114,12 +119,22 @@ public final class InternalConnectorRegistry {
    * Calls shutdown on the singleton and removes the singleton. After calling shutdownInstance(),
    * the next call to getInstance() will start a new singleton instance.
    */
-  public static synchronized void shutdownInstance() {
+  public static synchronized void resetInstance() {
     if (internalConnectorRegistry != null) {
       InternalConnectorRegistry old = internalConnectorRegistry;
       internalConnectorRegistry = null;
       old.shutdown();
+      resetUserAgent();
     }
+  }
+
+  /**
+   * Calls shutdown on the singleton and removes the singleton. After calling shutdownInstance(),
+   * the next call to getInstance() will start a new singleton instance.
+   */
+  public static synchronized void shutdownInstance() {
+    shutdown = true;
+    resetInstance();
   }
 
   // TODO(kvg): Figure out better executor to use for testing
