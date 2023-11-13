@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Properties;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Postgres {@link SocketFactory} that establishes a secure connection to a Cloud SQL instance
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
  */
 public class SocketFactory extends javax.net.SocketFactory {
 
-  private static final Logger logger = Logger.getLogger(SocketFactory.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(SocketFactory.class);
 
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
@@ -50,7 +51,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   public SocketFactory(Properties info) {
     String oldInstanceKey = info.getProperty(DEPRECATED_SOCKET_ARG);
     if (oldInstanceKey != null) {
-      logger.warning(
+      logger.debug(
           String.format(
               "The '%s' property has been deprecated. Please update your postgres driver and use"
                   + "the  '%s' property in your JDBC url instead.",

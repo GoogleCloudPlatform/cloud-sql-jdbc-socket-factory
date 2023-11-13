@@ -198,10 +198,6 @@
           <excludes>
             <exclude>**/*IntegrationTests</exclude>
           </excludes>
-          <systemPropertyVariables>
-            <!-- Disable logging in test. Comment out the following line to re-enable logging. -->
-            <java.util.logging.config.file />
-          </systemPropertyVariables>
         </configuration>
       </plugin>
 
