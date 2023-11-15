@@ -62,14 +62,14 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
     Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
     try {
-      c.connect(config);
+      c.connect(config, TEST_MAX_REFRESH_MS);
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
     }
 
     try {
-      c.connect(config2);
+      c.connect(config2, TEST_MAX_REFRESH_MS);
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
@@ -93,7 +93,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
     Connector connector = newConnector(config.getConnectorConfig(), port);
 
-    Socket socket = connector.connect(config);
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }

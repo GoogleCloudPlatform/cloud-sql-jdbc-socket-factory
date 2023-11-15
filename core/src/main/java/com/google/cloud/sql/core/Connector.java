@@ -43,7 +43,6 @@ class Connector {
 
   private final ConcurrentHashMap<ConnectionConfig, DefaultConnectionInfoCache> instances =
       new ConcurrentHashMap<>();
-  private final long refreshTimeoutMs;
   private final int serverProxyPort;
   private final ConnectorConfig config;
 
@@ -64,7 +63,6 @@ class Connector {
     this.executor = executor;
     this.localKeyPair = localKeyPair;
     this.minRefreshDelayMs = minRefreshDelayMs;
-    this.refreshTimeoutMs = refreshTimeoutMs;
     this.serverProxyPort = serverProxyPort;
   }
 
@@ -92,7 +90,7 @@ class Connector {
     return null; // if unset, default to null
   }
 
-  Socket connect(ConnectionConfig config) throws IOException {
+  Socket connect(ConnectionConfig config, long timeoutMs) throws IOException {
     // Connect using the specified Unix socket
     String unixSocket = getUnixSocketArg(config);
     String unixPathSuffix = config.getUnixSocketPathSuffix();
@@ -112,12 +110,12 @@ class Connector {
     DefaultConnectionInfoCache instance = getConnection(config);
     try {
 
-      SSLSocket socket = instance.createSslSocket(this.refreshTimeoutMs);
+      SSLSocket socket = instance.createSslSocket(timeoutMs);
 
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
 
-      String instanceIp = instance.getConnectionMetadata(refreshTimeoutMs).getPreferredIpAddress();
+      String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
 
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
       socket.startHandshake();

@@ -183,7 +183,7 @@ public class GcpConnectionFactoryProviderTest {
             repo,
             stubCredentialFactoryProvider,
             3307,
-            InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
+            InternalConnectorRegistry.DEFAULT_CONNECT_TIMEOUT_MS,
             defaultExecutor);
   }
 }
