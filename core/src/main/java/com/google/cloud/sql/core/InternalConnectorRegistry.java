@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class InternalConnectorRegistry {
 
-  static final long DEFAULT_MAX_REFRESH_MS = 30000;
+  static final long DEFAULT_CONNECT_TIMEOUT_MS = 45000; // connect attempt times out after 45 sec
   private static final Logger logger = LoggerFactory.getLogger(InternalConnectorRegistry.class);
 
   static final int DEFAULT_SERVER_PROXY_PORT = 3307;
@@ -63,7 +63,7 @@ public final class InternalConnectorRegistry {
   private final ListeningScheduledExecutorService executor;
   private final CredentialFactoryProvider credentialFactoryProvider;
   private final int serverProxyPort;
-  private final long refreshTimeoutMs;
+  private final long connectTimeoutMs;
   private final ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory;
 
   /**
@@ -80,14 +80,14 @@ public final class InternalConnectorRegistry {
       ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
       CredentialFactoryProvider credentialFactoryProvider,
       int serverProxyPort,
-      long refreshTimeoutMs,
+      long connectTimeoutMs,
       ListeningScheduledExecutorService executor) {
     this.connectionInfoRepositoryFactory = connectionInfoRepositoryFactory;
     this.credentialFactoryProvider = credentialFactoryProvider;
     this.serverProxyPort = serverProxyPort;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
-    this.refreshTimeoutMs = refreshTimeoutMs;
+    this.connectTimeoutMs = connectTimeoutMs;
   }
 
   /** Returns the {@link InternalConnectorRegistry} singleton. */
@@ -109,7 +109,7 @@ public final class InternalConnectorRegistry {
               new DefaultConnectionInfoRepositoryFactory(getUserAgents()),
               credentialFactoryProvider,
               DEFAULT_SERVER_PROXY_PORT,
-              InternalConnectorRegistry.DEFAULT_MAX_REFRESH_MS,
+              DEFAULT_CONNECT_TIMEOUT_MS,
               executor);
     }
     return internalConnectorRegistry;
@@ -167,7 +167,7 @@ public final class InternalConnectorRegistry {
   public Socket connect(ConnectionConfig config) throws IOException, InterruptedException {
     if (config.getNamedConnector() != null) {
       Connector connector = getNamedConnector(config.getNamedConnector());
-      return connector.connect(config.withConnectorConfig(connector.getConfig()));
+      return connector.connect(config.withConnectorConfig(connector.getConfig()), connectTimeoutMs);
     }
 
     // Validate parameters
@@ -176,7 +176,7 @@ public final class InternalConnectorRegistry {
         "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
             + "connection Properties with value in form \"project:region:instance\"");
 
-    return getConnector(config).connect(config);
+    return getConnector(config).connect(config, connectTimeoutMs);
   }
 
   /** Internal use only: Returns ConnectionMetadata for a connection. */
@@ -185,10 +185,10 @@ public final class InternalConnectorRegistry {
       Connector connector = getNamedConnector(config.getNamedConnector());
       return connector
           .getConnection(config.withConnectorConfig(connector.getConfig()))
-          .getConnectionMetadata(refreshTimeoutMs);
+          .getConnectionMetadata(connectTimeoutMs);
     }
 
-    return getConnector(config).getConnection(config).getConnectionMetadata(refreshTimeoutMs);
+    return getConnector(config).getConnection(config).getConnectionMetadata(connectTimeoutMs);
   }
 
   private static KeyPair generateRsaKeyPair() {
@@ -285,7 +285,7 @@ public final class InternalConnectorRegistry {
         executor,
         localKeyPair,
         MIN_REFRESH_DELAY_MS,
-        refreshTimeoutMs,
+        connectTimeoutMs,
         serverProxyPort);
   }
 
