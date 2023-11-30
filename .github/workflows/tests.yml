@@ -45,7 +45,7 @@ jobs:
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
-      uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7.0.0
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -66,14 +66,14 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
 
     - name: Set up JDK
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+      uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
       with:
         distribution: 'zulu'
         java-version: ${{matrix.java-version}}
 
     - id: 'auth'
       name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+      uses: google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591 # v2.0.0
       with:
         workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
@@ -162,7 +162,7 @@ jobs:
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
-      uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7.0.0
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -184,7 +184,7 @@ jobs:
 
     # Set up Java 8 for testing
     - name: Set up JDK 8
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+      uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
       with:
         distribution: 'zulu'
         java-version: '8'
@@ -193,7 +193,7 @@ jobs:
 
     # Set up Java 11 for compilation
     - name: Set up JDK 11
-      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+      uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
       with:
         distribution: 'zulu'
         java-version: '11'
@@ -202,7 +202,7 @@ jobs:
 
     - id: 'auth'
       name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+      uses: google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591 # v2.0.0
       with:
         workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
@@ -287,7 +287,7 @@ jobs:
     steps:
     - name: Remove PR label
       if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
-      uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7.0.0
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -317,7 +317,7 @@ jobs:
 
     - id: 'auth'
       name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+      uses: google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591 # v2.0.0
       with:
         workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
