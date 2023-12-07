@@ -265,9 +265,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AccessToken accessToken = accessTokenOptional.get();
 
       String token = accessToken.getTokenValue();
-      // TODO: remove this once issue with OAuth2 Tokens is resolved.
-      // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
-      request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
+      request.setAccessToken(token);
     }
     GenerateEphemeralCertResponse response;
     try {
