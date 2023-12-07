@@ -25,7 +25,6 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.IpType;
-import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -265,9 +264,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AccessToken accessToken = accessTokenOptional.get();
 
       String token = accessToken.getTokenValue();
-      // TODO: remove this once issue with OAuth2 Tokens is resolved.
-      // See: https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/565
-      request.setAccessToken(CharMatcher.is('.').trimTrailingFrom(token));
+      request.setAccessToken(token);
     }
     GenerateEphemeralCertResponse response;
     try {
