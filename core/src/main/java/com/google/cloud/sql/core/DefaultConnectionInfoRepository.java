@@ -25,7 +25,6 @@ import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.IpType;
-import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
