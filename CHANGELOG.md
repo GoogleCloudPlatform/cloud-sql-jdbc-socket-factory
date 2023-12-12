@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.15.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.15.0...v1.15.1) (2023-12-12)
+
+
+### Bug Fixes
+
+* Adjust default timeouts to accomodate more retries. Fixes [#1695](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1695). ([#1696](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1696)) ([a2dc813](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a2dc81346cd32c6c528757eee22440ec7302fc98))
+
+
+### Dependencies
+
+* Update dependencies for github ([#1701](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1701)) ([6a4e484](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6a4e4845573439113232c90c28d4b79787392a31))
+* Update dependencies for github ([#1706](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1706)) ([db864cc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/db864cc830ecc0f614996f0a0277ed5a6d4d427b))
+* Update dependency com.google.api:gax to v2.38.0 ([#1710](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1710)) ([a11e266](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a11e266ef571bb54022cd6da39e1d9baed75f26c))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20231128-2.0.0 ([#1716](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1716)) ([516ff01](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/516ff019a9af43ec2eff06df4e1cc7a52ab7637c))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20231208-2.0.0 ([#1727](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1727)) ([ba95a98](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ba95a98749a5cc9f0f25b579d60f08dc846fbe53))
+* Update dependency com.google.cloud:google-cloud-shared-config to v1.7.1 ([#1724](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1724)) ([6bce7a1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6bce7a137743447e2e9287850ccd7e1c33d5a3b1))
+* Update dependency cryptography to v41.0.6 [SECURITY] ([#1705](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1705)) ([470b4cd](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/470b4cd6f21da98d31461b4dd8137688415285a5))
+* Update dependency google-cloud-core to v2.4.1 ([#1723](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1723)) ([b3c9cf6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b3c9cf631e5a1ac59d698936d6650e12b9ef2484))
+* Update dependency importlib-metadata to v7 ([#1713](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1713)) ([131dca3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/131dca37afc9c3c93de76a56531d6078bbc04c1c))
+* Update dependency io.projectreactor:reactor-core to v3.6.1 ([#1731](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1731)) ([b7c5cac](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b7c5cac91e957a2bd7b1b5d792157aa607f4b23a))
+* Update dependency io.projectreactor.netty:reactor-netty to v1.1.14 ([#1730](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1730)) ([0465b83](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0465b83f523bc4df2fae6aac4dd534dc162e2f67))
+* Update dependency maven to v3.9.6 ([#1711](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1711)) ([883cf4e](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/883cf4ec2dcd09fffeb2b2515eceeaf537663a80))
+* Update dependency org.apache.maven.plugins:maven-javadoc-plugin to v3.6.3 ([#1714](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1714)) ([00f57fc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/00f57fc79a706ecec565df661ff985af3d7307fc))
+* Update dependency org.checkerframework:checker-qual to v3.41.0 ([#1715](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1715)) ([702b797](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/702b7972eabb8ab5cf478fccca5eb0a63f5aae83))
+* Update dependency org.codehaus.mojo:versions-maven-plugin to v2.16.2 ([#1700](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1700)) ([2089c4f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2089c4f959c0ba0b99e105356a71adcf40492495))
+* Update dependency org.mariadb.jdbc:mariadb-java-client to v3.3.1 ([#1709](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1709)) ([025235b](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/025235bb836185bf2a65329e93aea48c5e85a294))
+* Update dependency org.postgresql:postgresql to v42.7.0 ([#1703](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1703)) ([4fb0347](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4fb0347058301a89a8057406a6cd0a02abc5452b))
+* Update dependency org.postgresql:postgresql to v42.7.1 ([#1718](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1718)) ([88c27ef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/88c27efaefda0dba23629152527a66b6819297e3))
+* Update dependency org.postgresql:r2dbc-postgresql to v1.0.3.RELEASE ([#1732](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1732)) ([349b0f4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/349b0f476fd4f8aa97ca35c0b5ac13f104ade8ed))
+* Update dependency protobuf to v4.25.1 ([#1698](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1698)) ([47e8bd6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/47e8bd6d54993ea440abe20573fb2042bbeb6e41))
+* Update github/codeql-action action to v2.22.7 ([#1699](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1699)) ([895076c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/895076c0d1dcb51a859d72b908d755e212a4e5a6))
+* Update github/codeql-action action to v2.22.9 ([#1720](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1720)) ([145d9de](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/145d9de3086f1301bfbd429db3ce0fc26ba65169))
+* Update google-github-actions/get-secretmanager-secrets action to v2 ([#1726](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1726)) ([568b567](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/568b567232eb908afc591139431e629e2df012db))
+* Update python dependencies for kokoro ([#1702](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1702)) ([6294ad0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6294ad057dc9edbdaa98c2e74d8b677ec01dbbf4))
+* Update python dependencies for kokoro ([#1712](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1712)) ([b5c5bf4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b5c5bf41518eac70bc07209e9eb2af0d6142ebf8))
+* Update python dependencies for kokoro ([#1722](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1722)) ([76ce3c6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/76ce3c633929b0eab5bf74c3908d84a79e6ee878))
+* Update python dependencies for kokoro ([#1725](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1725)) ([e97b687](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e97b687487ffab4d67b7c70ba7d62c3ada2c91ee))
+
 ## [1.15.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.14.1...v1.15.0) (2023-11-14)
 
 
