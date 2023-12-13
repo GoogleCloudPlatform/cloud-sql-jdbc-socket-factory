@@ -50,17 +50,17 @@
     {
       "matchDatasources": ["pypi"],
       "groupName": "python dependencies for kokoro",
-      "commitMessagePrefix": "chore(deps)"
+      "commitMessagePrefix": "chore(deps):"
     },
     {
       "matchManagers": ["github-actions"],
       "groupName": "dependencies for github",
-      "commitMessagePrefix": "chore(deps)"
+      "commitMessagePrefix": "chore(deps):"
     },
     {
       "matchManagers": ["maven"],
       "matchDepTypes": ["test"],
-      "commitMessagePrefix": "chore(deps)"
+      "commitMessagePrefix": "chore(deps):"
     },
     {
       "matchPackagePatterns": [
