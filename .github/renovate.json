@@ -9,6 +9,7 @@
   "dependencyDashboard": true,
   "dependencyDashboardLabels": ["type: process"],
   "semanticCommits": "disabled",
+  "ignorePaths": [".kokoro/requirements.txt"],
   "ignoreDeps": [
     "com.coveo:fmt-maven-plugin", 
     "com.zaxxer:HikariCP", 
@@ -46,11 +47,6 @@
         "^org.postgresql:r2dbc-postgresql"
       ],
       "groupName": "netty and r2dbc dependencies"
-    },
-    {
-      "matchDatasources": ["pypi"],
-      "groupName": "python dependencies for kokoro",
-      "commitMessagePrefix": "chore(deps):"
     },
     {
       "matchManagers": ["github-actions"],
