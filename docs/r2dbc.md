@@ -30,7 +30,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.15.1'
 
 **Note:** Also include the R2DBC Driver for
 MySQL, `io.asyncer:r2dbc-mysql:<LATEST-VERSION>`
-<!-- {x-release-please-end} -->
+<!-- {x-version-update-end} -->
 
 ##### Postgres
 
@@ -53,7 +53,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.15.1'
 
 **Note:** Also include the R2DBC Driver for
 PostgreSQL, `io.r2dbc:r2dbc-postgresql:<LATEST-VERSION>`
-<!-- {x-release-please-end} -->
+<!-- {x-version-update-end} -->
 
 ##### SQL Server
 
@@ -76,7 +76,7 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.15.1'
 
 **Note:** Also include the R2DBC Driver for SQL
 Server, `io.r2dbc:r2dbc-mssql:<LATEST-VERSION>`
-<!-- {x-release-please-end} -->
+<!-- {x-version-update-end} -->
 
 ### Creating the R2DBC URL
 
