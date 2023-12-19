@@ -191,6 +191,16 @@ public final class InternalConnectorRegistry {
     return getConnector(config).getConnection(config).getConnectionMetadata(connectTimeoutMs);
   }
 
+  /** Internal use only: Force refresh the connection info. */
+  public void forceRefresh(ConnectionConfig config) {
+    if (config.getNamedConnector() != null) {
+      Connector connector = getNamedConnector(config.getNamedConnector());
+      connector.getConnection(config.withConnectorConfig(connector.getConfig())).forceRefresh();
+    } else {
+      getConnector(config).getConnection(config).forceRefresh();
+    }
+  }
+
   private static KeyPair generateRsaKeyPair() {
     KeyPairGenerator generator;
     try {

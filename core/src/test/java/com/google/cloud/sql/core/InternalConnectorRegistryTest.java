@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -445,6 +446,39 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> registry.connect(nameOnlyConfig));
     assertThat(ex).hasMessageThat().contains("Named connection my-connection does not exist.");
+  }
+
+  @Test
+  public void forceRefreshTest() throws IOException, InterruptedException, TimeoutException {
+    final String namedConnector = "connection-internal";
+    final PauseCondition refresh = new PauseCondition();
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start(PUBLIC_IP);
+    StubConnectionInfoRepository connectionInfoRepository = new StubConnectionInfoRepository();
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(connectionInfoRepository);
+    InternalConnectorRegistry registry =
+        new InternalConnectorRegistry(
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            port,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withNamedConnector(namedConnector)
+            .build();
+
+    ConnectorConfig configWithDetails = new ConnectorConfig.Builder().build();
+    registry.register(namedConnector, configWithDetails);
+    assertThat(connectionInfoRepository.getRefreshCount()).isEqualTo(0);
+
+    registry.forceRefresh(config);
+    refresh.waitForCondition(() -> connectionInfoRepository.getRefreshCount() > 0, 1000);
+    assertThat(connectionInfoRepository.getRefreshCount()).isEqualTo(1);
   }
 
   private InternalConnectorRegistry createRegistry(
