@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 class Connector {
   private static final Logger logger = LoggerFactory.getLogger(Connector.class);
 
-  private final DefaultConnectionInfoRepository adminApi;
+  private final ConnectionInfoRepository adminApi;
   private final CredentialFactory instanceCredentialFactory;
   private final ListeningScheduledExecutorService executor;
   private final ListenableFuture<KeyPair> localKeyPair;

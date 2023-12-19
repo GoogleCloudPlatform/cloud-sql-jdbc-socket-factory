@@ -53,7 +53,7 @@ public class DefaultConnectionInfoRepositoryTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
-    DefaultConnectionInfoRepository repo =
+    ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
@@ -90,7 +90,7 @@ public class DefaultConnectionInfoRepositoryTest {
         INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
 
-    DefaultConnectionInfoRepository repo =
+    ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
@@ -124,7 +124,7 @@ public class DefaultConnectionInfoRepositoryTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
-    DefaultConnectionInfoRepository repo =
+    ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 
@@ -151,7 +151,7 @@ public class DefaultConnectionInfoRepositoryTest {
     MockAdminApi mockAdminApi =
         buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
-    DefaultConnectionInfoRepository repo =
+    ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(new BadConnectionFactory())
             .create(new StubCredentialFactory().create(), config);
 
@@ -188,7 +188,7 @@ public class DefaultConnectionInfoRepositoryTest {
             .withAdminRootUrl(adminRootUrl)
             .withAdminServicePath(adminServicePath)
             .build();
-    DefaultConnectionInfoRepository repo =
+    ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
             .create(new StubCredentialFactory().create(), config);
 

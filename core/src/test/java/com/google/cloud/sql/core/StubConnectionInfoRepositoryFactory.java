@@ -26,14 +26,23 @@ import com.google.cloud.sql.ConnectorConfig;
 public class StubConnectionInfoRepositoryFactory implements ConnectionInfoRepositoryFactory {
 
   HttpTransport httpTransport;
+  ConnectionInfoRepository connectionInfoRepository;
 
   StubConnectionInfoRepositoryFactory(HttpTransport transport) {
     this.httpTransport = transport;
   }
 
+  StubConnectionInfoRepositoryFactory(ConnectionInfoRepository connectionInfoRepository) {
+    this.connectionInfoRepository = connectionInfoRepository;
+  }
+
   @Override
-  public DefaultConnectionInfoRepository create(
+  public ConnectionInfoRepository create(
       HttpRequestInitializer credentials, ConnectorConfig config) {
+    if (connectionInfoRepository != null) {
+      return connectionInfoRepository;
+    }
+
     SQLAdmin.Builder adminApiBuilder =
         new SQLAdmin.Builder(
                 httpTransport != null ? httpTransport : new MockHttpTransport(),
