@@ -59,7 +59,7 @@ public class StubCredentialFactory implements CredentialFactory {
     private final OAuth2Credentials oauth2;
 
     RefreshGoogleCredentials(OAuth2Credentials oauth2) {
-      super(oauth2.getAccessToken());
+      super(GoogleCredentials.newBuilder().setAccessToken(oauth2.getAccessToken()));
       this.oauth2 = oauth2;
     }
 

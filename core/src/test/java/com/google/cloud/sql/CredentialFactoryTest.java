@@ -39,7 +39,8 @@ public class CredentialFactoryTest {
 
   @Test
   public void testDefaultGetCredentialsWorksForGoogleCredentials() {
-    GoogleCredentials googleCredentials = new GoogleCredentials(new AccessToken("my-token", null));
+    GoogleCredentials googleCredentials =
+        GoogleCredentials.create(new AccessToken("my-token", null));
     CredentialFactory factory = new GoogleCredentialsFactory(googleCredentials);
 
     // Expected behavior from old implementation before getCredential()
