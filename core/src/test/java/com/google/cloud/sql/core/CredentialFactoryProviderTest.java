@@ -90,7 +90,7 @@ public class CredentialFactoryProviderTest {
 
   @Test
   public void getInstanceCredentialFactory_returnsImpersonatingCredentialFactory() {
-    GoogleCredentials c = new GoogleCredentials(null);
+    GoogleCredentials c = GoogleCredentials.create(null);
     ConnectorConfig config =
         new ConnectorConfig.Builder()
             .withGoogleCredentials(c)

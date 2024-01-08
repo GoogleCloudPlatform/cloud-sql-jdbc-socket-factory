@@ -64,7 +64,7 @@ public interface CredentialFactory {
                   ? Date.from(Instant.ofEpochMilli(credential.getExpirationTimeMilliseconds()))
                   : null);
 
-      return new GoogleCredentials(accessToken) {
+      return new GoogleCredentials(GoogleCredentials.newBuilder().setAccessToken(accessToken)) {
         @Override
         public AccessToken refreshAccessToken() throws IOException {
           credential.refreshToken();

@@ -211,8 +211,16 @@ public class ConnectorConfigTest {
 
   @Test
   public void testNotEqual_withGoogleCredentialsNotEqual() {
-    GoogleCredentials c1 = GoogleCredentials.create(new AccessToken("c1", null));
-    GoogleCredentials c2 = GoogleCredentials.create(new AccessToken("c2", null));
+    GoogleCredentials c1 =
+        GoogleCredentials.newBuilder()
+            .setAccessToken(new AccessToken("c1", null))
+            .setQuotaProjectId("project1")
+            .build();
+    GoogleCredentials c2 =
+        GoogleCredentials.newBuilder()
+            .setAccessToken(new AccessToken("c2", null))
+            .setQuotaProjectId("project2")
+            .build();
     ConnectorConfig k1 = new ConnectorConfig.Builder().withGoogleCredentials(c1).build();
     ConnectorConfig k2 = new ConnectorConfig.Builder().withGoogleCredentials(c2).build();
 
