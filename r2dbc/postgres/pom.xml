@@ -199,7 +199,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>r2dbc-postgresql</artifactId>
-      <version>1.0.3.RELEASE</version>
+      <version>1.0.4.RELEASE</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -266,7 +266,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>r2dbc-postgresql</artifactId>
-          <version>1.0.3.RELEASE</version>
+          <version>1.0.4.RELEASE</version>
         </dependency>
       </dependencies>
     </profile>
