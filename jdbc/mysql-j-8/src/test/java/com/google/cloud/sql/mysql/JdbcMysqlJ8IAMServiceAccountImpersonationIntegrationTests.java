@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +22,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.collect.ImmutableList;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -40,16 +36,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class JdbcMysqlJ8ServiceAccountImpersonationIntegrationTests {
+public class JdbcMysqlJ8IAMServiceAccountImpersonationIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("MYSQL_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
-  private static final String DB_USER = System.getenv("MYSQL_USER");
-  private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
+
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of(
-          "MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME", "IMPERSONATED_USER");
+      ImmutableList.of("MYSQL_DB", "MYSQL_IAM_CONNECTION_NAME", "IMPERSONATED_USER");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
   private HikariDataSource connectionPool;
 
@@ -70,11 +64,12 @@ public class JdbcMysqlJ8ServiceAccountImpersonationIntegrationTests {
     // Set up URL parameters
     String jdbcURL = String.format("jdbc:mysql:///%s", DB_NAME);
     Properties connProps = new Properties();
-    connProps.setProperty("user", DB_USER);
-    connProps.setProperty("password", DB_PASSWORD);
+    connProps.setProperty("user", IMPERSONATED_USER.substring(0, IMPERSONATED_USER.indexOf("@")));
     connProps.setProperty("cloudSqlTargetPrincipal", IMPERSONATED_USER);
+    connProps.setProperty("sslmode", "disable");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("enableIamAuth", "true");
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
