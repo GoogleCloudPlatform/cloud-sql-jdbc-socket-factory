@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.15.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.15.1...v1.15.2) (2024-01-17)
+
+
+### Bug Fixes
+
+* Call force refresh when r2dbc connection is invalid ([#1746](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1746)) ([1b0c43c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/1b0c43ca5ed0db5fd505d017773fdd30cec4788f))
+
+
+### Dependencies
+
+* Update com.google.auth dependencies to v1.21.0 ([#1760](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1760)) ([a8f1c00](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a8f1c00351a16b66fa498cf5771e06367ca82965))
+* Update com.google.auth dependencies to v1.22.0 ([#1766](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1766)) ([0c42664](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0c42664a3f200a373504fa77451e24e86f972d6b))
+* Update dependency com.google.api:gax to v2.39.0 ([#1761](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1761)) ([48f0a1c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/48f0a1c065aec87f4192bfbefe2f180e75cb4334))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20240101-2.0.0 ([#1767](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1767)) ([b87f6c2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b87f6c22bdd6ac613071d78b078860927850c1e0))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20240115-2.0.0 ([#1782](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1782)) ([aaa2b5f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/aaa2b5f844082aa337bfe271d323c1a25d898899))
+* Update dependency com.google.errorprone:error_prone_annotations to v2.24.0 ([#1754](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1754)) ([fa948cf](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/fa948cf3b1f1461ead9837420fe41df5d7b041c5))
+* Update dependency com.google.errorprone:error_prone_annotations to v2.24.1 ([#1758](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1758)) ([62dcac7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/62dcac7358dfa8702acba762272a6b0180b94d07))
+* Update dependency com.google.guava:guava to v33 ([#1751](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1751)) ([999c076](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/999c07682f78789305e558d868abde80696d2183))
+* Update dependency io.asyncer:r2dbc-mysql to v1.0.6 ([#1774](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1774)) ([36ed489](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/36ed48952fcef259cdf47186ad5e11ef081ce1a1))
+* Update dependency io.projectreactor:reactor-core to v3.6.2 ([#1769](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1769)) ([abe4065](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/abe4065965f096fe7478eb10c4d5ec3b8e8d0ac7))
+* Update dependency io.projectreactor.netty:reactor-netty to v1.1.15 ([#1768](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1768)) ([063e2f8](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/063e2f8300ef041280bd2c42dfc570540acc2106))
+* Update dependency org.apache.maven.plugins:maven-compiler-plugin to v3.12.0 ([#1750](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1750)) ([74e33cc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/74e33ccdcd75aa3902df9f733781ba7d934bb86f))
+* Update dependency org.apache.maven.plugins:maven-compiler-plugin to v3.12.1 ([#1756](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1756)) ([72433ee](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/72433ee22cb261201a7a1cf6fe7c84a0baf56bd5))
+* Update dependency org.apache.maven.plugins:maven-surefire-plugin to v3.2.3 ([#1741](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1741)) ([9313397](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/9313397fb0250f2fb63a1597984f7cb4f2f22227))
+* Update dependency org.apache.maven.plugins:maven-surefire-plugin to v3.2.5 ([#1770](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1770)) ([a02e6f4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a02e6f4950b85ae6eb45dd61b45356afcbfb9e42))
+* Update dependency org.checkerframework:checker-qual to v3.42.0 ([#1749](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1749)) ([ffcc2ea](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ffcc2ea8e34bd6cc48916524d21f1243640907e0))
+* Update dependency org.graalvm.sdk:nativeimage to v23.1.2 ([#1781](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1781)) ([6ce0780](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6ce078005eb579512cfaf01f93b4769427cee5eb))
+* Update dependency org.mariadb.jdbc:mariadb-java-client to v3.3.2 ([#1752](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1752)) ([7e25ca7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7e25ca71297349a4c4c00321fa6afdacceb6ea5e))
+* Update dependency org.postgresql:r2dbc-postgresql to v1.0.4.RELEASE ([#1772](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1772)) ([3649ad3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3649ad3e70e3e82becfa27d50ed8a994f9ff88b1))
+* Update dependency org.slf4j:slf4j-api to v2.0.10 ([#1757](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1757)) ([3ad9e29](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3ad9e296bc55dc4ce604d0f0d2e4166aa0a7419d))
+* Update dependency org.slf4j:slf4j-api to v2.0.11 ([#1764](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1764)) ([a4e77f4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a4e77f457de3e5ea2b56c6bd036627d01770f869))
+* Update netty and r2dbc dependencies to v4.1.103.Final ([#1739](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1739)) ([0c8dd92](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0c8dd9219a9391337c6959d8d15bb3c02885f1fa))
+* Update netty and r2dbc dependencies to v4.1.104.Final ([#1748](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1748)) ([748e3b3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/748e3b3d267a3667e286a8b1ea37332a1ec589a5))
+* Update netty and r2dbc dependencies to v4.1.105.Final ([#1780](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1780)) ([9ef12b6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/9ef12b63e4227daafbc9570e07a94ce06f7c08a6))
+
 ## [1.15.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.15.0...v1.15.1) (2023-12-12)
 
 
