@@ -68,7 +68,7 @@ public class JdbcPostgresServiceAccountImpersonationIntegrationTests {
     // Set up URL parameters
     String jdbcURL = String.format("jdbc:postgresql:///%s", DB_NAME);
     Properties connProps = new Properties();
-    connProps.setProperty("user", IMPERSONATED_USER.substring(0, IMPERSONATED_USER.indexOf("@")));
+    connProps.setProperty("user", IMPERSONATED_USER.replace(".gserviceaccount.com", ""));
     connProps.setProperty("cloudSqlTargetPrincipal", IMPERSONATED_USER);
     // Password must be set to a nonempty value to bypass driver validation errors
     connProps.setProperty("password", "password");
