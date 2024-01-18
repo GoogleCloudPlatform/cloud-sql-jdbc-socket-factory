@@ -55,7 +55,10 @@ public class RefresherTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     Refresher r =
         new Refresher(
-            "testcase", executorService, () -> Futures.immediateFuture(data), rateLimiter);
+            "RefresherTest.testCloudSqlInstanceDataRetrievedSuccessfully",
+            executorService,
+            () -> Futures.immediateFuture(data),
+            rateLimiter);
     ConnectionInfo gotInfo = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(gotInfo).isSameInstanceAs(data);
   }
@@ -64,7 +67,7 @@ public class RefresherTest {
   public void testInstanceFailsOnConnectionError() {
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testInstanceFailsOnConnectionError",
             executorService,
             () -> Futures.immediateFailedFuture(new RuntimeException("always fails")),
             rateLimiter);
@@ -79,7 +82,7 @@ public class RefresherTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testInstanceFailsOnTooLongToRetrieve",
             executorService,
             () -> {
               cond.pause();
@@ -98,7 +101,7 @@ public class RefresherTest {
     final PauseCondition cond = new PauseCondition();
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testCloudSqlInstanceForcesRefresh",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -140,7 +143,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testCloudSqlInstanceRetriesOnInitialFailures",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -171,7 +174,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testCloudSqlRefreshesExpiredData",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -225,7 +228,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testThatForceRefreshBalksWhenAScheduledRefreshIsInProgress",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -282,7 +285,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testThatForceRefreshBalksWhenAForceRefreshIsInProgress",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -335,7 +338,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testRefreshRetriesOnAfterFailedAttempts",
             executorService,
             () -> {
               int c = refreshCount.get();
@@ -396,7 +399,10 @@ public class RefresherTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     Refresher r =
         new Refresher(
-            "testcase", executorService, () -> Futures.immediateFuture(data), rateLimiter);
+            "RefresherTest.testClosedCloudSqlInstanceDataThrowsException",
+            executorService,
+            () -> Futures.immediateFuture(data),
+            rateLimiter);
     r.close();
 
     assertThrows(IllegalStateException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
@@ -412,7 +418,7 @@ public class RefresherTest {
 
     Refresher r =
         new Refresher(
-            "testcase",
+            "RefresherTest.testClosedCloudSqlInstanceDataStopsRefreshTasks",
             executorService,
             () -> {
               int c = refreshCount.get();
