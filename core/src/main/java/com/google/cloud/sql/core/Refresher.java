@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 /** Handles periodic refresh operations for an instance. */
 class Refresher {
   private static final Logger logger = LoggerFactory.getLogger(Refresher.class);
+  private static final long DEFAULT_CONNECT_TIMEOUT_MS = 45000;
 
   private final ListeningScheduledExecutorService executor;
 
@@ -58,6 +59,9 @@ class Refresher {
   @GuardedBy("connectionInfoGuard")
   private boolean closed;
 
+  @GuardedBy("connectionInfoGuard")
+  private boolean triggerNextRefresh = true;
+
   /**
    * Create a new refresher.
    *
@@ -71,10 +75,29 @@ class Refresher {
       ListeningScheduledExecutorService executor,
       Supplier<ListenableFuture<ConnectionInfo>> refreshOperation,
       AsyncRateLimiter rateLimiter) {
+    this(name, executor, refreshOperation, rateLimiter, true);
+  }
+
+  /**
+   * Create a new refresher.
+   *
+   * @param name the name of what is being refreshed, for logging.
+   * @param executor the executor to schedule refresh tasks.
+   * @param refreshOperation The supplier that refreshes the data.
+   * @param rateLimiter The rate limiter.
+   * @param triggerNextRefresh The next refresh operation should be triggered.
+   */
+  Refresher(
+      String name,
+      ListeningScheduledExecutorService executor,
+      Supplier<ListenableFuture<ConnectionInfo>> refreshOperation,
+      AsyncRateLimiter rateLimiter,
+      boolean triggerNextRefresh) {
     this.name = name;
     this.executor = executor;
     this.refreshOperation = refreshOperation;
     this.rateLimiter = rateLimiter;
+    this.triggerNextRefresh = triggerNextRefresh;
     synchronized (connectionInfoGuard) {
       forceRefresh();
       this.current = this.next;
@@ -156,6 +179,18 @@ class Refresher {
     }
   }
 
+  /** Force a new refresh of the instance data if the client certificate has expired. */
+  void refreshIfExpired() {
+    ConnectionInfo info = getConnectionInfo(DEFAULT_CONNECT_TIMEOUT_MS);
+    if (Instant.now().isAfter(info.getExpiration())) {
+      logger.debug(
+          String.format(
+              "[%s] Client certificate has expired. Starting next refresh operation immediately.",
+              name));
+      forceRefresh();
+    }
+  }
+
   /**
    * Triggers an update of internal information obtained from the Cloud SQL Admin API, returning a
    * future that resolves once a valid T has been acquired. This sets up a chain of futures that
@@ -202,15 +237,6 @@ class Refresher {
       long secondsToRefresh =
           refreshCalculator.calculateSecondsUntilNextRefresh(Instant.now(), info.getExpiration());
 
-      logger.debug(
-          String.format(
-              "[%s] Refresh Operation: Next operation scheduled at %s.",
-              name,
-              Instant.now()
-                  .plus(secondsToRefresh, ChronoUnit.SECONDS)
-                  .truncatedTo(ChronoUnit.SECONDS)
-                  .toString()));
-
       synchronized (connectionInfoGuard) {
         // Refresh completed successfully, reset forceRefreshRunning.
         refreshRunning = false;
@@ -219,7 +245,16 @@ class Refresher {
 
         // Now update nextInstanceData to perform a refresh after the
         // scheduled delay
-        if (!closed) {
+        if (!closed && triggerNextRefresh) {
+          logger.debug(
+              String.format(
+                  "[%s] Refresh Operation: Next operation scheduled at %s.",
+                  name,
+                  Instant.now()
+                      .plus(secondsToRefresh, ChronoUnit.SECONDS)
+                      .truncatedTo(ChronoUnit.SECONDS)
+                      .toString()));
+
           next =
               Futures.scheduleAsync(
                   this::startRefreshAttempt, secondsToRefresh, TimeUnit.SECONDS, executor);
