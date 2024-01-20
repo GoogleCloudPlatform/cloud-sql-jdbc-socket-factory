@@ -136,6 +136,10 @@ class DefaultConnectionInfoCache {
     this.refresher.forceRefresh();
   }
 
+  void refreshIfExpired() {
+    this.refresher.refreshIfExpired();
+  }
+
   ListenableFuture<ConnectionInfo> getNext() {
     return refresher.getNext();
   }
