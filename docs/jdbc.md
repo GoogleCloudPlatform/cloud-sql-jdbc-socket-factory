@@ -297,7 +297,7 @@ and
 [add an IAM database user](https://cloud.google.com/sql/docs/postgres/create-manage-iam-users#creating-a-database-user).
 Now, you can connect using user or service
 account credentials instead of a password.
-When setting up the connection, set the `ENABLE_IAM_AUTH` connection property
+When setting up the connection, set the `enableIamAuth` connection property
 to `true` and `user`
 to the email address associated with your IAM user.
 
