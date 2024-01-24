@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -44,9 +45,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -59,6 +64,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
+  private static final List<Integer> TERMINAL_STATUS_CODE = Arrays.asList(400, 401, 403, 404);
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
     this.apiClient = apiClient;
@@ -178,14 +184,14 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(instanceName.getRegionId())) {
-        throw new IllegalArgumentException(
+        throw new TerminalException(
             String.format(
                 "[%s] The region specified for the Cloud SQL instance is"
                     + " incorrect. Please verify the instance connection name.",
                 instanceName.getConnectionName()));
       }
       if (!instanceMetadata.getBackendType().equals("SECOND_GEN")) {
-        throw new IllegalArgumentException(
+        throw new TerminalException(
             String.format(
                 "[%s] Connections to Cloud SQL instance not supported - not a Second Generation "
                     + "instance.",
@@ -214,7 +220,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
       if (ipAddrs.isEmpty()) {
-        throw new IllegalStateException(
+        throw new TerminalException(
             String.format(
                 "[%s] Unable to connect to Cloud SQL instance: instance does not have an assigned "
                     + "IP address.",
@@ -371,40 +377,36 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
    */
   private RuntimeException addExceptionContext(
       IOException ex, String fallbackDesc, CloudSqlInstanceName instanceName) {
-    // Verify we are able to extract a reason from an exception, or fallback to a generic desc
-    GoogleJsonResponseException gjrEx =
-        ex instanceof GoogleJsonResponseException ? (GoogleJsonResponseException) ex : null;
-    if (gjrEx == null
-        || gjrEx.getDetails() == null
-        || gjrEx.getDetails().getErrors() == null
-        || gjrEx.getDetails().getErrors().isEmpty()) {
-      return new RuntimeException(fallbackDesc, ex);
+    String reason = fallbackDesc;
+    int statusCode = 0;
+
+    // Verify we are able to extract a reason from an exception and the status code, or fallback to
+    // a generic desc
+    if (ex instanceof GoogleJsonResponseException) {
+      GoogleJsonResponseException gjrEx = (GoogleJsonResponseException) ex;
+      reason = gjrEx.getStatusMessage();
+      statusCode = gjrEx.getStatusCode();
+    } else if (ex instanceof UnknownHostException) {
+      statusCode = 404;
+      reason = String.format("Host \"%s\" not found", ex.getMessage());
+    } else {
+      Matcher matcher = Pattern.compile("Error code (\\d+)").matcher(ex.getMessage());
+      reason = ex.getMessage();
+      if (matcher.find()) {
+        statusCode = Integer.parseInt(matcher.group(1));
+      }
     }
+
     // Check for commonly occurring user errors and add additional context
-    String reason = gjrEx.getDetails().getErrors().get(0).getReason();
-    if ("accessNotConfigured".equals(reason)) {
-      // This error occurs when the project doesn't have the "Cloud SQL Admin API" enabled
-      String apiLink =
-          "https://console.cloud.google.com/apis/api/sqladmin/overview?project="
-              + instanceName.getProjectId();
-      return new RuntimeException(
-          String.format(
-              "[%s] The Google Cloud SQL Admin API is not enabled for the project \"%s\". Please "
-                  + "use the Google Developers Console to enable it: %s",
-              instanceName.getConnectionName(), instanceName.getProjectId(), apiLink),
-          ex);
-    } else if ("notAuthorized".equals(reason)) {
-      // This error occurs if the instance doesn't exist or the account isn't authorized
-      // TODO(kvg): Add credential account name to error string.
-      return new RuntimeException(
-          String.format(
-              "[%s] The Cloud SQL Instance does not exist or your account is not authorized to "
-                  + "access it. Please verify the instance connection name and check the IAM "
-                  + "permissions for project \"%s\" ",
-              instanceName.getConnectionName(), instanceName.getProjectId()),
-          ex);
+    String message =
+        String.format(
+            "[%s] The Google Cloud SQL Admin API failed for the project \"%s\". Reason: %s",
+            instanceName.getConnectionName(), instanceName.getProjectId(), reason);
+
+    if (TERMINAL_STATUS_CODE.contains(statusCode)) {
+      return new TerminalException(message, ex);
     }
     // Fallback to the generic description
-    return new RuntimeException(fallbackDesc, ex);
+    return new RuntimeException(message, ex);
   }
 }

@@ -194,7 +194,7 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
-  public void create_adminApiNotEnabled() throws IOException {
+  public void create_throwsException_adminApiNotEnabled() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
     InternalConnectorRegistry internalConnectorRegistry =
@@ -212,19 +212,21 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
               .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
               .withIpTypes("PRIMARY")
               .build());
-      fail("Expected RuntimeException");
-    } catch (RuntimeException | InterruptedException e) {
+      fail("Expected TerminalException");
+    } catch (TerminalException e) {
       assertThat(e)
           .hasMessageThat()
           .contains(
               String.format(
-                  "[%s] The Google Cloud SQL Admin API is not enabled for the project",
+                  "[%s] The Google Cloud SQL Admin API failed for the project",
                   "NotMyProject:myRegion:myInstance"));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Test
-  public void create_notAuthorized() throws IOException {
+  public void create_throwsException_adminApiReturnsNotAuthorized() throws IOException {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
     InternalConnectorRegistry internalConnectorRegistry =
@@ -242,13 +244,45 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
               .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
               .withIpTypes("PRIMARY")
               .build());
-      fail();
+      fail("Expected TerminalException");
+    } catch (TerminalException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .contains(
+              String.format(
+                  "[%s] The Google Cloud SQL Admin API failed for the project",
+                  "myProject:myRegion:NotMyInstance"));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void create_badGateway() throws IOException {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeBadGatewayException());
+    InternalConnectorRegistry internalConnectorRegistry =
+        new InternalConnectorRegistry(
+            clientKeyPair,
+            factory,
+            stubCredentialFactoryProvider,
+            3307,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
+    try {
+      // Use a different instance to simulate incorrect permissions.
+      internalConnectorRegistry.connect(
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+              .withIpTypes("PRIMARY")
+              .build());
+      fail("Expected RuntimeException");
     } catch (RuntimeException e) {
       assertThat(e)
           .hasMessageThat()
           .contains(
               String.format(
-                  "[%s] The Cloud SQL Instance does not exist or your account is not authorized",
+                  "[%s] The Google Cloud SQL Admin API failed for the project",
                   "myProject:myRegion:NotMyInstance"));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);

@@ -70,6 +70,11 @@ public class CloudSqlCoreTestingBase {
 
   static final String SERVER_MESSAGE = "HELLO";
 
+  static final String ERROR_MESSAGE_BAD_GATEWAY =
+      "The server encountered a temporary error and could not complete your request.";
+  static final String ERROR_MESSAGE_NOT_AUTHORIZED =
+      "The client is not authorized to make this request.";
+
   final CredentialFactoryProvider stubCredentialFactoryProvider =
       new CredentialFactoryProvider(new StubCredentialFactory());
 
@@ -83,32 +88,40 @@ public class CloudSqlCoreTestingBase {
             + " it by visiting "
             + " https://console.developers.google.com/apis/api/sqladmin.googleapis.com/overview?project=12345"
             + " then retry. If you enabled this API recently, wait a few minutes for the action to"
-            + " propagate to our systems and retry.");
+            + " propagate to our systems and retry.",
+        HttpStatusCodes.STATUS_CODE_FORBIDDEN);
   }
 
   // Creates a fake "notAuthorized" exception that can be used for testing.
   static HttpTransport fakeNotAuthorizedException() {
     return fakeGoogleJsonResponseException(
-        "notAuthorized", "The client is not authorized to make this request");
+        "notAuthorized", ERROR_MESSAGE_NOT_AUTHORIZED, HttpStatusCodes.STATUS_CODE_UNAUTHORIZED);
+  }
+
+  // Creates a fake "serverError" exception that can be used for testing.
+  static HttpTransport fakeBadGatewayException() {
+    return fakeGoogleJsonResponseException(
+        "serverError", ERROR_MESSAGE_BAD_GATEWAY, HttpStatusCodes.STATUS_CODE_BAD_GATEWAY);
   }
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static HttpTransport fakeGoogleJsonResponseException(String reason, String message) {
+  private static HttpTransport fakeGoogleJsonResponseException(
+      String reason, String message, int statusCode) {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
     errorInfo.setMessage(message);
-    return fakeGoogleJsonResponseExceptionTransport(errorInfo, message);
+    return fakeGoogleJsonResponseExceptionTransport(errorInfo, message, statusCode);
   }
 
   private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
-      ErrorInfo errorInfo, String message) {
+      ErrorInfo errorInfo, String message, int statusCode) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
       public LowLevelHttpRequest buildRequest(String method, String url) throws IOException {
         errorInfo.setFactory(jsonFactory);
         GoogleJsonError jsonError = new GoogleJsonError();
-        jsonError.setCode(HttpStatusCodes.STATUS_CODE_FORBIDDEN);
+        jsonError.setCode(statusCode);
         jsonError.setErrors(Collections.singletonList(errorInfo));
         jsonError.setMessage(message);
         jsonError.setFactory(jsonFactory);
