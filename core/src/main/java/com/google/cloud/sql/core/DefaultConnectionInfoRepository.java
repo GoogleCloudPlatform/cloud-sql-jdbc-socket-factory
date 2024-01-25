@@ -64,7 +64,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
-  private static final List<Integer> TERMINAL_STATUS_CODE = Arrays.asList(400, 401, 403, 404);
+  private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
     this.apiClient = apiClient;
@@ -384,7 +384,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     // a generic desc
     if (ex instanceof GoogleJsonResponseException) {
       GoogleJsonResponseException gjrEx = (GoogleJsonResponseException) ex;
-      reason = gjrEx.getStatusMessage();
+      reason = gjrEx.getMessage();
       statusCode = gjrEx.getStatusCode();
     } else if (ex instanceof UnknownHostException) {
       statusCode = 404;
@@ -403,7 +403,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             "[%s] The Google Cloud SQL Admin API failed for the project \"%s\". Reason: %s",
             instanceName.getConnectionName(), instanceName.getProjectId(), reason);
 
-    if (TERMINAL_STATUS_CODE.contains(statusCode)) {
+    if (TERMINAL_STATUS_CODES.contains(statusCode)) {
       return new TerminalException(message, ex);
     }
     // Fallback to the generic description

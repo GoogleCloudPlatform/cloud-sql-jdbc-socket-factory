@@ -511,6 +511,7 @@ public class RefresherTest {
             },
             rateLimiter);
 
+    // Raising TerminalException stops the refresher's executor from running the next task.
     assertThrows(TerminalException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
     assertThat(refreshCount.get()).isEqualTo(1);
   }

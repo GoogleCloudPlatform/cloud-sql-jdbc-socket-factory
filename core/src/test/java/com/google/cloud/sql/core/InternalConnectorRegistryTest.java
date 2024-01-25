@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
 
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
@@ -72,29 +71,30 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             3307,
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
-    try {
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail();
-    } catch (IllegalArgumentException | InterruptedException e) {
-      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
-    }
 
-    try {
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject:myRegion")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
+
+    ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject:myRegion")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
   }
 
   @Test
@@ -109,20 +109,20 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             3307,
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
-    try {
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject:notMyRegion:myInstance")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail();
-    } catch (RuntimeException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains("The region specified for the Cloud SQL instance is incorrect");
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+
+    RuntimeException ex =
+        assertThrows(
+            RuntimeException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject:notMyRegion:myInstance")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("The region specified for the Cloud SQL instance is incorrect");
   }
 
   /**
@@ -147,22 +147,23 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   public void create_failOnEmptyTargetPrincipal() throws IOException, InterruptedException {
     InternalConnectorRegistry internalConnectorRegistry =
         createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
-    try {
 
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject:myRegion:myInstance")
-              .withIpTypes("PRIMARY")
-              .withConnectorConfig(
-                  new ConnectorConfig.Builder()
-                      .withDelegates(
-                          Collections.singletonList("delegate-service-principal@example.com"))
-                      .build())
-              .build());
-      fail("IllegalArgumentException expected.");
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
-    }
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject:myRegion:myInstance")
+                        .withIpTypes("PRIMARY")
+                        .withConnectorConfig(
+                            new ConnectorConfig.Builder()
+                                .withDelegates(
+                                    Collections.singletonList(
+                                        "delegate-service-principal@example.com"))
+                                .build())
+                        .build()));
+    assertThat(ex.getMessage()).contains(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
   }
 
   @Test
@@ -205,24 +206,24 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             3307,
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
-    try {
-      // Use a different project to get Api Not Enabled Error.
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail("Expected TerminalException");
-    } catch (TerminalException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              String.format(
-                  "[%s] The Google Cloud SQL Admin API failed for the project",
-                  "NotMyProject:myRegion:myInstance"));
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+
+    // Use a different project to get Api Not Enabled Error.
+    TerminalException ex =
+        assertThrows(
+            TerminalException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "NotMyProject:myRegion:myInstance"));
   }
 
   @Test
@@ -237,24 +238,24 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             3307,
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
-    try {
-      // Use a different instance to simulate incorrect permissions.
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail("Expected TerminalException");
-    } catch (TerminalException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              String.format(
-                  "[%s] The Google Cloud SQL Admin API failed for the project",
-                  "myProject:myRegion:NotMyInstance"));
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+
+    // Use a different instance to simulate incorrect permissions.
+    TerminalException ex =
+        assertThrows(
+            TerminalException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "myProject:myRegion:NotMyInstance"));
   }
 
   @Test
@@ -269,24 +270,24 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
             3307,
             TEST_MAX_REFRESH_MS,
             defaultExecutor);
-    try {
-      // Use a different instance to simulate incorrect permissions.
-      internalConnectorRegistry.connect(
-          new ConnectionConfig.Builder()
-              .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
-              .withIpTypes("PRIMARY")
-              .build());
-      fail("Expected RuntimeException");
-    } catch (RuntimeException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .contains(
-              String.format(
-                  "[%s] The Google Cloud SQL Admin API failed for the project",
-                  "myProject:myRegion:NotMyInstance"));
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+
+    // Use a different instance to simulate incorrect permissions.
+    TerminalException ex =
+        assertThrows(
+            TerminalException.class,
+            () ->
+                internalConnectorRegistry.connect(
+                    new ConnectionConfig.Builder()
+                        .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+                        .withIpTypes("PRIMARY")
+                        .build()));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "myProject:myRegion:NotMyInstance"));
   }
 
   @Test
