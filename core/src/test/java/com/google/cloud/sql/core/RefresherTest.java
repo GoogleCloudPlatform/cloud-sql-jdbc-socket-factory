@@ -487,6 +487,66 @@ public class RefresherTest {
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
+  @Test
+  public void testGetConnectionInfo_throwsTerminalException_refreshOperationNotScheduled() {
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    Refresher r =
+        new Refresher(
+            "RefresherTest.testGetConnectionInfo_throwsTerminalException_refreshOperationNotScheduled",
+            executorService,
+            () -> {
+              int c = refreshCount.get();
+              ExampleData refreshResult = data;
+              switch (c) {
+                case 0:
+                  // refresh 0 should throw an exception
+                  refreshCount.incrementAndGet();
+                  throw new TerminalException("Not authorized");
+              }
+              // refresh 2 and on should return data immediately
+              refreshCount.incrementAndGet();
+              return Futures.immediateFuture(refreshResult);
+            },
+            rateLimiter);
+
+    // Raising TerminalException stops the refresher's executor from running the next task.
+    assertThrows(TerminalException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
+    assertThat(refreshCount.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void testGetConnectionInfo_throwsRuntimeException_refreshOperationScheduled()
+      throws Exception {
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+    AtomicInteger refreshCount = new AtomicInteger();
+    final PauseCondition refresh1 = new PauseCondition();
+
+    Refresher r =
+        new Refresher(
+            "RefresherTest.testGetConnectionInfo_throwsRuntimeException_refreshOperationScheduled",
+            executorService,
+            () -> {
+              int c = refreshCount.get();
+              ExampleData refreshResult = data;
+              switch (c) {
+                case 0:
+                  // refresh 0 should throw an exception
+                  refreshCount.incrementAndGet();
+                  throw new RuntimeException("Bad Gateway");
+              }
+              // refresh 2 and on should return data immediately
+              refreshCount.incrementAndGet();
+              return Futures.immediateFuture(refreshResult);
+            },
+            rateLimiter);
+
+    // getConnectionInfo again, and assert the refresh operation completed.
+    refresh1.waitForCondition(() -> r.getConnectionInfo(TEST_TIMEOUT_MS) == data, 1000L);
+    assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
   private static class ExampleData extends ConnectionInfo {
 
     ExampleData(Instant expiration) {

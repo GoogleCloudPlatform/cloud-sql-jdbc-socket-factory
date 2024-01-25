@@ -264,6 +264,14 @@ class Refresher {
       }
 
     } catch (ExecutionException | InterruptedException e) {
+
+      // No refresh retry when the TerminalException is raised.
+      final Throwable cause = e.getCause();
+      if (cause instanceof TerminalException) {
+        logger.info(String.format("[%s] Refresh Operation: Failed! No retry.", name), e);
+        throw (TerminalException) cause;
+      }
+
       logger.info(
           String.format(
               "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.", name),
