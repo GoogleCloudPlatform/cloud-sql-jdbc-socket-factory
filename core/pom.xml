@@ -172,6 +172,12 @@
     <dependency>
       <groupId>com.google.http-client</groupId>
       <artifactId>google-http-client</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.opencensus</groupId>
+          <artifactId>opencensus-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
