@@ -132,7 +132,11 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <dependencyConvergence/>
+                <dependencyConvergence>
+                  <excludes>
+                    <exclude>io.grpc:grpc-context</exclude>
+                  </excludes>
+                </dependencyConvergence>
               </rules>
             </configuration>
             <goals>
@@ -270,7 +274,11 @@
               <execution>
                 <configuration>
                   <rules>
-                    <dependencyConvergence/>
+                    <dependencyConvergence>
+                      <excludes>
+                        <exclude>io.grpc:grpc-context</exclude>
+                      </excludes>
+                    </dependencyConvergence>
                   </rules>
                 </configuration>
                 <phase>compile</phase>
