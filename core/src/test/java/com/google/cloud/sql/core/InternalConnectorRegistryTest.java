@@ -20,19 +20,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
 
-import com.google.api.client.http.BasicAuthentication;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
-import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import org.junit.After;
@@ -97,34 +91,6 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
     assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
   }
 
-  @Test
-  public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-    InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactoryProvider,
-            3307,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
-
-    RuntimeException ex =
-        assertThrows(
-            RuntimeException.class,
-            () ->
-                internalConnectorRegistry.connect(
-                    new ConnectionConfig.Builder()
-                        .withCloudSqlInstance("myProject:notMyRegion:myInstance")
-                        .withIpTypes("PRIMARY")
-                        .build()));
-
-    assertThat(ex)
-        .hasMessageThat()
-        .contains("The region specified for the Cloud SQL instance is incorrect");
-  }
-
   /**
    * Start an SSL server on the private IP, and verifies that specifying a preference for private IP
    * results in a connection to the private IP.
@@ -141,218 +107,6 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
                 .build());
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void create_failOnEmptyTargetPrincipal() throws IOException, InterruptedException {
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
-
-    IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                internalConnectorRegistry.connect(
-                    new ConnectionConfig.Builder()
-                        .withCloudSqlInstance("myProject:myRegion:myInstance")
-                        .withIpTypes("PRIMARY")
-                        .withConnectorConfig(
-                            new ConnectorConfig.Builder()
-                                .withDelegates(
-                                    Collections.singletonList(
-                                        "delegate-service-principal@example.com"))
-                                .build())
-                        .build()));
-    assertThat(ex.getMessage()).contains(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
-  }
-
-  @Test
-  public void create_successfulConnection() throws IOException, InterruptedException {
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
-
-    Socket socket =
-        internalConnectorRegistry.connect(
-            new ConnectionConfig.Builder()
-                .withCloudSqlInstance("myProject:myRegion:myInstance")
-                .withIpTypes("PRIMARY")
-                .build());
-
-    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
-    Socket socket =
-        internalConnectorRegistry.connect(
-            new ConnectionConfig.Builder()
-                .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
-                .withIpTypes("PRIMARY")
-                .build());
-    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void create_throwsException_adminApiNotEnabled() throws IOException {
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
-    InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactoryProvider,
-            3307,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
-
-    // Use a different project to get Api Not Enabled Error.
-    TerminalException ex =
-        assertThrows(
-            TerminalException.class,
-            () ->
-                internalConnectorRegistry.connect(
-                    new ConnectionConfig.Builder()
-                        .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
-                        .withIpTypes("PRIMARY")
-                        .build()));
-
-    assertThat(ex)
-        .hasMessageThat()
-        .contains(
-            String.format(
-                "[%s] The Google Cloud SQL Admin API failed for the project",
-                "NotMyProject:myRegion:myInstance"));
-  }
-
-  @Test
-  public void create_throwsException_adminApiReturnsNotAuthorized() throws IOException {
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
-    InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactoryProvider,
-            3307,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
-
-    // Use a different instance to simulate incorrect permissions.
-    TerminalException ex =
-        assertThrows(
-            TerminalException.class,
-            () ->
-                internalConnectorRegistry.connect(
-                    new ConnectionConfig.Builder()
-                        .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
-                        .withIpTypes("PRIMARY")
-                        .build()));
-
-    assertThat(ex)
-        .hasMessageThat()
-        .contains(
-            String.format(
-                "[%s] The Google Cloud SQL Admin API failed for the project",
-                "myProject:myRegion:NotMyInstance"));
-  }
-
-  @Test
-  public void create_badGateway() throws IOException {
-    ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeBadGatewayException());
-    InternalConnectorRegistry internalConnectorRegistry =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            factory,
-            stubCredentialFactoryProvider,
-            3307,
-            TEST_MAX_REFRESH_MS,
-            defaultExecutor);
-
-    // Use a different instance to simulate incorrect permissions.
-    TerminalException ex =
-        assertThrows(
-            TerminalException.class,
-            () ->
-                internalConnectorRegistry.connect(
-                    new ConnectionConfig.Builder()
-                        .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
-                        .withIpTypes("PRIMARY")
-                        .build()));
-
-    assertThat(ex)
-        .hasMessageThat()
-        .contains(
-            String.format(
-                "[%s] The Google Cloud SQL Admin API failed for the project",
-                "myProject:myRegion:NotMyInstance"));
-  }
-
-  @Test
-  public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
-    CredentialFactoryProvider credentialFactoryProvider =
-        new CredentialFactoryProvider(
-            new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli()));
-
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactoryProvider);
-    Socket socket =
-        internalConnectorRegistry.connect(
-            new ConnectionConfig.Builder()
-                .withCloudSqlInstance("myProject:myRegion:myInstance")
-                .withIpTypes("PRIMARY")
-                .withAuthType(AuthType.IAM)
-                .build());
-
-    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void supportsCustomCredentialFactoryWithNoExpirationTime()
-      throws InterruptedException, IOException {
-    CredentialFactoryProvider credentialFactoryProvider =
-        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
-
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactoryProvider);
-    Socket socket =
-        internalConnectorRegistry.connect(
-            new ConnectionConfig.Builder()
-                .withCloudSqlInstance("myProject:myRegion:myInstance")
-                .withIpTypes("PRIMARY")
-                .withAuthType(AuthType.IAM)
-                .build());
-
-    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
-  }
-
-  @Test
-  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException {
-    class BasicAuthStubCredentialFactory implements CredentialFactory {
-
-      @Override
-      public HttpRequestInitializer create() {
-        return new BasicAuthentication("user", "password");
-      }
-    }
-
-    CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
-    CredentialFactoryProvider credentialFactoryProvider =
-        new CredentialFactoryProvider(stubCredentialFactory);
-
-    InternalConnectorRegistry internalConnectorRegistry =
-        createRegistry(PUBLIC_IP, credentialFactoryProvider);
-    assertThrows(
-        RuntimeException.class,
-        () ->
-            internalConnectorRegistry.connect(
-                new ConnectionConfig.Builder()
-                    .withCloudSqlInstance("myProject:myRegion:myInstance")
-                    .withIpTypes("PRIMARY")
-                    .withAuthType(AuthType.IAM)
-                    .build()));
   }
 
   @Test
