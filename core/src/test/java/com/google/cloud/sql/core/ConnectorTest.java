@@ -18,15 +18,21 @@ package com.google.cloud.sql.core;
 import static com.google.cloud.sql.core.InternalConnectorRegistry.DEFAULT_SERVER_PROXY_PORT;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
+import com.google.api.client.http.BasicAuthentication;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
+import com.google.cloud.sql.CredentialFactory;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,19 +67,15 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             .build();
 
     Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
-    try {
-      c.connect(config, TEST_MAX_REFRESH_MS);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
-    }
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
 
-    try {
-      c.connect(config2, TEST_MAX_REFRESH_MS);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessageThat().contains("Cloud SQL connection name is invalid");
-    }
+    assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
+
+    ex =
+        assertThrows(IllegalArgumentException.class, () -> c.connect(config2, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
   }
 
   /**
@@ -96,6 +98,272 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPublicConnection() throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_throwsErrorForInvalidInstanceRegion() throws IOException {
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:notMyRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("The region specified for the Cloud SQL instance is incorrect");
+  }
+
+  @Test
+  public void create_failOnEmptyTargetPrincipal() throws IOException, InterruptedException {
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .withConnectorConfig(
+                new ConnectorConfig.Builder()
+                    .withDelegates(
+                        Collections.singletonList("delegate-service-principal@example.com"))
+                    .build())
+            .build();
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT));
+
+    assertThat(ex.getMessage()).contains(ConnectionConfig.CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY);
+  }
+
+  @Test
+  public void create_throwsException_adminApiNotEnabled() throws IOException {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeNotConfiguredException());
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("NotMyProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT);
+
+    // Use a different project to get Api Not Enabled Error.
+    TerminalException ex =
+        assertThrows(TerminalException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "NotMyProject:myRegion:myInstance"));
+  }
+
+  @Test
+  public void create_throwsException_adminApiReturnsNotAuthorized() throws IOException {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeNotAuthorizedException());
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT);
+
+    // Use a different instance to simulate incorrect permissions.
+    TerminalException ex =
+        assertThrows(TerminalException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "myProject:myRegion:NotMyInstance"));
+  }
+
+  @Test
+  public void create_throwsException_badGateway() throws IOException {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeBadGatewayException());
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:NotMyInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT);
+
+    TerminalException ex =
+        assertThrows(TerminalException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains(
+            String.format(
+                "[%s] The Google Cloud SQL Admin API failed for the project",
+                "myProject:myRegion:NotMyInstance"));
+  }
+
+  @Test
+  public void supportsCustomCredentialFactoryWithIAM() throws InterruptedException, IOException {
+    FakeSslServer sslServer = new FakeSslServer();
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(
+            new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli()));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+
+    int port = sslServer.start(PUBLIC_IP);
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .withAuthType(AuthType.IAM)
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port);
+
+    Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void supportsCustomCredentialFactoryWithNoExpirationTime()
+      throws InterruptedException, IOException {
+    FakeSslServer sslServer = new FakeSslServer();
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+
+    int port = sslServer.start(PUBLIC_IP);
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .withAuthType(AuthType.IAM)
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port);
+
+    Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void doesNotSupportNonGoogleCredentialWithIAM() throws InterruptedException {
+    class BasicAuthStubCredentialFactory implements CredentialFactory {
+
+      @Override
+      public HttpRequestInitializer create() {
+        return new BasicAuthentication("user", "password");
+      }
+    }
+
+    CredentialFactory stubCredentialFactory = new BasicAuthStubCredentialFactory();
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(stubCredentialFactory);
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .withAuthType(AuthType.IAM)
+            .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT);
+
+    assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
   }
 
   private Connector newConnector(ConnectorConfig config, int port) {
