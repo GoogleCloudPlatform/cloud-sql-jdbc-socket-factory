@@ -45,6 +45,7 @@ public class ConnectionConfigTest {
     final String wantAdminServicePath = "sqladmin/";
     final String wantUnixSuffix = ".psql.5432";
     final String wantPath = "my-path";
+    final String wantAdminQuotaProject = "myNewProject";
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -58,6 +59,8 @@ public class ConnectionConfigTest {
     props.setProperty(ConnectionConfig.CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY, wantAdminServicePath);
     props.setProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY, wantUnixSuffix);
     props.setProperty(ConnectionConfig.CLOUD_SQL_GOOGLE_CREDENTIALS_PATH, wantPath);
+    props.setProperty(
+        ConnectionConfig.CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY, wantAdminQuotaProject);
 
     ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
 
@@ -71,6 +74,7 @@ public class ConnectionConfigTest {
     assertThat(c.getConnectorConfig().getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
     assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
     assertThat(c.getConnectorConfig().getGoogleCredentialsPath()).isEqualTo(wantPath);
+    assertThat(c.getConnectorConfig().getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 
@@ -86,6 +90,7 @@ public class ConnectionConfigTest {
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantAdminServicePath = "sqladmin/";
     final String wantUnixSuffix = ".psql.5432";
+    final String wantAdminQuotaProject = "myNewProject";
 
     ConnectorConfig cc =
         new ConnectorConfig.Builder()
@@ -93,6 +98,7 @@ public class ConnectionConfigTest {
             .withDelegates(wantDelegates)
             .withAdminRootUrl(wantAdminRootUrl)
             .withAdminServicePath(wantAdminServicePath)
+            .withAdminQuotaProject(wantAdminQuotaProject)
             .build();
 
     ConnectionConfig c =
@@ -115,6 +121,7 @@ public class ConnectionConfigTest {
     assertThat(c.getIpTypes()).isEqualTo(wantIpTypes);
     assertThat(c.getConnectorConfig().getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
     assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(c.getConnectorConfig().getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
   }
 

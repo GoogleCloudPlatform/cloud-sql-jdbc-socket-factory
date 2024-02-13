@@ -455,7 +455,9 @@ String jdbcUrl = "jdbc:postgresql:///<DATABASE_NAME>"
 
 Not Supported.
 
-### SQL Admin API URL
+## SQL Admin API
+
+### 
 
 The Java Connector supports setting the SQL Admin API URL with the 
 `cloudSqlAdminRootUrl` and `cloudSqlAdminServicePath` JDBC connection 
@@ -483,7 +485,7 @@ DEFAULT_SERVICE_PATH = ""
 
 For more information, see the [underlying driver class documentation](https://cloud.google.com/java/docs/reference/google-api-client/latest/com.google.api.client.googleapis.services.AbstractGoogleClient.Builder#com_google_api_client_googleapis_services_AbstractGoogleClient_Builder_setRootUrl_java_lang_String_).
 
-### Example
+#### Example
 
 Replace these parameters in the example based on your database type:
 
@@ -511,6 +513,23 @@ config.setDataSourceProperties(connProps);
 config.setConnectionTimeout(10000); // 10s
 
 HikariDataSource connectionPool = new HikariDataSource(config);
+```
+
+### Quota project
+
+The Java Connector supports setting the project ID for quota and billing
+with the `cloudSqlAdminQuotaProject` property. If not specified, defaults to the
+project sourced from environment.
+
+For more information, see the [documentation][quota-project-doc].
+
+[quota-project-doc]: https://cloud.google.com/docs/quota/set-quota-project
+
+#### Example
+
+```java
+Properties connProps = new Properties();
+connProps.setProperty("cloudSqlAdminQuotaProject", "PROJECT_NAME");
 ```
 
 ## Configuration Reference

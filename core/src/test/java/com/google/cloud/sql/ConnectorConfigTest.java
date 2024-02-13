@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.base.Objects;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,18 +35,21 @@ public class ConnectorConfigTest {
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantAdminServicePath = "sqladmin/";
+    final String wantAdminQuotaProject = "myNewProject";
     ConnectorConfig cc =
         new ConnectorConfig.Builder()
             .withTargetPrincipal(wantTargetPrincipal)
             .withDelegates(wantDelegates)
             .withAdminRootUrl(wantAdminRootUrl)
             .withAdminServicePath(wantAdminServicePath)
+            .withAdminQuotaProject(wantAdminQuotaProject)
             .build();
 
     assertThat(cc.getTargetPrincipal()).isEqualTo(wantTargetPrincipal);
     assertThat(cc.getDelegates()).isEqualTo(wantDelegates);
     assertThat(cc.getAdminRootUrl()).isEqualTo(wantAdminRootUrl);
     assertThat(cc.getAdminServicePath()).isEqualTo(wantAdminServicePath);
+    assertThat(cc.getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
   }
 
   @Test
@@ -281,5 +285,58 @@ public class ConnectorConfigTest {
 
     assertThat(k1).isEqualTo(k2);
     assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testNotEqual_withAdminQuotaProjectNotEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withAdminQuotaProject("myNewProject").build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withAdminQuotaProject("anotherProject").build();
+
+    assertThat(k1).isNotEqualTo(k2);
+    assertThat(k1.hashCode()).isNotEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testEqual_withAdminQuotaProjectEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withAdminQuotaProject("myNewProject").build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withAdminQuotaProject("myNewProject").build();
+
+    assertThat(k1).isEqualTo(k2);
+    assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testHashCode() {
+    final String wantTargetPrincipal = "test@example.com";
+    final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
+    final String wantAdminRootUrl = "https://googleapis.example.com/";
+    final String wantAdminServicePath = "sqladmin/";
+    final String wantGoogleCredentialsPath = "/path/to/credentials";
+    final String wantAdminQuotaProject = "myNewProject";
+    ConnectorConfig cc =
+        new ConnectorConfig.Builder()
+            .withTargetPrincipal(wantTargetPrincipal)
+            .withDelegates(wantDelegates)
+            .withAdminRootUrl(wantAdminRootUrl)
+            .withAdminServicePath(wantAdminServicePath)
+            .withGoogleCredentialsPath(wantGoogleCredentialsPath)
+            .withAdminQuotaProject(wantAdminQuotaProject)
+            .build();
+
+    assertThat(cc.hashCode())
+        .isEqualTo(
+            Objects.hashCode(
+                wantTargetPrincipal,
+                wantDelegates,
+                wantAdminRootUrl,
+                wantAdminServicePath,
+                null, // googleCredentialsSupplier
+                null, // googleCredentials
+                wantGoogleCredentialsPath,
+                wantAdminQuotaProject));
   }
 }
