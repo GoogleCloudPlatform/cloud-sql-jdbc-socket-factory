@@ -45,6 +45,7 @@ public class ConnectionConfig {
   public static final String UNIX_SOCKET_PATH_SUFFIX_PROPERTY = "cloudSqlUnixSocketPathSuffix";
   public static final String ENABLE_IAM_AUTH_PROPERTY = "enableIamAuth";
   public static final String IP_TYPES_PROPERTY = "ipTypes";
+  public static final String CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY = "cloudSqlAdminQuotaProject";
   public static final AuthType DEFAULT_AUTH_TYPE = AuthType.PASSWORD;
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final List<IpType> DEFAULT_IP_TYPE_LIST =
@@ -92,6 +93,8 @@ public class ConnectionConfig {
         props.getProperty(ConnectionConfig.UNIX_SOCKET_PATH_SUFFIX_PROPERTY);
     final String googleCredentialsPath =
         props.getProperty(ConnectionConfig.CLOUD_SQL_GOOGLE_CREDENTIALS_PATH);
+    final String adminQuotaProject =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY);
     return new ConnectionConfig(
         csqlInstanceName,
         namedConnection,
@@ -105,6 +108,7 @@ public class ConnectionConfig {
             .withAdminRootUrl(adminRootUrl)
             .withAdminServicePath(adminServicePath)
             .withGoogleCredentialsPath(googleCredentialsPath)
+            .withAdminQuotaProject(adminQuotaProject)
             .build());
   }
 

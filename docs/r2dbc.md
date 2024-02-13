@@ -274,7 +274,9 @@ The environment's application default principal impersonates
 SERVICE_ACCOUNT_1 which impersonates SERVICE_ACCOUNT_2 which then
 impersonates the TARGET_SERVICE_ACCOUNT.
 
-## SQL Admin API URL
+## SQL Admin API
+
+### Root URL & Service Path
 
 The Java Connector supports setting the SQL Admin API URL with the 
 `ADMIN_ROOT_URL` and `ADMIN_SERVICE_PATH` options. This feature is used 
@@ -302,7 +304,7 @@ DEFAULT_SERVICE_PATH = ""
 
 For more information, see the [underlying driver class documentation](https://cloud.google.com/java/docs/reference/google-api-client/latest/com.google.api.client.googleapis.services.AbstractGoogleClient.Builder#com_google_api_client_googleapis_services_AbstractGoogleClient_Builder_setRootUrl_java_lang_String_).
 
-### Example
+#### Example
 
 ```java
 ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
@@ -311,6 +313,25 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     // ...more connection options
     .build;
 ```
+
+### Quota project
+
+The Java Connector supports setting the project ID for quota and billing
+with the `ADMIN_QUOTA_PROJECT` option. If not specified, defaults to the
+project sourced from environment.
+
+For more information, see the [documentation][quota-project-doc].
+
+[quota-project-doc]: https://cloud.google.com/docs/quota/set-quota-project
+
+#### Example
+
+```java
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(ADMIN_QUOTA_PROJECT, "PROJECT_NAME")
+    .build;
+```
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)

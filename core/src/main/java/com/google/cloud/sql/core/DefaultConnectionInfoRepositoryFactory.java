@@ -17,6 +17,8 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.services.CommonGoogleClientRequestInitializer;
+import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -58,6 +60,13 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
     }
     if (config.getAdminServicePath() != null) {
       adminApiBuilder.setServicePath(config.getAdminServicePath());
+    }
+    if (config.getAdminQuotaProject() != null) {
+      GoogleClientRequestInitializer clientRequestInitializer =
+          CommonGoogleClientRequestInitializer.newBuilder()
+              .setUserProject(config.getAdminQuotaProject())
+              .build();
+      adminApiBuilder.setGoogleClientRequestInitializer(clientRequestInitializer);
     }
     return new DefaultConnectionInfoRepository(adminApiBuilder.build());
   }

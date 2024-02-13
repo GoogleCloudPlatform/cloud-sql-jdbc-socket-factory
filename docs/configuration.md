@@ -280,9 +280,11 @@ configuration using the Cloud SQL Admin API.
 | cloudSqlGoogleCredentialsPath | GOOGLE_CREDENTIALS_PATH | A file path to a JSON file containing a GoogleCredentials oauth token.                                                                               | `/home/alice/secrets/my-credentials.json`                                                    |
 | cloudSqlAdminRootUrl          | ADMIN_ROOT_URL          | An alternate root url for the Cloud SQL admin API. Must end in '/' See [rootUrl](java-api-root-url)                                                  | `https://googleapis.example.com/`                                                            |
 | cloudSqlAdminServicePath      | ADMIN_SERVICE_PATH      | An alternate path to the SQL Admin API endpoint. Must not begin with '/'. Must end with '/'. See [servicePath](java-api-service-path)                | `sqladmin/v1beta1/`                                                                          |
+| cloudSqlAdminQuotaProject     | ADMIN_QUOTA_PROJECT     | A project ID for quota and billing. See [Quota Project](quota-project)                | `my-project`                                                                          |
 
-[java-api-root-url]: https://github.com/googleapis/google-api-java-client/blob/4a12a5e0901d6fca0afbf9290e06ab39a182451c/google-api-client/src/main/java/com/google/api/client/googleapis/services/AbstractGoogleClient.java#L49
-[java-api-service-path]: https://github.com/googleapis/google-api-java-client/blob/4a12a5e0901d6fca0afbf9290e06ab39a182451c/google-api-client/src/main/java/com/google/api/client/googleapis/services/AbstractGoogleClient.java#L52
+[java-api-root-url]: https://github.com/googleapis/google-api-java-client/blob/main/google-api-client/src/main/java/com/google/api/client/googleapis/services/AbstractGoogleClient.java#L49
+[java-api-service-path]: https://github.com/googleapis/google-api-java-client/blob/main/google-api-client/src/main/java/com/google/api/client/googleapis/services/AbstractGoogleClient.java#L52
+[quota-project]: jdbc.md#quota-project
 
 ### Connection Configuration Properties
 
