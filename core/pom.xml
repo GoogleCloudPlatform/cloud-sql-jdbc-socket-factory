@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.21</version>
+      <version>0.38.22</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
