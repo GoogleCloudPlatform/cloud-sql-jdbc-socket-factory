@@ -132,8 +132,7 @@ public class CloudSqlConnection implements Connection {
             })
         // Execute in a default scheduler to prevent blocking.
         .subscribeOn(Schedulers.boundedElastic())
-        .share()
-        .block();
+        .subscribe();
     return response;
   }
 
