@@ -77,7 +77,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <native-image.version>0.10.0</native-image.version>
+    <native-image.version>0.10.1</native-image.version>
     <graal-sdk.version>23.1.2</graal-sdk.version>
     <netty.version>4.1.107.Final</netty.version>
     <ow2-asm.version>9.6</ow2-asm.version>
