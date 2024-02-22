@@ -101,6 +101,7 @@ jobs:
           SQLSERVER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
           SQLSERVER_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
           IMPERSONATED_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
+          QUOTA_PROJECT:${{ secrets.GOOGLE_CLOUD_PROJECT }}/QUOTA_PROJECT
     - name: Run tests
       env:
         MYSQL_CONNECTION_NAME: '${{ steps.secrets.outputs.MYSQL_CONNECTION_NAME }}'
@@ -120,6 +121,7 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
+        QUOTA_PROJECT: '${{ steps.secrets.outputs.QUOTA_PROJECT }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: Check Coverage
@@ -230,6 +232,7 @@ jobs:
           SQLSERVER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
           SQLSERVER_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
           IMPERSONATED_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
+          QUOTA_PROJECT:${{ secrets.GOOGLE_CLOUD_PROJECT }}/QUOTA_PROJECT
     - name: Run tests
       env:
         MYSQL_CONNECTION_NAME: '${{ steps.secrets.outputs.MYSQL_CONNECTION_NAME }}'
@@ -249,6 +252,7 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
+        QUOTA_PROJECT: '${{ steps.secrets.outputs.QUOTA_PROJECT }}'
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: Check Coverage
@@ -345,6 +349,7 @@ jobs:
           SQLSERVER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
           SQLSERVER_DB:${{ secrets.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
           IMPERSONATED_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
+          QUOTA_PROJECT:${{ secrets.GOOGLE_CLOUD_PROJECT }}/QUOTA_PROJECT
 
     - name: Run tests
       env:
@@ -365,6 +370,7 @@ jobs:
         SQLSERVER_PASS: '${{ steps.secrets.outputs.SQLSERVER_PASS }}'
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
+        QUOTA_PROJECT: '${{ steps.secrets.outputs.QUOTA_PROJECT }}'
       run: ./.github/scripts/run_tests_graalvm_native.sh
       shell: bash
     - name: Check Coverage
