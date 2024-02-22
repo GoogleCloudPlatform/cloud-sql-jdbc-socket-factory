@@ -308,7 +308,7 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
 
     - name: Set up GraalVM
-      uses: graalvm/setup-graalvm@076347913ec5246b563d35c3ac9be9a119a2ff50
+      uses: graalvm/setup-graalvm@e878075a9132fe5d3cdf1b48b6b225f3a64f262d
       with:
         version: 'latest'
         java-version: '17'
