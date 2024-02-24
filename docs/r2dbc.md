@@ -32,6 +32,28 @@ compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.16.0'
 MySQL, `io.asyncer:r2dbc-mysql:<LATEST-VERSION>`
 <!-- {x-version-update-end} -->
 
+##### MariaDB
+<!-- {x-version-update-start:cloud-sql-connector-r2dbc-mariadb:released} -->
+Maven
+
+```maven-pom
+<dependency>
+  <groupId>com.google.cloud</groupId>
+  <artifactId>cloud-sql-connector-r2dbc-mariadb</artifactId>
+  <version>1.16.0</version>
+</dependency>
+```
+
+Gradle
+
+```gradle
+compile 'com.google.cloud:cloud-sql-connector-r2dbc-mariadb:1.16.0'
+```
+
+**Note:** Also include the R2DBC Driver for
+MariaDB, `org.mariadb:r2dbc-mariadb:<LATEST-VERSION>`
+<!-- {x-release-please-end} -->
+
 ##### Postgres
 
 <!-- {x-version-update-start:cloud-sql-connector-r2dbc-postgres:released} -->
@@ -97,6 +119,12 @@ R2DBC URL template:
 r2dbc:gcp:mysql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>
 ```
 
+#### MariaDB
+
+```
+r2dbc:gcp:mariadb://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>
+```
+
 #### Postgres
 
 ```
@@ -115,7 +143,7 @@ r2dbc:gcp:mssql://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME
 // Set up URL parameters
 ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(DRIVER,"gcp")
-    .option(PROTOCOL,"mysql") // OR "postgres" or "mssql"
+    .option(PROTOCOL,"mysql") // OR "postgres" or "mssql" or "mariadb"
     .option(PASSWORD,"<DB_PASSWORD>")
     .option(USER,"<DB_USER>")
     .option(DATABASE,"<DATABASE_NAME}")
@@ -132,12 +160,12 @@ ConnectionPool connectionPool = new ConnectionPool(configuration);
 
 ### IAM Authentication
 
-**Note:** This feature is currently only supported for MySQL and Postgres
+**Note:** This feature is currently only supported for MySQL, MariaDB and Postgres
 drivers.
 
 Connections using
 [IAM database authentication](https://cloud.google.com/sql/docs/postgres/iam-logins)
-are supported when connecting to MySQL or Postgres instances.
+are supported when connecting to MySQL, MariaDB or Postgres instances.
 This feature is unsupported for SQL Server. First, make sure to
 [configure your Cloud SQL Instance to allow IAM authentication](https://cloud.google.com/sql/docs/postgres/create-edit-iam-instances#configure-iam-db-instance)
 and
@@ -153,13 +181,13 @@ different constraints on allowed characters in the database username, MySQL and
 postgres differ in how they shorten an IAM email address into a database
 username.
 
-* MySQL: Truncate the IAM email removing the `@` and everything that follows.
+* MySQL and MariaDB: Truncate the IAM email removing the `@` and everything that follows.
 * Postgres: If the IAM email ends with `.gserviceaccount.com`, remove
   the `.gserviceaccount.com` suffix from the email.
 
 For example, if the full IAM user account is 
 `my-sa@my-project.iam.gserviceaccount.com`, then the shortened database username
-would be `my-sa` for MySQL, and `my-sa@my-project.iam` for Postgres. 
+would be `my-sa` for MySQL and MariaDB, and `my-sa@my-project.iam` for Postgres. 
 
 **Note:** a non-empty string value for the `password` property must be set.
 While this property will be ignored when connecting with the Cloud SQL Connector
@@ -172,6 +200,7 @@ Replace these parameters in the example based on your database type:
 | Database | PROTOCOL   | IAM_DB_USER          |
 |----------|------------|----------------------|
 | MySQL    | mysql      | my-sa                |  
+| MariaDB  | mariadb    | my-sa                |
 | Postgres | postgresql | my-sa@my-project.iam |
 
 ```java
@@ -217,7 +246,8 @@ Replace these parameters in the example based on your database type:
 
 | Database | PROTOCOL   | IAM_DB_USER          | IAM_EMAIL                                |
 |----------|------------|----------------------|------------------------------------------|
-| MySQL    | mysql      | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
+| MySQL    | mysql      | my-sa                | my-sa@my-project.iam.gserviceaccount.com |
+| MariaDB  | mariadb    | my-sa                | my-sa@my-project.iam.gserviceaccount.com |  
 | Postgres | postgresql | my-sa@my-project.iam | my-sa@my-project.iam.gserviceaccount.com |
 
 **Note:** a non-empty string value for the `password` property must be set.
@@ -341,6 +371,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
 Examples for the Cloud SQL R2DBC Connector can be found by looking at the
 integration tests in this repository.
 
+* [MariaDB usage example](../r2dbc/mariadb/src/test/java/com/google/cloud/sql/core/R2dbcMariadbIntegrationTests.java)
 * [MySQL usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
 * [Postgres usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
 * [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
