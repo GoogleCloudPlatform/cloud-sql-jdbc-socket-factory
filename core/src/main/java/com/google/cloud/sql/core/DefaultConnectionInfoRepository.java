@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 /** Class that encapsulates all logic for interacting with SQLAdmin API. */
 class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
+  private static final String USER_PROJECT_HEADER_NAME = "X-Goog-User-Project";
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
@@ -171,6 +172,26 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
   String getApplicationName() {
     return apiClient.getApplicationName();
+  }
+
+  String getQuotaProject(String connectionName) {
+    CloudSqlInstanceName instanceName = new CloudSqlInstanceName(connectionName);
+    try {
+      List<String> values =
+          apiClient
+              .connect()
+              .get(instanceName.getProjectId(), instanceName.getInstanceId())
+              .getRequestHeaders()
+              .getHeaderStringValues(USER_PROJECT_HEADER_NAME);
+
+      if (!values.isEmpty()) {
+        return values.get(0);
+      }
+
+      return null;
+    } catch (IOException ex) {
+      throw addExceptionContext(ex, "[%s] Failed to get Quota Project", instanceName);
+    }
   }
 
   /** Fetches the latest version of the instance's metadata using the Cloud SQL Admin API. */
