@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2024 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>jdbc-socket-factory-parent</artifactId>
+    <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <groupId>com.google.cloud</groupId>
+  <artifactId>cloud-sql-connector-r2dbc-mariadb</artifactId>
+  <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-r2dbc-mariadb:current} -->
+  <packaging>jar</packaging>
+
+  <name>Google Cloud SQL R2DBC Connector for MariaDB</name>
+  <description>
+    The Cloud SQL R2DBC Connector provides a socket factory for the MySQL R2DBC driver. 
+    The socket factory provides an mTLS 1.3 connection to any specified Cloud SQL MySQL 
+    instance without requiring any manually configured TLS certificates.
+  </description>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
+
+  <properties>
+    <assembly.skipAssembly>false</assembly.skipAssembly>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-spi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mariadb</groupId>
+      <artifactId>r2dbc-mariadb</artifactId>
+      <version>1.2.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.truth</groupId>
+      <artifactId>truth</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-pool</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>jdbc-socket-factory-core</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <!-- Logging -->
+    <dependency> 
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jar-with-driver-and-dependencies</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.mariadb</groupId>
+          <artifactId>r2dbc-mariadb</artifactId>
+          <version>1.2.0</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- This dependency is not used at compile-time. -->
+            <dependency>ch.qos.logback:logback-classic</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
