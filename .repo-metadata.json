@@ -6,7 +6,7 @@
   "language": "java",
   "repo": "GoogleCloudPlatform/cloud-sql-jdbc-socket-factory",
   "repo_short": "cloud-sql-jdbc-socket-factory",
-  "distribution_name": "com.google.cloud.sql:jdbc-socket-factory-parent",
+  "distribution_name": "com.google.cloud:cloud-sql-connector-parent",
   "api_id": "sqladmin.googleapis.com",
   "library_type": "OTHER",
   "codeowner_team": "@GoogleCloudPlatform/infra-db-sdk"

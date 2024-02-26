@@ -18,10 +18,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.google.cloud.sql</groupId>
-  <artifactId>jdbc-socket-factory-parent</artifactId>
+  <groupId>com.google.cloud</groupId>
+  <artifactId>cloud-sql-connector-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+  <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
 
   <parent>
     <groupId>com.google.cloud</groupId>
@@ -29,13 +29,13 @@
     <version>1.7.2</version>
   </parent>
 
-  <name>Cloud SQL JDBC Socket Factory</name>
+  <name>Google Cloud SQL Java Connector Parent</name>
   <description>
     Socket factories for MySQL/Postgres JDBC drivers that allows a user with the appropriate
     permissions to connect to a Cloud SQL database without having to deal with IP allowlisting
     or SSL certificates manually
   </description>
-  <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory</url>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
 
   <licenses>
     <license>
@@ -58,12 +58,12 @@
 
   <scm>
     <connection>
-      scm:git:https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
+      scm:git:https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.git
     </connection>
     <developerConnection>
-      scm:git:ssh://git@github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git
+      scm:git:ssh://git@github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.git
     </developerConnection>
-    <url>https://github.com/GoogleCloudPlatform/cloud-sql-mysql-socket-factory.git</url>
+    <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory.git</url>
     <tag>HEAD</tag>
   </scm>
 
@@ -331,6 +331,15 @@
     <module>r2dbc/mysql</module>
     <module>r2dbc/postgres</module>
     <module>r2dbc/sqlserver</module>
+
+    <!-- These modules serve as wrappers for artifacts to be published with the old names -->
+    <module>wrapper/jdbc/mariadb</module>
+    <module>wrapper/jdbc/mysql</module>
+    <module>wrapper/jdbc/postgres</module>
+    <module>wrapper/jdbc/sqlserver</module>
+    <module>wrapper/r2dbc/mysql</module>
+    <module>wrapper/r2dbc/postgres</module>
+    <module>wrapper/r2dbc/sqlserver</module>
   </modules>
 
   <build>
@@ -576,9 +585,9 @@
 
                 Global test dependencies unused in r2dbc core:
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
-                com.google.cloud.sql:jdbc-socket-factory-core:test-jar
+                com.google.cloud:cloud-sql-connector-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud:cloud-sql-connector-core:test-jar,com.google.auth:google-auth-library-credentials
               </ignoredDependencies>
             </configuration>
             <executions>

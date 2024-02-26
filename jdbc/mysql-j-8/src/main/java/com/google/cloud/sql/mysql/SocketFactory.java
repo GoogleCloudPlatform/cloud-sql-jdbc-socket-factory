@@ -34,7 +34,7 @@ import java.util.Properties;
 public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
 
   static {
-    InternalConnectorRegistry.addArtifactId("mysql-socket-factory-connector-j-8");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-jdbc-mysql");
   }
 
   @Override

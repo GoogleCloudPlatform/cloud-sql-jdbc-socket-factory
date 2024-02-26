@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2023 Google LLC
+ Copyright 2024 Google LLC
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -23,61 +23,39 @@
     <groupId>com.google.cloud</groupId>
     <artifactId>cloud-sql-connector-parent</artifactId>
     <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-jdbc-mariadb</artifactId>
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>mariadb-socket-factory</artifactId>
   <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-jdbc-mariadb:current} -->
   <packaging>jar</packaging>
 
-  <name>Google Cloud SQL JDBC Connector for MariaDB</name>
+  <distributionManagement>
+    <relocation>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>cloud-sql-connector-jdbc-mariadb</artifactId>
+      <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-jdbc-mariadb:current} -->
+      <message>Please use the new artifact.</message>
+    </relocation>
+  </distributionManagement>
+
+  <name>Cloud SQL MariaDB Socket Factory</name>
   <description>
-    The Cloud SQL JDBC Connector provides a socket factory for the MariaDB JDBC driver. 
-    The socket factory provides an mTLS 1.3 connection to any specified Cloud SQL 
-    MariaDB instance without requiring any manually configured TLS certificates.
+    Socket factory for the MariaDB JDBC driver that allows a user with the appropriate permissions
+    to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
+    certificates manually.
   </description>
-  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
+    <mariadb.version>3.3.3</mariadb.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>cloud-sql-connector-core</artifactId>
+      <artifactId>cloud-sql-connector-jdbc-mariadb</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.mariadb.jdbc</groupId>
-      <artifactId>mariadb-java-client</artifactId>
-      <version>3.3.3</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.truth</groupId>
-      <artifactId>truth</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- Logging -->
-    <dependency> 
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -88,21 +66,17 @@
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.3.3</version>
+          <version>${mariadb.version}</version>
         </dependency>
       </dependencies>
     </profile>
-    <!-- Upgrading to v0.9.12 of the native maven plugin leaves
-        provided scope dependencies out of the classpath, so adding these
-        drivers back in for the native profile is a workaround.
-    -->
     <profile>
       <id>native</id>
       <dependencies>
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.3.3</version>
+          <version>${mariadb.version}</version>
         </dependency>
       </dependencies>
     </profile>
@@ -116,7 +90,7 @@
         <configuration>
           <usedDependencies>
             <!-- This dependency is not used at compile-time. -->
-            <dependency>ch.qos.logback:logback-classic</dependency>
+            <dependency>com.google.cloud:cloud-sql-connector-jdbc-mariadb</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

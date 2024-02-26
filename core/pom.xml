@@ -21,19 +21,20 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.google.cloud.sql</groupId>
-    <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <groupId>com.google.cloud</groupId>
+    <artifactId>cloud-sql-connector-parent</artifactId>
+    <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
   </parent>
-  <artifactId>jdbc-socket-factory-core</artifactId>
-  <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-core:current} -->
+  <artifactId>cloud-sql-connector-core</artifactId>
+  <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-core:current} -->
   <packaging>jar</packaging>
 
-  <name>Cloud SQL Core Socket Factory (Core Library, don't depend on this directly)</name>
+  <name>Google Cloud SQL Java Connector (Core Library, don't depend on this directly)</name>
   <description>
     Core library for establishing secure connections. End users should depend on the
     driver-specific socket factory artifacts.
   </description>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>

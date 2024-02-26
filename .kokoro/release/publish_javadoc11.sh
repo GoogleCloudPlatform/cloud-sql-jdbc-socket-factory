@@ -33,7 +33,7 @@ python3 -m pip install --require-hashes -r .kokoro/requirements.txt
 # compile all packages
 mvn clean install -B -q -DskipTests=true
 
-export NAME=jdbc-socket-factory-parent
+export NAME=cloud-sql-connector-parent
 export VERSION=$(grep ${NAME}: versions.txt | cut -d: -f3)
 
 # cloud RAD generation

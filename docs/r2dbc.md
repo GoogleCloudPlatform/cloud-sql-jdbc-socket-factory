@@ -16,7 +16,7 @@ Maven
 
 ```maven-pom
 <dependency>
-  <groupId>com.google.cloud.sql</groupId>
+  <groupId>com.google.cloud</groupId>
   <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
   <version>1.16.0</version>
 </dependency>
@@ -25,7 +25,7 @@ Maven
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.16.0'
+compile 'com.google.cloud:cloud-sql-connector-r2dbc-mysql:1.16.0'
 ```
 
 **Note:** Also include the R2DBC Driver for
@@ -61,7 +61,7 @@ Maven
 
 ```maven-pom
 <dependency>
-  <groupId>com.google.cloud.sql</groupId>
+  <groupId>com.google.cloud</groupId>
   <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
   <version>1.16.0</version>
 </dependency>
@@ -70,7 +70,7 @@ Maven
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.16.0'
+compile 'com.google.cloud:cloud-sql-connector-r2dbc-postgres:1.16.0'
 ```
 
 **Note:** Also include the R2DBC Driver for
@@ -84,7 +84,7 @@ Maven
 
 ```maven-pom
 <dependency>
-  <groupId>com.google.cloud.sql</groupId>
+  <groupId>com.google.cloud</groupId>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
   <version>1.16.0</version>
 </dependency>
@@ -93,7 +93,7 @@ Maven
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.16.0'
+compile 'com.google.cloud:cloud-sql-connector-r2dbc-sqlserver:1.16.0'
 ```
 
 **Note:** Also include the R2DBC Driver for SQL

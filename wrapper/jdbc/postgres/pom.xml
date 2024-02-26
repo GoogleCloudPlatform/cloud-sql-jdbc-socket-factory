@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2021 Google LLC
+ Copyright 2024 Google LLC
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -16,67 +16,46 @@
 -->
 
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>cloud-sql-connector-parent</artifactId>
     <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
-  <artifactId>cloud-sql-connector-jdbc-postgres</artifactId>
+  <groupId>com.google.cloud.sql</groupId>
+  <artifactId>postgres-socket-factory</artifactId>
   <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-jdbc-postgres:current} -->
   <packaging>jar</packaging>
 
-  <name>Google Cloud SQL JDBC Connector for Postgres</name>
+  <distributionManagement>
+    <relocation>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>cloud-sql-connector-jdbc-postgres</artifactId>
+      <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-jdbc-postgres:current} -->
+      <message>Please use the new artifact.</message>
+    </relocation>
+  </distributionManagement>
+
+  <name>Cloud SQL Postgres Socket Factory</name>
   <description>
-    The Cloud SQL JDBC Connector provides a socket factory for the Postgres JDBC driver. 
-    The socket factory provides an mTLS 1.3 connection to any specified Cloud SQL 
-    Postgres instance without requiring any manually configured TLS certificates.
+    Socket factory for the Postgres JDBC driver that allows a user with the appropriate permissions
+    to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
+    certificates manually.
   </description>
-  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
+    <postgres.version>42.7.2</postgres.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>cloud-sql-connector-core</artifactId>
+      <artifactId>cloud-sql-connector-jdbc-postgres</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.7.2</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.truth</groupId>
-      <artifactId>truth</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- Logging -->
-    <dependency> 
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency> 
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -87,21 +66,17 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.7.2</version>
+          <version>${postgres.version}</version>
         </dependency>
       </dependencies>
     </profile>
-    <!-- Upgrading to v0.9.12 of the native maven plugin leaves 
-        provided scope dependencies out of the classpath, so adding these
-        drivers back in for the native profile is a workaround.
-    -->
     <profile>
       <id>native</id>
       <dependencies>
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.7.2</version>
+          <version>${postgres.version}</version>
         </dependency>
       </dependencies>
     </profile>
@@ -115,7 +90,7 @@
         <configuration>
           <usedDependencies>
             <!-- This dependency is not used at compile-time. -->
-            <dependency>ch.qos.logback:logback-classic</dependency>
+            <dependency>com.google.cloud:cloud-sql-connector-jdbc-postgres</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

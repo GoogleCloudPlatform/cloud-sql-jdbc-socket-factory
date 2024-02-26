@@ -34,10 +34,14 @@ To build a fat JAR containing the JDBC driver with the bundles Socket Factory de
 This will create a *target* sub-folder within each of the module directories. Within these target directories you'll find the JDBC driver files.
 
 Example:
+<!-- {x-version-update-start:cloud-sql-connector-jdbc-mysql:released} -->
 ```
-mysql-socket-factory-connector-j-8–1.8.0-jar-with-dependencies.jar
-postgres-socket-factory-1.8.0-jar-with-dependencies.jar
+cloud-sql-connector-jdbc-mariadb-1.16.0-jar-with-dependencies.jar
+cloud-sql-connector-jdbc-mysql–1.16.0-jar-with-dependencies.jar
+cloud-sql-connector-jdbc-postgres-1.16.0-jar-with-dependencies.jar
+cloud-sql-connector-jdbc-sqlserver-1.16.0-jar-with-dependencies.jar
 ```
+<!-- {x-version-update-end} -->
 
 ---
 
