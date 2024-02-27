@@ -24,6 +24,7 @@
     <groupId>com.google.cloud</groupId>
     <artifactId>cloud-sql-connector-parent</artifactId>
     <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
+    <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-core</artifactId>
