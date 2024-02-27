@@ -333,10 +333,12 @@
     <module>r2dbc/sqlserver</module>
 
     <!-- These modules serve as wrappers for artifacts to be published with the old names -->
+    <module>wrapper/core</module>
     <module>wrapper/jdbc/mariadb</module>
     <module>wrapper/jdbc/mysql</module>
     <module>wrapper/jdbc/postgres</module>
     <module>wrapper/jdbc/sqlserver</module>
+    <module>wrapper/r2dbc/core</module>
     <module>wrapper/r2dbc/mysql</module>
     <module>wrapper/r2dbc/postgres</module>
     <module>wrapper/r2dbc/sqlserver</module>
