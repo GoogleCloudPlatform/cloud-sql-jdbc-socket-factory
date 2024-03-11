@@ -1,12 +1,11 @@
 # Format:
 # module:released-version:current-version
 
-jdbc-socket-factory-parent:1.16.0:1.16.1-SNAPSHOT
-jdbc-socket-factory-core:1.16.0:1.16.1-SNAPSHOT
-mariadb-socket-factory:1.16.0:1.16.1-SNAPSHOT
-mysql-socket-factory:1.16.0:1.16.1-SNAPSHOT
-mysql-socket-factory-connector-j-8:1.16.0:1.16.1-SNAPSHOT
-postgres-socket-factory:1.16.0:1.16.1-SNAPSHOT
+cloud-sql-connector-parent:1.16.0:1.16.1-SNAPSHOT
+cloud-sql-connector-core:1.16.0:1.16.1-SNAPSHOT
+cloud-sql-connector-jdbc-mariadb:1.16.0:1.16.1-SNAPSHOT
+cloud-sql-connector-jdbc-mysql:1.16.0:1.16.1-SNAPSHOT
+cloud-sql-connector-jdbc-postgres:1.16.0:1.16.1-SNAPSHOT
 cloud-sql-connector-jdbc-sqlserver:1.16.0:1.16.1-SNAPSHOT
 cloud-sql-connector-r2dbc-core:1.16.0:1.16.1-SNAPSHOT
 cloud-sql-connector-r2dbc-mariadb:1.16.0:1.16.1-SNAPSHOT

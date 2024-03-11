@@ -41,7 +41,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   private final Properties props;
 
   static {
-    InternalConnectorRegistry.addArtifactId("postgres-socket-factory");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-jdbc-postgres");
   }
 
   /**

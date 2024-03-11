@@ -33,7 +33,7 @@ import org.mariadb.jdbc.util.ConfigurableSocketFactory;
 public class SocketFactory extends ConfigurableSocketFactory {
 
   static {
-    InternalConnectorRegistry.addArtifactId("mariadb-socket-factory");
+    InternalConnectorRegistry.addArtifactId("cloud-sql-connector-jdbc-mariadb");
   }
 
   private Configuration conf;

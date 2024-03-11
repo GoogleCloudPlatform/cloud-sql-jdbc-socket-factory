@@ -19,20 +19,21 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.google.cloud.sql</groupId>
-    <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <groupId>com.google.cloud</groupId>
+    <artifactId>cloud-sql-connector-parent</artifactId>
+    <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-core</artifactId>
   <version>1.16.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-r2dbc-core:current} -->
   <packaging>jar</packaging>
 
-  <name>Cloud SQL R2DBC Connection Factory (R2DBC Core Library, don't depend on this directly)</name>
+  <name>Google Cloud SQL R2DBC Connector (Core Library, don't depend on this directly)</name>
   <description>
-    R2DBC ConnectionFactory to connect to a Cloud SQL database without having to deal with IP allowlisting or SSL
-    certificates manually.
+    Core library for establishing secure connections. End users should depend on the
+    driver-specific socket factory artifacts.
   </description>
+  <url>https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory</url>
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
@@ -40,8 +41,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>cloud-sql-connector-core</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>
@@ -72,8 +73,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.cloud.sql</groupId>
-      <artifactId>jdbc-socket-factory-core</artifactId>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>cloud-sql-connector-core</artifactId>
       <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
