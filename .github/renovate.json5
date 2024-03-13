@@ -1,7 +1,15 @@
 {
   "extends": [
     "config:recommended",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigests",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases",
+    ":ignoreUnstable",
+    ":prImmediately",
+    ":updateNotScheduled",
+    ":automergeDisabled",
+    ":ignoreModulesAndTests",
+    ":maintainLockFilesDisabled"
   ],
   "commitMessagePrefix": "deps: ",
   "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
@@ -18,14 +26,54 @@
     "ch.qos.logback:logback-classic"
   ],
   "packageRules": [
+    {"matchPackagePatterns": ["^com.google.guava:"], "versioning": "docker"},
     {
-      "matchPackagePatterns": [".*"],
-      "addLabels": ["automerge"]
+      "matchPackagePatterns": ["*"],
+      "semanticCommitType": "deps",
+      "semanticCommitScope": null
     },
     {
-      "matchPackageNames": ["mysql:mysql-connector-java"],
-      "enabled": false
+      "matchPackagePatterns": [
+        "^org.apache.maven",
+        "^org.jacoco:",
+        "^org.codehaus.mojo:",
+        "^org.sonatype.plugins:",
+        "^com.coveo:",
+        "^com.google.cloud:google-cloud-shared-config"
+      ],
+      "semanticCommitType": "build",
+      "semanticCommitScope": "deps"
     },
+    {
+      "matchPackagePatterns": [
+        "^com.google.cloud.sql:cloud-sql-jdbc-socket-factory-parent",
+        "^com.google.cloud:libraries-bom",
+        "^com.google.cloud.samples:shared-configuration"
+      ],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "matchPackagePatterns": [
+        "^junit:junit",
+        "^com.google.truth:truth",
+        "^org.mockito:mockito-core",
+        "^org.objenesis:objenesis",
+        "^com.google.cloud:google-cloud-conformance-tests"
+      ],
+      "semanticCommitType": "test",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "matchPackagePatterns": ["^com.google.cloud:google-cloud-"],
+      "ignoreUnstable": false
+    },
+    {
+      "matchPackagePatterns": ["^com.fasterxml.jackson.core"],
+      "groupName": "jackson dependencies"
+    },
+    {"matchPackagePatterns": [".*"], "addLabels": ["automerge"]},
+    {"matchPackageNames": ["mysql:mysql-connector-java"], "enabled": false},
     {
       "matchPackageNames": ["com.google.guava:guava"],
       "allowedVersions": "/.+-android/"
