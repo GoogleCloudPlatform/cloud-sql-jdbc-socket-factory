@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.17.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.17.0...v1.17.1) (2024-03-18)
+
+
+### Bug Fixes
+
+* Add scope for Credentials defined by a JSON file ([#1907](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1907)) ([e8377c3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e8377c3ff2cf9d50bd16071cac94d1360375c01d))
+
+
+### Dependencies
+
+* Update dependency com.google.api:gax to v2.46.0 ([#1902](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1902)) ([609408c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/609408c23aabb19aa490743a883cd8a6001d5377))
+* Update dependency com.google.api:gax to v2.46.1 ([#1903](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1903)) ([f1774b9](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f1774b93b4bea81f8371bf2a31780965d4cc8707))
+* Update dependency com.google.cloud:google-cloud-shared-config to v1.7.5 ([#1897](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1897)) ([0206a10](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0206a1022e73ad3742971b75ececcc9c90909305))
+* Update dependency com.google.cloud:google-cloud-shared-config to v1.7.6 ([#1900](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1900)) ([3510feb](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3510feb1199f96928fda865fdab923629b86d856))
+* Update dependency com.google.errorprone:error_prone_annotations to v2.26.1 ([#1890](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1890)) ([e5a86c5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e5a86c5c391989707e576570b8d92a7ba1d97a09))
+* Update dependency org.apache.maven.plugins:maven-gpg-plugin to v3.2.1 ([#1906](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1906)) ([3c14e01](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3c14e012fbf499e9f3ae89bfa4fd4c09d3c5303b))
+* Update dependency org.postgresql:postgresql to v42.7.3 ([#1899](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1899)) ([860a369](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/860a3691e04928bee3d1ccb88e4f0b9e6a1876cf))
+
 ## [1.17.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.16.0...v1.17.0) (2024-03-12)
 
 
