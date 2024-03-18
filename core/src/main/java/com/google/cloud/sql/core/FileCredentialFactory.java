@@ -17,11 +17,13 @@
 package com.google.cloud.sql.core;
 
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.services.sqladmin.SQLAdminScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.CredentialFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 class FileCredentialFactory implements CredentialFactory {
   private final String path;
@@ -37,10 +39,19 @@ class FileCredentialFactory implements CredentialFactory {
 
   @Override
   public GoogleCredentials getCredentials() {
+    GoogleCredentials credentials;
     try {
-      return GoogleCredentials.fromStream(new FileInputStream(path));
+      credentials = GoogleCredentials.fromStream(new FileInputStream(path));
     } catch (IOException e) {
       throw new IllegalStateException("Unable to load GoogleCredentials from file " + path, e);
     }
+
+    if (credentials.createScopedRequired()) {
+      credentials =
+          credentials.createScoped(
+              Arrays.asList(SQLAdminScopes.SQLSERVICE_ADMIN, SQLAdminScopes.CLOUD_PLATFORM));
+    }
+
+    return credentials;
   }
 }
