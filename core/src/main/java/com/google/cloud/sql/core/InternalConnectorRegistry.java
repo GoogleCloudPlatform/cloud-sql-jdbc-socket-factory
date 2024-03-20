@@ -305,6 +305,25 @@ public final class InternalConnectorRegistry {
     CredentialFactory instanceCredentialFactory =
         credentialFactoryProvider.getInstanceCredentialFactory(config);
 
+    String universeDomain = config.getUniverseDomain();
+    String credentialsUniverse;
+    try {
+      credentialsUniverse = instanceCredentialFactory.getCredentials().getUniverseDomain();
+    } catch (IOException e) {
+      throw new IllegalStateException("Fail to fetch the credential universe domain");
+    }
+
+    // Verify that the universe domain provided matches the credential universe domain.
+    if (credentialsUniverse != null
+        && universeDomain != null
+        && !credentialsUniverse.equals(universeDomain)) {
+      throw new IllegalStateException(
+          String.format(
+              "The configured universe domain (%s) does not match "
+                  + "the credential universe domain (%s)",
+              universeDomain, credentialsUniverse));
+    }
+
     return new Connector(
         config,
         connectionInfoRepositoryFactory,

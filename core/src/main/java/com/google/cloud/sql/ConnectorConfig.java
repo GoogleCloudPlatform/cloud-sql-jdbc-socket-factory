@@ -36,6 +36,7 @@ public class ConnectorConfig {
   private final GoogleCredentials googleCredentials;
   private final String googleCredentialsPath;
   private final String adminQuotaProject;
+  private final String universeDomain;
 
   private ConnectorConfig(
       String targetPrincipal,
@@ -45,7 +46,8 @@ public class ConnectorConfig {
       Supplier<GoogleCredentials> googleCredentialsSupplier,
       GoogleCredentials googleCredentials,
       String googleCredentialsPath,
-      String adminQuotaProject) {
+      String adminQuotaProject,
+      String universeDomain) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -54,6 +56,7 @@ public class ConnectorConfig {
     this.googleCredentials = googleCredentials;
     this.googleCredentialsPath = googleCredentialsPath;
     this.adminQuotaProject = adminQuotaProject;
+    this.universeDomain = universeDomain;
   }
 
   @Override
@@ -72,7 +75,8 @@ public class ConnectorConfig {
         && Objects.equal(googleCredentialsSupplier, that.googleCredentialsSupplier)
         && Objects.equal(googleCredentials, that.googleCredentials)
         && Objects.equal(googleCredentialsPath, that.googleCredentialsPath)
-        && Objects.equal(adminQuotaProject, that.adminQuotaProject);
+        && Objects.equal(adminQuotaProject, that.adminQuotaProject)
+        && Objects.equal(universeDomain, that.universeDomain);
   }
 
   @Override
@@ -85,7 +89,8 @@ public class ConnectorConfig {
         googleCredentialsSupplier,
         googleCredentials,
         googleCredentialsPath,
-        adminQuotaProject);
+        adminQuotaProject,
+        universeDomain);
   }
 
   public String getTargetPrincipal() {
@@ -120,6 +125,10 @@ public class ConnectorConfig {
     return adminQuotaProject;
   }
 
+  public String getUniverseDomain() {
+    return universeDomain;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -131,6 +140,7 @@ public class ConnectorConfig {
     private GoogleCredentials googleCredentials;
     private String googleCredentialsPath;
     private String adminQuotaProject;
+    private String universeDomain;
 
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
@@ -173,6 +183,11 @@ public class ConnectorConfig {
       return this;
     }
 
+    public Builder withUniverseDomain(String universeDomain) {
+      this.universeDomain = universeDomain;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -191,6 +206,11 @@ public class ConnectorConfig {
             "Invalid configuration, more than one GoogleCredentials field has a value "
                 + "(googleCredentials, googleCredentialsPath, googleCredentialsSupplier)");
       }
+      if (adminRootUrl != null && universeDomain != null) {
+        throw new IllegalStateException(
+            "Can not set Admin API Endpoint and Universe Domain together, "
+                + "set only Admin API Endpoint (it already contains the universe domain)");
+      }
 
       return new ConnectorConfig(
           targetPrincipal,
@@ -200,7 +220,8 @@ public class ConnectorConfig {
           googleCredentialsSupplier,
           googleCredentials,
           googleCredentialsPath,
-          adminQuotaProject);
+          adminQuotaProject,
+          universeDomain);
     }
   }
 }
