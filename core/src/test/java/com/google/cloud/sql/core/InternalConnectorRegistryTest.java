@@ -197,6 +197,38 @@ public class InternalConnectorRegistryTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
+  public void registerConnectionFails_withUniverseDomainDoesNotMatchCredentialsDomain()
+      throws InterruptedException {
+    final String googleCredentialsPath =
+        InternalConnectorRegistryTest.class.getResource("/sample-credentials.json").getFile();
+    final String universeDomain = "test-universe.test";
+
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
+    ConnectorConfig config =
+        new ConnectorConfig.Builder()
+            .withGoogleCredentialsPath(googleCredentialsPath)
+            .withUniverseDomain(universeDomain)
+            .build();
+    assertThrows(IllegalStateException.class, () -> registry.register("my-connection", config));
+  }
+
+  @Test
+  public void registerConnection_withUniverseDomainMatchingCredentialsDomain()
+      throws InterruptedException {
+    final String googleCredentialsPath =
+        InternalConnectorRegistryTest.class.getResource("/sample-credentials.json").getFile();
+    final String universeDomain = "googleapis.com";
+
+    InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
+    ConnectorConfig config =
+        new ConnectorConfig.Builder()
+            .withGoogleCredentialsPath(googleCredentialsPath)
+            .withUniverseDomain(universeDomain)
+            .build();
+    registry.register("my-connection", config);
+  }
+
+  @Test
   public void closeNamedConnectionFailsWhenNotFound() throws InterruptedException {
     InternalConnectorRegistry registry = createRegistry(PUBLIC_IP, stubCredentialFactoryProvider);
     // Assert that you can't close a connection that doesn't exist
