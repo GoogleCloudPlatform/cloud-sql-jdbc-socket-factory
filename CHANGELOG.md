@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.17.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.17.1...v1.17.2) (2024-03-28)
+
+
+### Dependencies
+
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20240317-2.0.0 ([#1917](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1917)) ([8cea3f8](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/8cea3f8e2e33ecfc25b0d711ea234bd61eb4f498))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20240324-2.0.0 ([#1923](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1923)) ([43e9538](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/43e9538bdc9ab1c8de28334106d8b7d91cc1f745))
+* Update dependency org.apache.maven.plugins:maven-assembly-plugin to v3.7.1 ([#1911](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1911)) ([be8c9c0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/be8c9c0d0cf7eb90b8d48398a6be4559848d1503))
+* Update dependency org.apache.maven.plugins:maven-compiler-plugin to v3.13.0 ([#1914](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1914)) ([281b7cd](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/281b7cd3af39e21a0ed9d3bfb97449eda190077b))
+* Update dependency org.apache.maven.plugins:maven-gpg-plugin to v3.2.2 ([#1922](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1922)) ([313878d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/313878db4bbeb0c5aa65bf2fd18320c10e7d2dbf))
+* Update dependency org.graalvm.sdk:nativeimage to v24 ([#1916](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1916)) ([77c1d95](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/77c1d9512a18f1d0ebf1e850e38df3d64a68d59f))
+* Update netty and r2dbc dependencies to v4.1.108.Final ([#1919](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1919)) ([7107ad7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7107ad759ec2e3d2df7ee341ed4024f5b52212f7))
+* Update org.ow2.asm dependencies to v9.7 ([#1920](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1920)) ([8132a1f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/8132a1f8491acf5fc676f6f27bdaf139a0d75fb1))
+
 ## [1.17.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.17.0...v1.17.1) (2024-03-18)
 
 
