@@ -68,6 +68,9 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
               .build();
       adminApiBuilder.setGoogleClientRequestInitializer(clientRequestInitializer);
     }
+    if (config.getUniverseDomain() != null) {
+      adminApiBuilder.setUniverseDomain(config.getUniverseDomain());
+    }
     return new DefaultConnectionInfoRepository(adminApiBuilder.build());
   }
 }

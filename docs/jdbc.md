@@ -532,6 +532,19 @@ Properties connProps = new Properties();
 connProps.setProperty("cloudSqlAdminQuotaProject", "PROJECT_NAME");
 ```
 
+### Trusted Partner Cloud (TPC) support
+
+The Java Connector supports setting the universe domain for the TPC environment
+with the `cloudSqlUniverseDomain` property. If not specified, defaults to the
+Google Default Universe (GDU): googleapis.com.
+
+#### Example
+
+```java
+Properties connProps = new Properties();
+connProps.setProperty("cloudSqlUniverseDomain", "test-universe.test");
+```
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)

@@ -80,6 +80,28 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  public void testBuild_withUniverseDomain() {
+    final String wantUniverseDomain = "test-universe.test";
+    ConnectorConfig cc =
+        new ConnectorConfig.Builder().withUniverseDomain(wantUniverseDomain).build();
+    assertThat(cc.getUniverseDomain()).isEqualTo(wantUniverseDomain);
+  }
+
+  @Test
+  public void testBuild_failsWhenAdminAPIAndUniverseDomainAreSet() {
+    final String wantAdminRootUrl = "https://googleapis.example.com/";
+    final String wantUniverseDomain = "test-universe.test";
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            new ConnectorConfig.Builder()
+                .withAdminRootUrl(wantAdminRootUrl)
+                .withUniverseDomain(wantUniverseDomain)
+                .build());
+  }
+
+  @Test
   public void testBuild_failsWhenManyGoogleCredentialFieldsSet() {
     final Supplier<GoogleCredentials> wantGoogleCredentialSupplier =
         () -> GoogleCredentials.create(null);
@@ -310,6 +332,27 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  public void testNotEqual_withUniverseDomainNotEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withUniverseDomain("test-universe.test").build();
+    ConnectorConfig k2 = new ConnectorConfig.Builder().withUniverseDomain("googleapis.com").build();
+
+    assertThat(k1).isNotEqualTo(k2);
+    assertThat(k1.hashCode()).isNotEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testNotEqual_withUniverseDomainEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withUniverseDomain("test-universe.test").build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withUniverseDomain("test-universe.test").build();
+
+    assertThat(k1).isEqualTo(k2);
+    assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
   public void testHashCode() {
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
@@ -337,6 +380,7 @@ public class ConnectorConfigTest {
                 null, // googleCredentialsSupplier
                 null, // googleCredentials
                 wantGoogleCredentialsPath,
-                wantAdminQuotaProject));
+                wantAdminQuotaProject,
+                null)); // universeDomain
   }
 }
