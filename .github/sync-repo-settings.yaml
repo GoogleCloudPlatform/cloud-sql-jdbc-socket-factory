@@ -41,11 +41,17 @@ branchProtectionRules:
   requiresStrictStatusChecks: true
   # List of required status check contexts that must pass for commits to be accepted to matching branches.
   requiredStatusCheckContexts:
-  - "dependencies (11)"
   - "lint"
-  - "units (8)"
-  - "units (11)"
-  - "units + e2e"
+  - "unit tests (macos-latest, 8)"
+  - "unit tests (macos-latest, 11)"
+  - "unit tests (macos-latest, 17)"
+  - "unit tests (windows-latest, 8)"
+  - "unit tests (windows-latest, 11)"
+  - "unit tests (windows-latest, 17)"
+  - "unit tests (ubuntu-latest, 8)"
+  - "unit tests (ubuntu-latest, 11)"
+  - "unit tests (ubuntu-latest, 17)"
+  - "units + e2e (ubuntu-latest, 17)"
   - "cla/google"
   # Wait until we make the repo public before bringing this back
   # - "OwlBot Post Processor"
