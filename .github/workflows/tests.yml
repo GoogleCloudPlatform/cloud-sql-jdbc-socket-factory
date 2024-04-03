@@ -27,15 +27,15 @@ on:
 permissions: read-all
 
 jobs:
-  unit-e2e:
+  units:
     # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
     if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
-    name: unit + e2e
+    name: unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ macos-latest, windows-latest, ubuntu-latest ]
-        java-version: [ "11", "17" ]
+        java-version: [ "8", "11", "17" ]
       fail-fast: false
     permissions:
       contents: 'read'
@@ -122,6 +122,7 @@ jobs:
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
         QUOTA_PROJECT: '${{ steps.secrets.outputs.QUOTA_PROJECT }}'
+        JOB_TYPE: test
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: Check Coverage
@@ -147,14 +148,15 @@ jobs:
         curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot-darwin-amd64 -o flakybot -s -L
         chmod +x ./flakybot
         ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-  unit-e2e-java8:
+  unit-e2e:
     # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
     if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
-    name: unit + e2e java8
+    name: units + e2e
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+        os: [ ubuntu-latest ]
+        java-version: [ "17" ]
       fail-fast: false
     permissions:
       contents: 'read'
@@ -184,23 +186,11 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         repository: ${{ github.event.pull_request.head.repo.full_name }}
 
-    # Set up Java 8 for testing
-    - name: Set up JDK 8
+    - name: Set up JDK
       uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
       with:
         distribution: 'zulu'
-        java-version: '8'
-    - run: echo "JAVA8_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-      shell: bash
-
-    # Set up Java 11 for compilation
-    - name: Set up JDK 11
-      uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
-      with:
-        distribution: 'zulu'
-        java-version: '11'
-    - run: echo "JAVA11_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-      shell: bash
+        java-version: ${{matrix.java-version}}
 
     - id: 'auth'
       name: Authenticate to Google Cloud
@@ -253,6 +243,7 @@ jobs:
         SQLSERVER_DB: '${{ steps.secrets.outputs.SQLSERVER_DB }}'
         IMPERSONATED_USER: '${{ steps.secrets.outputs.IMPERSONATED_USER }}'
         QUOTA_PROJECT: '${{ steps.secrets.outputs.QUOTA_PROJECT }}'
+        JOB_TYPE: integration
       run: ./.github/scripts/run_tests.sh
       shell: bash
     - name: Check Coverage
