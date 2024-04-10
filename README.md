@@ -39,6 +39,16 @@ mysql-socket-factory-connector-j-8–1.8.0-jar-with-dependencies.jar
 postgres-socket-factory-1.8.0-jar-with-dependencies.jar
 ```
 
+### Debug Logging
+
+The Java Connector supports optional debug logging to help diagnose problems with
+the background certificate refresh. To enable it, add the following to the file
+`/src/main/resources/application.yml`:
+
+```
+logging.level.root=DEBUG
+```
+
 ---
 
 ### Firewall configuration

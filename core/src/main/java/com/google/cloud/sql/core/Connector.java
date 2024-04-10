@@ -110,18 +110,28 @@ class Connector {
     DefaultConnectionInfoCache instance = getConnection(config);
     try {
 
-      SSLSocket socket = instance.createSslSocket(timeoutMs);
+      String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
+      logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
 
+      SSLSocket socket = instance.createSslSocket(timeoutMs);
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
-
-      String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
-
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-      socket.startHandshake();
+
+      try {
+        socket.startHandshake();
+      } catch (IOException e) {
+        logger.debug("TLS handshake failed!");
+        throw e;
+      }
+
+      logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
 
       return socket;
     } catch (IOException e) {
+      logger.debug(
+          String.format(
+              "[%s] Socket connection failed! Trigger a refresh.", config.getCloudSqlInstance()));
       instance.forceRefresh();
       throw e;
     }
@@ -142,11 +152,14 @@ class Connector {
   }
 
   private DefaultConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
+    logger.debug(
+        String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
     return new DefaultConnectionInfoCache(
         config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
   }
 
   public void close() {
+    logger.debug("Close all connections and remove them from cache.");
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
   }
