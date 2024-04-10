@@ -182,6 +182,10 @@ class Refresher {
   /** Force a new refresh of the instance data if the client certificate has expired. */
   void refreshIfExpired() {
     ConnectionInfo info = getConnectionInfo(DEFAULT_CONNECT_TIMEOUT_MS);
+    logger.debug(
+        String.format(
+            "[%s] Now = %s, Current client certificate expiration = %s",
+            name, Instant.now().toString(), info.getExpiration()));
     if (Instant.now().isAfter(info.getExpiration())) {
       logger.debug(
           String.format(
@@ -268,11 +272,11 @@ class Refresher {
       // No refresh retry when the TerminalException is raised.
       final Throwable cause = e.getCause();
       if (cause instanceof TerminalException) {
-        logger.info(String.format("[%s] Refresh Operation: Failed! No retry.", name), e);
+        logger.debug(String.format("[%s] Refresh Operation: Failed! No retry.", name), e);
         throw (TerminalException) cause;
       }
 
-      logger.info(
+      logger.debug(
           String.format(
               "[%s] Refresh Operation: Failed! Starting next refresh operation immediately.", name),
           e);
