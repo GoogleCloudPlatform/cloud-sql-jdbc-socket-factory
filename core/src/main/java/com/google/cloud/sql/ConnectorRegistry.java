@@ -64,6 +64,6 @@ public final class ConnectorRegistry {
    * @throws IllegalStateException if the SQLAdmin client has already been initialized
    */
   public static void addArtifactId(String artifactId) {
-    InternalConnectorRegistry.getInstance().addArtifactId(artifactId);
+    InternalConnectorRegistry.addArtifactId(artifactId, false);
   }
 }

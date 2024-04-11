@@ -231,14 +231,31 @@ public final class InternalConnectorRegistry {
    * Internal use only: Sets the default string which is appended to the SQLAdmin API client
    * User-Agent header.
    *
-   * <p>This is used by the specific database connector socket factory implementations to append
-   * their database name to the user agent.
+   * @param artifactId is the Artifact ID.
+   * @param addVersion whether the version should be appended to the ID.
    */
-  public static void addArtifactId(String artifactId) {
-    String userAgent = artifactId + "/" + version;
+  public static void addArtifactId(String artifactId, boolean addVersion) {
+    String userAgent = artifactId;
+
+    if (addVersion) {
+      userAgent += "/" + version;
+    }
     if (!userAgents.contains(userAgent)) {
       userAgents.add(userAgent);
     }
+  }
+
+  /**
+   * Internal use only: Sets the default string which is appended to the SQLAdmin API client
+   * User-Agent header.
+   *
+   * <p>This is used by the specific database connector socket factory implementations to append
+   * their database name to the user agent. The version is appended to the ID.
+   *
+   * @param artifactId is the Artifact ID.
+   */
+  public static void addArtifactId(String artifactId) {
+    addArtifactId(artifactId, true);
   }
 
   /** Resets the values of User Agent fields for unit tests. */
