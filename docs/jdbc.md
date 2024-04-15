@@ -82,7 +82,7 @@ Maven
 ```maven-pom
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
-    <artifactId>postgres-socket-factory</artifactId>
+    <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
     <version>1.17.1</version>
 </dependency>
 ```
