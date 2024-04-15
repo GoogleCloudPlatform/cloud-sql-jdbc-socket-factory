@@ -17,9 +17,22 @@
 package com.google.cloud.sql.nativeimage;
 
 import com.google.api.gax.nativeimage.NativeImageUtils;
+import com.oracle.svm.core.configure.ResourcesRegistry;
+import com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry;
+import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 /**
  * Registers GraalVM configuration for the Cloud SQL libraries.
@@ -112,5 +125,98 @@ final class CloudSqlFeature implements Feature {
     if (bouncyCastleAlpnSslUtils != null) {
       RuntimeClassInitialization.initializeAtRunTime(bouncyCastleAlpnSslUtils);
     }
+
+    // Register config for Unix Domain Socket support
+    DynamicProxyRegistry proxyRegistry = ImageSingletons.lookup(DynamicProxyRegistry.class);
+    if (access.findClassByName("jnr.ffi.provider.FFIProvider") != null) {
+
+      // Disabling this as ASM (runtime code generation library) can sometimes cause issues during
+      // native image build.
+      String asmEnabledPropertyKey = "jnr.ffi.asm.enabled";
+      if (System.getProperty(asmEnabledPropertyKey) == null) {
+        System.setProperty(asmEnabledPropertyKey, String.valueOf(false));
+      }
+
+      NativeImageUtils.registerForReflectiveInstantiation(access, "jnr.ffi.provider.jffi.Provider");
+      RuntimeClassInitialization.initializeAtBuildTime("jnr.ffi.provider.jffi.NativeLibraryLoader");
+
+      // StubLoader loads the native stub library and is only intended to be called reflectively.
+      // Note that this configuration only covers linux x86_64 platform at the moment.
+      NativeImageUtils.registerClassForReflection(access, "com.kenai.jffi.internal.StubLoader");
+      NativeImageUtils.registerClassForReflection(access, "com.kenai.jffi.Version");
+
+      // Dynamic proxy for jnr
+      Class<?> loadedLibrary = access.findClassByName("jnr.ffi.provider.LoadedLibrary");
+      if (loadedLibrary != null) {
+        Class<?> unixSocketLibc = access.findClassByName("jnr.unixsocket.Native$LibC");
+        if (unixSocketLibc != null) {
+          proxyRegistry.addProxyClass(unixSocketLibc, loadedLibrary);
+        }
+
+        Class<?> enxioLibc = access.findClassByName("jnr.enxio.channels.Native$LibC");
+        if (enxioLibc != null) {
+          proxyRegistry.addProxyClass(enxioLibc, loadedLibrary);
+        }
+      }
+
+      // Stub library. For example: jni/x86_64-Linux/libjffi-1.2.so
+      ResourcesRegistry resourcesRegistry = ImageSingletons.lookup(ResourcesRegistry.class);
+      resourcesRegistry.addResources(
+          ConfigurationCondition.alwaysTrue(), "jni/x86_64-Linux/libjffi-\\d+\\.\\d+\\.so");
+
+      NativeImageUtils.registerClassForReflection(
+          access, "jnr.ffi.provider.jffi.platform.x86_64.linux.TypeAliases");
+
+      // Scan the jnr.constants.platform.linux package and register all for reflection
+      registerPackageForReflection(access, "jnr.constants.platform.linux.Errno");
+    }
+  }
+
+  /** Registers all the classes under the specified package for reflection. */
+  public static void registerPackageForReflection(FeatureAccess access, String packageName) {
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+    try {
+      String path = packageName.replace('.', '/');
+
+      Enumeration<URL> resources = classLoader.getResources(path);
+      while (resources.hasMoreElements()) {
+        URL url = resources.nextElement();
+
+        URLConnection connection = url.openConnection();
+        if (connection instanceof JarURLConnection) {
+          List<String> classes = findClassesInJar((JarURLConnection) connection, packageName);
+          for (String className : classes) {
+            NativeImageUtils.registerClassHierarchyForReflection(access, className);
+          }
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to load classes under package name.", e);
+    }
+  }
+
+  private static List<String> findClassesInJar(JarURLConnection urlConnection, String packageName)
+      throws IOException {
+
+    List<String> result = new ArrayList<>();
+
+    final JarFile jarFile = urlConnection.getJarFile();
+    final Enumeration<JarEntry> entries = jarFile.entries();
+
+    while (entries.hasMoreElements()) {
+      JarEntry entry = entries.nextElement();
+      String entryName = entry.getName();
+
+      if (entryName.endsWith(".class")) {
+        String javaClassName = entryName.replace(".class", "").replace('/', '.');
+
+        if (javaClassName.startsWith(packageName)) {
+          result.add(javaClassName);
+        }
+      }
+    }
+
+    return result;
   }
 }

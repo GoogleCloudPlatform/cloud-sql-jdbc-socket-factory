@@ -698,6 +698,7 @@
       (.kokoro/graalvm-native/linux) -->
       <id>native</id>
 
+
       <dependencyManagement>
         <!-- Controlling version for dependencyConvergence enforcer rule -->
         <dependencies>
@@ -729,15 +730,38 @@
           <version>${native-image.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.graalvm.nativeimage</groupId>
+          <artifactId>svm</artifactId>
+          <version>${graal-sdk.version}</version>
+          <scope>provided</scope>
+        </dependency>
       </dependencies>
 
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <!-- Include all matching tests during native image testing -->
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>animal-sniffer-maven-plugin</artifactId>
+            <version>1.23</version>
+            <dependencies>
+              <!--
+              Force newer version of asm so that this maven plugin can parse
+              jdk 21 class files.
+              -->
+             <dependency>
+               <groupId>org.ow2.asm</groupId>
+               <artifactId>asm</artifactId>
+               <version>9.7</version>
+             </dependency>
+           </dependencies>
+         </plugin>
+
+         <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-surefire-plugin</artifactId>
+           <configuration>
+             <!-- Include all matching tests during native image testing -->
               <excludes combine.self="override"/>
               <includes>
                 <include>**/*IntegrationTests</include>
