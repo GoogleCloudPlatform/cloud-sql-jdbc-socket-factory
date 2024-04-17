@@ -62,9 +62,7 @@ that are protected by a firewall may need to be configured to allow outgoing con
  
 In order to [connect IntelliJ](https://www.jetbrains.com/help/datagrip/connect-to-google-cloud-sql-instances.html) 
 to your Cloud SQL instance, you will need to add this library as a jar with dependencies in
-"Additional Files" section on the driver settings page. Prebuilt fat jars can be found on the 
-[Releases](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/releases) page for 
-this purpose. 
+"Additional Files" section on the driver settings page. Prebuilt fat jars are no longer provided (since v1.14.0).
  
 ## Troubleshooting
 
