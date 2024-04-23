@@ -30,6 +30,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -116,6 +118,43 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  private boolean isWindows() {
+    String os = System.getProperty("os.name").toLowerCase();
+    return os.contains("win");
+  }
+
+  @Test
+  public void create_successfulUnixSocketConnection() throws IOException, InterruptedException {
+    if (isWindows()) {
+      System.out.println("Skipping unix socket test on Windows.");
+      return;
+    }
+
+    Path socketTestDir = Files.createTempDirectory("sockettest");
+    Path socketPath = socketTestDir.resolve("test.sock");
+    FakeUnixSocketServer unixSocketServer = new FakeUnixSocketServer(socketPath.toString());
+
+    try {
+
+      ConnectionConfig config =
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:myInstance")
+              .withIpTypes("PRIMARY")
+              .withUnixSocketPath(socketPath.toString())
+              .build();
+
+      unixSocketServer.start();
+
+      Connector connector = newConnector(config.getConnectorConfig(), 10000);
+
+      Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+      assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+    } finally {
+      unixSocketServer.close();
+    }
   }
 
   @Test
