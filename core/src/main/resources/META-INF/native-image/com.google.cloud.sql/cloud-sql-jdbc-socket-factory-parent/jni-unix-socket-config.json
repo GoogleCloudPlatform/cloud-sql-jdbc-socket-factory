@@ -1,0 +1,14 @@
+[
+  {
+    "interfaces": [
+      "jnr.unixsocket.Native$LibC",
+      "jnr.ffi.provider.LoadedLibrary"
+    ]
+  },
+  {
+    "interfaces": [
+      "jnr.enxio.channels.Native$LibC",
+      "jnr.ffi.provider.LoadedLibrary"
+    ]
+  }
+]
