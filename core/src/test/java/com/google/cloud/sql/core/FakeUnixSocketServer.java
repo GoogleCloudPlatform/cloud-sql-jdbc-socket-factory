@@ -46,12 +46,17 @@ class FakeUnixSocketServer {
     this.address = new UnixSocketAddress(path);
   }
 
-  public void close() throws IOException {
-    this.closed.set(true);
-    channel.close();
+  public synchronized void close() throws IOException {
+    if (!this.closed.get()) {
+      this.closed.set(true);
+    }
+    if (this.channel != null) {
+      channel.close();
+      this.channel = null;
+    }
   }
 
-  public void start() throws IOException {
+  public synchronized void start() throws IOException {
     java.io.File path = new java.io.File(this.path);
     path.deleteOnExit();
 

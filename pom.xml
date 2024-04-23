@@ -741,6 +741,7 @@
               <!-- Include all matching tests during native image testing -->
               <excludes combine.self="override"/>
               <includes>
+                <include>**/ConnectorsTest</include>
                 <include>**/*IntegrationTests</include>
               </includes>
             </configuration>
