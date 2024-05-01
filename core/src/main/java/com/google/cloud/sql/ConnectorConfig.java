@@ -38,6 +38,8 @@ public class ConnectorConfig {
   private final String adminQuotaProject;
   private final String universeDomain;
 
+  private final RefreshStrategy refreshStrategy;
+
   private ConnectorConfig(
       String targetPrincipal,
       List<String> delegates,
@@ -47,7 +49,8 @@ public class ConnectorConfig {
       GoogleCredentials googleCredentials,
       String googleCredentialsPath,
       String adminQuotaProject,
-      String universeDomain) {
+      String universeDomain,
+      RefreshStrategy refreshStrategy) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -57,6 +60,7 @@ public class ConnectorConfig {
     this.googleCredentialsPath = googleCredentialsPath;
     this.adminQuotaProject = adminQuotaProject;
     this.universeDomain = universeDomain;
+    this.refreshStrategy = refreshStrategy;
   }
 
   @Override
@@ -76,7 +80,8 @@ public class ConnectorConfig {
         && Objects.equal(googleCredentials, that.googleCredentials)
         && Objects.equal(googleCredentialsPath, that.googleCredentialsPath)
         && Objects.equal(adminQuotaProject, that.adminQuotaProject)
-        && Objects.equal(universeDomain, that.universeDomain);
+        && Objects.equal(universeDomain, that.universeDomain)
+        && Objects.equal(refreshStrategy, that.refreshStrategy);
   }
 
   @Override
@@ -90,7 +95,8 @@ public class ConnectorConfig {
         googleCredentials,
         googleCredentialsPath,
         adminQuotaProject,
-        universeDomain);
+        universeDomain,
+        refreshStrategy);
   }
 
   public String getTargetPrincipal() {
@@ -129,6 +135,10 @@ public class ConnectorConfig {
     return universeDomain;
   }
 
+  public RefreshStrategy getRefreshStrategy() {
+    return refreshStrategy;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -141,6 +151,7 @@ public class ConnectorConfig {
     private String googleCredentialsPath;
     private String adminQuotaProject;
     private String universeDomain;
+    private RefreshStrategy refreshStrategy = RefreshStrategy.BACKGROUND;
 
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
@@ -188,6 +199,11 @@ public class ConnectorConfig {
       return this;
     }
 
+    public Builder withRefreshStrategy(RefreshStrategy refreshStrategy) {
+      this.refreshStrategy = refreshStrategy;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -221,7 +237,8 @@ public class ConnectorConfig {
           googleCredentials,
           googleCredentialsPath,
           adminQuotaProject,
-          universeDomain);
+          universeDomain,
+          refreshStrategy);
     }
   }
 }

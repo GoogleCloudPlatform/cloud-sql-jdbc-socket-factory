@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Splitter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +42,7 @@ public class ConnectionConfig {
   public static final String CLOUD_SQL_TARGET_PRINCIPAL_PROPERTY = "cloudSqlTargetPrincipal";
   public static final String CLOUD_SQL_ADMIN_ROOT_URL_PROPERTY = "cloudSqlAdminRootUrl";
   public static final String CLOUD_SQL_ADMIN_SERVICE_PATH_PROPERTY = "cloudSqlAdminServicePath";
+  public static final String CLOUD_SQL_REFRESH_STRATEGY_PROPERTY = "cloudSqlRefreshStrategy";
   public static final String UNIX_SOCKET_PROPERTY = "unixSocketPath";
   public static final String UNIX_SOCKET_PATH_SUFFIX_PROPERTY = "cloudSqlUnixSocketPathSuffix";
   public static final String ENABLE_IAM_AUTH_PROPERTY = "enableIamAuth";
@@ -97,6 +99,12 @@ public class ConnectionConfig {
     final String adminQuotaProject =
         props.getProperty(ConnectionConfig.CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY);
     final String universeDomain = props.getProperty(ConnectionConfig.CLOUD_SQL_UNIVERSE_DOMAIN);
+    final String refreshStrategyStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_REFRESH_STRATEGY_PROPERTY);
+    final RefreshStrategy refreshStrategy =
+        "lazy".equalsIgnoreCase(refreshStrategyStr)
+            ? RefreshStrategy.LAZY
+            : RefreshStrategy.BACKGROUND;
 
     return new ConnectionConfig(
         csqlInstanceName,
@@ -113,6 +121,7 @@ public class ConnectionConfig {
             .withGoogleCredentialsPath(googleCredentialsPath)
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
+            .withRefreshStrategy(refreshStrategy)
             .build());
   }
 
