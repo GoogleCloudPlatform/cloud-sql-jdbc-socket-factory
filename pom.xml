@@ -569,7 +569,8 @@
                 com.google.auth:google-auth-library-credentials
 
                 Necessary for Unix socket support:
-                org.ow2.asm:asm-util AND com.github.jnr:jnr-unixsocket
+                org.ow2.asm:asm-util AND com.github.jnr:jnr-unixsocket AND
+                com.github.jnr:jnr-enxio
 
                 Necessary for Postgres support:
                 org.postgresql:postgresql
@@ -583,7 +584,7 @@
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,com.github.jnr:jnr-enxio,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -740,6 +741,7 @@
               <!-- Include all matching tests during native image testing -->
               <excludes combine.self="override"/>
               <includes>
+                <include>**/ConnectorsTest</include>
                 <include>**/*IntegrationTests</include>
               </includes>
             </configuration>

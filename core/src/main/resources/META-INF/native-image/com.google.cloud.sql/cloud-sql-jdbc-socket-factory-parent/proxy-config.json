@@ -1,0 +1,22 @@
+[
+  {
+    "condition": {
+      "typeReachable": "jnr.unixsocket.Native$LibC"
+    },
+    "name": "jnr.unixsocket.Native$LibC",
+    "interfaces": [
+      "jnr.unixsocket.Native$LibC",
+      "jnr.ffi.provider.LoadedLibrary"
+    ]
+  },
+  {
+    "condition": {
+      "typeReachable":"jnr.enxio.channels.Native$LibC"
+    },
+    "name": "jnr.enxio.channels.Native$LibC",
+    "interfaces": [
+      "jnr.enxio.channels.Native$LibC",
+      "jnr.ffi.provider.LoadedLibrary"
+    ]
+  }
+]
