@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Handles periodic refresh operations for an instance. */
-class Refresher {
-  private static final Logger logger = LoggerFactory.getLogger(Refresher.class);
+class RefreshAheadStrategy {
+  private static final Logger logger = LoggerFactory.getLogger(RefreshAheadStrategy.class);
   private static final long DEFAULT_CONNECT_TIMEOUT_MS = 45000;
 
   private final ListeningScheduledExecutorService executor;
@@ -70,7 +70,7 @@ class Refresher {
    * @param refreshOperation The supplier that refreshes the data.
    * @param rateLimiter The rate limiter.
    */
-  Refresher(
+  RefreshAheadStrategy(
       String name,
       ListeningScheduledExecutorService executor,
       Supplier<ListenableFuture<ConnectionInfo>> refreshOperation,
@@ -87,7 +87,7 @@ class Refresher {
    * @param rateLimiter The rate limiter.
    * @param triggerNextRefresh The next refresh operation should be triggered.
    */
-  Refresher(
+  RefreshAheadStrategy(
       String name,
       ListeningScheduledExecutorService executor,
       Supplier<ListenableFuture<ConnectionInfo>> refreshOperation,
@@ -201,7 +201,7 @@ class Refresher {
    * will 1. Acquire a rate limiter. 2. Attempt to fetch instance data. 3. Schedule the next attempt
    * to get instance data based on the success/failure of this attempt.
    *
-   * @see com.google.cloud.sql.core.Refresher#handleRefreshResult(
+   * @see RefreshAheadStrategy#handleRefreshResult(
    *     com.google.common.util.concurrent.ListenableFuture)
    */
   private ListenableFuture<ConnectionInfo> startRefreshAttempt() {

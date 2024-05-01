@@ -35,7 +35,7 @@ import javax.net.ssl.SSLSocket;
 class DefaultConnectionInfoCache {
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
-  private final Refresher refresher;
+  private final RefreshAheadStrategy refreshStrategy;
   private final ConnectionConfig config;
 
   /**
@@ -63,8 +63,8 @@ class DefaultConnectionInfoCache {
     }
 
     // Initialize the data refresher to retrieve instance data.
-    refresher =
-        new Refresher(
+    refreshStrategy =
+        new RefreshAheadStrategy(
             config.getCloudSqlInstance(),
             executor,
             () ->
@@ -89,7 +89,7 @@ class DefaultConnectionInfoCache {
    * the exception from the last failed refresh attempt as the cause.
    */
   private ConnectionInfo getConnectionInfo(long timeoutMs) {
-    return refresher.getConnectionInfo(timeoutMs);
+    return refreshStrategy.getConnectionInfo(timeoutMs);
   }
 
   /**
@@ -133,19 +133,19 @@ class DefaultConnectionInfoCache {
   }
 
   void forceRefresh() {
-    this.refresher.forceRefresh();
+    this.refreshStrategy.forceRefresh();
   }
 
   void refreshIfExpired() {
-    this.refresher.refreshIfExpired();
+    this.refreshStrategy.refreshIfExpired();
   }
 
   ListenableFuture<ConnectionInfo> getNext() {
-    return refresher.getNext();
+    return refreshStrategy.getNext();
   }
 
   ListenableFuture<ConnectionInfo> getCurrent() {
-    return refresher.getCurrent();
+    return refreshStrategy.getCurrent();
   }
 
   public CloudSqlInstanceName getInstanceName() {
@@ -153,6 +153,6 @@ class DefaultConnectionInfoCache {
   }
 
   void close() {
-    refresher.close();
+    refreshStrategy.close();
   }
 }

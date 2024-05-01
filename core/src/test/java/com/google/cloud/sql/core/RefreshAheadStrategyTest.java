@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RefresherTest {
+public class RefreshAheadStrategyTest {
 
   public static final long TEST_TIMEOUT_MS = 3000;
 
-  private AsyncRateLimiter rateLimiter = new AsyncRateLimiter(10);
+  private final AsyncRateLimiter rateLimiter = new AsyncRateLimiter(10);
 
   private ListeningScheduledExecutorService executorService;
 
@@ -53,8 +53,8 @@ public class RefresherTest {
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testCloudSqlInstanceDataRetrievedSuccessfully",
             executorService,
             () -> Futures.immediateFuture(data),
@@ -65,8 +65,8 @@ public class RefresherTest {
 
   @Test
   public void testInstanceFailsOnConnectionError() {
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testInstanceFailsOnConnectionError",
             executorService,
             () -> Futures.immediateFailedFuture(new RuntimeException("always fails")),
@@ -80,8 +80,8 @@ public class RefresherTest {
   public void testInstanceFailsOnTooLongToRetrieve() {
     PauseCondition cond = new PauseCondition();
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testInstanceFailsOnTooLongToRetrieve",
             executorService,
             () -> {
@@ -99,8 +99,8 @@ public class RefresherTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition cond = new PauseCondition();
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testCloudSqlInstanceForcesRefresh",
             executorService,
             () -> {
@@ -141,8 +141,8 @@ public class RefresherTest {
 
     AtomicInteger refreshCount = new AtomicInteger();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testCloudSqlInstanceRetriesOnInitialFailures",
             executorService,
             () -> {
@@ -172,8 +172,8 @@ public class RefresherTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testCloudSqlRefreshesExpiredData",
             executorService,
             () -> {
@@ -226,8 +226,8 @@ public class RefresherTest {
     final PauseCondition refresh0 = new PauseCondition();
     final PauseCondition refresh1 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testThatForceRefreshBalksWhenAScheduledRefreshIsInProgress",
             executorService,
             () -> {
@@ -283,8 +283,8 @@ public class RefresherTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testThatForceRefreshBalksWhenAForceRefreshIsInProgress",
             executorService,
             () -> {
@@ -336,8 +336,8 @@ public class RefresherTest {
     final PauseCondition badRequest2 = new PauseCondition();
     final PauseCondition goodRequest = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testRefreshRetriesOnAfterFailedAttempts",
             executorService,
             () -> {
@@ -397,8 +397,8 @@ public class RefresherTest {
   @Test
   public void testClosedCloudSqlInstanceDataThrowsException() {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testClosedCloudSqlInstanceDataThrowsException",
             executorService,
             () -> Futures.immediateFuture(data),
@@ -416,8 +416,8 @@ public class RefresherTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh0 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testClosedCloudSqlInstanceDataStopsRefreshTasks",
             executorService,
             () -> {
@@ -456,18 +456,15 @@ public class RefresherTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testCloudSqlRefreshesTokenIfExpired",
             executorService,
             () -> {
               int c = refreshCount.get();
               ExampleData refreshResult = data;
-              switch (c) {
-                case 0:
-                  // refresh 0 should return initialData immediately
-                  refreshResult = initialData;
-                  break;
+              if (c == 0) { // refresh 0 should return initialData immediately
+                refreshResult = initialData;
               }
               // refresh 2 and on should return data immediately
               refreshCount.incrementAndGet();
@@ -492,18 +489,16 @@ public class RefresherTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testGetConnectionInfo_throwsTerminalException_refreshOperationNotScheduled",
             executorService,
             () -> {
               int c = refreshCount.get();
               ExampleData refreshResult = data;
-              switch (c) {
-                case 0:
-                  // refresh 0 should throw an exception
-                  refreshCount.incrementAndGet();
-                  throw new TerminalException("Not authorized");
+              if (c == 0) { // refresh 0 should throw an exception
+                refreshCount.incrementAndGet();
+                throw new TerminalException("Not authorized");
               }
               // refresh 2 and on should return data immediately
               refreshCount.incrementAndGet();
@@ -523,18 +518,16 @@ public class RefresherTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
 
-    Refresher r =
-        new Refresher(
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
             "RefresherTest.testGetConnectionInfo_throwsRuntimeException_refreshOperationScheduled",
             executorService,
             () -> {
               int c = refreshCount.get();
               ExampleData refreshResult = data;
-              switch (c) {
-                case 0:
-                  // refresh 0 should throw an exception
-                  refreshCount.incrementAndGet();
-                  throw new RuntimeException("Bad Gateway");
+              if (c == 0) { // refresh 0 should throw an exception
+                refreshCount.incrementAndGet();
+                throw new RuntimeException("Bad Gateway");
               }
               // refresh 2 and on should return data immediately
               refreshCount.incrementAndGet();
