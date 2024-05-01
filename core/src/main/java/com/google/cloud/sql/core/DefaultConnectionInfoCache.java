@@ -35,7 +35,7 @@ import javax.net.ssl.SSLSocket;
 class DefaultConnectionInfoCache {
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
-  private final RefreshAheadStrategy refreshStrategy;
+  private final RefreshStrategy refreshStrategy;
   private final ConnectionConfig config;
 
   /**
@@ -140,12 +140,8 @@ class DefaultConnectionInfoCache {
     this.refreshStrategy.refreshIfExpired();
   }
 
-  ListenableFuture<ConnectionInfo> getNext() {
-    return refreshStrategy.getNext();
-  }
-
-  ListenableFuture<ConnectionInfo> getCurrent() {
-    return refreshStrategy.getCurrent();
+  RefreshStrategy getRefresher() {
+    return this.refreshStrategy;
   }
 
   public CloudSqlInstanceName getInstanceName() {

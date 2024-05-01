@@ -524,10 +524,10 @@ public class DefaultConnectionInfoCacheTest {
 
     Map<List<IpType>, String> values = new LinkedHashMap<>();
     values.put(Arrays.asList(IpType.PUBLIC, IpType.PRIVATE), "10.1.2.3");
-    values.put(Arrays.asList(IpType.PUBLIC), "10.1.2.3");
+    values.put(Collections.singletonList(IpType.PUBLIC), "10.1.2.3");
     values.put(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), "10.10.10.10");
-    values.put(Arrays.asList(IpType.PRIVATE), "10.10.10.10");
-    values.put(Arrays.asList(IpType.PSC), "abcde.12345.us-central1.sql.goog");
+    values.put(Collections.singletonList(IpType.PRIVATE), "10.10.10.10");
+    values.put(Collections.singletonList(IpType.PSC), "abcde.12345.us-central1.sql.goog");
 
     values.forEach(
         (ipTypes, wantsIp) -> {
@@ -637,14 +637,14 @@ public class DefaultConnectionInfoCacheTest {
     refresh0.waitForCondition(() -> refreshCount.get() == 1, TEST_TIMEOUT_MS);
 
     // Assert that the next refresh task is scheduled in the future
-    assertThat(instance.getNext().isDone()).isFalse();
+    assertThat(((RefreshAheadStrategy) instance.getRefresher()).getNext().isDone()).isFalse();
 
     // Close the instance
     instance.close();
 
     // Assert that the next refresh task is canceled
-    assertThat(instance.getNext().isDone()).isTrue();
-    assertThat(instance.getNext().isCancelled()).isTrue();
+    assertThat(((RefreshAheadStrategy) instance.getRefresher()).getNext().isDone()).isTrue();
+    assertThat(((RefreshAheadStrategy) instance.getRefresher()).getNext().isCancelled()).isTrue();
   }
 
   private ListeningScheduledExecutorService newTestExecutor() {
