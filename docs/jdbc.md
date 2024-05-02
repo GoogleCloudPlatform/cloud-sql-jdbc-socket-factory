@@ -545,6 +545,24 @@ Properties connProps = new Properties();
 connProps.setProperty("cloudSqlUniverseDomain", "test-universe.test");
 ```
 
+
+### Refresh Strategy for Serverless Compute 
+
+When the connector runs in Cloud Run, App Engine Flex, or other serverless 
+compute platforms, the connector should be configured to use the `lazy` refresh
+strategy instead of the default `background` strategy. 
+
+Cloud Run, Flex, and other serverless compute platforms throttle application CPU
+in a way that interferes with the default `background` strategy used to refresh 
+the client certificate and authentication token.  
+
+#### Example
+
+```java
+Properties connProps = new Properties();
+connProps.setProperty("cloudSqlRefreshStrategy", "lazy");
+```
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)

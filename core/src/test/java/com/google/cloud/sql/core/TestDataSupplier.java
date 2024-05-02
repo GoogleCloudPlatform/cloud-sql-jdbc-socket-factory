@@ -98,6 +98,6 @@ class TestDataSupplier implements ConnectionInfoRepository {
       throw new RuntimeException("Flaky");
     }
     successCounter.incrementAndGet();
-    return null;
+    return response;
   }
 }

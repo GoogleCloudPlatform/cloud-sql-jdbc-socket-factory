@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
@@ -26,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.KeyPair;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -154,9 +156,21 @@ class Connector {
   private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     logger.debug(
         String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
+    if (config.getConnectorConfig().getRefreshStrategy() == RefreshStrategy.LAZY) {
+      // Resolve the key operation immediately.
+      KeyPair keyPair = null;
+      try {
+        keyPair = localKeyPair.get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+      return new LazyRefreshConnectionInfoCache(
+          config, adminApi, instanceCredentialFactory, keyPair);
 
-    return new RefreshAheadConnectionInfoCache(
-        config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+    } else {
+      return new RefreshAheadConnectionInfoCache(
+          config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+    }
   }
 
   public void close() {
