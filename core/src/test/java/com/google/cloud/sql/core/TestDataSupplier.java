@@ -86,4 +86,18 @@ class TestDataSupplier implements ConnectionInfoRepository {
 
     return f;
   }
+
+  @Override
+  public ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair) {
+    int c = counter.incrementAndGet();
+    if (flaky && c % 2 == 0) {
+      throw new RuntimeException("Flaky");
+    }
+    successCounter.incrementAndGet();
+    return null;
+  }
 }
