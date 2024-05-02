@@ -109,11 +109,11 @@ class Connector {
 
     ConnectionInfoCache instance = getConnection(config);
     try {
-
-      String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
+      ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
+      String instanceIp = metadata.getPreferredIpAddress();
       logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
 
-      SSLSocket socket = instance.createSslSocket(timeoutMs);
+      SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
@@ -154,7 +154,8 @@ class Connector {
   private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     logger.debug(
         String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
-    return new BaseConnectionInfoCache(
+
+    return new RefreshAheadConnectionInfoCache(
         config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
   }
 

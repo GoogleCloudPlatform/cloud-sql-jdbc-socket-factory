@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
 import java.time.Duration;
@@ -42,6 +43,14 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
   private final CredentialFactory credentialFactory;
   private final int retryCount;
   private final Duration retryDuration;
+
+  static AccessTokenSupplier newInstance(AuthType authType, CredentialFactory tokenSourceFactory) {
+    if (authType == AuthType.IAM) {
+      return new DefaultAccessTokenSupplier(tokenSourceFactory);
+    } else {
+      return Optional::empty;
+    }
+  }
 
   /**
    * Creates an instance with default retry settings.

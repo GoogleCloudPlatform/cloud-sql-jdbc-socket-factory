@@ -16,17 +16,8 @@
 
 package com.google.cloud.sql.core;
 
-import java.io.IOException;
-import javax.net.ssl.SSLSocket;
-
 /** ConnectionInfoCache is the contract for a caching strategy for ConnectionInfo. */
-public interface ConnectionInfoCache {
-
-  /**
-   * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
-   * block until required instance data is available.
-   */
-  SSLSocket createSslSocket(long timeoutMs) throws IOException;
+interface ConnectionInfoCache {
 
   /**
    * Returns metadata needed to create a connection to the instance.
@@ -40,10 +31,6 @@ public interface ConnectionInfoCache {
   void forceRefresh();
 
   void refreshIfExpired();
-
-  RefreshStrategy getRefresher();
-
-  CloudSqlInstanceName getInstanceName();
 
   void close();
 }

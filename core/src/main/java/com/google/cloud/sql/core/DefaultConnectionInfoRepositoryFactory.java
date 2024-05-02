@@ -44,6 +44,12 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
   @Override
   public DefaultConnectionInfoRepository create(
       HttpRequestInitializer requestInitializer, ConnectorConfig config) {
+    SQLAdmin adminApiBuilder = getApiBuilder(requestInitializer, config);
+    return new DefaultConnectionInfoRepository(adminApiBuilder);
+  }
+
+  private SQLAdmin getApiBuilder(
+      HttpRequestInitializer requestInitializer, ConnectorConfig config) {
     HttpTransport httpTransport;
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -71,6 +77,6 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
     if (config.getUniverseDomain() != null) {
       adminApiBuilder.setUniverseDomain(config.getUniverseDomain());
     }
-    return new DefaultConnectionInfoRepository(adminApiBuilder.build());
+    return adminApiBuilder.build();
   }
 }
