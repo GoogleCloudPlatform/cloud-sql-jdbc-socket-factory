@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.RefreshStrategy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -46,6 +47,8 @@ public class ConnectionConfigTest {
     final String wantUnixSuffix = ".psql.5432";
     final String wantPath = "my-path";
     final String wantAdminQuotaProject = "myNewProject";
+    final String propRefreshStrategy = "Lazy";
+    final RefreshStrategy wantRefreshStrategy = RefreshStrategy.LAZY;
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -61,6 +64,7 @@ public class ConnectionConfigTest {
     props.setProperty(ConnectionConfig.CLOUD_SQL_GOOGLE_CREDENTIALS_PATH, wantPath);
     props.setProperty(
         ConnectionConfig.CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY, wantAdminQuotaProject);
+    props.setProperty(ConnectionConfig.CLOUD_SQL_REFRESH_STRATEGY_PROPERTY, propRefreshStrategy);
 
     ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
 
@@ -76,6 +80,7 @@ public class ConnectionConfigTest {
     assertThat(c.getConnectorConfig().getGoogleCredentialsPath()).isEqualTo(wantPath);
     assertThat(c.getConnectorConfig().getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
+    assertThat(c.getConnectorConfig().getRefreshStrategy()).isEqualTo(wantRefreshStrategy);
   }
 
   @Test

@@ -88,6 +88,26 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  public void testBuild_withRefreshStrategyDefault() {
+    ConnectorConfig cc = new ConnectorConfig.Builder().build();
+    assertThat(cc.getRefreshStrategy()).isEqualTo(RefreshStrategy.BACKGROUND);
+  }
+
+  @Test
+  public void testBuild_withRefreshStrategyBackground() {
+    ConnectorConfig cc =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.BACKGROUND).build();
+    assertThat(cc.getRefreshStrategy()).isEqualTo(RefreshStrategy.BACKGROUND);
+  }
+
+  @Test
+  public void testBuild_withRefreshStrategyLazy() {
+    ConnectorConfig cc =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.LAZY).build();
+    assertThat(cc.getRefreshStrategy()).isEqualTo(RefreshStrategy.LAZY);
+  }
+
+  @Test
   public void testBuild_failsWhenAdminAPIAndUniverseDomainAreSet() {
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantUniverseDomain = "test-universe.test";
@@ -156,6 +176,28 @@ public class ConnectorConfigTest {
         new ConnectorConfig.Builder().withAdminRootUrl("http://example.com/1").build();
     ConnectorConfig k2 =
         new ConnectorConfig.Builder().withAdminRootUrl("http://example.com/1").build();
+
+    assertThat(k1).isEqualTo(k2);
+    assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testNotEqual_withRefreshStrategyNotEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.LAZY).build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.BACKGROUND).build();
+
+    assertThat(k1).isNotEqualTo(k2);
+    assertThat(k1.hashCode()).isNotEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testEqual_withRefreshStrategyEqual() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.LAZY).build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withRefreshStrategy(RefreshStrategy.LAZY).build();
 
     assertThat(k1).isEqualTo(k2);
     assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
@@ -360,6 +402,7 @@ public class ConnectorConfigTest {
     final String wantAdminServicePath = "sqladmin/";
     final String wantGoogleCredentialsPath = "/path/to/credentials";
     final String wantAdminQuotaProject = "myNewProject";
+    final RefreshStrategy wantRefreshStrategy = RefreshStrategy.LAZY;
     ConnectorConfig cc =
         new ConnectorConfig.Builder()
             .withTargetPrincipal(wantTargetPrincipal)
@@ -368,6 +411,7 @@ public class ConnectorConfigTest {
             .withAdminServicePath(wantAdminServicePath)
             .withGoogleCredentialsPath(wantGoogleCredentialsPath)
             .withAdminQuotaProject(wantAdminQuotaProject)
+            .withRefreshStrategy(wantRefreshStrategy)
             .build();
 
     assertThat(cc.hashCode())
@@ -381,6 +425,8 @@ public class ConnectorConfigTest {
                 null, // googleCredentials
                 wantGoogleCredentialsPath,
                 wantAdminQuotaProject,
-                null)); // universeDomain
+                null, // universeDomain
+                wantRefreshStrategy // refreshStrategy
+                ));
   }
 }

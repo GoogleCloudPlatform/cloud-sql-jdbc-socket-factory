@@ -23,6 +23,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
+import com.google.cloud.sql.RefreshStrategy;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
@@ -51,6 +52,8 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   public static final Option<String> UNIVERSE_DOMAIN = Option.valueOf("UNIVERSE_DOMAIN");
   public static final Option<String> GOOGLE_CREDENTIALS_PATH =
       Option.valueOf("GOOGLE_CREDENTIALS_PATH");
+
+  public static final Option<String> REFRESH_STRATEGY = Option.valueOf("REFRESH_STRATEGY");
 
   /**
    * Creates a ConnectionFactory that creates an SSL connection over a TCP socket, using
@@ -116,6 +119,10 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     final String googleCredentialsPath =
         (String) connectionFactoryOptions.getValue(GOOGLE_CREDENTIALS_PATH);
     final String universeDomain = (String) connectionFactoryOptions.getValue(UNIVERSE_DOMAIN);
+    final RefreshStrategy refreshStrategy =
+        "lazy".equalsIgnoreCase((String) connectionFactoryOptions.getValue(REFRESH_STRATEGY))
+            ? RefreshStrategy.LAZY
+            : RefreshStrategy.BACKGROUND;
 
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
     String cloudSqlInstance = (String) connectionFactoryOptions.getRequiredValue(HOST);
@@ -134,6 +141,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                     .withAdminQuotaProject(adminQuotaProject)
                     .withGoogleCredentialsPath(googleCredentialsPath)
                     .withUniverseDomain(universeDomain)
+                    .withRefreshStrategy(refreshStrategy)
                     .build())
             .build();
     // Precompute SSL Data to trigger the initial refresh to happen immediately,
