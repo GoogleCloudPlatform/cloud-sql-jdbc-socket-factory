@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.18.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.18.0...v1.18.1) (2024-05-14)
+
+
+### Bug Fixes
+
+* Configure unix socket library for Graalvm ([#1961](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1961)) ([e054059](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e0540592bf68045d1dbabaf217900833b9b8065e)), closes [#1940](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1940)
+
+
+### Dependencies
+
+* Update dependency com.google.api:gax to v2.48.0 ([#1954](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1954)) ([22d3bd1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/22d3bd1a1f234e8844dd40c97d1271dbc96bbc95))
+* Update dependency com.google.cloud:google-cloud-shared-config to v1.7.7 ([#1953](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1953)) ([a2ab407](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a2ab4071c5ef7f4f9713bcd51c5fbf5cc10b6bfc))
+* Update dependency com.google.errorprone:error_prone_annotations to v2.27.1 ([#1962](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1962)) ([bc48ee4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/bc48ee4e053781295a04b6d75c94d7714ef6ac20))
+* Update dependency com.google.guava:guava to v33.2.0-android ([#1974](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1974)) ([daa52bd](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/daa52bd1c3f6e789abdb33c29b141f5f79fd8aa2))
+* Update dependency com.google.oauth-client:google-oauth-client to v1.36.0 ([#1971](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1971)) ([4cac595](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4cac59572863a5b1d11fb07caa4e2db2db856867))
+* Update dependency com.mysql:mysql-connector-j to v8.4.0 ([#1975](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1975)) ([b429616](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b429616437af27cd6e9c639dc024feffc2579edf))
+* Update dependency commons-codec:commons-codec to v1.17.0 ([#1963](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1963)) ([4c2b0ee](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4c2b0ee8e603422b5ceb456769f1d60deeb86858))
+* Update dependency io.projectreactor:reactor-core to v3.6.6 ([#1973](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1973)) ([9f49d3d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/9f49d3d147aa6c1a89efd79ad77de3c6fb35a8a4))
+* Update dependency io.projectreactor.netty:reactor-netty to v1.1.19 ([#1972](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1972)) ([d4203a3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d4203a3a737045a77830cd1309cc16a808e43cae))
+* Update dependency maven-wrapper to v3.3.1 ([#1957](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1957)) ([f5d0c96](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f5d0c96f1f5d7b0cf474db2c2d850bf8ec569f8e))
+* Update dependency org.apache.maven.plugins:maven-gpg-plugin to v3.2.4 ([#1955](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1955)) ([2d1a3d3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2d1a3d3d0248772eba0ef3b548d739eed9343019))
+* Update dependency org.apache.maven.plugins:maven-jar-plugin to v3.4.1 ([#1956](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1956)) ([2f5b25f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2f5b25f4aa95e3dde89d8b49767e8ed73e303714))
+* Update dependency org.graalvm.sdk:nativeimage to v24.0.1 ([#1948](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1948)) ([8e3e0e6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/8e3e0e6c2a2eddd55be78e8eea0b77237c7f961d))
+
 ## [1.18.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.17.1...v1.18.0) (2024-04-15)
 
 
