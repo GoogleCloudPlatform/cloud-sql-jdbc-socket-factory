@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Handles periodic refresh operations for an instance. */
-class RefreshAheadStrategy {
+class RefreshAheadStrategy implements RefreshStrategy {
   private static final Logger logger = LoggerFactory.getLogger(RefreshAheadStrategy.class);
   private static final long DEFAULT_CONNECT_TIMEOUT_MS = 45000;
 
@@ -115,7 +115,8 @@ class RefreshAheadStrategy {
    * successful attempt. If no attempts succeed within the timeout, throws a RuntimeException with
    * the exception from the last failed refresh attempt as the cause.
    */
-  ConnectionInfo getConnectionInfo(long timeoutMs) {
+  @Override
+  public ConnectionInfo getConnectionInfo(long timeoutMs) {
     ListenableFuture<ConnectionInfo> f;
     synchronized (connectionInfoGuard) {
       if (closed) {
@@ -155,7 +156,8 @@ class RefreshAheadStrategy {
    * new refresh is already in progress. If successful, other methods will block until refresh has
    * been completed.
    */
-  void forceRefresh() {
+  @Override
+  public void forceRefresh() {
     synchronized (connectionInfoGuard) {
       if (closed) {
         throw new IllegalStateException("Named connection closed");
@@ -180,7 +182,8 @@ class RefreshAheadStrategy {
   }
 
   /** Force a new refresh of the instance data if the client certificate has expired. */
-  void refreshIfExpired() {
+  @Override
+  public void refreshIfExpired() {
     ConnectionInfo info = getConnectionInfo(DEFAULT_CONNECT_TIMEOUT_MS);
     logger.debug(
         String.format(
@@ -291,7 +294,8 @@ class RefreshAheadStrategy {
     }
   }
 
-  void close() {
+  @Override
+  public void close() {
     synchronized (connectionInfoGuard) {
       if (closed) {
         return;

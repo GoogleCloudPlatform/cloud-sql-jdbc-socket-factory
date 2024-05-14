@@ -99,7 +99,8 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     // Check if there is a scheduled future
     int brokenLoop = 0;
     for (DefaultConnectionInfoCache i : caches) {
-      if (i.getCurrent().isDone() && i.getNext().isDone()) {
+      RefreshAheadStrategy r = ((RefreshAheadStrategy) i.getRefresher());
+      if (r.getCurrent().isDone() && r.getNext().isDone()) {
         logger.debug("No future scheduled thing for instance " + i.getInstanceName());
         brokenLoop++;
       }
