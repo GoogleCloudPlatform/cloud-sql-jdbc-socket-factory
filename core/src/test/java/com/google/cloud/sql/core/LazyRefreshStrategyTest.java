@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
-import com.google.common.util.concurrent.RateLimiter;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,8 +26,6 @@ import org.junit.Test;
 
 public class LazyRefreshStrategyTest {
   public static final long TEST_TIMEOUT_MS = 3000;
-  final double delayBetweenAttemptSeconds = 0.25;
-  final RateLimiter rateLimiter = RateLimiter.create(1.0 / delayBetweenAttemptSeconds);
 
   @Test
   public void testCloudSqlInstanceDataRetrievedSuccessfully() {
@@ -106,13 +103,20 @@ public class LazyRefreshStrategyTest {
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData);
 
-    // Wait for the instance to expire
-    while (Instant.now().isBefore(initialData.getExpiration())) {
-      Thread.sleep(10);
-    }
+    waitForExpiration(initialData);
 
     assertThat(r.getConnectionInfo(TEST_TIMEOUT_MS)).isSameInstanceAs(data);
     assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
+  private static void waitForExpiration(ExampleData initialData) throws InterruptedException {
+    // Wait for the instance to expire
+    while (!Instant.now().isAfter(initialData.getExpiration())) {
+      Thread.sleep(10);
+    }
+    // Sleep a few more ms to make sure that Instant.now() really is after expiration.
+    // Fixes a date math race condition only present in Java 8.
+    Thread.sleep(10);
   }
 
   @Test
@@ -139,11 +143,7 @@ public class LazyRefreshStrategyTest {
     assertThat(d).isSameInstanceAs(initialData);
 
     // Wait for the instance to expire
-    while (Instant.now().isBefore(initialData.getExpiration())) {
-      Thread.sleep(10);
-    }
-    // Introduce a little more delay to allow for Java 8
-    Thread.sleep(100);
+    waitForExpiration(initialData);
 
     // Start multiple threads and request connection info
     Thread t1 = new Thread(() -> r.getConnectionInfo(TEST_TIMEOUT_MS));
