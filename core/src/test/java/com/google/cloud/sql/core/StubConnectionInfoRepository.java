@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
 
 class StubConnectionInfoRepository implements ConnectionInfoRepository {
-  private AtomicInteger refreshCount = new AtomicInteger();
+  private final AtomicInteger refreshCount = new AtomicInteger();
 
   int getRefreshCount() {
     return refreshCount.get();
@@ -60,5 +60,15 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
     refreshCount.incrementAndGet();
     ConnectionInfo connectionInfo = newConnectionInfo();
     return Futures.immediateFuture(connectionInfo);
+  }
+
+  @Override
+  public ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair) {
+    refreshCount.incrementAndGet();
+    return newConnectionInfo();
   }
 }
