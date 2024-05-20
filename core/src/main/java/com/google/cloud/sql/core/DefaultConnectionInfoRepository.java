@@ -382,8 +382,20 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustedKeyStore.load(null, null);
       trustedKeyStore.setCertificateEntry("instance", instanceMetadata.getInstanceCaCertificate());
-      TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
+      TrustManagerFactory tmf;
+
+      // Note: This is a workaround for Conscrypt bug #1033
+      // Conscrypt is the JCE provider on some Google Cloud runtimes like DataProc.
+      // https://github.com/google/conscrypt/issues/1033
+      //
+      if (ConscryptWorkaroundTrustManagerFactory.isWorkaroundNeeded()) {
+        tmf = ConscryptWorkaroundTrustManagerFactory.newInstance();
+      } else {
+        tmf = TrustManagerFactory.getInstance("X.509");
+      }
+
       tmf.init(trustedKeyStore);
+
       SSLContext sslContext;
 
       try {
