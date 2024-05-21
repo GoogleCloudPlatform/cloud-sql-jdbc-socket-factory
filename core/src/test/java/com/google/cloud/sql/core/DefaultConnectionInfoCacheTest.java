@@ -90,15 +90,17 @@ public class DefaultConnectionInfoCacheTest {
   public void testInstanceFailsOnConnectionError() {
 
     ConnectionInfoRepository connectionInfoRepository =
-        (CloudSqlInstanceName instanceName,
-            AccessTokenSupplier accessTokenSupplier,
-            AuthType authType,
-            ListeningScheduledExecutorService exec,
-            ListenableFuture<KeyPair> keyPair) ->
-            exec.submit(
-                () -> {
-                  throw new RuntimeException("always fails");
-                });
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            throw new RuntimeException("always fails");
+          }
+        };
 
     // initialize connectionInfoCache after mocks are set up
     DefaultConnectionInfoCache connectionInfoCache =
@@ -121,14 +123,18 @@ public class DefaultConnectionInfoCacheTest {
   public void testInstanceFailsOnTooLongToRetrieve() {
     PauseCondition cond = new PauseCondition();
     ConnectionInfoRepository connectionInfoRepository =
-        (CloudSqlInstanceName instanceName,
-            AccessTokenSupplier accessTokenSupplier,
-            AuthType authType,
-            ListeningScheduledExecutorService exec,
-            ListenableFuture<KeyPair> keyPair) -> {
-          // This is never allowed to proceed
-          cond.pause();
-          throw new RuntimeException("fake read timeout");
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            // This is never allowed to proceed
+            cond.pause();
+            throw new RuntimeException("fake read timeout");
+          }
         };
 
     // initialize connectionInfoCache after mocks are set up
@@ -151,20 +157,30 @@ public class DefaultConnectionInfoCacheTest {
     ConnectionInfo connectionInfo = newFutureConnectionInfo();
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition cond = new PauseCondition();
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            // Allow the first execution to complete immediately.
+            // The second execution should pause until signaled.
+            if (c == 1) {
+              cond.pause();
+            }
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(connectionInfo);
+          }
+        };
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              // Allow the first execution to complete immediately.
-              // The second execution should pause until signaled.
-              if (c == 1) {
-                cond.pause();
-              }
-              refreshCount.incrementAndGet();
-              return Futures.immediateFuture(connectionInfo);
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -197,17 +213,27 @@ public class DefaultConnectionInfoCacheTest {
 
     AtomicInteger refreshCount = new AtomicInteger();
 
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            refreshCount.incrementAndGet();
+            if (c == 0) {
+              throw new RuntimeException("bad request 0");
+            }
+            return Futures.immediateFuture(connectionInfo);
+          }
+        };
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              refreshCount.incrementAndGet();
-              if (c == 0) {
-                throw new RuntimeException("bad request 0");
-              }
-              return Futures.immediateFuture(connectionInfo);
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -249,27 +275,37 @@ public class DefaultConnectionInfoCacheTest {
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
 
+            int c = refreshCount.get();
+            ConnectionInfo refreshResult = info;
+            switch (c) {
+              case 0:
+                // refresh 0 should return initial immediately
+                refreshResult = initial;
+                break;
+              case 1:
+                // refresh 1 should pause
+                refresh1.pause();
+                break;
+            }
+            // refresh 2 and on should return data immediately
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(refreshResult);
+          }
+        };
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              ConnectionInfo refreshResult = info;
-              switch (c) {
-                case 0:
-                  // refresh 0 should return initial immediately
-                  refreshResult = initial;
-                  break;
-                case 1:
-                  // refresh 1 should pause
-                  refresh1.pause();
-                  break;
-              }
-              // refresh 2 and on should return data immediately
-              refreshCount.incrementAndGet();
-              return Futures.immediateFuture(refreshResult);
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -311,24 +347,34 @@ public class DefaultConnectionInfoCacheTest {
     final PauseCondition refresh0 = new PauseCondition();
     final PauseCondition refresh1 = new PauseCondition();
 
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            ConnectionInfo refreshResult = info;
+            switch (c) {
+              case 0:
+                refresh0.pause();
+                refreshResult = expiresInOneMinute;
+                break;
+              case 1:
+                refresh1.pause();
+                break;
+            }
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(refreshResult);
+          }
+        };
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              ConnectionInfo refreshResult = info;
-              switch (c) {
-                case 0:
-                  refresh0.pause();
-                  refreshResult = expiresInOneMinute;
-                  break;
-                case 1:
-                  refresh1.pause();
-                  break;
-              }
-              refreshCount.incrementAndGet();
-              return Futures.immediateFuture(refreshResult);
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -374,24 +420,34 @@ public class DefaultConnectionInfoCacheTest {
 
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh1 = new PauseCondition();
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            switch (c) {
+              case 0:
+                refreshCount.incrementAndGet();
+                return Futures.immediateFuture(initialData);
+              case 1:
+                refresh1.pause();
+                refreshCount.incrementAndGet();
+                return Futures.immediateFuture(info);
+              default:
+                return Futures.immediateFuture(info);
+            }
+          }
+        };
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              switch (c) {
-                case 0:
-                  refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(initialData);
-                case 1:
-                  refresh1.pause();
-                  refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(info);
-                default:
-                  return Futures.immediateFuture(info);
-              }
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -435,30 +491,40 @@ public class DefaultConnectionInfoCacheTest {
     final PauseCondition badRequest1 = new PauseCondition();
     final PauseCondition badRequest2 = new PauseCondition();
     final PauseCondition goodRequest = new PauseCondition();
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            switch (c) {
+              case 0:
+                refreshCount.incrementAndGet();
+                return Futures.immediateFuture(aboutToExpire);
+              case 1:
+                badRequest1.pause();
+                refreshCount.incrementAndGet();
+                throw new RuntimeException("bad request 1");
+              case 2:
+                badRequest2.pause();
+                refreshCount.incrementAndGet();
+                throw new RuntimeException("bad request 2");
+              default:
+                goodRequest.pause();
+                refreshCount.incrementAndGet();
+                return Futures.immediateFuture(info);
+            }
+          }
+        };
 
     DefaultConnectionInfoCache connectionInfoCache =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              switch (c) {
-                case 0:
-                  refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(aboutToExpire);
-                case 1:
-                  badRequest1.pause();
-                  refreshCount.incrementAndGet();
-                  throw new RuntimeException("bad request 1");
-                case 2:
-                  badRequest2.pause();
-                  refreshCount.incrementAndGet();
-                  throw new RuntimeException("bad request 2");
-                default:
-                  goodRequest.pause();
-                  refreshCount.incrementAndGet();
-                  return Futures.immediateFuture(info);
-              }
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,
@@ -517,9 +583,17 @@ public class DefaultConnectionInfoCacheTest {
     AtomicInteger refreshCount = new AtomicInteger();
 
     ConnectionInfoRepository connectionInfoRepository =
-        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          refreshCount.incrementAndGet();
-          return Futures.immediateFuture(info);
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(info);
+          }
         };
 
     Map<List<IpType>, String> values = new LinkedHashMap<>();
@@ -563,9 +637,17 @@ public class DefaultConnectionInfoCacheTest {
     AtomicInteger refreshCount = new AtomicInteger();
 
     ConnectionInfoRepository connectionInfoRepository =
-        (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-          refreshCount.incrementAndGet();
-          return Futures.immediateFuture(info);
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(info);
+          }
         };
 
     // initialize connectionInfoCache after mocks are set up
@@ -613,17 +695,27 @@ public class DefaultConnectionInfoCacheTest {
     AtomicInteger refreshCount = new AtomicInteger();
     final PauseCondition refresh0 = new PauseCondition();
 
+    ConnectionInfoRepository connectionInfoRepository =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            int c = refreshCount.get();
+            if (c == 0) {
+              refresh0.pause();
+            }
+            refreshCount.incrementAndGet();
+            return Futures.immediateFuture(initialData);
+          }
+        };
     DefaultConnectionInfoCache instance =
         new DefaultConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
-            (instanceName, accessTokenSupplier, authType, executor, keyPair) -> {
-              int c = refreshCount.get();
-              if (c == 0) {
-                refresh0.pause();
-              }
-              refreshCount.incrementAndGet();
-              return Futures.immediateFuture(initialData);
-            },
+            connectionInfoRepository,
             stubCredentialFactory,
             executorService,
             keyPairFuture,

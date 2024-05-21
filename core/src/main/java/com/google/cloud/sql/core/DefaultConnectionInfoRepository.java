@@ -98,6 +98,29 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
   @Override
+  public ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair) {
+    Optional<AccessToken> token = null;
+    try {
+      token = accessTokenSupplier.get();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to create IAM Auth access token", e);
+    }
+    InstanceMetadata metadata = fetchMetadata(instanceName, authType);
+    Certificate ephemeralCertificate =
+        fetchEphemeralCertificate(keyPair, instanceName, token, authType);
+    SslData sslContext =
+        createSslData(keyPair, metadata, ephemeralCertificate, instanceName, authType);
+
+    return createConnectionInfo(
+        instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
+  }
+
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
+  @Override
   public ListenableFuture<ConnectionInfo> getConnectionInfo(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
@@ -137,37 +160,44 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     ListenableFuture<ConnectionInfo> done =
         Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
             .call(
-                () -> {
-
-                  // Get expiration value for new cert
-                  Certificate ephemeralCertificate = Futures.getDone(ephemeralCertificateFuture);
-                  X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
-                  Instant expiration = x509Certificate.getNotAfter().toInstant();
-
-                  if (authType == AuthType.IAM) {
-                    expiration =
-                        DefaultAccessTokenSupplier.getTokenExpirationTime(Futures.getDone(token))
-                            .filter(
-                                tokenExpiration ->
-                                    x509Certificate
-                                        .getNotAfter()
-                                        .toInstant()
-                                        .isAfter(tokenExpiration))
-                            .orElse(x509Certificate.getNotAfter().toInstant());
-                  }
-
-                  logger.debug(String.format("[%s] INSTANCE DATA DONE", instanceName));
-
-                  return new ConnectionInfo(
-                      Futures.getDone(metadataFuture),
-                      Futures.getDone(sslContextFuture),
-                      expiration);
-                },
+                () ->
+                    createConnectionInfo(
+                        instanceName,
+                        authType,
+                        Futures.getDone(token),
+                        Futures.getDone(metadataFuture),
+                        Futures.getDone(ephemeralCertificateFuture),
+                        Futures.getDone(sslContextFuture)),
                 executor);
 
     done.addListener(
         () -> logger.debug(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
     return done;
+  }
+
+  private static ConnectionInfo createConnectionInfo(
+      CloudSqlInstanceName instanceName,
+      AuthType authType,
+      Optional<AccessToken> token,
+      InstanceMetadata metadata,
+      Certificate ephemeralCertificate,
+      SslData sslContext) {
+    // Get expiration value for new cert
+    X509Certificate x509Certificate = (X509Certificate) ephemeralCertificate;
+    Instant expiration = x509Certificate.getNotAfter().toInstant();
+
+    if (authType == AuthType.IAM) {
+      expiration =
+          DefaultAccessTokenSupplier.getTokenExpirationTime(token)
+              .filter(
+                  tokenExpiration ->
+                      x509Certificate.getNotAfter().toInstant().isAfter(tokenExpiration))
+              .orElse(x509Certificate.getNotAfter().toInstant());
+    }
+
+    logger.debug(String.format("[%s] INSTANCE DATA DONE", instanceName));
+
+    return new ConnectionInfo(metadata, sslContext, expiration);
   }
 
   String getApplicationName() {
