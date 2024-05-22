@@ -34,21 +34,17 @@ import com.google.auth.oauth2.OAuth2CredentialsWithRefresh.OAuth2RefreshHandler;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Base64.Decoder;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -83,24 +79,11 @@ public class MockAdminApi {
     generateEphemeralCertRequests = new ArrayList<>();
     generateEphemeralCertRequestsIndex = new AtomicInteger(0);
 
-    Decoder decoder = Base64.getDecoder();
-    // Decode client private test key
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decoder.decode(TestKeys.CLIENT_PRIVATE_KEY.replaceAll("\\s", "")));
-    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-
-    // Decode client public test key
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decoder.decode(TestKeys.CLIENT_PUBLIC_KEY.replaceAll("\\s", "")));
-    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+    PrivateKey privateKey = TestKeys.getClientPrivateKey();
+    PublicKey publicKey = TestKeys.getClientPublicKey();
 
     // Decode proxy server private test key
-    PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(
-            decoder.decode(TestKeys.SIGNING_CA_PRIVATE_KEY.replaceAll("\\s", "")));
-
-    proxyServerPrivateKey = keyFactory.generatePrivate(keySpec);
+    proxyServerPrivateKey = TestKeys.getSigningCaKey();
     clientKeyPair = new KeyPair(publicKey, privateKey);
   }
 
