@@ -62,6 +62,8 @@ public class CloudSqlCoreTestingBase {
 
   ListenableFuture<KeyPair> clientKeyPair;
 
+  public CloudSqlCoreTestingBase() {}
+
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
   static HttpTransport fakeNotConfiguredException() {
     return fakeGoogleJsonResponseException(
@@ -130,10 +132,18 @@ public class CloudSqlCoreTestingBase {
   }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
-    return fakeSuccessHttpTransport(certDuration, null);
+    return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, null);
   }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration, String baseUrl) {
+    return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, baseUrl);
+  }
+
+  HttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration) {
+    return fakeSuccessHttpTransport(serverCert, certDuration, null);
+  }
+
+  HttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration, String baseUrl) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -153,7 +163,7 @@ public class CloudSqlCoreTestingBase {
                           ImmutableList.of(
                               new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                               new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                      .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
+                      .setServerCaCert(new SslCert().setCert(serverCert))
                       .setDatabaseVersion("POSTGRES14")
                       .setRegion("myRegion");
               settings.setFactory(jsonFactory);

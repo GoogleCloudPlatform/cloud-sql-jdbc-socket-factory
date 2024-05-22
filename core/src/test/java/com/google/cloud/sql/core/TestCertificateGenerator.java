@@ -68,15 +68,19 @@ public class TestCertificateGenerator {
 
   private static final X500Name SERVER_CERT_SUBJECT =
       new X500Name("C=US,O=Google\\, Inc,CN=myProject:myInstance");
+  private static final X500Name DOMAIN_SERVER_CERT_SUBJECT =
+      new X500Name("C=US,O=Google\\, Inc,CN=example.com:myProject:myInstance");
 
   private final String SHA_256_WITH_RSA = "SHA256WithRSA";
   private final KeyPair signingCaKeyPair;
   private final KeyPair serverCaKeyPair;
+  private final KeyPair domainServerKeyPair;
   private final KeyPair serverKeyPair;
   private final KeyPair clientKeyPair;
   private final X509Certificate signingCaCert;
   private final X509Certificate serverCaCert;
   private final X509Certificate serverCertificate;
+  private final X509Certificate domainServerCertificate;
 
   private final String PEM_HEADER = "-----BEGIN CERTIFICATE-----";
   private final String PEM_FOOTER = "-----END CERTIFICATE-----";
@@ -101,6 +105,7 @@ public class TestCertificateGenerator {
     this.signingCaKeyPair = generateKeyPair();
     this.serverKeyPair = generateKeyPair();
     this.clientKeyPair = generateKeyPair();
+    this.domainServerKeyPair = generateKeyPair();
 
     try {
       this.serverCaCert = buildRootCertificate(SERVER_CA_SUBJECT, this.serverCaKeyPair);
@@ -110,6 +115,15 @@ public class TestCertificateGenerator {
           buildSignedCertificate(
               SERVER_CERT_SUBJECT,
               serverKeyPair.getPublic(),
+              SERVER_CA_SUBJECT,
+              serverCaKeyPair.getPrivate(),
+              ONE_YEAR_FROM_NOW,
+              null);
+
+      this.domainServerCertificate =
+          buildSignedCertificate(
+              DOMAIN_SERVER_CERT_SUBJECT,
+              domainServerKeyPair.getPublic(),
               SERVER_CA_SUBJECT,
               serverCaKeyPair.getPrivate(),
               ONE_YEAR_FROM_NOW,
@@ -133,6 +147,14 @@ public class TestCertificateGenerator {
 
   public X509Certificate getServerCaCert() {
     return serverCaCert;
+  }
+
+  public KeyPair getDomainServerKeyPair() {
+    return domainServerKeyPair;
+  }
+
+  public X509Certificate getDomainServerCertificate() {
+    return domainServerCertificate;
   }
 
   public X509Certificate createEphemeralCert(String cn, Duration shiftIntoPast)

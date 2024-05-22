@@ -26,19 +26,16 @@ import javax.net.ssl.TrustManagerFactorySpi;
 import javax.net.ssl.X509ExtendedTrustManager;
 
 /**
- * This is a workaround for a known bug in Conscrypt crypto in how it handles X509 auth type.
- * OpenJDK interpres the X509 certificate auth type as "UNKNOWN" while Conscrypt interpret the same
- * certificate as auth type "GENERIC". This incompatibility causes problems in the JDK.
- *
- * <p>This adapter works around the issue by creating wrappers around all TrustManager instances. It
- * replaces "GENERIC" auth type with "UNKNOWN" auth type before delegating calls.
- *
- * <p>See https://github.com/google/conscrypt/issues/1033#issuecomment-982701272
+ * Part of the InstanceCheckingTrustManagerFactory that implements custom CloudSQL server
+ * certificate checks.
  */
-class ConscryptWorkaroundTrustManagerFactorySpi extends TrustManagerFactorySpi {
+class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
   private final TrustManagerFactory delegate;
+  private final CloudSqlInstanceName instanceName;
 
-  ConscryptWorkaroundTrustManagerFactorySpi(TrustManagerFactory delegate) {
+  InstanceCheckingTrustManagerFactorySpi(
+      CloudSqlInstanceName instanceName, TrustManagerFactory delegate) {
+    this.instanceName = instanceName;
     this.delegate = delegate;
   }
 
@@ -59,10 +56,17 @@ class ConscryptWorkaroundTrustManagerFactorySpi extends TrustManagerFactorySpi {
     TrustManager[] delegates = new TrustManager[tms.length];
     for (int i = 0; i < tms.length; i++) {
       if (tms[i] instanceof X509ExtendedTrustManager) {
-        delegates[i] =
-            new ConscryptWorkaroundDelegatingTrustManger((X509ExtendedTrustManager) tms[i]);
-      } else {
+        X509ExtendedTrustManager tm = (X509ExtendedTrustManager) tms[i];
 
+        // Note: This is a workaround for Conscrypt bug #1033
+        // Conscrypt is the JCE provider on some Google Cloud runtimes like DataProc.
+        // https://github.com/google/conscrypt/issues/1033
+        if (ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded()) {
+          tm = new ConscryptWorkaroundDelegatingTrustManger(tm);
+        }
+
+        delegates[i] = new InstanceCheckingTrustManger(instanceName, tm);
+      } else {
         delegates[i] = tms[i];
       }
     }

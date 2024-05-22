@@ -45,6 +45,11 @@ public class FakeSslServer {
     cert = TestKeys.getServerCert();
   }
 
+  public FakeSslServer(PrivateKey privateKey, X509Certificate cert) {
+    this.privateKey = privateKey;
+    this.cert = cert;
+  }
+
   int start(final String ip) throws InterruptedException {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     final AtomicInteger pickedPort = new AtomicInteger();
