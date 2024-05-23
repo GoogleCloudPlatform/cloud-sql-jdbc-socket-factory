@@ -32,7 +32,7 @@ import javax.net.ssl.SSLSocket;
  * SQL Admin API. The operations to retrieve information with the API are largely done
  * asynchronously, and this class should be considered threadsafe.
  */
-class BaseConnectionInfoCache {
+class BaseConnectionInfoCache implements ConnectionInfoCache {
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
   private final RefreshStrategy refreshStrategy;
@@ -96,7 +96,8 @@ class BaseConnectionInfoCache {
    * Returns an unconnected {@link SSLSocket} using the SSLContext associated with the instance. May
    * block until required instance data is available.
    */
-  SSLSocket createSslSocket(long timeoutMs) throws IOException {
+  @Override
+  public SSLSocket createSslSocket(long timeoutMs) throws IOException {
     return (SSLSocket)
         getConnectionInfo(timeoutMs).getSslContext().getSocketFactory().createSocket();
   }
@@ -108,7 +109,8 @@ class BaseConnectionInfoCache {
    * @throws IllegalArgumentException If the instance has no IP addresses matching the provided
    *     preferences.
    */
-  ConnectionMetadata getConnectionMetadata(long timeoutMs) {
+  @Override
+  public ConnectionMetadata getConnectionMetadata(long timeoutMs) {
     ConnectionInfo info = getConnectionInfo(timeoutMs);
     String preferredIp = null;
 
@@ -132,23 +134,28 @@ class BaseConnectionInfoCache {
         info.getSslData().getTrustManagerFactory());
   }
 
-  void forceRefresh() {
+  @Override
+  public void forceRefresh() {
     this.refreshStrategy.forceRefresh();
   }
 
-  void refreshIfExpired() {
+  @Override
+  public void refreshIfExpired() {
     this.refreshStrategy.refreshIfExpired();
   }
 
-  RefreshStrategy getRefresher() {
+  @Override
+  public RefreshStrategy getRefresher() {
     return this.refreshStrategy;
   }
 
+  @Override
   public CloudSqlInstanceName getInstanceName() {
     return instanceName;
   }
 
-  void close() {
+  @Override
+  public void close() {
     refreshStrategy.close();
   }
 }

@@ -41,7 +41,7 @@ class Connector {
   private final ListenableFuture<KeyPair> localKeyPair;
   private final long minRefreshDelayMs;
 
-  private final ConcurrentHashMap<ConnectionConfig, BaseConnectionInfoCache> instances =
+  private final ConcurrentHashMap<ConnectionConfig, ConnectionInfoCache> instances =
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
@@ -107,7 +107,7 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
-    BaseConnectionInfoCache instance = getConnection(config);
+    ConnectionInfoCache instance = getConnection(config);
     try {
 
       String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
@@ -137,8 +137,8 @@ class Connector {
     }
   }
 
-  BaseConnectionInfoCache getConnection(ConnectionConfig config) {
-    BaseConnectionInfoCache instance =
+  ConnectionInfoCache getConnection(ConnectionConfig config) {
+    ConnectionInfoCache instance =
         instances.computeIfAbsent(config, k -> createConnectionInfo(config));
 
     // If the client certificate has expired (as when the computer goes to
@@ -151,7 +151,7 @@ class Connector {
     return instance;
   }
 
-  private BaseConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
+  private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     logger.debug(
         String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
     return new BaseConnectionInfoCache(
