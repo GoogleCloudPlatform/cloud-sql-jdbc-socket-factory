@@ -71,8 +71,8 @@ public class DefaultConnectionInfoCacheTest {
   public void testCloudSqlInstanceDataRetrievedSuccessfully() {
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
     // initialize connectionInfoCache after mocks are set up
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             instanceDataSupplier,
             stubCredentialFactory,
@@ -103,8 +103,8 @@ public class DefaultConnectionInfoCacheTest {
         };
 
     // initialize connectionInfoCache after mocks are set up
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -138,8 +138,8 @@ public class DefaultConnectionInfoCacheTest {
         };
 
     // initialize connectionInfoCache after mocks are set up
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -177,8 +177,8 @@ public class DefaultConnectionInfoCacheTest {
           }
         };
 
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -230,8 +230,8 @@ public class DefaultConnectionInfoCacheTest {
             return Futures.immediateFuture(connectionInfo);
           }
         };
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -302,8 +302,8 @@ public class DefaultConnectionInfoCacheTest {
             return Futures.immediateFuture(refreshResult);
           }
         };
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -371,8 +371,8 @@ public class DefaultConnectionInfoCacheTest {
             return Futures.immediateFuture(refreshResult);
           }
         };
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -444,8 +444,8 @@ public class DefaultConnectionInfoCacheTest {
           }
         };
 
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -521,8 +521,8 @@ public class DefaultConnectionInfoCacheTest {
           }
         };
 
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,
@@ -606,8 +606,8 @@ public class DefaultConnectionInfoCacheTest {
     values.forEach(
         (ipTypes, wantsIp) -> {
           // initialize connectionInfoCache after mocks are set up
-          DefaultConnectionInfoCache connectionInfoCache =
-              new DefaultConnectionInfoCache(
+          BaseConnectionInfoCache connectionInfoCache =
+              new BaseConnectionInfoCache(
                   new ConnectionConfig.Builder()
                       .withCloudSqlInstance("project:region:instance")
                       .withIpTypes(ipTypes)
@@ -651,8 +651,8 @@ public class DefaultConnectionInfoCacheTest {
         };
 
     // initialize connectionInfoCache after mocks are set up
-    DefaultConnectionInfoCache connectionInfoCache =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache connectionInfoCache =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder()
                 .withCloudSqlInstance("project:region:instance")
                 .withIpTypes(Collections.singletonList(IpType.PRIVATE))
@@ -671,8 +671,8 @@ public class DefaultConnectionInfoCacheTest {
   public void testClosedCloudSqlInstanceDataThrowsException() throws Exception {
     TestDataSupplier instanceDataSupplier = new TestDataSupplier(false);
     // initialize instance after mocks are set up
-    DefaultConnectionInfoCache instance =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache instance =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             instanceDataSupplier,
             stubCredentialFactory,
@@ -712,8 +712,8 @@ public class DefaultConnectionInfoCacheTest {
             return Futures.immediateFuture(initialData);
           }
         };
-    DefaultConnectionInfoCache instance =
-        new DefaultConnectionInfoCache(
+    BaseConnectionInfoCache instance =
+        new BaseConnectionInfoCache(
             new ConnectionConfig.Builder().withCloudSqlInstance("project:region:instance").build(),
             connectionInfoRepository,
             stubCredentialFactory,

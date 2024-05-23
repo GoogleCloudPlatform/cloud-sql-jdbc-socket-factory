@@ -32,7 +32,7 @@ import javax.net.ssl.SSLSocket;
  * SQL Admin API. The operations to retrieve information with the API are largely done
  * asynchronously, and this class should be considered threadsafe.
  */
-class DefaultConnectionInfoCache {
+class BaseConnectionInfoCache {
   private final AccessTokenSupplier accessTokenSupplier;
   private final CloudSqlInstanceName instanceName;
   private final RefreshStrategy refreshStrategy;
@@ -46,7 +46,7 @@ class DefaultConnectionInfoCache {
    * @param executor executor used to schedule asynchronous tasks
    * @param keyPair public/private key pair used to authenticate connections
    */
-  DefaultConnectionInfoCache(
+  BaseConnectionInfoCache(
       ConnectionConfig config,
       ConnectionInfoRepository connectionInfoRepository,
       CredentialFactory tokenSourceFactory,
