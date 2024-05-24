@@ -104,7 +104,44 @@
         </dependency>
       </dependencies>
     </profile>
+
+    <profile>
+      <id>google-conscript</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+          <version>2.5.2</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
+            <executions>
+              <execution>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <!-- double-equals means override the JRE default properties, don't append -->
+                  <argLine>-Djava.security.properties==src/test/resources/conscrypt-security.properties</argLine>
+                  <classpathDependencyExcludes>
+                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk15on</classpathDependencyExclude>
+                  </classpathDependencyExcludes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
+
 
   <build>
     <plugins>

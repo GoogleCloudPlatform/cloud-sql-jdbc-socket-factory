@@ -304,7 +304,7 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-      <groupId>org.bouncycastle</groupId>
+        <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
         <version>1.70</version>
         <scope>test</scope>
@@ -345,6 +345,14 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.4.1.Final</version>
+      </extension>
+    </extensions>
 
     <plugins>
 
@@ -900,6 +908,40 @@
                 <goals>
                   <goal>single</goal>
                 </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>google-conscript</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+          <version>2.5.2</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
+            <executions>
+              <execution>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <classpathDependencyExcludes>
+                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk15on</classpathDependencyExclude>
+                  </classpathDependencyExcludes>
+                </configuration>
               </execution>
             </executions>
           </plugin>

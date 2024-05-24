@@ -22,11 +22,15 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.collect.ImmutableList;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -34,9 +38,13 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(JUnit4.class)
 public class JdbcPostgresIamAuthIntegrationTests {
+  private static final Logger log =
+      LoggerFactory.getLogger(JdbcPostgresIamAuthIntegrationTests.class);
 
   // [START cloud_sql_connector_postgres_jdbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
@@ -59,6 +67,19 @@ public class JdbcPostgresIamAuthIntegrationTests {
                         "Environment variable '%s' must be set to perform these tests.", varName))
                 .that(System.getenv(varName))
                 .isNotEmpty());
+
+    log.info("Crypto Providers: ");
+    Provider[] providers = Security.getProviders();
+    for (Provider p : providers) {
+      log.info("  {}", p.getName());
+    }
+    try {
+      SSLContext ctx = SSLContext.getInstance("TLS");
+      Provider prov = ctx.getProvider();
+      log.info("TLS Provider: {}", prov.getName());
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Before
