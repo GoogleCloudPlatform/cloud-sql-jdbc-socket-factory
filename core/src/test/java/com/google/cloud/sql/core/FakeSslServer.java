@@ -25,9 +25,7 @@ import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
@@ -43,17 +41,8 @@ public class FakeSslServer {
   private final X509Certificate cert;
 
   FakeSslServer() {
-    try {
-      privateKey = TestKeys.getServerPrivateKey();
-      cert = TestKeys.getServerCert();
-    } catch (InvalidKeySpecException | CertificateException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  FakeSslServer(PrivateKey privateKey, X509Certificate cert, X509Certificate signingCert) {
-    this.privateKey = privateKey;
-    this.cert = cert;
+    privateKey = TestKeys.getServerKeyPair().getPrivate();
+    cert = TestKeys.getServerCert();
   }
 
   int start(final String ip) throws InterruptedException {

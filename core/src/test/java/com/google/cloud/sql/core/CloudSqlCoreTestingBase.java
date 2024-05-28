@@ -37,24 +37,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.cert.Certificate;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Date;
-import java.util.concurrent.ExecutionException;
-import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Before;
 
 public class CloudSqlCoreTestingBase {
@@ -139,9 +126,7 @@ public class CloudSqlCoreTestingBase {
 
   @Before
   public void setup() throws GeneralSecurityException {
-    clientKeyPair =
-        Futures.immediateFuture(
-            new KeyPair(TestKeys.getClientPublicKey(), TestKeys.getClientPrivateKey()));
+    clientKeyPair = Futures.immediateFuture(TestKeys.getClientKeyPair());
   }
 
   HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
@@ -168,7 +153,7 @@ public class CloudSqlCoreTestingBase {
                           ImmutableList.of(
                               new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                               new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                      .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                      .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
                       .setDatabaseVersion("POSTGRES14")
                       .setRegion("myRegion");
               settings.setFactory(jsonFactory);
@@ -178,15 +163,9 @@ public class CloudSqlCoreTestingBase {
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
               GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
-              try {
-                certResponse.setEphemeralCert(
-                    new SslCert().setCert(createEphemeralCert(certDuration)));
-                certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException
-                  | ExecutionException
-                  | OperatorCreationException e) {
-                throw new RuntimeException(e);
-              }
+              certResponse.setEphemeralCert(
+                  new SslCert().setCert(TestKeys.createEphemeralCert(certDuration)));
+              certResponse.setFactory(jsonFactory);
               response
                   .setContent(certResponse.toPrettyString())
                   .setContentType(Json.MEDIA_TYPE)
@@ -197,36 +176,5 @@ public class CloudSqlCoreTestingBase {
         };
       }
     };
-  }
-
-  private String createEphemeralCert(Duration shiftIntoPast)
-      throws GeneralSecurityException, ExecutionException, OperatorCreationException {
-    Duration validFor = Duration.ofHours(1);
-    ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC")).minus(shiftIntoPast);
-    ZonedDateTime notAfter = notBefore.plus(validFor);
-
-    final ContentSigner signer =
-        new JcaContentSignerBuilder("SHA1withRSA").build(TestKeys.getSigningCaKey());
-
-    X500Principal issuer = TestKeys.getSigningCaCert().getSubjectX500Principal();
-    X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
-
-    JcaX509v3CertificateBuilder certificateBuilder =
-        new JcaX509v3CertificateBuilder(
-            issuer,
-            BigInteger.ONE,
-            Date.from(notBefore.toInstant()),
-            Date.from(notAfter.toInstant()),
-            subject,
-            Futures.getDone(clientKeyPair).getPublic());
-
-    X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
-
-    Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
-
-    return "-----BEGIN CERTIFICATE-----\n"
-        + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
-        + "\n"
-        + "-----END CERTIFICATE-----\n";
   }
 }

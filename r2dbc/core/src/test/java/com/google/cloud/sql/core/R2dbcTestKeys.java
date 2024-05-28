@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-class TestKeys {
+class R2dbcTestKeys {
 
   static final String SIGNING_CA_PRIVATE_KEY =
       "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDSd6WlH1OH+qBx\n"
