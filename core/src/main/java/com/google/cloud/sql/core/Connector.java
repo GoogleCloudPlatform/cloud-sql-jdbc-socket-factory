@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
@@ -26,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.KeyPair;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -41,7 +43,7 @@ class Connector {
   private final ListenableFuture<KeyPair> localKeyPair;
   private final long minRefreshDelayMs;
 
-  private final ConcurrentHashMap<ConnectionConfig, DefaultConnectionInfoCache> instances =
+  private final ConcurrentHashMap<ConnectionConfig, ConnectionInfoCache> instances =
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
@@ -107,13 +109,13 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
-    DefaultConnectionInfoCache instance = getConnection(config);
+    ConnectionInfoCache instance = getConnection(config);
     try {
-
-      String instanceIp = instance.getConnectionMetadata(timeoutMs).getPreferredIpAddress();
+      ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
+      String instanceIp = metadata.getPreferredIpAddress();
       logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
 
-      SSLSocket socket = instance.createSslSocket(timeoutMs);
+      SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
@@ -137,8 +139,8 @@ class Connector {
     }
   }
 
-  DefaultConnectionInfoCache getConnection(ConnectionConfig config) {
-    DefaultConnectionInfoCache instance =
+  ConnectionInfoCache getConnection(ConnectionConfig config) {
+    ConnectionInfoCache instance =
         instances.computeIfAbsent(config, k -> createConnectionInfo(config));
 
     // If the client certificate has expired (as when the computer goes to
@@ -151,11 +153,24 @@ class Connector {
     return instance;
   }
 
-  private DefaultConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
+  private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     logger.debug(
         String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
-    return new DefaultConnectionInfoCache(
-        config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+    if (config.getConnectorConfig().getRefreshStrategy() == RefreshStrategy.LAZY) {
+      // Resolve the key operation immediately.
+      KeyPair keyPair = null;
+      try {
+        keyPair = localKeyPair.get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+      return new LazyRefreshConnectionInfoCache(
+          config, adminApi, instanceCredentialFactory, keyPair);
+
+    } else {
+      return new RefreshAheadConnectionInfoCache(
+          config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+    }
   }
 
   public void close() {

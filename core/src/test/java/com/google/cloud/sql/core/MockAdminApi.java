@@ -32,35 +32,18 @@ import com.google.api.services.sqladmin.model.SslCert;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.OAuth2CredentialsWithRefresh.OAuth2RefreshHandler;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Base64.Decoder;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 public class MockAdminApi {
 
@@ -71,7 +54,6 @@ public class MockAdminApi {
       Pattern.compile(
           "(?<baseUrl>.*)sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
   private final KeyPair clientKeyPair;
-  private final PrivateKey proxyServerPrivateKey;
   private final List<ConnectSettingsRequest> connectSettingsRequests;
   private final AtomicInteger allConnectSettingsRequestsIndex;
   private final List<GenerateEphemeralCertRequest> generateEphemeralCertRequests;
@@ -83,25 +65,8 @@ public class MockAdminApi {
     generateEphemeralCertRequests = new ArrayList<>();
     generateEphemeralCertRequestsIndex = new AtomicInteger(0);
 
-    Decoder decoder = Base64.getDecoder();
-    // Decode client private test key
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decoder.decode(TestKeys.CLIENT_PRIVATE_KEY.replaceAll("\\s", "")));
-    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-
-    // Decode client public test key
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decoder.decode(TestKeys.CLIENT_PUBLIC_KEY.replaceAll("\\s", "")));
-    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-
     // Decode proxy server private test key
-    PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(
-            decoder.decode(TestKeys.SIGNING_CA_PRIVATE_KEY.replaceAll("\\s", "")));
-
-    proxyServerPrivateKey = keyFactory.generatePrivate(keySpec);
-    clientKeyPair = new KeyPair(publicKey, privateKey);
+    clientKeyPair = TestKeys.getClientKeyPair();
   }
 
   public KeyPair getClientKeyPair() {
@@ -135,7 +100,7 @@ public class MockAdminApi {
         new ConnectSettings()
             .setBackendType("SECOND_GEN")
             .setIpAddresses(ipMappings)
-            .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+            .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
             .setDatabaseVersion(databaseVersion)
             .setDnsName(pscHostname)
             .setRegion(cloudSqlInstanceName.getRegionId());
@@ -150,7 +115,8 @@ public class MockAdminApi {
       throws GeneralSecurityException, OperatorCreationException {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
-    SslCert ephemeralCert = new SslCert().setCert(createEphemeralCert(ephemeralCertExpiration));
+    SslCert ephemeralCert =
+        new SslCert().setCert(TestKeys.createEphemeralCert(ephemeralCertExpiration));
 
     GenerateEphemeralCertResponse generateEphemeralCertResponse =
         new GenerateEphemeralCertResponse().setEphemeralCert(ephemeralCert);
@@ -212,35 +178,6 @@ public class MockAdminApi {
         };
       }
     };
-  }
-
-  private String createEphemeralCert(Duration timeUntilExpiration)
-      throws GeneralSecurityException, OperatorCreationException {
-    ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC"));
-    ZonedDateTime notAfter = notBefore.plus(timeUntilExpiration);
-
-    final ContentSigner signer =
-        new JcaContentSignerBuilder("SHA256withRSA").build(proxyServerPrivateKey);
-
-    X500Principal issuer =
-        new X500Principal("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
-    X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
-
-    JcaX509v3CertificateBuilder certificateBuilder =
-        new JcaX509v3CertificateBuilder(
-            issuer,
-            BigInteger.ONE,
-            Date.from(notBefore.toInstant()),
-            Date.from(notAfter.toInstant()),
-            subject,
-            clientKeyPair.getPublic());
-
-    X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
-    Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
-    return "-----BEGIN CERTIFICATE-----\n"
-        + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
-        + "\n"
-        + "-----END CERTIFICATE-----\n";
   }
 
   private boolean isRequestUnknown(

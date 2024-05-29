@@ -79,7 +79,7 @@
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.10.2</native-image.version>
     <graal-sdk.version>24.0.1</graal-sdk.version>
-    <netty.version>4.1.109.Final</netty.version>
+    <netty.version>4.1.110.Final</netty.version>
     <ow2-asm.version>9.7</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
@@ -149,22 +149,22 @@
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20240324-2.0.0</version>
+        <version>v1beta4-rev20240521-2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>1.44.1</version>
+        <version>1.44.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>1.44.1</version>
+        <version>1.44.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-jackson2</artifactId>
-        <version>1.44.1</version>
+        <version>1.44.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
@@ -304,8 +304,14 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-      <groupId>org.bouncycastle</groupId>
+        <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
+        <version>1.70</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
         <version>1.70</version>
         <scope>test</scope>
       </dependency>
@@ -345,6 +351,14 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
 
     <plugins>
 
@@ -427,7 +441,7 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.13</version>
+        <version>1.7.0</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>
@@ -900,6 +914,40 @@
                 <goals>
                   <goal>single</goal>
                 </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>google-conscript</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+          <version>2.5.2</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
+            <executions>
+              <execution>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <classpathDependencyExcludes>
+                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk15on</classpathDependencyExclude>
+                  </classpathDependencyExcludes>
+                </configuration>
               </execution>
             </executions>
           </plugin>

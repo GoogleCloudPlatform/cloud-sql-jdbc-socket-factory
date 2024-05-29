@@ -82,7 +82,7 @@ public class GcpConnectionFactoryProviderTest {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.SIGNING_CA_PRIVATE_KEY));
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.SIGNING_CA_PRIVATE_KEY));
     PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
 
     final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
@@ -127,7 +127,7 @@ public class GcpConnectionFactoryProviderTest {
                           ImmutableList.of(
                               new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
                               new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                      .setServerCaCert(new SslCert().setCert(TestKeys.SERVER_CA_CERT))
+                      .setServerCaCert(new SslCert().setCert(R2dbcTestKeys.SERVER_CA_CERT))
                       .setDatabaseVersion("POSTGRES14")
                       .setRegion("myRegion");
               settings.setFactory(jsonFactory);
@@ -163,11 +163,11 @@ public class GcpConnectionFactoryProviderTest {
 
     KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PRIVATE_KEY));
+        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.CLIENT_PRIVATE_KEY));
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
     X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decodeBase64StripWhitespace(TestKeys.CLIENT_PUBLIC_KEY));
+        new X509EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.CLIENT_PUBLIC_KEY));
     PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
     clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));

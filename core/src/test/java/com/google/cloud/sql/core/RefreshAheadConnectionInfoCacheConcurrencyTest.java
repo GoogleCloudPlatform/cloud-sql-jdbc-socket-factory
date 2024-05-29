@@ -33,12 +33,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultConnectionInfoCacheConcurrencyTest {
+public class RefreshAheadConnectionInfoCacheConcurrencyTest {
 
   public static final int DEFAULT_WAIT = 200;
 
   private static final Logger logger =
-      LoggerFactory.getLogger(DefaultConnectionInfoCacheConcurrencyTest.class);
+      LoggerFactory.getLogger(RefreshAheadConnectionInfoCacheConcurrencyTest.class);
   public static final int FORCE_REFRESH_COUNT = 10;
 
   private static class TestCredentialFactory implements CredentialFactory, HttpRequestInitializer {
@@ -62,13 +62,13 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
         Futures.immediateFuture(mockAdminApi.getClientKeyPair());
     ListeningScheduledExecutorService executor = InternalConnectorRegistry.getDefaultExecutor();
     TestDataSupplier supplier = new TestDataSupplier(false);
-    List<DefaultConnectionInfoCache> caches = new ArrayList<>();
+    List<RefreshAheadConnectionInfoCache> caches = new ArrayList<>();
 
     final int instanceCount = 5;
 
     for (int i = 0; i < instanceCount; i++) {
       caches.add(
-          new DefaultConnectionInfoCache(
+          new RefreshAheadConnectionInfoCache(
               new ConnectionConfig.Builder().withCloudSqlInstance("a:b:instance" + i).build(),
               supplier,
               new TestCredentialFactory(),
@@ -98,8 +98,8 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
 
     // Check if there is a scheduled future
     int brokenLoop = 0;
-    for (DefaultConnectionInfoCache i : caches) {
-      RefreshAheadStrategy r = ((RefreshAheadStrategy) i.getRefresher());
+    for (RefreshAheadConnectionInfoCache i : caches) {
+      RefreshAheadStrategy r = i.getRefreshStrategy();
       if (r.getCurrent().isDone() && r.getNext().isDone()) {
         logger.debug("No future scheduled thing for instance " + i.getInstanceName());
         brokenLoop++;
@@ -108,7 +108,7 @@ public class DefaultConnectionInfoCacheConcurrencyTest {
     assertThat(brokenLoop).isEqualTo(0);
   }
 
-  private Thread startForceRefreshThread(DefaultConnectionInfoCache connectionInfoCache) {
+  private Thread startForceRefreshThread(RefreshAheadConnectionInfoCache connectionInfoCache) {
     Runnable forceRefreshRepeat =
         () -> {
           for (int i = 0; i < 10; i++) {

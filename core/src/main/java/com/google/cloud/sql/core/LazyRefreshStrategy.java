@@ -76,18 +76,18 @@ public class LazyRefreshStrategy implements RefreshStrategy {
       logger.debug(String.format("[%s] Lazy Refresh Operation: Starting refresh operation.", name));
       try {
         this.connectionInfo = this.refreshOperation.get();
+        logger.debug(
+            String.format(
+                "[%s] Lazy Refresh Operation: Completed refresh with new certificate "
+                    + "expiration at %s.",
+                name, connectionInfo.getExpiration().toString()));
+
       } catch (TerminalException e) {
         logger.debug(String.format("[%s] Lazy Refresh Operation: Failed! No retry.", name), e);
         throw e;
       } catch (Exception e) {
         throw new RuntimeException(String.format("[%s] Refresh Operation: Failed!", name), e);
       }
-
-      logger.debug(
-          String.format(
-              "[%s] Lazy Refresh Operation: Completed refresh with new certificate "
-                  + "expiration at %s.",
-              name, connectionInfo.getExpiration().toString()));
     }
   }
 
