@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
@@ -27,16 +28,19 @@ public class ConnectionMetadata {
   private final String preferredIpAddress;
   private final KeyManagerFactory keyManagerFactory;
   private final TrustManagerFactory trustManagerFactory;
+  private final SSLContext sslContext;
 
   /** Construct an immutable ConnectionMetadata. */
   public ConnectionMetadata(
       String preferredIpAddress,
       KeyManagerFactory keyManagerFactory,
-      TrustManagerFactory trustManagerFactory) {
+      TrustManagerFactory trustManagerFactory,
+      SSLContext sslContext) {
 
     this.preferredIpAddress = preferredIpAddress;
     this.keyManagerFactory = keyManagerFactory;
     this.trustManagerFactory = trustManagerFactory;
+    this.sslContext = sslContext;
   }
 
   public String getPreferredIpAddress() {
@@ -49,5 +53,9 @@ public class ConnectionMetadata {
 
   public TrustManagerFactory getTrustManagerFactory() {
     return trustManagerFactory;
+  }
+
+  public SSLContext getSslContext() {
+    return sslContext;
   }
 }

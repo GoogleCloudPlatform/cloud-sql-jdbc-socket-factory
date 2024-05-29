@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.cloud.sql.IpType;
 import java.time.Instant;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 
 /** Represents the results of a certificate and metadata refresh operation. */
@@ -50,5 +51,30 @@ class ConnectionInfo {
 
   SslData getSslData() {
     return sslData;
+  }
+
+  ConnectionMetadata toConnectionMetadata(
+      ConnectionConfig config, CloudSqlInstanceName instanceName) {
+    String preferredIp = null;
+
+    for (IpType ipType : config.getIpTypes()) {
+      preferredIp = getIpAddrs().get(ipType);
+      if (preferredIp != null) {
+        break;
+      }
+    }
+    if (preferredIp == null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
+              instanceName.getConnectionName(),
+              config.getIpTypes().stream().map(IpType::toString).collect(Collectors.joining(","))));
+    }
+
+    return new ConnectionMetadata(
+        preferredIp,
+        sslData.getKeyManagerFactory(),
+        sslData.getTrustManagerFactory(),
+        sslData.getSslContext());
   }
 }
