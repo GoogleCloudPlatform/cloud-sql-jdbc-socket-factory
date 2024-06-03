@@ -17,12 +17,11 @@
 package com.google.cloud.sql.core;
 
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
-import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.SSLContext;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
@@ -36,82 +35,94 @@ import javax.net.ssl.X509ExtendedTrustManager;
  *
  * <p>See https://github.com/google/conscrypt/issues/1033#issuecomment-982701272
  */
-class ConscryptWorkaroundDelegatingTrustManger extends X509ExtendedTrustManager {
-  private static final boolean CONSCRYPT_TLS;
-
-  static {
-    // Provider name is "Conscrypt", hardcoded string in the library source:
-    // https://github.com/google/conscrypt/blob/655ad5069e1cb4d1989b8117eaf090371885af99/openjdk/src/main/java/org/conscrypt/Platform.java#L149
-    Provider p = Security.getProvider("Conscrypt");
-    if (p != null) {
-      try {
-        SSLContext ctx = SSLContext.getInstance("TLS");
-        Provider prov = ctx.getProvider();
-        CONSCRYPT_TLS = "Conscrypt".equals(prov.getName());
-      } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException("Unable to load algorithm TLS", e);
-      }
-    } else {
-      CONSCRYPT_TLS = false;
-    }
-  }
-
-  /** Returns true if the Conscrypt Java Crypto Extension is installed. */
-  static boolean isWorkaroundNeeded() {
-    return CONSCRYPT_TLS;
-  }
-
+class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
   private final X509ExtendedTrustManager tm;
+  private final CloudSqlInstanceName instanceName;
 
-  ConscryptWorkaroundDelegatingTrustManger(X509ExtendedTrustManager tm) {
+  public InstanceCheckingTrustManger(
+      CloudSqlInstanceName instanceName, X509ExtendedTrustManager tm) {
+    this.instanceName = instanceName;
     this.tm = tm;
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
       throws CertificateException {
-    tm.checkClientTrusted(chain, fixAuthType(authType), socket);
+    tm.checkClientTrusted(chain, authType, socket);
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
       throws CertificateException {
-    tm.checkClientTrusted(chain, fixAuthType(authType), engine);
+    tm.checkClientTrusted(chain, authType, engine);
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType)
       throws CertificateException {
-    tm.checkClientTrusted(chain, fixAuthType(authType));
+    tm.checkClientTrusted(chain, authType);
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
       throws CertificateException {
-    tm.checkServerTrusted(chain, fixAuthType(authType), socket);
+    tm.checkServerTrusted(chain, authType, socket);
+    checkCertificateChain(chain);
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
       throws CertificateException {
-    tm.checkServerTrusted(chain, fixAuthType(authType), engine);
+    tm.checkServerTrusted(chain, authType, engine);
+    checkCertificateChain(chain);
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType)
       throws CertificateException {
-    tm.checkServerTrusted(chain, fixAuthType(authType));
+    tm.checkServerTrusted(chain, authType);
+    checkCertificateChain(chain);
+  }
+
+  private void checkCertificateChain(X509Certificate[] chain) throws CertificateException {
+    if (chain.length == 0) {
+      throw new CertificateException("No server certificates in chain");
+    }
+    if (chain[0].getSubjectX500Principal() == null) {
+      throw new CertificateException("Subject is missing");
+    }
+
+    String cn = null;
+
+    try {
+      String subject = chain[0].getSubjectX500Principal().getName();
+      LdapName subjectName = new LdapName(subject);
+      for (Rdn rdn : subjectName.getRdns()) {
+        if ("CN".equals(rdn.getType())) {
+          cn = (String) rdn.getValue();
+        }
+      }
+    } catch (InvalidNameException e) {
+      throw new CertificateException("Exception parsing the server certificate subject field", e);
+    }
+
+    if (cn == null) {
+      throw new CertificateException("Server certificate subject does not contain a value for CN");
+    }
+
+    // parse CN from subject. CN always comes last in the list.
+    String instName = this.instanceName.getProjectId() + ":" + this.instanceName.getInstanceId();
+    if (!instName.equals(cn)) {
+      throw new CertificateException(
+          "Server certificate CN does not match instance name. Server certificate CN="
+              + cn
+              + " Expected instance name: "
+              + instName);
+    }
   }
 
   @Override
   public X509Certificate[] getAcceptedIssuers() {
     return tm.getAcceptedIssuers();
-  }
-
-  private String fixAuthType(String authType) {
-    if ("GENERIC".equals(authType)) {
-      return "UNKNOWN";
-    }
-    return authType;
   }
 }

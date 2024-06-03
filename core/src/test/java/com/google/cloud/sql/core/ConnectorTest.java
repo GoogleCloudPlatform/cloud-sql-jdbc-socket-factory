@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,6 +79,32 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         assertThrows(IllegalArgumentException.class, () -> c.connect(config2, TEST_MAX_REFRESH_MS));
 
     assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
+  }
+
+  @Test
+  public void create_throwsErrorForInvalidTlsCommonNameMismatch()
+      throws IOException, InterruptedException {
+    // The server TLS certificate matches myProject:myRegion:myInstance
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:wrongwrongwrong")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+    SSLHandshakeException ex =
+        assertThrows(
+            SSLHandshakeException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .isEqualTo(
+            "Server certificate CN does not match instance name. "
+                + "Server certificate CN=myProject:myInstance "
+                + "Expected instance name: myProject:wrongwrongwrong");
   }
 
   /**
@@ -159,18 +186,34 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void create_successfulDomainScopedConnection() throws IOException, InterruptedException {
-    FakeSslServer sslServer = new FakeSslServer();
+    FakeSslServer sslServer =
+        new FakeSslServer(
+            TestKeys.getDomainServerKeyPair().getPrivate(), TestKeys.getDomainServerCert());
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpTransport(TestKeys.getDomainServerCertPem(), Duration.ofSeconds(60)));
+
+    int port = sslServer.start(PUBLIC_IP);
     ConnectionConfig config =
         new ConnectionConfig.Builder()
             .withCloudSqlInstance("example.com:myProject:myRegion:myInstance")
             .withIpTypes("PRIMARY")
             .build();
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port);
 
-    int port = sslServer.start(PUBLIC_IP);
+    Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
-    Connector connector = newConnector(config.getConnectorConfig(), port);
-
-    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
@@ -312,7 +355,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         new CredentialFactoryProvider(
             new StubCredentialFactory("foo", Instant.now().plusSeconds(3600).toEpochMilli()));
     ConnectionInfoRepositoryFactory factory =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpTransport(TestKeys.getServerCertPem(), Duration.ofSeconds(0)));
 
     int port = sslServer.start(PUBLIC_IP);
     ConnectionConfig config =

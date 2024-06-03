@@ -66,4 +66,16 @@ public class TestKeys {
         certs.getEphemeralCertificate(
             "temporary-cert", certs.getClientKey().getPublic(), notAfter.toInstant()));
   }
+
+  public static KeyPair getDomainServerKeyPair() {
+    return certs.getDomainServerKeyPair();
+  }
+
+  public static X509Certificate getDomainServerCert() {
+    return certs.getDomainServerCertificate();
+  }
+
+  public static String getDomainServerCertPem() {
+    return certs.getPemForCert(certs.getDomainServerCertificate());
+  }
 }
