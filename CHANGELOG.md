@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.19.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.18.1...v1.19.0) (2024-06-11)
+
+
+### Features
+
+* Add lazy refresh strategy to the connector. Fixes [#992](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/992). ([d84d082](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d84d0827cbfe733f33309579d8ac8728ef7d63d1))
+* Configure java connector to check CN instance name. Fixes [#1995](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1995) ([#1996](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1996)) ([9346117](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/93461176c2426e6a62c15d4b2e101f4283e1e92b))
+
+
+### Bug Fixes
+
+* Add TrustManagerFactory workaround for Conscrypt bug, Fixes [#1983](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1983). ([#1993](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1993)) ([0735a91](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0735a916df2d89250f844b3c617e90564c3a950e))
+* Remove native image flag that breaks GraalVM CE builds, Fixes [#1979](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1979). ([#1991](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/1991)) ([d14892f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d14892fb5dffd872c4ad3a3fe0560a8887fae0fd))
+
+
+### Dependencies
+
+* Update com.google.http-client dependencies to v1.44.2 ([f1b1434](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f1b1434f60dbeca064380097c3856c2506010872))
+* Update dependency com.google.api-client:google-api-client to v2.5.1 ([fcb20e5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/fcb20e554166a62cf7c02bedafe4d77ac6a722af))
+* Update dependency com.google.api-client:google-api-client to v2.6.0 ([ab3973c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ab3973ce5f50ac1367434aa146feb4c5d842f97d))
+* Update dependency com.google.api:gax to v2.48.1 ([20ea693](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/20ea693a80a7a319f983027fc658a2419efdc6d2))
+* Update dependency com.google.api:gax to v2.49.0 ([f7a4d70](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f7a4d700502b5438e2b035d1f12226ecebedc4c8))
+* Update dependency com.google.apis:google-api-services-sqladmin to v1beta4-rev20240521-2.0.0 ([33ebcf8](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/33ebcf8a21dc31a542d1cd0c3ca876702866ebd4))
+* Update dependency com.google.auto.value:auto-value-annotations to v1.11.0 ([0d73283](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0d73283ec9b4fd1482100b6dddc0c867199fd822))
+* Update dependency com.google.cloud:google-cloud-shared-config to v1.8.0 ([e3b7b19](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e3b7b196f1655ba2606e9a9bdd70f76c7dfd92cf))
+* Update dependency com.google.errorprone:error_prone_annotations to v2.28.0 ([7e94182](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7e941820b6a3bc87d06572d29bc779ace2cbec96))
+* Update dependency com.google.guava:guava to v33.2.1-android ([712ca24](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/712ca2442c39f090c06e3322a5b3605c6fb7f798))
+* Update dependency com.microsoft.sqlserver:mssql-jdbc to v12.6.2.jre8 ([d1b0f77](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d1b0f77ba6322ddb66ada356c994b9845a1c25d4))
+* Update dependency kr.motd.maven:os-maven-plugin to v1.7.1 ([94f8436](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/94f843690a0fbbfc3fa59eb576b9316e9ef4eb42))
+* Update dependency maven to v3.9.7 ([81f1b2e](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/81f1b2e9346f4ea54ab84c32eae87a39dd7c043a))
+* Update dependency org.apache.maven.plugins:maven-checkstyle-plugin to v3.4.0 ([3e0cec3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3e0cec380bc2f1a71dc7af9250e106af03d35061))
+* Update dependency org.apache.maven.plugins:maven-enforcer-plugin to v3.5.0 ([e790e74](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e790e7441760d4a859bc2fe0df3068bf9e8b2687))
+* Update dependency org.apache.maven.plugins:maven-javadoc-plugin to v3.7.0 ([27389b6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/27389b674ec0f00821015eb45edf47779be0cab7))
+* Update dependency org.checkerframework:checker-qual to v3.43.0 ([5c37897](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/5c378970b254419bcd4e5af063eb3a000bd9ab39))
+* Update dependency org.checkerframework:checker-qual to v3.44.0 ([69a2f39](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/69a2f3927d8ee9ca2f90a212c34cab63b0706929))
+* Update dependency org.mariadb.jdbc:mariadb-java-client to v3.4.0 ([3796a7c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3796a7c6f5bd70b554515122204f5fbc771c6db1))
+* Update dependency org.sonatype.plugins:nexus-staging-maven-plugin to v1.7.0 ([225454c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/225454c877569b68e3e9a2e76c1e59244dc45ad0))
+* Update native-image.version to v0.10.2 ([dbffbf4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/dbffbf48c38b25f47b85fa50e4b938ebf88f9357))
+* Update netty and r2dbc dependencies to v4.1.110.Final ([3486e1c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3486e1ccfe026e8fddab821b14ced003a0b8f2ac))
+
 ## [1.18.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.18.0...v1.18.1) (2024-05-14)
 
 

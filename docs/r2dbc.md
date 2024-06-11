@@ -18,14 +18,14 @@ Maven
 <dependency>
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-  <version>1.18.1</version>
+  <version>1.19.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.18.1'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-mysql:1.19.0'
 ```
 
 **Note:** Also include the R2DBC Driver for
@@ -40,14 +40,14 @@ Maven
 <dependency>
   <groupId>com.google.cloud</groupId>
   <artifactId>cloud-sql-connector-r2dbc-mariadb</artifactId>
-  <version>1.18.1</version>
+  <version>1.19.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud:cloud-sql-connector-r2dbc-mariadb:1.18.1'
+compile 'com.google.cloud:cloud-sql-connector-r2dbc-mariadb:1.19.0'
 ```
 
 **Note:** Also include the R2DBC Driver for
@@ -63,14 +63,14 @@ Maven
 <dependency>
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>cloud-sql-connector-r2dbc-postgres</artifactId>
-  <version>1.18.1</version>
+  <version>1.19.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.18.1'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-postgres:1.19.0'
 ```
 
 **Note:** Also include the R2DBC Driver for
@@ -86,14 +86,14 @@ Maven
 <dependency>
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>cloud-sql-connector-r2dbc-sqlserver</artifactId>
-  <version>1.18.1</version>
+  <version>1.19.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.18.1'
+compile 'com.google.cloud.sql:cloud-sql-connector-r2dbc-sqlserver:1.19.0'
 ```
 
 **Note:** Also include the R2DBC Driver for SQL
