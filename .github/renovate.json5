@@ -19,19 +19,14 @@
   "semanticCommits": "disabled",
   "ignorePaths": [".kokoro/requirements.txt"],
   "ignoreDeps": [
-    "com.coveo:fmt-maven-plugin", 
-    "com.zaxxer:HikariCP", 
+    "com.coveo:fmt-maven-plugin",
+    "com.zaxxer:HikariCP",
     "com.google.googlejavaformat:google-java-format",
     "com.google.errorprone:error_prone_core",
     "ch.qos.logback:logback-classic"
   ],
   "packageRules": [
     {"matchPackagePatterns": ["^com.google.guava:"], "versioning": "docker"},
-    {
-      "matchPackagePatterns": ["*"],
-      "semanticCommitType": "deps",
-      "semanticCommitScope": null
-    },
     {
       "matchPackagePatterns": [
         "^org.apache.maven",
@@ -45,34 +40,9 @@
       "semanticCommitScope": "deps"
     },
     {
-      "matchPackagePatterns": [
-        "^com.google.cloud.sql:cloud-sql-jdbc-socket-factory-parent",
-        "^com.google.cloud:libraries-bom",
-        "^com.google.cloud.samples:shared-configuration"
-      ],
-      "semanticCommitType": "chore",
-      "semanticCommitScope": "deps"
-    },
-    {
-      "matchPackagePatterns": [
-        "^junit:junit",
-        "^com.google.truth:truth",
-        "^org.mockito:mockito-core",
-        "^org.objenesis:objenesis",
-        "^com.google.cloud:google-cloud-conformance-tests"
-      ],
-      "semanticCommitType": "test",
-      "semanticCommitScope": "deps"
-    },
-    {
       "matchPackagePatterns": ["^com.google.cloud:google-cloud-"],
       "ignoreUnstable": false
     },
-    {
-      "matchPackagePatterns": ["^com.fasterxml.jackson.core"],
-      "groupName": "jackson dependencies"
-    },
-    {"matchPackagePatterns": [".*"], "addLabels": ["automerge"]},
     {"matchPackageNames": ["mysql:mysql-connector-java"], "enabled": false},
     {
       "matchPackageNames": ["com.google.guava:guava"],
@@ -87,42 +57,14 @@
       "allowedVersions": "/v1beta4-.*/"
     },
     {
-      "matchPackagePatterns": [
-        "^io.netty:.*",
-        "^io.projectreactor.netty:.*",
-        "^io.r2dbc:.*",
-        "^io.asyncer:r2dbc-mysql",
-        "^org.postgresql:r2dbc-postgresql"
-      ],
-      "groupName": "netty and r2dbc dependencies"
+      "groupName": "Non-major dependencies",
+      "matchManagers": ["maven"],
+      "matchUpdateTypes": ["minor", "patch"]
     },
     {
       "matchManagers": ["github-actions"],
       "groupName": "dependencies for github",
       "commitMessagePrefix": "chore(deps):"
-    },
-    {
-      "matchManagers": ["maven"],
-      "matchDepTypes": ["test"],
-      "commitMessagePrefix": "chore(deps):"
-    },
-    {
-      "matchPackagePatterns": [
-        "^org.ow2.asm"
-      ],
-      "groupName": "org.ow2.asm dependencies"
-    },
-    {
-      "matchPackagePatterns": [
-        "^com.google.auth"
-      ],
-      "groupName": "com.google.auth dependencies"
-    },
-    {
-      "matchPackagePatterns": [
-        "^com.google.http-client"
-      ],
-      "groupName": "com.google.http-client dependencies"
     }
   ]
 }
