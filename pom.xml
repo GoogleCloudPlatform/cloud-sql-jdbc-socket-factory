@@ -79,7 +79,7 @@
     <javac.version>9+181-r4173-1</javac.version>
     <native-image.version>0.10.2</native-image.version>
     <graal-sdk.version>24.0.1</graal-sdk.version>
-    <netty.version>4.1.110.Final</netty.version>
+    <netty.version>4.1.111.Final</netty.version>
     <ow2-asm.version>9.7</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
@@ -229,7 +229,7 @@
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.1.19</version>
+        <version>1.1.21</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
