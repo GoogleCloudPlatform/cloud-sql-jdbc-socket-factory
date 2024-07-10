@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.19.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.19.0...v1.19.1) (2024-07-10)
+
+
+### Dependencies
+
+* Update dependency com.mysql:mysql-connector-j to v9 ([#2034](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2034)) ([d7e434f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d7e434f92577a572fc64f8aed1ec60c26e97c076))
+* Update Non-major dependencies ([#2033](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2033)) ([3c2d81d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3c2d81dff217dcaa994a0287d9db23d5e0989e05))
+
+
+### Documentation
+
+* update serverless products lazy cert refresh is useful for ([#2022](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2022)) ([322ca2d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/322ca2d7d461ed5692d271149c2413fa559153da))
+
 ## [1.19.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.18.1...v1.19.0) (2024-06-11)
 
 
