@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,60 +18,51 @@ package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpResponseException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RetryingCallableTest {
+public class ApiClientRetryingCallableTest {
   @Test
-  public void testConstructorIllegalArguments() throws Exception {
-    // Callable must not be null
-    Assert.assertThrows(IllegalArgumentException.class, () -> new RetryingCallable<>(null));
+  public void testApiClientRetriesOn500ErrorAndSucceeds() throws Exception {
+    AtomicInteger counter = new AtomicInteger(0);
+    ApiClientRetryingCallable<Integer> c =
+        new ApiClientRetryingCallable<>(
+            () -> {
+              int attempt = counter.incrementAndGet();
+              if (attempt < 3) {
+                throw new HttpResponseException.Builder(
+                        503, "service unavailable", new HttpHeaders())
+                    .build();
+              }
+              return attempt;
+            });
+
+    Integer v = c.call();
+    assertThat(counter.get()).isEqualTo(3);
+    assertThat(v).isEqualTo(3);
   }
 
   @Test
-  public void testNoRetryRequired() throws Exception {
-    RetryingCallable<Integer> r = new RetryingCallable<>(() -> 1);
-    int v = r.call();
-    assertThat(v).isEqualTo(1);
-  }
-
-  @Test
-  public void testAlwaysFails() {
-    final AtomicInteger counter = new AtomicInteger();
-    RetryingCallable<Integer> r =
-        new RetryingCallable<>(
+  public void testApiClientRetriesOn500ErrorAndFailsAfter5Attempts() throws Exception {
+    AtomicInteger counter = new AtomicInteger(0);
+    ApiClientRetryingCallable<Integer> c =
+        new ApiClientRetryingCallable<>(
             () -> {
               counter.incrementAndGet();
-              throw new Exception("nope");
+              throw new HttpResponseException.Builder(503, "service unavailable", new HttpHeaders())
+                  .build();
             });
 
     try {
-      r.call();
+      c.call();
       Assert.fail("got no exception, wants an exception to be thrown");
     } catch (Exception e) {
       // Expected to throw an exception
     }
-
     assertThat(counter.get()).isEqualTo(5);
-  }
-
-  @Test
-  public void testRetrySucceedsAfterFailures() throws Exception {
-    final AtomicInteger counter = new AtomicInteger();
-    RetryingCallable<Integer> r =
-        new RetryingCallable<>(
-            () -> {
-              int i = counter.incrementAndGet();
-              if (i < 3) {
-                throw new Exception("nope");
-              }
-              return i;
-            });
-
-    int v = r.call();
-    assertThat(counter.get()).isEqualTo(3);
-    assertThat(v).isEqualTo(3);
   }
 
   @Test
@@ -80,11 +71,8 @@ public class RetryingCallableTest {
     RetryingCallable<Integer> r =
         new RetryingCallable<Integer>(
             () -> {
-              int i = counter.incrementAndGet();
-              if (i < 3) {
-                throw new Exception("nope");
-              }
-              return i;
+              counter.incrementAndGet();
+              throw new Exception("nope");
             }) {
           @Override
           protected boolean isFatalException(Exception e) {

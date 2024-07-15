@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -25,59 +24,57 @@ import java.util.concurrent.ThreadLocalRandom;
  * The sleep duration is chosen randomly in the range [sleepDuration, sleepDuration * 2] to avoid
  * causing a thundering herd of requests on failure.
  *
+ * <p>exponentialBackoff calculates a duration based on the attempt i.
+ *
+ * <p>The formula is: base * multi^(attempt + 1 + random)
+ *
+ * <p>With base = 200ms and multi = 1.618, and random = [0.0, 1.0), the backoff values would fall
+ * between the following low and high ends:
+ *
+ * <p>Attempt Low (ms) High (ms)
+ *
+ * <p>0 324 524 1 524 847 2 847 1371 3 1371 2218 4 2218 3588
+ *
+ * <p>The theoretical worst case scenario would have a client wait 8.5s in total for an API request
+ * to complete (with the first four attempts failing, and the fifth succeeding).
+ *
+ * <p>This backoff strategy matches the behavior of the Cloud SQL Proxy v1.
+ *
  * @param <T> the result type of the Callable.
  */
 class RetryingCallable<T> implements Callable<T> {
+  private static final int RETRY_COUNT = 5;
 
   /** The callable that should be retried. */
   private final Callable<T> callable;
-  /** The number of times to attempt to retry. */
-  private final int retryCount;
-  /** The duration to sleep after a failed retry attempt. */
-  private final Duration sleepDuration;
 
   /**
    * Construct a new RetryLogic.
    *
    * @param callable the callable that should be retried
-   * @param retryCount the number of times to retry
-   * @param sleepDuration the duration wait after a failed attempt.
    */
-  public RetryingCallable(Callable<T> callable, int retryCount, Duration sleepDuration) {
-    if (retryCount <= 0) {
-      throw new IllegalArgumentException("retryCount must be > 0");
-    }
-    if (sleepDuration.isNegative() || sleepDuration.isZero()) {
-      throw new IllegalArgumentException("sleepDuration must be positive");
-    }
+  public RetryingCallable(Callable<T> callable) {
     if (callable == null) {
       throw new IllegalArgumentException("call must not be null");
     }
     this.callable = callable;
-    this.retryCount = retryCount;
-    this.sleepDuration = sleepDuration;
   }
 
   @Override
   public T call() throws Exception {
 
-    for (int retriesLeft = retryCount - 1; retriesLeft >= 0; retriesLeft--) {
+    for (int attempt = 0; attempt < RETRY_COUNT; attempt++) {
       // Attempt to call the Callable.
       try {
         return callable.call();
       } catch (Exception e) {
-        // Callable threw an exception.
-
-        // If this is the last iteration, then
-        // throw the exception
-        if (retriesLeft == 0) {
+        // If this is the last retry attempt, or if the exception is fatal
+        // then exit immediately.
+        if (attempt == (RETRY_COUNT - 1) || isFatalException(e)) {
           throw e;
         }
-
         // Else, sleep a random amount of time, then retry
-        long sleep =
-            ThreadLocalRandom.current()
-                .nextLong(sleepDuration.toMillis(), sleepDuration.toMillis() * 2);
+        long sleep = exponentialBackoffMs(attempt);
         try {
           Thread.sleep(sleep);
         } catch (InterruptedException ie) {
@@ -89,5 +86,16 @@ class RetryingCallable<T> implements Callable<T> {
     // If the callable was never called, then throw an exception. This will never happen
     // as long as the preconditions in the constructor are properly met.
     throw new RuntimeException("call was never called.");
+  }
+
+  protected boolean isFatalException(Exception e) {
+    return false;
+  }
+
+  private long exponentialBackoffMs(int attempt) {
+    long baseMs = 200;
+    double multi = 1.618;
+    double exp = attempt + 1.0 + ThreadLocalRandom.current().nextDouble();
+    return (long) (baseMs * Math.pow(multi, exp));
   }
 }

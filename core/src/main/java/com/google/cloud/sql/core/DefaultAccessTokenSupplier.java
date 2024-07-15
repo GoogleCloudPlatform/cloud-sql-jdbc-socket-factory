@@ -21,7 +21,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -41,8 +40,6 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
   private static final String SQL_LOGIN_SCOPE = "https://www.googleapis.com/auth/sqlservice.login";
 
   private final CredentialFactory credentialFactory;
-  private final int retryCount;
-  private final Duration retryDuration;
 
   static AccessTokenSupplier newInstance(AuthType authType, CredentialFactory tokenSourceFactory) {
     if (authType == AuthType.IAM) {
@@ -53,26 +50,12 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
   }
 
   /**
-   * Creates an instance with default retry settings.
-   *
-   * @param tokenSource the token source that produces auth tokens.
-   */
-  DefaultAccessTokenSupplier(CredentialFactory tokenSource) {
-    this(tokenSource, 3, Duration.ofSeconds(3));
-  }
-
-  /**
    * Creates an instance with configurable retry settings.
    *
    * @param tokenSource the token source
-   * @param retryCount the number of attempts to refresh.
-   * @param retryDuration the duration to wait between attempts.
    */
-  DefaultAccessTokenSupplier(
-      CredentialFactory tokenSource, int retryCount, Duration retryDuration) {
+  DefaultAccessTokenSupplier(CredentialFactory tokenSource) {
     this.credentialFactory = tokenSource;
-    this.retryCount = retryCount;
-    this.retryDuration = retryDuration;
   }
 
   /**
@@ -141,9 +124,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
               }
 
               return Optional.of(downscoped.getAccessToken());
-            },
-            this.retryCount,
-            this.retryDuration);
+            });
 
     try {
       return retries.call();

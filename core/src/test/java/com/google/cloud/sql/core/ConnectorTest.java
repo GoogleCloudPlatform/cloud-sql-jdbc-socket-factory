@@ -337,15 +337,51 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT);
 
-    TerminalException ex =
-        assertThrows(TerminalException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+    // If the gateway is down, then this is a temporary error, not a fatal error.
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
 
-    assertThat(ex)
-        .hasMessageThat()
-        .contains(
-            String.format(
-                "[%s] The Google Cloud SQL Admin API failed for the project",
-                "myProject:myRegion:NotMyInstance"));
+    // The Connector.connect() method will timeout, and will include details about the instance
+    // data in the test.
+    assertThat(ex).hasMessageThat().contains("Unable to get valid instance data within");
+
+    assertThat(ex).hasMessageThat().contains("502");
+
+    assertThat(ex).hasMessageThat().contains("myProject:myRegion:NotMyInstance");
+  }
+
+  @Test
+  public void create_successfulPublicConnection_withIntermittentBadGatewayErrors()
+      throws IOException, InterruptedException {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(
+            fakeIntermittentErrorHttpTransport(
+                fakeSuccessHttpTransport(Duration.ofSeconds(0)), fakeBadGatewayException()));
+
+    FakeSslServer sslServer = new FakeSslServer();
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port);
+
+    Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   @Test
