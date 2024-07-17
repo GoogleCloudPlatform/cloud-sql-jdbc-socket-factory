@@ -42,6 +42,7 @@ import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Before;
 
 public class CloudSqlCoreTestingBase {
@@ -65,7 +66,7 @@ public class CloudSqlCoreTestingBase {
   public CloudSqlCoreTestingBase() {}
 
   // Creates a fake "accessNotConfigured" exception that can be used for testing.
-  static HttpTransport fakeNotConfiguredException() {
+  static MockHttpTransport fakeNotConfiguredException() {
     return fakeGoogleJsonResponseException(
         "accessNotConfigured",
         "Cloud SQL Admin API has not been used in project 12345 before or it is disabled. Enable"
@@ -77,19 +78,19 @@ public class CloudSqlCoreTestingBase {
   }
 
   // Creates a fake "notAuthorized" exception that can be used for testing.
-  static HttpTransport fakeNotAuthorizedException() {
+  static MockHttpTransport fakeNotAuthorizedException() {
     return fakeGoogleJsonResponseException(
         "notAuthorized", ERROR_MESSAGE_NOT_AUTHORIZED, HttpStatusCodes.STATUS_CODE_UNAUTHORIZED);
   }
 
   // Creates a fake "serverError" exception that can be used for testing.
-  static HttpTransport fakeBadGatewayException() {
+  static MockHttpTransport fakeBadGatewayException() {
     return fakeGoogleJsonResponseException(
         "serverError", ERROR_MESSAGE_BAD_GATEWAY, HttpStatusCodes.STATUS_CODE_BAD_GATEWAY);
   }
 
   // Builds a fake GoogleJsonResponseException for testing API error handling.
-  private static HttpTransport fakeGoogleJsonResponseException(
+  private static MockHttpTransport fakeGoogleJsonResponseException(
       String reason, String message, int statusCode) {
     ErrorInfo errorInfo = new ErrorInfo();
     errorInfo.setReason(reason);
@@ -97,7 +98,7 @@ public class CloudSqlCoreTestingBase {
     return fakeGoogleJsonResponseExceptionTransport(errorInfo, message, statusCode);
   }
 
-  private static HttpTransport fakeGoogleJsonResponseExceptionTransport(
+  private static MockHttpTransport fakeGoogleJsonResponseExceptionTransport(
       ErrorInfo errorInfo, String message, int statusCode) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
@@ -117,7 +118,7 @@ public class CloudSqlCoreTestingBase {
                 new MockLowLevelHttpResponse()
                     .setContent(errorResponse.toPrettyString())
                     .setContentType(Json.MEDIA_TYPE)
-                    .setStatusCode(HttpStatusCodes.STATUS_CODE_FORBIDDEN));
+                    .setStatusCode(statusCode));
       }
     };
   }
@@ -131,19 +132,20 @@ public class CloudSqlCoreTestingBase {
     clientKeyPair = Futures.immediateFuture(TestKeys.getClientKeyPair());
   }
 
-  HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
+  MockHttpTransport fakeSuccessHttpTransport(Duration certDuration) {
     return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, null);
   }
 
-  HttpTransport fakeSuccessHttpTransport(Duration certDuration, String baseUrl) {
+  MockHttpTransport fakeSuccessHttpTransport(Duration certDuration, String baseUrl) {
     return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, baseUrl);
   }
 
-  HttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration) {
+  MockHttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration) {
     return fakeSuccessHttpTransport(serverCert, certDuration, null);
   }
 
-  HttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration, String baseUrl) {
+  MockHttpTransport fakeSuccessHttpTransport(
+      String serverCert, Duration certDuration, String baseUrl) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -182,6 +184,36 @@ public class CloudSqlCoreTestingBase {
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             }
             return response;
+          }
+        };
+      }
+    };
+  }
+
+  HttpTransport fakeIntermittentErrorHttpTransport(
+      MockHttpTransport successTransport, MockHttpTransport errorTransport) {
+    // Odd request counts get errors, Even request count gets success.
+    ConcurrentHashMap<String, Integer> counterByUrl = new ConcurrentHashMap<>();
+
+    return new MockHttpTransport() {
+      @Override
+      public LowLevelHttpRequest buildRequest(String method, String url) {
+        return new MockLowLevelHttpRequest() {
+          @Override
+          public LowLevelHttpResponse execute() throws IOException {
+            int count =
+                counterByUrl.compute(
+                    url,
+                    (url, val) -> {
+                      if (val == null) {
+                        return 1;
+                      }
+                      return val + 1;
+                    });
+            if (count % 2 == 0) {
+              return successTransport.buildRequest(method, url).execute();
+            }
+            return errorTransport.buildRequest(method, url).execute();
           }
         };
       }

@@ -112,6 +112,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     InstanceMetadata metadata = fetchMetadata(instanceName, authType);
     Certificate ephemeralCertificate =
         fetchEphemeralCertificate(keyPair, instanceName, token, authType);
+
     SslData sslContext =
         createSslData(keyPair, metadata, ephemeralCertificate, instanceName, authType);
 
@@ -228,10 +229,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private InstanceMetadata fetchMetadata(CloudSqlInstanceName instanceName, AuthType authType) {
     try {
       ConnectSettings instanceMetadata =
-          apiClient
-              .connect()
-              .get(instanceName.getProjectId(), instanceName.getInstanceId())
-              .execute();
+          new ApiClientRetryingCallable<>(
+                  () ->
+                      apiClient
+                          .connect()
+                          .get(instanceName.getProjectId(), instanceName.getInstanceId())
+                          .execute())
+              .call();
 
       // Validate the instance will support the authenticated connection.
       if (!instanceMetadata.getRegion().equals(instanceName.getRegionId())) {
@@ -293,7 +297,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                 instanceName.getConnectionName()),
             ex);
       }
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       throw addExceptionContext(
           ex,
           String.format(
@@ -326,12 +330,15 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     GenerateEphemeralCertResponse response;
     try {
       response =
-          apiClient
-              .connect()
-              .generateEphemeralCert(
-                  instanceName.getProjectId(), instanceName.getInstanceId(), request)
-              .execute();
-    } catch (IOException ex) {
+          new ApiClientRetryingCallable<>(
+                  () ->
+                      apiClient
+                          .connect()
+                          .generateEphemeralCert(
+                              instanceName.getProjectId(), instanceName.getInstanceId(), request)
+                          .execute())
+              .call();
+    } catch (Exception ex) {
       throw addExceptionContext(
           ex,
           String.format(
@@ -425,7 +432,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
    *     provided to the user
    */
   private RuntimeException addExceptionContext(
-      IOException ex, String fallbackDesc, CloudSqlInstanceName instanceName) {
+      Exception ex, String fallbackDesc, CloudSqlInstanceName instanceName) {
     String reason = fallbackDesc;
     int statusCode = 0;
 

@@ -37,7 +37,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.cloud.sql.CredentialFactory;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -75,8 +74,7 @@ public class DefaultAccessTokenSupplierTest {
 
   @Test
   public void testEmptyTokenOnEmptyCredentials() throws IOException {
-    DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(null, 1, Duration.ofMillis(10));
+    DefaultAccessTokenSupplier supplier = new DefaultAccessTokenSupplier(null);
     assertThat(supplier.get()).isEqualTo(Optional.empty());
   }
 
@@ -100,8 +98,7 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(googleCredentials), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(googleCredentials));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -127,8 +124,7 @@ public class DefaultAccessTokenSupplierTest {
           }
         };
 
-    DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(badFactory, 1, Duration.ofMillis(10));
+    DefaultAccessTokenSupplier supplier = new DefaultAccessTokenSupplier(badFactory);
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Unsupported credentials of type");
   }
@@ -153,11 +149,10 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(expiredGoogleCredentials), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(expiredGoogleCredentials));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("Error refreshing credentials");
-    assertThat(refreshCounter.get()).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(5);
   }
 
   @Test
@@ -180,11 +175,10 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(refreshGetsExpiredToken), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(refreshGetsExpiredToken));
     IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
     assertThat(ex).hasMessageThat().contains("expiration time is in the past");
-    assertThat(refreshCounter.get()).isEqualTo(1);
+    assertThat(refreshCounter.get()).isEqualTo(5);
   }
 
   @Test
@@ -206,8 +200,7 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(refreshableCredentials), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(refreshableCredentials));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -239,8 +232,7 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(refreshableCredentials), 3, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(refreshableCredentials));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -271,8 +263,7 @@ public class DefaultAccessTokenSupplierTest {
   public void throwsErrorForWrongCredentialType() {
     OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("abc", null));
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new Oauth2BadCredentialFactory(creds), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new Oauth2BadCredentialFactory(creds));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex)
@@ -291,8 +282,7 @@ public class DefaultAccessTokenSupplierTest {
           }
         };
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(creds), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(creds));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token has length of zero");
@@ -317,8 +307,7 @@ public class DefaultAccessTokenSupplierTest {
         };
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new GoogleCredentialsFactory(refreshableCredentials), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(refreshableCredentials));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
@@ -368,8 +357,7 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(future.toEpochMilli());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new Oauth2CredentialFactory(credential), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new Oauth2CredentialFactory(credential));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
@@ -438,8 +426,7 @@ public class DefaultAccessTokenSupplierTest {
     credential.setExpirationTimeMilliseconds(past.toEpochMilli());
 
     DefaultAccessTokenSupplier supplier =
-        new DefaultAccessTokenSupplier(
-            new Oauth2CredentialFactory(credential), 1, Duration.ofMillis(10));
+        new DefaultAccessTokenSupplier(new Oauth2CredentialFactory(credential));
     Optional<AccessToken> token = supplier.get();
 
     assertThat(token.isPresent()).isTrue();
