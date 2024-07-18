@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 package com.google.cloud.sql.core;
 
-import java.util.Collection;
-import javax.naming.NameNotFoundException;
+/** Resolves the Cloud SQL Instance from the configuration name. */
+interface InstanceConnectionNameResolver {
 
-/** Wraps the Java DNS API. */
-interface DnsResolver {
-  Collection<String> resolveTxt(String domainName) throws NameNotFoundException;
+  /**
+   * Resolves the CloudSqlInstanceName from a configuration string value.
+   *
+   * @param name the configuration string
+   * @return the CloudSqlInstanceName
+   * @throws IllegalArgumentException if the name cannot be resolved.
+   */
+  CloudSqlInstanceName resolve(String name);
 }

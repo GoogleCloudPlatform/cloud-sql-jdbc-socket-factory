@@ -49,6 +49,8 @@ class Connector {
   private final int serverProxyPort;
   private final ConnectorConfig config;
 
+  private final InstanceConnectionNameResolver instanceNameResolver;
+
   Connector(
       ConnectorConfig config,
       ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
@@ -57,7 +59,8 @@ class Connector {
       ListenableFuture<KeyPair> localKeyPair,
       long minRefreshDelayMs,
       long refreshTimeoutMs,
-      int serverProxyPort) {
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver) {
     this.config = config;
 
     this.adminApi =
@@ -67,6 +70,7 @@ class Connector {
     this.localKeyPair = localKeyPair;
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
+    this.instanceNameResolver = instanceNameResolver;
   }
 
   public ConnectorConfig getConfig() {
@@ -181,17 +185,16 @@ class Connector {
       final String unresolvedName = config.getDomainName();
       final Function<String, String> resolver =
           config.getConnectorConfig().getInstanceNameResolver();
+      CloudSqlInstanceName name;
       if (resolver != null) {
-        return config.withCloudSqlInstance(resolver.apply(unresolvedName));
+        name = instanceNameResolver.resolve(resolver.apply(unresolvedName));
       } else {
-        throw new IllegalStateException(
-            "Can't resolve domain " + unresolvedName + ". ConnectorConfig.resolver is not set.");
+        name = instanceNameResolver.resolve(unresolvedName);
       }
+      return config.withCloudSqlInstance(name.getConnectionName());
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(
-          String.format(
-              "Cloud SQL connection name is invalid: \"%s\"", config.getCloudSqlInstance()),
-          e);
+          String.format("Cloud SQL connection name is invalid: \"%s\"", config.getDomainName()), e);
     }
   }
 

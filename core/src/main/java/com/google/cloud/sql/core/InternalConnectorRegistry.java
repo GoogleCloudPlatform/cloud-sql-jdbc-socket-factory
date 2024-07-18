@@ -172,9 +172,11 @@ public final class InternalConnectorRegistry {
 
     // Validate parameters
     Preconditions.checkArgument(
-        config.getCloudSqlInstance() != null,
-        "cloudSqlInstance property not set. Please specify this property in the JDBC URL or the "
-            + "connection Properties with value in form \"project:region:instance\"");
+        config.getCloudSqlInstance() != null || config.getDomainName() != null,
+        "cloudSqlInstance property or hostname was not set. Please specify"
+            + " either cloudSqlInstance or the database hostname in the JDBC URL or the "
+            + "connection Properties. cloudSqlInstance should contain a value in "
+            + "form \"project:region:instance\"");
 
     return getConnector(config).connect(config, connectTimeoutMs);
   }
@@ -332,7 +334,8 @@ public final class InternalConnectorRegistry {
         localKeyPair,
         MIN_REFRESH_DELAY_MS,
         connectTimeoutMs,
-        serverProxyPort);
+        serverProxyPort,
+        new DnsInstanceConnectionNameResolver(new JndiDnsResolver()));
   }
 
   /** Register the configuration for a named connector. */

@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.common.base.Strings;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -103,12 +104,23 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
   }
 
   private void checkSan(X509Certificate[] chain) throws CertificateException {
-    List<String> sans = getSans(chain[0]);
-    String dns = instanceMetadata.getDnsName();
-    if (dns == null || dns.isEmpty()) {
+    final String dns;
+    if (!Strings.isNullOrEmpty(instanceMetadata.getInstanceName().getDomainName())) {
+      // If the connector is configured using a DNS name, validate the DNS name from the connector
+      // config.
+      dns = instanceMetadata.getInstanceName().getDomainName();
+    } else {
+      // If the connector is configured with an instance name, validate the DNS name from
+      // the instance metadata.
+      dns = instanceMetadata.getDnsName();
+    }
+
+    if (Strings.isNullOrEmpty(dns)) {
       throw new CertificateException(
           "Instance metadata for " + instanceMetadata.getInstanceName() + " has an empty dnsName");
     }
+
+    List<String> sans = getSans(chain[0]);
     for (String san : sans) {
       if (san.equalsIgnoreCase(dns)) {
         return;
@@ -116,7 +128,7 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
     }
     throw new CertificateException(
         "Server certificate does not contain expected name '"
-            + instanceMetadata.getDnsName()
+            + dns
             + "' for Cloud SQL instance "
             + instanceMetadata.getInstanceName());
   }
