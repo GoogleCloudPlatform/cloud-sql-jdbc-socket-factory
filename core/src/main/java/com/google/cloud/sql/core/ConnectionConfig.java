@@ -200,6 +200,18 @@ public class ConnectionConfig {
         config);
   }
 
+  /** Creates a new instance of the ConnectionConfig with an updated cloudSqlInstance. */
+  public ConnectionConfig withCloudSqlInstance(String newCloudSqlInstance) {
+    return new ConnectionConfig(
+        newCloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        connectorConfig);
+  }
+
   public String getNamedConnector() {
     return namedConnector;
   }

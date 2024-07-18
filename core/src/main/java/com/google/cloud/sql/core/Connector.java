@@ -48,6 +48,8 @@ class Connector {
   private final int serverProxyPort;
   private final ConnectorConfig config;
 
+  private final InstanceConnectionNameResolver instanceNameResolver;
+
   Connector(
       ConnectorConfig config,
       ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
@@ -56,7 +58,8 @@ class Connector {
       ListenableFuture<KeyPair> localKeyPair,
       long minRefreshDelayMs,
       long refreshTimeoutMs,
-      int serverProxyPort) {
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver) {
     this.config = config;
 
     this.adminApi =
@@ -66,6 +69,7 @@ class Connector {
     this.localKeyPair = localKeyPair;
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
+    this.instanceNameResolver = instanceNameResolver;
   }
 
   public ConnectorConfig getConfig() {
@@ -139,9 +143,20 @@ class Connector {
     }
   }
 
-  ConnectionInfoCache getConnection(ConnectionConfig config) {
+  ConnectionInfoCache getConnection(final ConnectionConfig config) {
+    CloudSqlInstanceName name = null;
+    try {
+      name = instanceNameResolver.resolve(config.getCloudSqlInstance());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Cloud SQL connection name is invalid: \"%s\"", config.getCloudSqlInstance()),
+          e);
+    }
+    final ConnectionConfig updatedConfig = config.withCloudSqlInstance(name.getConnectionName());
+
     ConnectionInfoCache instance =
-        instances.computeIfAbsent(config, k -> createConnectionInfo(config));
+        instances.computeIfAbsent(updatedConfig, k -> createConnectionInfo(updatedConfig));
 
     // If the client certificate has expired (as when the computer goes to
     // sleep, and the refresh cycle cannot run), force a refresh immediately.

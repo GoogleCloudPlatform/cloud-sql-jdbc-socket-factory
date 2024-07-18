@@ -34,7 +34,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
+import javax.naming.NameNotFoundException;
 import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
 import org.junit.Before;
@@ -147,6 +149,57 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
+  @Test
+  public void create_successfulPublicConnectionWithDomainName()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("db.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_throwsErrorForUnresolvedDomainName() throws IOException {
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("baddomain.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("Cloud SQL connection name is invalid: \"baddomain.example.com\"");
+  }
+
+  @Test
+  public void create_throwsErrorForDomainNameBadTargetValue() throws IOException {
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("badvalue.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+    Connector c = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("Cloud SQL connection name is invalid: \"badvalue.example.com\"");
+  }
+
   private boolean isWindows() {
     String os = System.getProperty("os.name").toLowerCase();
     return os.contains("win");
@@ -210,7 +263,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            port);
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -271,7 +325,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            DEFAULT_SERVER_PROXY_PORT);
+            DEFAULT_SERVER_PROXY_PORT,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     // Use a different project to get Api Not Enabled Error.
     TerminalException ex =
@@ -303,7 +358,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            DEFAULT_SERVER_PROXY_PORT);
+            DEFAULT_SERVER_PROXY_PORT,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     // Use a different instance to simulate incorrect permissions.
     TerminalException ex =
@@ -335,7 +391,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            DEFAULT_SERVER_PROXY_PORT);
+            DEFAULT_SERVER_PROXY_PORT,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     // If the gateway is down, then this is a temporary error, not a fatal error.
     RuntimeException ex =
@@ -377,7 +434,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            port);
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -410,7 +468,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            port);
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -442,7 +501,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            port);
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -480,7 +540,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            DEFAULT_SERVER_PROXY_PORT);
+            DEFAULT_SERVER_PROXY_PORT,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
 
     assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
   }
@@ -497,7 +558,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             clientKeyPair,
             10,
             TEST_MAX_REFRESH_MS,
-            port);
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
     return connector;
   }
 
@@ -505,5 +567,20 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
     return bufferedReader.readLine();
+  }
+
+  private static class MockDnsResolver implements DnsResolver {
+
+    @Override
+    public Collection<DnsSrvRecord> resolveSrv(String domainName) throws NameNotFoundException {
+      if ("db.example.com".equals(domainName)) {
+        return Collections.singletonList(
+            new DnsSrvRecord("0 10 3307 myProject:myRegion:myInstance."));
+      }
+      if ("badvalue.example.com".equals(domainName)) {
+        return Collections.singletonList(new DnsSrvRecord("0 10 3307 not-an-instance-name."));
+      }
+      throw new NameNotFoundException("Not found: " + domainName);
+    }
   }
 }
