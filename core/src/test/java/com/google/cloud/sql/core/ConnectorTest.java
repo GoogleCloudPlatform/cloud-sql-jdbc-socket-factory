@@ -155,6 +155,46 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
+  public void create_successfulPrivateConnection_UsesInstanceName_DomainNameIgnored()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIVATE")
+            .build();
+
+    int port = sslServer.start(PRIVATE_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPrivateConnection_UsesInstanceName_EmptyDomainNameIgnored()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("")
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIVATE")
+            .build();
+
+    int port = sslServer.start(PRIVATE_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
   public void create_throwsErrorForDomainNameWithNoResolver()
       throws IOException, InterruptedException {
     // The server TLS certificate matches myProject:myRegion:myInstance

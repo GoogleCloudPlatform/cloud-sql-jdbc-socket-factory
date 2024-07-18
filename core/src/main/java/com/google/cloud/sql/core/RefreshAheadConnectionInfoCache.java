@@ -48,12 +48,15 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
       long minRefreshDelayMs) {
+
+    CloudSqlInstanceName instanceName =
+        new CloudSqlInstanceName(config.getCloudSqlInstance(), config.getDomainName());
+
     this.config = config;
-    this.instanceName = new CloudSqlInstanceName(config.getCloudSqlInstance());
+    this.instanceName = instanceName;
 
     AccessTokenSupplier accessTokenSupplier =
         DefaultAccessTokenSupplier.newInstance(config.getAuthType(), tokenSourceFactory);
-    CloudSqlInstanceName instanceName = new CloudSqlInstanceName(config.getCloudSqlInstance());
 
     this.refreshStrategy =
         new RefreshAheadStrategy(

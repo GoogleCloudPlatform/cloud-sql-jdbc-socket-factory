@@ -157,6 +157,13 @@ class Connector {
     return instance;
   }
 
+  /**
+   * Updates the ConnectionConfig to ensure that the cloudSqlInstance field is set, resolving the
+   * domainName using the InstanceNameResolver.
+   *
+   * @param config the configuration to resolve.
+   * @return a ConnectionConfig guaranteed to have the CloudSqlInstance field set.
+   */
   private ConnectionConfig resolveConnectionName(ConnectionConfig config) {
     // If domainName is not set, return the original configuration unmodified.
     if (config.getDomainName() == null || config.getDomainName().isEmpty()) {
