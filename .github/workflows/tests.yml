@@ -127,6 +127,10 @@ jobs:
           ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   unit-e2e:
     name: units + e2e
+    # run integration tests on all builds except pull requests from forks or dependabot
+    if: |
+      github.event_name != 'pull_request' || 
+      (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
