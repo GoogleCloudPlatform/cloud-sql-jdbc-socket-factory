@@ -37,6 +37,7 @@ public class SocketFactory extends ConfigurableSocketFactory {
   }
 
   private Configuration conf;
+  private String host;
 
   /** Instantiate a socket factory. */
   public SocketFactory() {}
@@ -45,13 +46,14 @@ public class SocketFactory extends ConfigurableSocketFactory {
   public void setConfiguration(Configuration conf, String host) {
     // Ignore the hostname
     this.conf = conf;
+    this.host = host;
   }
 
   @Override
   public Socket createSocket() throws IOException {
     try {
       return InternalConnectorRegistry.getInstance()
-          .connect(ConnectionConfig.fromConnectionProperties(conf.nonMappedOptions()));
+          .connect(ConnectionConfig.fromConnectionProperties(conf.nonMappedOptions(), host));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
