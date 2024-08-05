@@ -19,6 +19,7 @@ package com.google.cloud.sql;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Objects;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -33,6 +34,7 @@ public class ConnectorConfig {
   private final String adminRootUrl;
   private final String adminServicePath;
   private final Supplier<GoogleCredentials> googleCredentialsSupplier;
+  private final Function<String,String> instanceNameResolver;
   private final GoogleCredentials googleCredentials;
   private final String googleCredentialsPath;
   private final String adminQuotaProject;
@@ -50,7 +52,8 @@ public class ConnectorConfig {
       String googleCredentialsPath,
       String adminQuotaProject,
       String universeDomain,
-      RefreshStrategy refreshStrategy) {
+      RefreshStrategy refreshStrategy,
+      Function<String,String> instanceNameResolver) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -61,6 +64,7 @@ public class ConnectorConfig {
     this.adminQuotaProject = adminQuotaProject;
     this.universeDomain = universeDomain;
     this.refreshStrategy = refreshStrategy;
+    this.instanceNameResolver = instanceNameResolver;
   }
 
   @Override
@@ -81,7 +85,8 @@ public class ConnectorConfig {
         && Objects.equal(googleCredentialsPath, that.googleCredentialsPath)
         && Objects.equal(adminQuotaProject, that.adminQuotaProject)
         && Objects.equal(universeDomain, that.universeDomain)
-        && Objects.equal(refreshStrategy, that.refreshStrategy);
+        && Objects.equal(refreshStrategy, that.refreshStrategy)
+        && Objects.equal(instanceNameResolver, that.instanceNameResolver);
   }
 
   @Override
@@ -96,7 +101,8 @@ public class ConnectorConfig {
         googleCredentialsPath,
         adminQuotaProject,
         universeDomain,
-        refreshStrategy);
+        refreshStrategy,
+        instanceNameResolver);
   }
 
   public String getTargetPrincipal() {
@@ -139,6 +145,10 @@ public class ConnectorConfig {
     return refreshStrategy;
   }
 
+  public Function<String, String> getInstanceNameResolver() {
+    return instanceNameResolver;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -152,6 +162,7 @@ public class ConnectorConfig {
     private String adminQuotaProject;
     private String universeDomain;
     private RefreshStrategy refreshStrategy = RefreshStrategy.BACKGROUND;
+    private Function<String,String> instanceNameResolver;
 
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
@@ -203,6 +214,10 @@ public class ConnectorConfig {
       this.refreshStrategy = refreshStrategy;
       return this;
     }
+    public Builder withInstanceNameResolver(Function<String,String> instanceNameResolver) {
+      this.instanceNameResolver = instanceNameResolver;
+      return this;
+    }
 
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
@@ -238,7 +253,8 @@ public class ConnectorConfig {
           googleCredentialsPath,
           adminQuotaProject,
           universeDomain,
-          refreshStrategy);
+          refreshStrategy,
+          instanceNameResolver);
     }
   }
 }
