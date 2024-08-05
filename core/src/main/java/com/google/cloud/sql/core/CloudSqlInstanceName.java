@@ -24,8 +24,10 @@ import java.util.regex.Pattern;
 /**
  * This class parses the different parts of a Cloud SQL Connection Name to allow users to easily
  * fetch the projectId, regionId, and instanceId.
+ *
+ * <p>INTERNAL USE ONLY! This API may change without notice.
  */
-class CloudSqlInstanceName {
+public class CloudSqlInstanceName {
 
   // Unique identifier for each Cloud SQL instance in the format "PROJECT:REGION:INSTANCE"
   // Some legacy project ids are domain-scoped (e.g. "example.com:PROJECT:REGION:INSTANCE")
@@ -65,6 +67,17 @@ class CloudSqlInstanceName {
    */
   public static boolean isValidDomain(String domain) {
     Matcher matcher = DOMAIN_NAME.matcher(domain);
+    return matcher.matches();
+  }
+
+  /**
+   * Checks if a string is a well-formed instance name.
+   *
+   * @param connectionName the value to check
+   * @return true if it is a well-formed instance name.
+   */
+  public static boolean isValidInstanceName(String connectionName) {
+    Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     return matcher.matches();
   }
 
