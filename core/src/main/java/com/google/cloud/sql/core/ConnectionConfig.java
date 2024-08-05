@@ -327,7 +327,8 @@ public class ConnectionConfig {
       this.ipTypes = ipTypes;
       return this;
     }
-    /** Set domainName as. */
+
+    /** Set domainName. */
     public Builder withDomainName(String domainName) {
       this.domainName = domainName;
       return this;

@@ -34,7 +34,7 @@ public class ConnectorConfig {
   private final String adminRootUrl;
   private final String adminServicePath;
   private final Supplier<GoogleCredentials> googleCredentialsSupplier;
-  private final Function<String,String> instanceNameResolver;
+  private final Function<String, String> instanceNameResolver;
   private final GoogleCredentials googleCredentials;
   private final String googleCredentialsPath;
   private final String adminQuotaProject;
@@ -53,7 +53,7 @@ public class ConnectorConfig {
       String adminQuotaProject,
       String universeDomain,
       RefreshStrategy refreshStrategy,
-      Function<String,String> instanceNameResolver) {
+      Function<String, String> instanceNameResolver) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -162,7 +162,7 @@ public class ConnectorConfig {
     private String adminQuotaProject;
     private String universeDomain;
     private RefreshStrategy refreshStrategy = RefreshStrategy.BACKGROUND;
-    private Function<String,String> instanceNameResolver;
+    private Function<String, String> instanceNameResolver;
 
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
@@ -214,7 +214,8 @@ public class ConnectorConfig {
       this.refreshStrategy = refreshStrategy;
       return this;
     }
-    public Builder withInstanceNameResolver(Function<String,String> instanceNameResolver) {
+
+    public Builder withInstanceNameResolver(Function<String, String> instanceNameResolver) {
       this.instanceNameResolver = instanceNameResolver;
       return this;
     }

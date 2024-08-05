@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.cloud.sql.postgres;
+package com.google.cloud.sql.mysql;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.cloud.sql.ConnectorConfig;
+import com.google.cloud.sql.ConnectorRegistry;
 import com.google.common.collect.ImmutableList;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -36,16 +38,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class JdbcPostgresIntegrationTests {
+public class JdbcMysqlJ8DomainNameIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
-  private static final String DB_NAME = System.getenv("POSTGRES_DB");
-  private static final String DB_USER = System.getenv("POSTGRES_USER");
-  private static final String DB_PASSWORD = System.getenv("POSTGRES_PASS");
+  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
+  private static final String DB_NAME = System.getenv("MYSQL_DB");
+  private static final String DB_USER = System.getenv("MYSQL_USER");
+  private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
+      ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
-
   private HikariDataSource connectionPool;
 
   @BeforeClass
@@ -63,12 +64,19 @@ public class JdbcPostgresIntegrationTests {
   @Before
   public void setUpPool() throws SQLException {
     // Set up URL parameters
-    String jdbcURL = String.format("jdbc:postgresql://db.example.com/%s", DB_NAME);
+    String jdbcURL = String.format("jdbc:mysql://db.example.com/%s", DB_NAME);
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);
-    connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
-    connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
+
+    // Register a resolver that resolves `db.example.com` to the connection name
+    connProps.setProperty("cloudSqlNamedConnector", "resolver-test");
+    ConnectorRegistry.register(
+        "resolver-test",
+        new ConnectorConfig.Builder()
+            .withInstanceNameResolver((n) -> "db.example.com".equals(n) ? CONNECTION_NAME : null)
+            .build());
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();
