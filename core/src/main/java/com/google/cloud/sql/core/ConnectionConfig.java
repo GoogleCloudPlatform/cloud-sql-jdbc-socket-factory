@@ -63,9 +63,19 @@ public class ConnectionConfig {
 
   private final AuthType authType;
   private final String unixSocketPathSuffix;
+  private final String domainName;
 
   /** Create a new ConnectionConfig from the well known JDBC Connection properties. */
   public static ConnectionConfig fromConnectionProperties(Properties props) {
+    // TODO convert internal uses to fromConnectionProperties(props, domainName)
+    return fromConnectionProperties(props, null);
+  }
+
+  /**
+   * Create a new ConnectionConfig from the well known JDBC Connection properties, also setting
+   * database domain name.
+   */
+  public static ConnectionConfig fromConnectionProperties(Properties props, String domainName) {
     final String csqlInstanceName = props.getProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY);
     final String namedConnection =
         props.getProperty(ConnectionConfig.CLOUD_SQL_NAMED_CONNECTOR_PROPERTY);
@@ -113,6 +123,7 @@ public class ConnectionConfig {
         ipTypes,
         authType,
         unixSocketPathSuffix,
+        domainName,
         new ConnectorConfig.Builder()
             .withTargetPrincipal(targetPrincipal)
             .withDelegates(delegates)
@@ -162,13 +173,20 @@ public class ConnectionConfig {
         && Objects.equals(unixSocketPath, config.unixSocketPath)
         && Objects.equals(ipTypes, config.ipTypes)
         && Objects.equals(authType, config.authType)
+        && Objects.equals(domainName, config.domainName)
         && Objects.equals(connectorConfig, config.connectorConfig);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        cloudSqlInstance, namedConnector, unixSocketPath, ipTypes, authType, connectorConfig);
+        cloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        domainName,
+        connectorConfig);
   }
 
   private ConnectionConfig(
@@ -178,6 +196,7 @@ public class ConnectionConfig {
       List<IpType> ipTypes,
       AuthType authType,
       String unixSocketPathSuffix,
+      String domainName,
       ConnectorConfig connectorConfig) {
     this.cloudSqlInstance = cloudSqlInstance;
     this.namedConnector = namedConnector;
@@ -186,6 +205,7 @@ public class ConnectionConfig {
     this.unixSocketPathSuffix = unixSocketPathSuffix;
     this.connectorConfig = connectorConfig;
     this.authType = authType;
+    this.domainName = domainName;
   }
 
   /** Creates a new instance of the ConnectionConfig with an updated connectorConfig. */
@@ -197,7 +217,34 @@ public class ConnectionConfig {
         ipTypes,
         authType,
         unixSocketPathSuffix,
+        domainName,
         config);
+  }
+
+  /** Creates a new instance of the ConnectionConfig with an updated cloudSqlInstance. */
+  public ConnectionConfig withCloudSqlInstance(String newCloudSqlInstance) {
+    return new ConnectionConfig(
+        newCloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        domainName,
+        connectorConfig);
+  }
+
+  /** Creates a new instance of the ConnectionConfig with an updated cloudSqlInstance. */
+  public ConnectionConfig withDomainName(String domainName) {
+    return new ConnectionConfig(
+        cloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        domainName,
+        connectorConfig);
   }
 
   public String getNamedConnector() {
@@ -228,6 +275,10 @@ public class ConnectionConfig {
     return authType;
   }
 
+  public String getDomainName() {
+    return domainName;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -238,6 +289,7 @@ public class ConnectionConfig {
     private String unixSocketPathSuffix;
     private ConnectorConfig connectorConfig = new ConnectorConfig.Builder().build();
     private AuthType authType = DEFAULT_AUTH_TYPE;
+    private String domainName;
 
     public Builder withCloudSqlInstance(String cloudSqlInstance) {
       this.cloudSqlInstance = cloudSqlInstance;
@@ -275,6 +327,11 @@ public class ConnectionConfig {
       this.ipTypes = ipTypes;
       return this;
     }
+    /** Set domainName as. */
+    public Builder withDomainName(String domainName) {
+      this.domainName = domainName;
+      return this;
+    }
 
     public Builder withUnixSocketPathSuffix(String unixSocketPathSuffix) {
       this.unixSocketPathSuffix = unixSocketPathSuffix;
@@ -290,6 +347,7 @@ public class ConnectionConfig {
           ipTypes,
           authType,
           unixSocketPathSuffix,
+          domainName,
           connectorConfig);
     }
   }
