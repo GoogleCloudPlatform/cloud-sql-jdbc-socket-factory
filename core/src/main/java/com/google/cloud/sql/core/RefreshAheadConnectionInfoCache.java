@@ -95,4 +95,9 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
   public CloudSqlInstanceName getInstanceName() {
     return instanceName;
   }
+
+  @Override
+  public ConnectionConfig getConfig() {
+    return config;
+  }
 }

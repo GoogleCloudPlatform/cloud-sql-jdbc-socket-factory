@@ -26,9 +26,9 @@ class InstanceMetadata {
 
   private final CloudSqlInstanceName instanceName;
   private final Map<IpType, String> ipAddrs;
+  private final String dnsName;
   private final List<Certificate> instanceCaCertificates;
   private final boolean casManagedCertificate;
-  private final String dnsName;
   private final boolean pscEnabled;
 
   InstanceMetadata(
@@ -41,8 +41,8 @@ class InstanceMetadata {
     this.instanceName = instanceName;
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificates = instanceCaCertificates;
-    this.casManagedCertificate = casManagedCertificate;
     this.dnsName = dnsName;
+    this.casManagedCertificate = casManagedCertificate;
     this.pscEnabled = pscEnabled;
   }
 

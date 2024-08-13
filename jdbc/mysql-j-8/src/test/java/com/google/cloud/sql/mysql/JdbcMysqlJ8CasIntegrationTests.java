@@ -36,14 +36,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class JdbcMysqlJ8IntegrationTests {
+public class JdbcMysqlJ8CasIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("MYSQL_CAS_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
+      ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CAS_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
   private HikariDataSource connectionPool;
 
@@ -66,13 +66,7 @@ public class JdbcMysqlJ8IntegrationTests {
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);
-    connProps.setProperty("allowPublicKeyRetrieval", "true");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
-    connProps.setProperty(
-        "authenticationPlugins", "com.google.cloud.sql.mysql.CloudSqlSha256PasswordPlugin");
-    // connProps.setProperty("disabledAuthenticationPlugins",
-    // "caching_sha256_password,sha256_password");
-    // connProps.setProperty("defaultAuthenticationPlugin", "caching_sha256_password");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
 
     // Initialize connection pool
