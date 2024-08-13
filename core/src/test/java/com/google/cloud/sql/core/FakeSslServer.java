@@ -18,7 +18,9 @@ package com.google.cloud.sql.core;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
@@ -38,6 +40,7 @@ public class FakeSslServer {
 
   private final PrivateKey privateKey;
   private final X509Certificate[] cert;
+  private SSLServerSocket sslServerSocket;
 
   FakeSslServer() {
     privateKey = TestKeys.getServerKeyPair().getPrivate();
@@ -54,7 +57,15 @@ public class FakeSslServer {
     this.cert = new X509Certificate[] {cert};
   }
 
+  void stop() throws IOException {
+    sslServerSocket.close();
+  }
+
   int start(final String ip) throws InterruptedException {
+    return this.start(ip, 0, this.cert); // when port == 0, socket will open on a random port
+  }
+
+  int start(final String ip, int port, X509Certificate[] certChain) throws InterruptedException {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     final AtomicInteger pickedPort = new AtomicInteger();
 
@@ -63,7 +74,7 @@ public class FakeSslServer {
               try {
                 KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
                 authKeyStore.load(null, null);
-                PrivateKeyEntry serverCert = new PrivateKeyEntry(privateKey, cert);
+                PrivateKeyEntry serverCert = new PrivateKeyEntry(privateKey, certChain);
                 authKeyStore.setEntry(
                     "serverCert", serverCert, new PasswordProtection(new char[0]));
                 KeyManagerFactory keyManagerFactory =
@@ -82,16 +93,22 @@ public class FakeSslServer {
                 sslContext.init(
                     keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
                 SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-                SSLServerSocket sslServerSocket =
+                this.sslServerSocket =
                     (SSLServerSocket)
-                        sslServerSocketFactory.createServerSocket(0, 5, InetAddress.getByName(ip));
+                        sslServerSocketFactory.createServerSocket(
+                            port, 5, InetAddress.getByName(ip));
                 sslServerSocket.setNeedClientAuth(true);
 
                 pickedPort.set(sslServerSocket.getLocalPort());
                 countDownLatch.countDown();
 
-                for (; ; ) {
-                  SSLSocket socket = (SSLSocket) sslServerSocket.accept();
+                while (!sslServerSocket.isClosed()) {
+                  SSLSocket socket;
+                  try {
+                    socket = (SSLSocket) sslServerSocket.accept();
+                  } catch (SocketException e) {
+                    break; // the server socket was closed, exit accept loop.
+                  }
                   socket.startHandshake();
                   socket
                       .getOutputStream()
@@ -99,6 +116,7 @@ public class FakeSslServer {
                   socket.close();
                 }
               } catch (Exception e) {
+                countDownLatch.countDown();
                 throw new RuntimeException(e);
               }
             })

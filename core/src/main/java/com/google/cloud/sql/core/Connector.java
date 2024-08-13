@@ -26,9 +26,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -46,10 +51,13 @@ class Connector {
 
   private final ConcurrentHashMap<ConnectionConfig, ConnectionInfoCache> instances =
       new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<ConnectionConfig, Collection<Socket>> socketsByConfig =
+      new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
 
   private final InstanceConnectionNameResolver instanceNameResolver;
+  private final Timer instanceNameResolverTimer;
 
   Connector(
       ConnectorConfig config,
@@ -71,6 +79,17 @@ class Connector {
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
     this.instanceNameResolver = instanceNameResolver;
+    this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
+    // every 30 seconds, poll DNS records for changes.
+    this.instanceNameResolverTimer.schedule(
+        new TimerTask() {
+          @Override
+          public void run() {
+            checkDomainNames();
+          }
+        },
+        30000,
+        30000);
   }
 
   public ConnectorConfig getConfig() {
@@ -134,6 +153,17 @@ class Connector {
       }
 
       logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
+      if (hasDomain(config)) {
+        this.socketsByConfig.compute(
+            instance.getConfig(),
+            (cfg, sockets) -> {
+              if (sockets == null) {
+                sockets = new ArrayList();
+              }
+              sockets.add(socket);
+              return sockets;
+            });
+      }
 
       return socket;
     } catch (IOException e) {
@@ -145,11 +175,17 @@ class Connector {
     }
   }
 
+  private boolean hasDomain(ConnectionConfig config) {
+    return config.getDomainName() != null && !config.getDomainName().isEmpty();
+  }
+
   ConnectionInfoCache getConnection(final ConnectionConfig config) {
     final ConnectionConfig updatedConfig = resolveConnectionName(config);
 
     ConnectionInfoCache instance =
         instances.computeIfAbsent(updatedConfig, k -> createConnectionInfo(updatedConfig));
+
+    closeCachesWithSameDomain(updatedConfig);
 
     // If the client certificate has expired (as when the computer goes to
     // sleep, and the refresh cycle cannot run), force a refresh immediately.
@@ -173,12 +209,19 @@ class Connector {
       return config.withDomainName(null);
     }
 
+    // If both domainName and cloudSqlInstance are set, ignore the domain name. Return a new
+    // configuration with domainName set to null.
+    if (config.getCloudSqlInstance() != null && !config.getCloudSqlInstance().isEmpty()) {
+      return config.withDomainName(null);
+    }
+
     // If only domainName is set, resolve the domain name.
+    // Resolve the domain name.
     try {
       final String unresolvedName = config.getDomainName();
+      final CloudSqlInstanceName name;
       final Function<String, String> resolver =
           config.getConnectorConfig().getInstanceNameResolver();
-      CloudSqlInstanceName name;
       if (resolver != null) {
         name = instanceNameResolver.resolve(resolver.apply(unresolvedName));
       } else {
@@ -215,5 +258,75 @@ class Connector {
     logger.debug("Close all connections and remove them from cache.");
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+  }
+
+  private void checkDomainNames() {
+    instances.entrySet().stream()
+        // filter for all instance caches configured with domain names
+        .filter(entry -> hasDomain(entry.getKey()))
+        .forEach(
+            entry -> {
+              // Resolve the connection name again.
+              ConnectionConfig updatedConfig = resolveConnectionName(entry.getKey());
+
+              // Close the cache if it has the same domain name.
+              closeCachesWithSameDomain(updatedConfig);
+
+              // Remove closed sockets from the Connector's list of domain sockets.
+              socketsByConfig.computeIfPresent(
+                  entry.getKey(),
+                  (cfg, sockets) ->
+                      sockets.stream().filter(s -> !s.isClosed()).collect(Collectors.toList()));
+            });
+  }
+
+  private boolean closeCachesWithSameDomain(ConnectionConfig config) {
+    if (!hasDomain(config)) {
+      return false;
+    }
+    long closedCaches =
+        instances.entrySet().stream()
+            // Filter to instances that have the same domain, but a different config, in other words
+            // different instance name or connection properties.
+            .filter(
+                entry ->
+                    hasDomain(entry.getKey())
+                        && entry.getKey().getDomainName().equals(config.getDomainName())
+                        && !entry.getKey().equals(config))
+            .map(
+                entry -> {
+                  logger.info(
+                      "Cloud SQL Instance associated with domain name {} changed from {} to {}.",
+                      entry.getKey().getDomainName(),
+                      entry.getKey().getCloudSqlInstance(),
+                      config.getDomainName());
+                  // Safely remove this cache entry, only if it still has the same value
+                  // and close the cache.
+                  this.instances.remove(entry.getKey(), entry.getValue());
+                  Collection<Socket> sockets = socketsByConfig.remove(entry.getKey());
+                  entry.getValue().close();
+
+                  if (sockets != null) {
+                    sockets.forEach(
+                        s -> {
+                          if (!s.isClosed()) {
+                            try {
+                              s.close();
+                            } catch (IOException e) {
+                              logger.debug(
+                                  "Unable to close socket when domain {} changed from "
+                                      + "instance {} to {} value changed",
+                                  config.getDomainName(),
+                                  entry.getKey().getCloudSqlInstance(),
+                                  config.getCloudSqlInstance(),
+                                  e);
+                            }
+                          }
+                        });
+                  }
+                  return entry.getValue();
+                })
+            .count();
+    return closedCaches > 0;
   }
 }
