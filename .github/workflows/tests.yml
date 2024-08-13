@@ -59,6 +59,8 @@ jobs:
           access_token_lifetime: 600s
 
       - name: Run tests
+        env:
+          JOB_TYPE: test
         run: ./.github/scripts/run_tests.sh
         shell: bash
       - name: Check Coverage
