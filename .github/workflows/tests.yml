@@ -48,57 +48,8 @@ jobs:
           distribution: "zulu"
           java-version: ${{matrix.java-version}}
 
-      - id: auth
-        name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
-        with:
-          workload_identity_provider: ${{ vars.PROVIDER_NAME }}
-          service_account: ${{ vars.SERVICE_ACCOUNT }}
-          access_token_lifetime: 600s
-
-      - id: secrets
-        name: Get secrets
-        uses: google-github-actions/get-secretmanager-secrets@dc4a1392bad0fd60aee00bb2097e30ef07a1caae # v2.1.3
-        with:
-          secrets: |-
-            MYSQL_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_CONNECTION_NAME
-            MYSQL_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER
-            MYSQL_IAM_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_JAVA_IAM_CONNECTION_NAME
-            MYSQL_IAM_USER_JAVA:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
-            MYSQL_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_PASS
-            MYSQL_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
-            POSTGRES_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
-            POSTGRES_IAM_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_IAM_CONNECTION_NAME
-            POSTGRES_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
-            POSTGRES_IAM_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER_IAM_JAVA
-            POSTGRES_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_PASS
-            POSTGRES_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_DB
-            SQLSERVER_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_CONNECTION_NAME
-            SQLSERVER_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_USER
-            SQLSERVER_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
-            SQLSERVER_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_DB
-            IMPERSONATED_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/IMPERSONATED_USER
-            QUOTA_PROJECT:${{ vars.GOOGLE_CLOUD_PROJECT }}/QUOTA_PROJECT
       - name: Run tests
         env:
-          MYSQL_CONNECTION_NAME: "${{ steps.secrets.outputs.MYSQL_CONNECTION_NAME }}"
-          MYSQL_USER: "${{ steps.secrets.outputs.MYSQL_USER }}"
-          MYSQL_IAM_CONNECTION_NAME: "${{ steps.secrets.outputs.MYSQL_IAM_CONNECTION_NAME }}"
-          MYSQL_IAM_USER: "${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}"
-          MYSQL_PASS: "${{ steps.secrets.outputs.MYSQL_PASS }}"
-          MYSQL_DB: "${{ steps.secrets.outputs.MYSQL_DB }}"
-          POSTGRES_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}"
-          POSTGRES_IAM_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_IAM_CONNECTION_NAME }}"
-          POSTGRES_USER: "${{ steps.secrets.outputs.POSTGRES_USER }}"
-          POSTGRES_IAM_USER: "${{ steps.secrets.outputs.POSTGRES_IAM_USER }}"
-          POSTGRES_PASS: "${{ steps.secrets.outputs.POSTGRES_PASS }}"
-          POSTGRES_DB: "${{ steps.secrets.outputs.POSTGRES_DB }}"
-          SQLSERVER_CONNECTION_NAME: "${{ steps.secrets.outputs.SQLSERVER_CONNECTION_NAME }}"
-          SQLSERVER_USER: "${{ steps.secrets.outputs.SQLSERVER_USER }}"
-          SQLSERVER_PASS: "${{ steps.secrets.outputs.SQLSERVER_PASS }}"
-          SQLSERVER_DB: "${{ steps.secrets.outputs.SQLSERVER_DB }}"
-          IMPERSONATED_USER: "${{ steps.secrets.outputs.IMPERSONATED_USER }}"
-          QUOTA_PROJECT: "${{ steps.secrets.outputs.QUOTA_PROJECT }}"
           JOB_TYPE: test
         run: ./.github/scripts/run_tests.sh
         shell: bash
@@ -255,8 +206,8 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
         with:
-          workload_identity_provider: ${{ vars.PROVIDER_NAME }}
-          service_account: ${{ vars.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
           access_token_lifetime: 600s
 
       - id: secrets
