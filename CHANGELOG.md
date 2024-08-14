@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.20.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.19.1...v1.20.0) (2024-08-14)
+
+
+### Features
+
+* Retry API calls that return a 5xx error. Fixes [#2029](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2029). ([#2041](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2041)) ([d76e892](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d76e8926f8f8ed2e5a8be952cec22cc77fe3b6d3))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2037](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2037)) ([b5e9b50](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b5e9b505e834b171615ca3128ea608b640fa6319))
+
 ## [1.19.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.19.0...v1.19.1) (2024-07-10)
 
 
