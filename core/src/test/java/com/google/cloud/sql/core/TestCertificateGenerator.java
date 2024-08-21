@@ -40,12 +40,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -62,7 +61,9 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 public class TestCertificateGenerator {
   public static final int DEFAULT_KEY_SIZE = 2048;
   private static final X500Name SERVER_CA_SUBJECT =
-      new X500Name("C=US,O=Google\\, Inc,CN=Google Cloud SQL Server CA");
+      new X500Name("C=US,O=Google\\, Inc,CN=Google Cloud SQL Root CA");
+  private static final X500Name SERVER_INTERMEDIATE_CA_SUBJECT =
+      new X500Name("C=US,O=Google\\, Inc,CN=Google Cloud SQL Intermediate CA");
   private static final X500Name SIGNING_CA_SUBJECT =
       new X500Name("C=US,O=Google\\, Inc,CN=Google Cloud SQL Signing CA foo:baz");
 
@@ -74,12 +75,16 @@ public class TestCertificateGenerator {
   private final String SHA_256_WITH_RSA = "SHA256WithRSA";
   private final KeyPair signingCaKeyPair;
   private final KeyPair serverCaKeyPair;
+  private final KeyPair serverIntermediateCaKeyPair;
   private final KeyPair domainServerKeyPair;
   private final KeyPair serverKeyPair;
   private final KeyPair clientKeyPair;
   private final X509Certificate signingCaCert;
   private final X509Certificate serverCaCert;
+  private final X509Certificate serverIntemediateCaCert;
   private final X509Certificate serverCertificate;
+  private final X509Certificate casServerCertificate;
+  private final X509Certificate[] casServerCertificateChain;
   private final X509Certificate domainServerCertificate;
 
   private final String PEM_HEADER = "-----BEGIN CERTIFICATE-----";
@@ -102,6 +107,7 @@ public class TestCertificateGenerator {
   TestCertificateGenerator() {
 
     this.serverCaKeyPair = generateKeyPair();
+    this.serverIntermediateCaKeyPair = generateKeyPair();
     this.signingCaKeyPair = generateKeyPair();
     this.serverKeyPair = generateKeyPair();
     this.clientKeyPair = generateKeyPair();
@@ -120,6 +126,29 @@ public class TestCertificateGenerator {
               ONE_YEAR_FROM_NOW,
               null);
 
+      this.serverIntemediateCaCert =
+          buildSignedCertificate(
+              SERVER_INTERMEDIATE_CA_SUBJECT,
+              serverIntermediateCaKeyPair.getPublic(),
+              SERVER_CA_SUBJECT,
+              serverCaKeyPair.getPrivate(),
+              ONE_YEAR_FROM_NOW,
+              null);
+
+      this.casServerCertificate =
+          buildSignedCertificate(
+              SERVER_CERT_SUBJECT,
+              serverKeyPair.getPublic(),
+              SERVER_INTERMEDIATE_CA_SUBJECT,
+              serverIntermediateCaKeyPair.getPrivate(),
+              ONE_YEAR_FROM_NOW,
+              Collections.singletonList(new GeneralName(GeneralName.dNSName, "db.example.com")));
+
+      this.casServerCertificateChain =
+          new X509Certificate[] {
+            this.casServerCertificate, this.serverIntemediateCaCert, this.serverCaCert
+          };
+
       this.domainServerCertificate =
           buildSignedCertificate(
               DOMAIN_SERVER_CERT_SUBJECT,
@@ -131,6 +160,14 @@ public class TestCertificateGenerator {
     } catch (OperatorCreationException | CertificateException | IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public X509Certificate getCasServerCertificate() {
+    return casServerCertificate;
+  }
+
+  public X509Certificate[] getCasServerCertificateChain() {
+    return casServerCertificateChain;
   }
 
   public KeyPair getServerKeyPair() {
@@ -270,11 +307,12 @@ public class TestCertificateGenerator {
         Extension.keyUsage,
         false,
         new KeyUsage(KeyUsage.cRLSign | KeyUsage.keyCertSign | KeyUsage.digitalSignature));
+
     if (subjectAlternateNames != null && !subjectAlternateNames.isEmpty()) {
-      ASN1Encodable[] names =
-          subjectAlternateNames.toArray(new ASN1Encodable[subjectAlternateNames.size()]);
-      certificateBuilder.addExtension(
-          Extension.subjectAlternativeName, false, new DERSequence(names));
+      GeneralName[] gn =
+          subjectAlternateNames.toArray(new GeneralName[subjectAlternateNames.size()]);
+      GeneralNames subjectAltNames = new GeneralNames(gn);
+      certificateBuilder.addExtension(Extension.subjectAlternativeName, false, subjectAltNames);
     }
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(csrContentSigner);

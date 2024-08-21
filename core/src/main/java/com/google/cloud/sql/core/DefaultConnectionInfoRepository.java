@@ -45,9 +45,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,10 +84,15 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   // Creates a Certificate object from a provided string.
-  private Certificate createCertificate(String cert) throws CertificateException {
+  private List<Certificate> parseCertificateChain(String cert) throws CertificateException {
     byte[] certBytes = cert.getBytes(StandardCharsets.UTF_8);
     ByteArrayInputStream certStream = new ByteArrayInputStream(certBytes);
-    return CertificateFactory.getInstance("X.509").generateCertificate(certStream);
+    List<Certificate> certificates = new ArrayList<>();
+    while (certStream.available() > 0) {
+      Certificate c = CertificateFactory.getInstance("X.509").generateCertificate(certStream);
+      certificates.add(c);
+    }
+    return certificates;
   }
 
   private String generatePublicKeyCert(KeyPair keyPair) {
@@ -296,18 +301,17 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                     + "IP address.",
                 instanceName.getConnectionName()));
       }
-
       // Update the Server CA certificate used to create the SSL connection with the instance.
       try {
-        Certificate instanceCaCertificate =
-            createCertificate(instanceMetadata.getServerCaCert().getCert());
+        List<Certificate> instanceCaCertificates =
+            parseCertificateChain(instanceMetadata.getServerCaCert().getCert());
 
         logger.debug(String.format("[%s] METADATA DONE", instanceName));
 
         return new InstanceMetadata(
             instanceName,
             ipAddrs,
-            Collections.singletonList(instanceCaCertificate),
+            instanceCaCertificates,
             "GOOGLE_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode()),
             instanceMetadata.getDnsName(),
             pscEnabled);
@@ -371,7 +375,9 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     // Parse the certificate from the response.
     Certificate ephemeralCertificate;
     try {
-      ephemeralCertificate = createCertificate(response.getEphemeralCert().getCert());
+      // The response contains a single certificate. This uses the parseCertificateChain method
+      // to parse the response, and then uses the first, and only, certificate.
+      ephemeralCertificate = parseCertificateChain(response.getEphemeralCert().getCert()).get(0);
     } catch (CertificateException ex) {
       throw new RuntimeException(
           String.format(
@@ -407,8 +413,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       kmf.init(authKeyStore, new char[0]);
 
-      TrustManagerFactory tmf =
-          InstanceCheckingTrustManagerFactory.newInstance(instanceName, instanceMetadata);
+      TrustManagerFactory tmf = InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata);
 
       SSLContext sslContext;
 
@@ -428,7 +433,6 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           sslContext = SSLContext.getInstance("TLSv1.2");
         }
       }
-
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
       logger.debug(

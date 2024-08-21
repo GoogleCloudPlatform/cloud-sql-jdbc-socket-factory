@@ -31,11 +31,11 @@ import javax.net.ssl.X509ExtendedTrustManager;
  */
 class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
   private final TrustManagerFactory delegate;
-  private final CloudSqlInstanceName instanceName;
+  private final InstanceMetadata instanceMetadata;
 
   InstanceCheckingTrustManagerFactorySpi(
-      CloudSqlInstanceName instanceName, TrustManagerFactory delegate) {
-    this.instanceName = instanceName;
+      InstanceMetadata instanceMetadata, TrustManagerFactory delegate) {
+    this.instanceMetadata = instanceMetadata;
     this.delegate = delegate;
   }
 
@@ -65,7 +65,7 @@ class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
           tm = new ConscryptWorkaroundDelegatingTrustManger(tm);
         }
 
-        delegates[i] = new InstanceCheckingTrustManger(instanceName, tm);
+        delegates[i] = new InstanceCheckingTrustManger(instanceMetadata, tm);
       } else {
         delegates[i] = tms[i];
       }

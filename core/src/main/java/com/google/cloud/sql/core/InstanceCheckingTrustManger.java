@@ -19,6 +19,9 @@ package com.google.cloud.sql.core;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -37,11 +40,11 @@ import javax.net.ssl.X509ExtendedTrustManager;
  */
 class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
   private final X509ExtendedTrustManager tm;
-  private final CloudSqlInstanceName instanceName;
+  private final InstanceMetadata instanceMetadata;
 
   public InstanceCheckingTrustManger(
-      CloudSqlInstanceName instanceName, X509ExtendedTrustManager tm) {
-    this.instanceName = instanceName;
+      InstanceMetadata instanceMetadata, X509ExtendedTrustManager tm) {
+    this.instanceMetadata = instanceMetadata;
     this.tm = tm;
   }
 
@@ -92,6 +95,66 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
       throw new CertificateException("Subject is missing");
     }
 
+    if (instanceMetadata.isCasManagedCertificate() || instanceMetadata.isPscEnabled()) {
+      checkSan(chain);
+    } else {
+      checkCn(chain);
+    }
+  }
+
+  private void checkSan(X509Certificate[] chain) throws CertificateException {
+    List<String> sans = getSans(chain[0]);
+    String dns = instanceMetadata.getDnsName();
+    if (dns == null || dns.isEmpty()) {
+      throw new CertificateException(
+          "Instance metadata for " + instanceMetadata.getInstanceName() + " has an empty dnsName");
+    }
+    for (String san : sans) {
+      if (san.equalsIgnoreCase(dns)) {
+        return;
+      }
+    }
+    throw new CertificateException(
+        "Server certificate does not contain expected name '"
+            + instanceMetadata.getDnsName()
+            + "' for Cloud SQL instance "
+            + instanceMetadata.getInstanceName());
+  }
+
+  private List<String> getSans(X509Certificate cert) throws CertificateException {
+    ArrayList<String> names = new ArrayList<>();
+
+    Collection<List<?>> sanAsn1Field = cert.getSubjectAlternativeNames();
+    if (sanAsn1Field == null) {
+      return names;
+    }
+
+    for (List item : sanAsn1Field) {
+      Integer type = (Integer) item.get(0);
+      // RFC 5280 section 4.2.1.6.  "Subject Alternative Name"
+      // describes the structure of subjectAlternativeName record.
+      //   type == 0 means this contains an "otherName"
+      //   type == 2 means this contains a "dNSName"
+      if (type == 0 || type == 2) {
+        Object value = item.get(1);
+        if (value instanceof byte[]) {
+          // This would only happen if the customer provided a non-standard JSSE encryption
+          // provider. The standard JSSE providers all return a list of Strings for the SAN.
+          // To handle this case, the project would need to add the BouncyCastle crypto library
+          // as a dependency, and follow the example to decode an ASN1 SAN data structure:
+          // https://stackoverflow.com/questions/30993879/retrieve-subject-alternative-names-of-x-509-certificate-in-java
+          throw new UnsupportedOperationException(
+              "Server certificate SAN field cannot be decoded.");
+        } else if (value instanceof String) {
+          names.add((String) value);
+        }
+      }
+    }
+    return names;
+  }
+
+  private void checkCn(X509Certificate[] chain) throws CertificateException {
+
     String cn = null;
 
     try {
@@ -111,7 +174,10 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
     }
 
     // parse CN from subject. CN always comes last in the list.
-    String instName = this.instanceName.getProjectId() + ":" + this.instanceName.getInstanceId();
+    String instName =
+        this.instanceMetadata.getInstanceName().getProjectId()
+            + ":"
+            + this.instanceMetadata.getInstanceName().getInstanceId();
     if (!instName.equals(cn)) {
       throw new CertificateException(
           "Server certificate CN does not match instance name. Server certificate CN="

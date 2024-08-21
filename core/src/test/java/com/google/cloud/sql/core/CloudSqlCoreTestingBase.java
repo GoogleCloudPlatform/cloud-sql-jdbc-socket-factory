@@ -133,19 +133,30 @@ public class CloudSqlCoreTestingBase {
   }
 
   MockHttpTransport fakeSuccessHttpTransport(Duration certDuration) {
-    return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, null);
+    return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, null, false, false);
   }
 
   MockHttpTransport fakeSuccessHttpTransport(Duration certDuration, String baseUrl) {
-    return fakeSuccessHttpTransport(TestKeys.getServerCertPem(), certDuration, baseUrl);
+    return fakeSuccessHttpTransport(
+        TestKeys.getServerCertPem(), certDuration, baseUrl, false, false);
   }
 
   MockHttpTransport fakeSuccessHttpTransport(String serverCert, Duration certDuration) {
-    return fakeSuccessHttpTransport(serverCert, certDuration, null);
+    return fakeSuccessHttpTransport(serverCert, certDuration, null, false, false);
+  }
+
+  MockHttpTransport fakeSuccessHttpCasTransport(Duration certDuration) {
+    return fakeSuccessHttpTransport(
+        TestKeys.getCasServerCertChainPem(), certDuration, null, true, false);
+  }
+
+  MockHttpTransport fakeSuccessHttpPscCasTransport(Duration certDuration) {
+    return fakeSuccessHttpTransport(
+        TestKeys.getCasServerCertChainPem(), certDuration, null, true, true);
   }
 
   MockHttpTransport fakeSuccessHttpTransport(
-      String serverCert, Duration certDuration, String baseUrl) {
+      String serverCert, Duration certDuration, String baseUrl, boolean cas, boolean psc) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -167,7 +178,10 @@ public class CloudSqlCoreTestingBase {
                               new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
                       .setServerCaCert(new SslCert().setCert(serverCert))
                       .setDatabaseVersion("POSTGRES14")
-                      .setRegion("myRegion");
+                      .setRegion("myRegion")
+                      .setPscEnabled(psc ? Boolean.TRUE : null)
+                      .setDnsName(cas || psc ? "db.example.com" : null)
+                      .setServerCaMode(cas ? "GOOGLE_MANAGED_CAS_CA" : null);
               settings.setFactory(jsonFactory);
               response
                   .setContent(settings.toPrettyString())

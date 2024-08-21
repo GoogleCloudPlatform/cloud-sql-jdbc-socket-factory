@@ -104,6 +104,7 @@ public class MockAdminApi {
             .setDatabaseVersion(databaseVersion)
             .setPscEnabled(pscHostname != null)
             .setDnsName(pscHostname)
+            .setPscEnabled(pscHostname != null)
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
 

@@ -78,4 +78,19 @@ public class TestKeys {
   public static String getDomainServerCertPem() {
     return certs.getPemForCert(certs.getDomainServerCertificate());
   }
+
+  public static X509Certificate[] getCasServerCertChain() {
+    return certs.getCasServerCertificateChain();
+  }
+
+  public static String getCasServerCertChainPem() {
+    StringBuilder s = new StringBuilder();
+    for (X509Certificate c : certs.getCasServerCertificateChain()) {
+      if (s.length() > 0) {
+        s.append("\n");
+      }
+      s.append(certs.getPemForCert(c));
+    }
+    return s.toString();
+  }
 }
