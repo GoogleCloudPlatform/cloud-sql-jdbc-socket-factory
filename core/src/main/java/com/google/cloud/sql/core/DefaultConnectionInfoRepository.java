@@ -46,6 +46,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -196,7 +197,15 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               .orElse(x509Certificate.getNotAfter().toInstant());
     }
 
-    logger.debug(String.format("[%s] INSTANCE DATA DONE", instanceName));
+    logger.debug(
+        "[{}] INSTANCE DATA DONE - Ephemeral cert id: {} cert expiration: {} token expiration: {}",
+        instanceName,
+        Base64.getEncoder().encodeToString(((X509Certificate) ephemeralCertificate).getSignature()),
+        token
+            .map(tok -> tok.getExpirationTime())
+            .filter(time -> time != null)
+            .map(time -> time.toInstant().toString())
+            .orElse("(none)"));
 
     return new ConnectionInfo(metadata, sslContext, expiration);
   }

@@ -16,6 +16,8 @@
 
 package com.google.cloud.sql.core;
 
+import static com.google.cloud.sql.core.RefreshCalculator.DEFAULT_REFRESH_BUFFER;
+
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.sql.AuthType;
@@ -76,12 +78,12 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
             () -> {
               final GoogleCredentials credentials = credentialFactory.getCredentials();
               try {
-                credentials.refreshIfExpired();
+                refreshIfRequired(credentials);
               } catch (IllegalStateException e) {
                 throw new IllegalStateException("Error refreshing credentials " + credentials, e);
               }
-              if (credentials.getAccessToken() == null
-                  || "".equals(credentials.getAccessToken().getTokenValue())) {
+
+              if (isAccessTokenEmpty(credentials)) {
 
                 String errorMessage = "Access Token has length of zero";
                 logger.debug(errorMessage);
@@ -97,10 +99,9 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
               // For some implementations of GoogleCredentials, particularly
               // ImpersonatedCredentials, down-scoped credentials are not
               // initialized with a token and need to be explicitly refreshed.
-              if (downscoped.getAccessToken() == null
-                  || "".equals(downscoped.getAccessToken().getTokenValue())) {
+              if (isAccessTokenEmpty(downscoped)) {
                 try {
-                  downscoped.refreshIfExpired();
+                  downscoped.refresh();
                 } catch (Exception e) {
                   throw new IllegalStateException(
                       "Error refreshing downscoped credentials " + credentials, e);
@@ -108,8 +109,7 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
 
                 // After attempting to refresh once, if the downscoped credentials do not have
                 // an access token after attempting to refresh, then throw an IllegalStateException
-                if (downscoped.getAccessToken() == null
-                    || "".equals(downscoped.getAccessToken().getTokenValue())) {
+                if (isAccessTokenEmpty(downscoped)) {
                   String errorMessage = "Downscoped access token has length of zero";
                   logger.debug(errorMessage);
 
@@ -132,6 +132,28 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
       throw e;
     } catch (Exception e) {
       throw new RuntimeException("Unexpected exception refreshing authentication token", e);
+    }
+  }
+
+  private static boolean isAccessTokenEmpty(GoogleCredentials credentials) {
+    return credentials.getAccessToken() == null
+        || "".equals(credentials.getAccessToken().getTokenValue());
+  }
+
+  private void refreshIfRequired(GoogleCredentials credentials) throws IOException {
+    // if the token does not exist, or if the token expires in less than 4 minutes, refresh it.
+    if (credentials.getAccessToken() == null) {
+      logger.debug("Current IAM AuthN Token is not set. Refreshing the token.");
+      credentials.refresh();
+    } else if (credentials.getAccessToken().getExpirationTime() != null
+        && credentials
+            .getAccessToken()
+            .getExpirationTime()
+            .toInstant()
+            .minus(DEFAULT_REFRESH_BUFFER)
+            .isBefore(Instant.now())) {
+      logger.debug("Current IAM AuthN Token expires in less than 4 minutes. Refreshing the token.");
+      credentials.refresh();
     }
   }
 

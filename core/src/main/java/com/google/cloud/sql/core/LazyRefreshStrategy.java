@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ public class LazyRefreshStrategy implements RefreshStrategy {
 
   private final String name;
   private final Supplier<ConnectionInfo> refreshOperation;
+  private final Duration refreshBuffer;
 
   private final Object connectionInfoGuard = new Object();
 
@@ -38,9 +40,11 @@ public class LazyRefreshStrategy implements RefreshStrategy {
   private boolean closed;
 
   /** Creates a new LazyRefreshStrategy instance. */
-  public LazyRefreshStrategy(String name, Supplier<ConnectionInfo> refreshOperation) {
+  public LazyRefreshStrategy(
+      String name, Supplier<ConnectionInfo> refreshOperation, Duration refreshDuration) {
     this.name = name;
     this.refreshOperation = refreshOperation;
+    this.refreshBuffer = refreshDuration;
   }
 
   @Override
@@ -59,7 +63,7 @@ public class LazyRefreshStrategy implements RefreshStrategy {
                 name));
         fetchConnectionInfo();
       }
-      if (Instant.now().isAfter(connectionInfo.getExpiration())) {
+      if (Instant.now().isAfter(connectionInfo.getExpiration().minus(refreshBuffer))) {
         logger.debug(
             String.format(
                 "[%s] Lazy Refresh Operation: Client certificate has expired. Starting next "

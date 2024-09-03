@@ -28,7 +28,7 @@ class RefreshCalculator {
   // defaultRefreshBuffer is the minimum amount of time for which a
   // certificate must be valid to ensure the next refresh attempt has adequate
   // time to complete.
-  private static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
+  static final Duration DEFAULT_REFRESH_BUFFER = Duration.ofMinutes(4);
 
   long calculateSecondsUntilNextRefresh(Instant now, Instant expiration) {
     Duration timeUntilExp = Duration.between(now, expiration);
