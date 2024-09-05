@@ -16,6 +16,8 @@
 
 package com.google.cloud.sql.core;
 
+import static com.google.cloud.sql.core.RefreshCalculator.DEFAULT_REFRESH_BUFFER;
+
 import com.google.cloud.sql.CredentialFactory;
 import java.security.KeyPair;
 
@@ -54,7 +56,8 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
             config.getCloudSqlInstance(),
             () ->
                 connectionInfoRepository.getConnectionInfoSync(
-                    instanceName, accessTokenSupplier, config.getAuthType(), keyPair));
+                    instanceName, accessTokenSupplier, config.getAuthType(), keyPair),
+            DEFAULT_REFRESH_BUFFER);
   }
 
   @Override

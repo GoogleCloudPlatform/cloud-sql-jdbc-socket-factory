@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +33,9 @@ public class LazyRefreshStrategyTest {
     final ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     LazyRefreshStrategy r =
         new LazyRefreshStrategy(
-            "LazyRefresherTest.testCloudSqlInstanceDataRetrievedSuccessfully", () -> data);
+            "LazyRefresherTest.testCloudSqlInstanceDataRetrievedSuccessfully",
+            () -> data,
+            Duration.ZERO);
     ConnectionInfo gotInfo = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(gotInfo).isSameInstanceAs(data);
   }
@@ -44,7 +47,8 @@ public class LazyRefreshStrategyTest {
             "LazyRefresherTest.testInstanceFailsOnConnectionError",
             () -> {
               throw new RuntimeException("always fails");
-            });
+            },
+            Duration.ZERO);
 
     RuntimeException ex =
         assertThrows(RuntimeException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
@@ -62,7 +66,8 @@ public class LazyRefreshStrategyTest {
             () -> {
               refreshCount.incrementAndGet();
               return data;
-            });
+            },
+            Duration.ZERO);
 
     r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
@@ -96,24 +101,59 @@ public class LazyRefreshStrategyTest {
                 return initialData;
               }
               return data;
-            });
+            },
+            Duration.ZERO);
 
     // Get the first data that is about to expire
     ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
     assertThat(refreshCount.get()).isEqualTo(1);
     assertThat(d).isSameInstanceAs(initialData);
 
-    waitForExpiration(initialData);
+    waitForExpiration(initialData.getExpiration());
 
     assertThat(r.getConnectionInfo(TEST_TIMEOUT_MS)).isSameInstanceAs(data);
     assertThat(refreshCount.get()).isEqualTo(2);
   }
 
-  private static void waitForExpiration(ExampleData initialData) throws InterruptedException {
+  @Test
+  public void testCloudSqlRefreshesExpiredDataWithRefreshBuffer() throws Exception {
+    Duration buffer = Duration.ofSeconds(5);
+    ExampleData initialData = new ExampleData(Instant.now().plus(8, ChronoUnit.SECONDS));
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    LazyRefreshStrategy r =
+        new LazyRefreshStrategy(
+            "LazyRefresherTest.testCloudSqlRefreshesExpiredData",
+            () -> {
+              int c = refreshCount.getAndIncrement();
+              if (c == 0) {
+                return initialData;
+              }
+              return data;
+            },
+            buffer);
+
+    // Get the first data that is about to expire, but not yet expired
+    ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
+    assertThat(refreshCount.get()).isEqualTo(1);
+    assertThat(d).isSameInstanceAs(initialData);
+
+    // Wait 5 seconds. Now the initialData expires in 3 seconds, less than the buffer.
+    waitForExpiration(Instant.now().plus(buffer));
+
+    // Assert that it gets data instead of initialData.
+    assertThat(r.getConnectionInfo(TEST_TIMEOUT_MS)).isSameInstanceAs(data);
+    assertThat(refreshCount.get()).isEqualTo(2);
+  }
+
+  private static void waitForExpiration(Instant expiration) throws InterruptedException {
     // Wait for the instance to expire
-    while (!Instant.now().isAfter(initialData.getExpiration())) {
+    while (!Instant.now().isAfter(expiration)) {
       Thread.sleep(10);
     }
+
     // Sleep a few more ms to make sure that Instant.now() really is after expiration.
     // Fixes a date math race condition only present in Java 8.
     Thread.sleep(10);
@@ -135,7 +175,8 @@ public class LazyRefreshStrategyTest {
                 return initialData;
               }
               return data;
-            });
+            },
+            Duration.ZERO);
 
     // Get the first data that is about to expire
     ConnectionInfo d = r.getConnectionInfo(TEST_TIMEOUT_MS);
@@ -143,7 +184,7 @@ public class LazyRefreshStrategyTest {
     assertThat(d).isSameInstanceAs(initialData);
 
     // Wait for the instance to expire
-    waitForExpiration(initialData);
+    waitForExpiration(initialData.getExpiration());
 
     // Start multiple threads and request connection info
     Thread t1 = new Thread(() -> r.getConnectionInfo(TEST_TIMEOUT_MS));
@@ -166,7 +207,9 @@ public class LazyRefreshStrategyTest {
     ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
     LazyRefreshStrategy r =
         new LazyRefreshStrategy(
-            "RefresherTest.testClosedCloudSqlInstanceDataThrowsException", () -> data);
+            "RefresherTest.testClosedCloudSqlInstanceDataThrowsException",
+            () -> data,
+            Duration.ZERO);
     r.close();
 
     assertThrows(IllegalStateException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
