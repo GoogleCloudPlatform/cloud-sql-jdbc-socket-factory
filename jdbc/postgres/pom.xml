@@ -22,11 +22,11 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>postgres-socket-factory</artifactId>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:postgres-socket-factory:current} -->
+  <version>1.20.1</version><!-- {x-version-update:postgres-socket-factory:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL Postgres Socket Factory</name>

@@ -1,15 +1,15 @@
 # Format:
 # module:released-version:current-version
 
-jdbc-socket-factory-parent:1.20.0:1.20.1-SNAPSHOT
-jdbc-socket-factory-core:1.20.0:1.20.1-SNAPSHOT
-mariadb-socket-factory:1.20.0:1.20.1-SNAPSHOT
-mysql-socket-factory:1.20.0:1.20.1-SNAPSHOT
-mysql-socket-factory-connector-j-8:1.20.0:1.20.1-SNAPSHOT
-postgres-socket-factory:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-jdbc-sqlserver:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-r2dbc-core:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-r2dbc-mariadb:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-r2dbc-mysql:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-r2dbc-postgres:1.20.0:1.20.1-SNAPSHOT
-cloud-sql-connector-r2dbc-sqlserver:1.20.0:1.20.1-SNAPSHOT
+jdbc-socket-factory-parent:1.20.1:1.20.1
+jdbc-socket-factory-core:1.20.1:1.20.1
+mariadb-socket-factory:1.20.1:1.20.1
+mysql-socket-factory:1.20.1:1.20.1
+mysql-socket-factory-connector-j-8:1.20.1:1.20.1
+postgres-socket-factory:1.20.1:1.20.1
+cloud-sql-connector-jdbc-sqlserver:1.20.1:1.20.1
+cloud-sql-connector-r2dbc-core:1.20.1:1.20.1
+cloud-sql-connector-r2dbc-mariadb:1.20.1:1.20.1
+cloud-sql-connector-r2dbc-mysql:1.20.1:1.20.1
+cloud-sql-connector-r2dbc-postgres:1.20.1:1.20.1
+cloud-sql-connector-r2dbc-sqlserver:1.20.1:1.20.1

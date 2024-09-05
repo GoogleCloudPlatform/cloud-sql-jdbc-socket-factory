@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+  <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
 
   <parent>
     <groupId>com.google.cloud</groupId>

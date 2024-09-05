@@ -23,10 +23,10 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
   </parent>
   <artifactId>jdbc-socket-factory-core</artifactId>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-core:current} -->
+  <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-core:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL Core Socket Factory (Core Library, don't depend on this directly)</name>

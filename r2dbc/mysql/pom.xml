@@ -22,11 +22,11 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>cloud-sql-connector-r2dbc-mysql</artifactId>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-r2dbc-mysql:current} -->
+  <version>1.20.1</version><!-- {x-version-update:cloud-sql-connector-r2dbc-mysql:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL R2DBC Connection Factory for MySQL</name>
