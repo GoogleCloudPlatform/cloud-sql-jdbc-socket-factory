@@ -22,12 +22,12 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>com.google.cloud</groupId>
   <artifactId>cloud-sql-connector-r2dbc-mariadb</artifactId>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:cloud-sql-connector-r2dbc-mariadb:current} -->
+  <version>1.20.1</version><!-- {x-version-update:cloud-sql-connector-r2dbc-mariadb:current} -->
   <packaging>jar</packaging>
 
   <name>Google Cloud SQL R2DBC Connector for MariaDB</name>

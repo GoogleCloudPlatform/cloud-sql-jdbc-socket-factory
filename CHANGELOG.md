@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.20.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.20.0...v1.20.1) (2024-09-05)
+
+
+### Bug Fixes
+
+* Lazy refresh should refresh tokens 4 minutes before expiration. ([#2063](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2063)) ([286051d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/286051d5a93eff9686ca3ef657a63d1bc3418820))
+
+
+### Dependencies
+
+* Update dependency maven to v3.9.8 ([#2025](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2025)) ([a75fa59](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a75fa599c76f8cb62c040a9fe2b9f535756d0fca))
+
 ## [1.20.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.19.1...v1.20.0) (2024-08-14)
 
 

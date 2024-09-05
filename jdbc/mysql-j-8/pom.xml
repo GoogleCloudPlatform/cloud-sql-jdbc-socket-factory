@@ -23,12 +23,12 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.20.1</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-  <version>1.20.1-SNAPSHOT</version><!-- {x-version-update:mysql-socket-factory-connector-j-8:current} -->
+  <version>1.20.1</version><!-- {x-version-update:mysql-socket-factory-connector-j-8:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL MySQL Socket Factory (for Connector/J 8.x)</name>

@@ -16,14 +16,14 @@ Maven
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mysql-socket-factory-connector-j-8</artifactId>
-    <version>1.20.0</version>
+    <version>1.20.1</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.20.0'
+compile 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.20.1'
 ```
 
 <!-- {x-version-update-end} -->
@@ -37,14 +37,14 @@ Maven
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>mariadb-socket-factory</artifactId>
-    <version>1.20.0</version>
+    <version>1.20.1</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:mariadb-socket-factory:1.20.0'
+compile 'com.google.cloud.sql:mariadb-socket-factory:1.20.1'
 ```
 
 **Note:** Also include the JDBC Driver for
@@ -60,14 +60,14 @@ Maven
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
-    <version>1.20.0</version>
+    <version>1.20.1</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:postgres-socket-factory:1.20.0'
+compile 'com.google.cloud.sql:postgres-socket-factory:1.20.1'
 ```
 
 **Note:**  Also include the JDBC Driver for
@@ -83,14 +83,14 @@ Maven
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
-    <version>1.20.0</version>
+    <version>1.20.1</version>
 </dependency>
 ```
 
 Gradle
 
 ```gradle
-compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.20.0'
+compile 'com.google.cloud.sql:cloud-sql-connector-jdbc-sqlserver:1.20.1'
 ```
 
 **Note:**  Also include the JDBC Driver for SQL
