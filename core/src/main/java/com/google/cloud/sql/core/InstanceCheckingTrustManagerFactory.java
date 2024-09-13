@@ -50,7 +50,8 @@ class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
     TrustManagerFactory delegate = TrustManagerFactory.getInstance("X.509");
     KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     trustedKeyStore.load(null, null);
-    trustedKeyStore.setCertificateEntry("instance", instanceMetadata.getInstanceCaCertificate());
+    trustedKeyStore.setCertificateEntry(
+        "instance", instanceMetadata.getInstanceCaCertificates().get(0));
 
     InstanceCheckingTrustManagerFactory tmf =
         new InstanceCheckingTrustManagerFactory(instanceName, delegate);

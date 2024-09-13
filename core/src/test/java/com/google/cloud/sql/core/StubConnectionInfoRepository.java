@@ -41,7 +41,8 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
     Map<IpType, String> ips = Collections.singletonMap(IpType.PUBLIC, "10.1.1.1");
     try {
       return new ConnectionInfo(
-          new InstanceMetadata(ips, null),
+          new InstanceMetadata(
+              new CloudSqlInstanceName("project:region:instance"), ips, null, false, "", false),
           new SslData(
               null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
           Instant.now().plus(1, ChronoUnit.HOURS));

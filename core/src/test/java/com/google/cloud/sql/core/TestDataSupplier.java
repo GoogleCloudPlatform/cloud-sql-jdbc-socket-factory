@@ -38,11 +38,15 @@ class TestDataSupplier implements ConnectionInfoRepository {
   final ConnectionInfo response =
       new ConnectionInfo(
           new InstanceMetadata(
+              new CloudSqlInstanceName("project:region:instance"),
               ImmutableMap.of(
                   IpType.PUBLIC, "10.1.2.3",
                   IpType.PRIVATE, "10.10.10.10",
                   IpType.PSC, "abcde.12345.us-central1.sql.goog"),
-              null),
+              null,
+              false,
+              "",
+              false),
           new SslData(null, createKeyManagerFactory(), null),
           Instant.now().plus(1, ChronoUnit.HOURS));
 

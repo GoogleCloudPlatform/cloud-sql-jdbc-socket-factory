@@ -47,6 +47,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -277,8 +278,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         }
       }
 
-      // resolve DnsName into IP address for PSC
-      if (instanceMetadata.getDnsName() != null && !instanceMetadata.getDnsName().isEmpty()) {
+      // If PSC is enabled, resolve DnsName into IP address for PSC
+      boolean pscEnabled =
+          instanceMetadata.getPscEnabled() != null
+              && instanceMetadata.getPscEnabled().booleanValue();
+      if (pscEnabled
+          && instanceMetadata.getDnsName() != null
+          && !instanceMetadata.getDnsName().isEmpty()) {
         ipAddrs.put(IpType.PSC, instanceMetadata.getDnsName());
       }
 
@@ -298,7 +304,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
         logger.debug(String.format("[%s] METADATA DONE", instanceName));
 
-        return new InstanceMetadata(ipAddrs, instanceCaCertificate);
+        return new InstanceMetadata(
+            instanceName,
+            ipAddrs,
+            Collections.singletonList(instanceCaCertificate),
+            "GOOGLE_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode()),
+            instanceMetadata.getDnsName(),
+            pscEnabled);
       } catch (CertificateException ex) {
         throw new RuntimeException(
             String.format(
