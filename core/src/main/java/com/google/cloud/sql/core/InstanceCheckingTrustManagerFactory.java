@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -39,32 +40,44 @@ import javax.net.ssl.TrustManagerFactory;
  * <p>class ConscryptWorkaroundTrustManager - the workaround for the Conscrypt bug.
  *
  * <p>class InstanceCheckingTrustManager - delegates TLS checks to the default provider and then
- * checks that the Subject CN field contains the Cloud SQL instance ID.
+ * does custom hostname checking in accordance with these rules:
+ *
+ * <p>If the instance supports CAS certificates (instanceMetadata.casEnabled == true), or the
+ * connection is being made to a PSC endpoint (instanceMetadata.pscEnabled == true) the connector
+ * should validate that the server certificate subjectAlterantiveNames contains an entry that
+ * matches instanceMetadata.dnsName.
+ *
+ * <p>Otherwise, the connector should check that the Subject CN field contains the Cloud SQL
+ * instance ID in the form: "project-name:instance-name"
  */
 class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
 
-  static InstanceCheckingTrustManagerFactory newInstance(
-      CloudSqlInstanceName instanceName, InstanceMetadata instanceMetadata)
+  static TrustManagerFactory newInstance(InstanceMetadata instanceMetadata)
       throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
 
     TrustManagerFactory delegate = TrustManagerFactory.getInstance("X.509");
     KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     trustedKeyStore.load(null, null);
-    trustedKeyStore.setCertificateEntry(
-        "instance", instanceMetadata.getInstanceCaCertificates().get(0));
 
+    // Add all the certificates in the chain of trust to the trust keystore.
+    for (Certificate cert : instanceMetadata.getInstanceCaCertificates()) {
+      trustedKeyStore.setCertificateEntry("ca" + cert.hashCode(), cert);
+    }
+
+    // Use a custom trust manager factory that checks the CN against the instance name
+    // The delegate TrustManagerFactory will check the certificate chain, but will not do
+    // hostname checking.
     InstanceCheckingTrustManagerFactory tmf =
-        new InstanceCheckingTrustManagerFactory(instanceName, delegate);
-
+        new InstanceCheckingTrustManagerFactory(instanceMetadata, delegate);
     tmf.init(trustedKeyStore);
 
     return tmf;
   }
 
   private InstanceCheckingTrustManagerFactory(
-      CloudSqlInstanceName instanceName, TrustManagerFactory delegate) {
+      InstanceMetadata instanceMetadata, TrustManagerFactory delegate) {
     super(
-        new InstanceCheckingTrustManagerFactorySpi(instanceName, delegate),
+        new InstanceCheckingTrustManagerFactorySpi(instanceMetadata, delegate),
         delegate.getProvider(),
         delegate.getAlgorithm());
   }

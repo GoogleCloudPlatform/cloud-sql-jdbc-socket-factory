@@ -118,6 +118,7 @@ class Connector {
       SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
       socket.setKeepAlive(true);
       socket.setTcpNoDelay(true);
+
       socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
 
       try {

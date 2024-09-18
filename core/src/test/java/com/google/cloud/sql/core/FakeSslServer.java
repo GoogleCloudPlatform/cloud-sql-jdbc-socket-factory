@@ -24,7 +24,6 @@ import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,16 +37,21 @@ import javax.net.ssl.TrustManagerFactory;
 public class FakeSslServer {
 
   private final PrivateKey privateKey;
-  private final X509Certificate cert;
+  private final X509Certificate[] cert;
 
   FakeSslServer() {
     privateKey = TestKeys.getServerKeyPair().getPrivate();
-    cert = TestKeys.getServerCert();
+    cert = new X509Certificate[] {TestKeys.getServerCert()};
+  }
+
+  public FakeSslServer(PrivateKey privateKey, X509Certificate[] cert) {
+    this.privateKey = privateKey;
+    this.cert = cert;
   }
 
   public FakeSslServer(PrivateKey privateKey, X509Certificate cert) {
     this.privateKey = privateKey;
-    this.cert = cert;
+    this.cert = new X509Certificate[] {cert};
   }
 
   int start(final String ip) throws InterruptedException {
@@ -59,8 +63,7 @@ public class FakeSslServer {
               try {
                 KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
                 authKeyStore.load(null, null);
-                PrivateKeyEntry serverCert =
-                    new PrivateKeyEntry(privateKey, new Certificate[] {cert});
+                PrivateKeyEntry serverCert = new PrivateKeyEntry(privateKey, cert);
                 authKeyStore.setEntry(
                     "serverCert", serverCert, new PasswordProtection(new char[0]));
                 KeyManagerFactory keyManagerFactory =

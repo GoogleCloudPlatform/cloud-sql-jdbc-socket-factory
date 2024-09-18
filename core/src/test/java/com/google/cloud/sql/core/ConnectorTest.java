@@ -32,6 +32,8 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -141,6 +143,39 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     int port = sslServer.start(PUBLIC_IP);
 
     Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPublicCasConnection() throws IOException, InterruptedException {
+    PrivateKey privateKey = TestKeys.getServerKeyPair().getPrivate();
+    X509Certificate[] cert = TestKeys.getCasServerCertChain();
+
+    FakeSslServer sslServer = new FakeSslServer(privateKey, cert);
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpCasTransport(Duration.ZERO));
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port);
 
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
