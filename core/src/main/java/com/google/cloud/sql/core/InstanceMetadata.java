@@ -18,24 +18,55 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.IpType;
 import java.security.cert.Certificate;
+import java.util.List;
 import java.util.Map;
 
 /** Represents the results of @link #fetchMetadata(). */
 class InstanceMetadata {
 
+  private final CloudSqlInstanceName instanceName;
   private final Map<IpType, String> ipAddrs;
-  private final Certificate instanceCaCertificate;
+  private final List<Certificate> instanceCaCertificates;
+  private final boolean casManagedCertificate;
+  private final String dnsName;
+  private final boolean pscEnabled;
 
-  InstanceMetadata(Map<IpType, String> ipAddrs, Certificate instanceCaCertificate) {
+  InstanceMetadata(
+      CloudSqlInstanceName instanceName,
+      Map<IpType, String> ipAddrs,
+      List<Certificate> instanceCaCertificates,
+      boolean casManagedCertificate,
+      String dnsName,
+      boolean pscEnabled) {
+    this.instanceName = instanceName;
     this.ipAddrs = ipAddrs;
-    this.instanceCaCertificate = instanceCaCertificate;
+    this.instanceCaCertificates = instanceCaCertificates;
+    this.casManagedCertificate = casManagedCertificate;
+    this.dnsName = dnsName;
+    this.pscEnabled = pscEnabled;
   }
 
   Map<IpType, String> getIpAddrs() {
     return ipAddrs;
   }
 
-  Certificate getInstanceCaCertificate() {
-    return instanceCaCertificate;
+  List<Certificate> getInstanceCaCertificates() {
+    return instanceCaCertificates;
+  }
+
+  public boolean isCasManagedCertificate() {
+    return casManagedCertificate;
+  }
+
+  public String getDnsName() {
+    return dnsName;
+  }
+
+  public boolean isPscEnabled() {
+    return pscEnabled;
+  }
+
+  public CloudSqlInstanceName getInstanceName() {
+    return instanceName;
   }
 }

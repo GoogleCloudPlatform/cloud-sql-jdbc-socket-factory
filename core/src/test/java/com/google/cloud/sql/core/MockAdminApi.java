@@ -102,6 +102,7 @@ public class MockAdminApi {
             .setIpAddresses(ipMappings)
             .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
             .setDatabaseVersion(databaseVersion)
+            .setPscEnabled(pscHostname != null)
             .setDnsName(pscHostname)
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
