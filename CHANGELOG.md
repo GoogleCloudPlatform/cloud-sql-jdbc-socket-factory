@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.20.1...v1.21.0) (2024-09-30)
+
+
+### Features
+
+* Support for CAS server certificate authority. ([#2060](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2060)) ([4332ffc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4332ffc34380ab4ba8b7cb9ed67f1fb985fb38ce))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2055](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2055)) ([be764dc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/be764dc65bd70e41be9e5e03c896d2622518a58d))
+* Update Non-major dependencies ([#2072](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2072)) ([d834afe](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d834afead7f3ab239a7dafde45cb13e6918b0680))
+
 ## [1.20.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.20.0...v1.20.1) (2024-09-05)
 
 
