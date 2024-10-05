@@ -38,6 +38,9 @@ public class SocketFactory extends javax.net.SocketFactory {
   private static final String DEPRECATED_SOCKET_ARG = "SocketFactoryArg";
   private static final String POSTGRES_SUFFIX = "/.s.PGSQL.5432";
 
+  /** The connection property containing the hostname from the JDBC url. */
+  private static final String POSTGRES_HOST_PROP = "PGHOST";
+
   private final Properties props;
 
   static {
@@ -78,7 +81,9 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket() throws IOException {
     try {
       return InternalConnectorRegistry.getInstance()
-          .connect(ConnectionConfig.fromConnectionProperties(props));
+          .connect(
+              ConnectionConfig.fromConnectionProperties(
+                  props, props.getProperty(POSTGRES_HOST_PROP)));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

@@ -62,7 +62,7 @@ public class JdbcMysqlJ8IntegrationTests {
   @Before
   public void setUpPool() throws SQLException {
     // Set up URL parameters
-    String jdbcURL = String.format("jdbc:mysql:///%s", DB_NAME);
+    String jdbcURL = String.format("jdbc:mysql://db.example.com/%s", DB_NAME);
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);

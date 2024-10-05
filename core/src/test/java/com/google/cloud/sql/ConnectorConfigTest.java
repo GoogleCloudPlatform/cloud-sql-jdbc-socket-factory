@@ -426,7 +426,8 @@ public class ConnectorConfigTest {
                 wantGoogleCredentialsPath,
                 wantAdminQuotaProject,
                 null, // universeDomain
-                wantRefreshStrategy // refreshStrategy
+                wantRefreshStrategy, // refreshStrategy
+                null // instanceNameResolver
                 ));
   }
 }
