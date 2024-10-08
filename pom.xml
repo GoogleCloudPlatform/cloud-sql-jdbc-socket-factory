@@ -26,7 +26,7 @@
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.11.2</version>
+    <version>1.11.3</version>
   </parent>
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -78,8 +78,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <graal-sdk.version>24.1.0</graal-sdk.version>
-    <netty.version>4.1.113.Final</netty.version>
-    <ow2-asm.version>9.7</ow2-asm.version>
+    <netty.version>4.1.114.Final</netty.version>
+    <ow2-asm.version>9.7.1</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -133,7 +133,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.47.0</version>
+        <version>3.48.0</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -168,12 +168,12 @@
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-credentials</artifactId>
-        <version>1.27.0</version>
+        <version>1.28.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-oauth2-http</artifactId>
-        <version>1.27.0</version>
+        <version>1.28.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.oauth-client</groupId>
@@ -183,7 +183,7 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.32.0</version>
+        <version>2.33.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -208,7 +208,7 @@
       <dependency>
         <groupId>com.google.api</groupId>
         <artifactId>gax</artifactId>
-        <version>2.54.1</version>
+        <version>2.55.0</version>
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
@@ -323,7 +323,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.11.1</version>
+        <version>5.11.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -452,7 +452,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>3.5.1</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -619,7 +619,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.5.1</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -718,12 +718,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.11.1</version>
+            <version>1.11.2</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.11.1</version>
+            <version>1.11.2</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -733,7 +733,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.11.1</version>
+          <version>5.11.2</version>
           <scope>test</scope>
         </dependency>
 
@@ -833,7 +833,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.10.0</version>
+            <version>3.10.1</version>
             <configuration>
               <source>8</source>
               <sourcepath>src/main/java</sourcepath>
@@ -933,7 +933,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.0</version>
+            <version>3.5.1</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
