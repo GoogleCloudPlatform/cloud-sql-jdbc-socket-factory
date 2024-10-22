@@ -44,7 +44,7 @@ import javax.net.ssl.TrustManagerFactory;
  *
  * <p>If the instance supports CAS certificates (instanceMetadata.casEnabled == true), or the
  * connection is being made to a PSC endpoint (instanceMetadata.pscEnabled == true) the connector
- * should validate that the server certificate subjectAlterantiveNames contains an entry that
+ * should validate that the server certificate subjectAlternativeNames contains an entry that
  * matches instanceMetadata.dnsName.
  *
  * <p>Otherwise, the connector should check that the Subject CN field contains the Cloud SQL
