@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.21.0...v1.21.1) (2024-10-23)
+
+
+### Documentation
+
+* Add missing javadoc comments to public methods. ([#2080](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2080)) ([00e0b1a](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/00e0b1a0d4008e9ac32bfa60525316a312be1db1))
+
 ## [1.21.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.20.1...v1.21.0) (2024-09-30)
 
 
