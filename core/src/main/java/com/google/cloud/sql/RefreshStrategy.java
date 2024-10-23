@@ -18,6 +18,8 @@ package com.google.cloud.sql;
 
 /** Enum for supported refresh strategies. */
 public enum RefreshStrategy {
+  /** Use the Background refresh strategy. */
   BACKGROUND,
+  /** Use the Lazy refresh strategy. */
   LAZY
 }

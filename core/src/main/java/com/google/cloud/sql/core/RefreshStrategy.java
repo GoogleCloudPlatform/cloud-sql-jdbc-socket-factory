@@ -18,11 +18,18 @@ package com.google.cloud.sql.core;
 
 /** Provide the refresh strategy to the DefaultConnectionInfoCache. */
 public interface RefreshStrategy {
+  /** Return the current valid ConnectionInfo, blocking if necessary for up to the timeout. */
   ConnectionInfo getConnectionInfo(long timeoutMs);
 
+  /** Force a refresh of the ConnectionInfo, possibly in the background. */
   void forceRefresh();
 
+  /** Refresh the ConnectionInfo if it has expired or is near expiration. */
   void refreshIfExpired();
 
+  /**
+   * Stop background threads and refresh operations in progress and refuse to start subsequent
+   * refresh operations.
+   */
   void close();
 }

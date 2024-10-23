@@ -239,26 +239,31 @@ public class ConnectionConfig {
     private ConnectorConfig connectorConfig = new ConnectorConfig.Builder().build();
     private AuthType authType = DEFAULT_AUTH_TYPE;
 
+    /** Chained setter for CloudSqlInstance field. */
     public Builder withCloudSqlInstance(String cloudSqlInstance) {
       this.cloudSqlInstance = cloudSqlInstance;
       return this;
     }
 
+    /** Chained setter for NamedConnector field. */
     public Builder withNamedConnector(String namedConnector) {
       this.namedConnector = namedConnector;
       return this;
     }
 
+    /** Chained setter for ConnectorConfig field. */
     public Builder withConnectorConfig(ConnectorConfig connectorConfig) {
       this.connectorConfig = connectorConfig;
       return this;
     }
 
+    /** Chained setter for UnixSocketPath field. */
     public Builder withUnixSocketPath(String unixSocketPath) {
       this.unixSocketPath = unixSocketPath;
       return this;
     }
 
+    /** Chained setter for AuthType field. */
     public Builder withAuthType(AuthType authType) {
       this.authType = authType;
       return this;
@@ -276,6 +281,7 @@ public class ConnectionConfig {
       return this;
     }
 
+    /** Chained setter for UnixSocketPathSuffix field. */
     public Builder withUnixSocketPathSuffix(String unixSocketPathSuffix) {
       this.unixSocketPathSuffix = unixSocketPathSuffix;
       return this;

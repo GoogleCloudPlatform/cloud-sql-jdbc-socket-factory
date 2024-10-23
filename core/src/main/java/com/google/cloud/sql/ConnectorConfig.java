@@ -153,52 +153,62 @@ public class ConnectorConfig {
     private String universeDomain;
     private RefreshStrategy refreshStrategy = RefreshStrategy.BACKGROUND;
 
+    /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
       this.targetPrincipal = targetPrincipal;
       return this;
     }
 
+    /** Chained setter for GoogleCredentialsSupplier field. */
     public Builder withGoogleCredentialsSupplier(
         Supplier<GoogleCredentials> googleCredentialsSupplier) {
       this.googleCredentialsSupplier = googleCredentialsSupplier;
       return this;
     }
 
+    /** Chained setter for GoogleCredentials field. */
     public Builder withGoogleCredentials(GoogleCredentials googleCredentials) {
       this.googleCredentials = googleCredentials;
       return this;
     }
 
+    /** Chained setter for GoogleCredentialsPath field. */
     public Builder withGoogleCredentialsPath(String googleCredentialsPath) {
       this.googleCredentialsPath = googleCredentialsPath;
       return this;
     }
 
+    /** Chained setter for Delegates field. */
     public Builder withDelegates(List<String> delegates) {
       this.delegates = delegates;
       return this;
     }
 
+    /** Chained setter for AdminRootUrl field. */
     public Builder withAdminRootUrl(String adminRootUrl) {
       this.adminRootUrl = adminRootUrl;
       return this;
     }
 
+    /** Chained setter for AdminServicePath field. */
     public Builder withAdminServicePath(String adminServicePath) {
       this.adminServicePath = adminServicePath;
       return this;
     }
 
+    /** Chained setter for AdminQuotaProject field. */
     public Builder withAdminQuotaProject(String adminQuotaProject) {
       this.adminQuotaProject = adminQuotaProject;
       return this;
     }
 
+    /** Chained setter for UniverseDomain field. */
     public Builder withUniverseDomain(String universeDomain) {
       this.universeDomain = universeDomain;
       return this;
     }
 
+    /** Chained setter for RefreshStrategy field. */
     public Builder withRefreshStrategy(RefreshStrategy refreshStrategy) {
       this.refreshStrategy = refreshStrategy;
       return this;
