@@ -32,6 +32,7 @@ public interface CredentialFactory {
   /** Name of system property that can specify an alternative credential factory. */
   String CREDENTIAL_FACTORY_PROPERTY = "cloudSql.socketFactory.credentialFactory";
 
+  /** Creates the HttpRequestInitializer. */
   HttpRequestInitializer create();
 
   /**
