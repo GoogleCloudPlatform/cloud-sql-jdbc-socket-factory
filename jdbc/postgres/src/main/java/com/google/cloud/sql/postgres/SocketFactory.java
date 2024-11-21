@@ -61,6 +61,11 @@ public class SocketFactory extends javax.net.SocketFactory {
     this.props = info;
   }
 
+  /**
+   * Instantiate a socket factory.
+   *
+   * @param instanceName the instance name.
+   */
   @Deprecated
   public SocketFactory(String instanceName) {
     // Deprecated constructor for converting 'SocketFactoryArg' to 'CloudSqlInstance'

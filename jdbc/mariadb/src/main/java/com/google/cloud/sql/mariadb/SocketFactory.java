@@ -38,6 +38,7 @@ public class SocketFactory extends ConfigurableSocketFactory {
 
   private Configuration conf;
 
+  /** Instantiate a socket factory. */
   public SocketFactory() {}
 
   @Override
