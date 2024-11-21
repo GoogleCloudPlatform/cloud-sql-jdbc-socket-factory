@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.21.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.21.0...v1.21.1) (2024-11-21)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2076](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2076)) ([5a7e08a](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/5a7e08a1d4c7044e5c799bea637bd22a9aa2f320))
+
+
+### Documentation
+
+* Add missing javadoc comments to public methods. ([#2080](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2080)) ([00e0b1a](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/00e0b1a0d4008e9ac32bfa60525316a312be1db1))
+
 ## [1.21.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.20.1...v1.21.0) (2024-09-30)
 
 
