@@ -312,7 +312,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             instanceName,
             ipAddrs,
             instanceCaCertificates,
-            "GOOGLE_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode()),
+            isCasManagedCertificate(instanceMetadata),
             instanceMetadata.getDnsName(),
             pscEnabled);
       } catch (CertificateException ex) {
@@ -330,6 +330,11 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               instanceName.getConnectionName()),
           instanceName);
     }
+  }
+
+  private static boolean isCasManagedCertificate(ConnectSettings instanceMetadata) {
+    return "GOOGLE_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode())
+        || "CUSTOMER_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode());
   }
 
   /**
