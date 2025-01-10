@@ -362,6 +362,90 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .build;
 ```
 
+### Using DNS domain names to identify instances
+
+The connector can be configured to use DNS to look up an instance. This would
+allow you to configure your application to connect to a database instance, and
+centrally configure which instance in your DNS zone.
+
+#### Configure your DNS Records
+
+Add a DNS TXT record for the Cloud SQL instance to a **private** DNS server
+or a private Google Cloud DNS Zone used by your application.
+
+**Note:** You are strongly discouraged from adding DNS records for your
+Cloud SQL instances to a public DNS server. This would allow anyone on the
+internet to discover the Cloud SQL instance name.
+
+For example: suppose you wanted to use the domain name
+`prod-db.mycompany.example.com` to connect to your database instance
+`my-project:region:my-instance`. You would create the following DNS record:
+
+- Record type: `TXT`
+- Name: `prod-db.mycompany.example.com` – This is the domain name used by the application
+- Value: `my-project:region:my-instance` – This is the instance name
+
+#### Creating the R2DBC URL
+
+Add the following connection properties:
+
+| Property      | Value                            |
+|---------------|----------------------------------|
+| DATABASE_NAME | The name of the database         |
+| HOST          | The domain name for the instance |
+| DB_USER       | Database username                |
+| DB_PASS       | Database user's password         |
+
+R2DBC URL template:
+
+#### MySQL
+
+```
+r2dbc:gcp:mysql://<DB_USER>:<DB_PASS>@<HOST>/<DATABASE_NAME>
+```
+
+#### MariaDB
+
+```
+r2dbc:gcp:mariadb://<DB_USER>:<DB_PASS>@<HOST>/<DATABASE_NAME>
+```
+
+#### Postgres
+
+```
+r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<HOST>/<DATABASE_NAME>
+```
+
+##### SQL Server
+
+```
+r2dbc:gcp:mssql://<DB_USER>:<DB_PASS>@<HOST>/<DATABASE_NAME>
+```
+
+#### Example
+
+```java
+// Set up URL parameters
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(DRIVER,"gcp")
+    .option(PROTOCOL,"mysql") // OR "postgres" or "mssql" or "mariadb"
+    .option(PASSWORD,"<DB_PASSWORD>")
+    .option(USER,"<DB_USER>")
+    .option(DATABASE,"<DATABASE_NAME}")
+    .option(HOST,"<HOST>")
+    .build();
+
+ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration
+    .builder(connectionFactory)
+    .build();
+
+ConnectionPool connectionPool = new ConnectionPool(configuration);
+```
+
+
+
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)
