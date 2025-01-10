@@ -312,7 +312,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             instanceName,
             ipAddrs,
             instanceCaCertificates,
-            "GOOGLE_MANAGED_CAS_CA".equals(instanceMetadata.getServerCaMode()),
+            isCasManagedCertificate(instanceMetadata.getServerCaMode()),
             instanceMetadata.getDnsName(),
             pscEnabled);
       } catch (CertificateException ex) {
@@ -330,6 +330,22 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               instanceName.getConnectionName()),
           instanceName);
     }
+  }
+
+  /**
+   * Instances with serverCaMode == GOOGLE_MANAGED_INTERNAL_CA or serverCaMode is null or empty use
+   * a legacy, non-standard server certificate validation strategy. In all other cases, use standard
+   * TLS hostname validation using the SubjectAlternativeNames records.
+   *
+   * @param serverCaMode from the instance metadata.
+   * @return true when the instance uses a CAS certificate, and should use standard validation.
+   */
+  private static boolean isCasManagedCertificate(String serverCaMode) {
+    boolean useLegacyValidation =
+        serverCaMode == null
+            || serverCaMode.isEmpty()
+            || "GOOGLE_MANAGED_INTERNAL_CA".equals(serverCaMode);
+    return !useLegacyValidation;
   }
 
   /**

@@ -181,7 +181,8 @@ public class CloudSqlCoreTestingBase {
                       .setRegion("myRegion")
                       .setPscEnabled(psc ? Boolean.TRUE : null)
                       .setDnsName(cas || psc ? "db.example.com" : null)
-                      .setServerCaMode(cas ? "GOOGLE_MANAGED_CAS_CA" : null);
+                      .setServerCaMode(
+                          cas ? "GOOGLE_MANAGED_CAS_CA" : "GOOGLE_MANAGED_INTERNAL_CA");
               settings.setFactory(jsonFactory);
               response
                   .setContent(settings.toPrettyString())
