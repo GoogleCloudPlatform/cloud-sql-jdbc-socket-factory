@@ -107,6 +107,20 @@ public class GcpConnectionFactoryProviderTest {
     assertThat(config.getConnectorConfig().getAdminServicePath()).isEqualTo("/service");
   }
 
+  @Test
+  public void testCreateWithDomainName() {
+
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "db.example.com");
+
+    StubConnectionFactory factory = configureConnection(options.build());
+    ConnectionConfig config = factory.config;
+
+    assertThat(config.getDomainName()).isEqualTo("db.example.com");
+    assertThat(config.getCloudSqlInstance()).isNull();
+  }
+
   private static class StubConnectionFactory implements ConnectionFactory {
 
     final ConnectionConfig config;
