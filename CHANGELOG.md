@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.22.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.21.2...v1.22.0) (2025-01-16)
+
+
+### Features
+
+* Support Customer Managed Private CA for server certificates. ([#2095](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2095)) ([d14b4e4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d14b4e4de2fd066a24f3a4e6db2ee3ce418f830d))
+
+
+### Dependencies
+
+* Update dependency maven to v3.9.9 ([#2057](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2057)) ([ffd8935](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ffd8935a5b36147e9657235d413cef4d35c840de))
+* Update Non-major dependencies ([#2094](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2094)) ([293b0ee](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/293b0ee93be6d7aa34f860176cd849c3e7f4d0c0))
+
 ## [1.21.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.21.1...v1.21.2) (2024-12-10)
 
 
