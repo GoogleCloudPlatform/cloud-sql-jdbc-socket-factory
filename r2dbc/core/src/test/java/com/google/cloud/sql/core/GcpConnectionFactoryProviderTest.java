@@ -15,175 +15,146 @@
  */
 package com.google.cloud.sql.core;
 
-import com.google.api.client.http.HttpStatusCodes;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.LowLevelHttpRequest;
-import com.google.api.client.http.LowLevelHttpResponse;
-import com.google.api.client.json.Json;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.testing.http.MockHttpTransport;
-import com.google.api.client.testing.http.MockLowLevelHttpRequest;
-import com.google.api.client.testing.http.MockLowLevelHttpResponse;
-import com.google.api.services.sqladmin.model.ConnectSettings;
-import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
-import com.google.api.services.sqladmin.model.IpMapping;
-import com.google.api.services.sqladmin.model.SslCert;
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.Base64;
-import java.util.Date;
-import java.util.concurrent.ExecutionException;
-import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.Before;
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.RefreshStrategy;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.r2dbc.spi.Connection;
+import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.ConnectionFactoryMetadata;
+import io.r2dbc.spi.ConnectionFactoryOptions;
+import java.util.Collections;
+import java.util.function.Function;
+import org.junit.Test;
+import org.reactivestreams.Publisher;
 
 public class GcpConnectionFactoryProviderTest {
+  private final ConnectionFactory unixFactory = new StubConnectionFactory(null);
 
-  static final String PUBLIC_IP = "127.0.0.1";
-  static final String PRIVATE_IP = "10.0.0.1";
-  final CredentialFactoryProvider stubCredentialFactoryProvider =
-      new CredentialFactoryProvider(new StubCredentialFactory());
-  ListeningScheduledExecutorService defaultExecutor;
-  ListenableFuture<KeyPair> clientKeyPair;
-  InternalConnectorRegistry internalConnectorRegistryStub;
+  @Test
+  public void testCreateWithInstanceName() {
 
-  String fakeInstanceName = "myProject:myRegion:myInstance";
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
 
-  private static byte[] decodeBase64StripWhitespace(String b64) {
-    return Base64.getDecoder().decode(b64.replaceAll("\\s", ""));
+    StubConnectionFactory factory = configureConnection(options.build());
+    ConnectionConfig config = factory.config;
+    assertThat(config.getCloudSqlInstance()).isEqualTo("project:region:instance");
   }
 
-  private String createEphemeralCert(Duration shiftIntoPast)
-      throws GeneralSecurityException, ExecutionException, OperatorCreationException {
-    Duration validFor = Duration.ofHours(1);
-    ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC")).minus(shiftIntoPast);
-    ZonedDateTime notAfter = notBefore.plus(validFor);
+  @Test
+  public void testCreateWithUnixSocket() {
 
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec keySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.SIGNING_CA_PRIVATE_KEY));
-    PrivateKey signingKey = keyFactory.generatePrivate(keySpec);
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+    options.option(GcpConnectionFactoryProvider.UNIX_SOCKET, "/socket/path");
 
-    final ContentSigner signer = new JcaContentSignerBuilder("SHA1withRSA").build(signingKey);
-
-    X500Principal issuer =
-        new X500Principal("C = US, O = Google\\, Inc, CN=Google Cloud SQL Signing CA foo:baz");
-    X500Principal subject = new X500Principal("C = US, O = Google\\, Inc, CN=temporary-subject");
-
-    JcaX509v3CertificateBuilder certificateBuilder =
-        new JcaX509v3CertificateBuilder(
-            issuer,
-            BigInteger.ONE,
-            Date.from(notBefore.toInstant()),
-            Date.from(notAfter.toInstant()),
-            subject,
-            Futures.getDone(clientKeyPair).getPublic());
-
-    X509CertificateHolder certificateHolder = certificateBuilder.build(signer);
-
-    Certificate cert = new JcaX509CertificateConverter().getCertificate(certificateHolder);
-
-    return "-----BEGIN CERTIFICATE-----\n"
-        + Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n")
-        + "\n"
-        + "-----END CERTIFICATE-----\n";
+    StubConnectionFactory factory = configureConnection(options.build());
+    assertThat(factory).isSameInstanceAs(unixFactory);
   }
 
-  private HttpTransport fakeSuccessHttpTransport(Duration certDuration) {
-    final JsonFactory jsonFactory = new GsonFactory();
-    return new MockHttpTransport() {
-      @Override
-      public LowLevelHttpRequest buildRequest(String method, String url) {
-        return new MockLowLevelHttpRequest() {
+  @Test
+  public void testCreateWithAllOptions() {
+
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+    options.option(GcpConnectionFactoryProvider.NAMED_CONNECTOR, "resolver-test");
+    options.option(GcpConnectionFactoryProvider.IP_TYPES, "private");
+    options.option(GcpConnectionFactoryProvider.ENABLE_IAM_AUTH, true);
+    options.option(GcpConnectionFactoryProvider.DELEGATES, "delegate@example.com");
+    options.option(GcpConnectionFactoryProvider.TARGET_PRINCIPAL, "target@example.com");
+    options.option(GcpConnectionFactoryProvider.ADMIN_QUOTA_PROJECT, "quota-project");
+    options.option(GcpConnectionFactoryProvider.GOOGLE_CREDENTIALS_PATH, "/credentials/path");
+    options.option(GcpConnectionFactoryProvider.UNIVERSE_DOMAIN, "domain.google.com");
+    options.option(GcpConnectionFactoryProvider.REFRESH_STRATEGY, "lazy");
+
+    StubConnectionFactory factory = configureConnection(options.build());
+    ConnectionConfig config = factory.config;
+
+    assertThat(config.getCloudSqlInstance()).isEqualTo("project:region:instance");
+    assertThat(config.getNamedConnector()).isEqualTo("resolver-test");
+    assertThat(config.getIpTypes()).isEqualTo(Collections.singletonList(IpType.PRIVATE));
+    assertThat(config.getAuthType()).isEqualTo(AuthType.IAM);
+    assertThat(config.getConnectorConfig().getDelegates())
+        .isEqualTo(Collections.singletonList("delegate@example.com"));
+    assertThat(config.getConnectorConfig().getTargetPrincipal()).isEqualTo("target@example.com");
+    assertThat(config.getConnectorConfig().getAdminQuotaProject()).isEqualTo("quota-project");
+    assertThat(config.getConnectorConfig().getGoogleCredentialsPath())
+        .isEqualTo("/credentials/path");
+    assertThat(config.getConnectorConfig().getUniverseDomain()).isEqualTo("domain.google.com");
+    assertThat(config.getConnectorConfig().getRefreshStrategy()).isEqualTo(RefreshStrategy.LAZY);
+  }
+
+  @Test
+  public void testCreateWithAdminApiOptions() {
+
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+    options.option(GcpConnectionFactoryProvider.ADMIN_ROOT_URL, "http://example.com/root");
+    options.option(GcpConnectionFactoryProvider.ADMIN_SERVICE_PATH, "/service");
+
+    StubConnectionFactory factory = configureConnection(options.build());
+    ConnectionConfig config = factory.config;
+
+    assertThat(config.getCloudSqlInstance()).isEqualTo("project:region:instance");
+    assertThat(config.getConnectorConfig().getAdminRootUrl()).isEqualTo("http://example.com/root");
+    assertThat(config.getConnectorConfig().getAdminServicePath()).isEqualTo("/service");
+  }
+
+  private static class StubConnectionFactory implements ConnectionFactory {
+
+    final ConnectionConfig config;
+
+    private StubConnectionFactory(ConnectionConfig config) {
+      this.config = config;
+    }
+
+    @Override
+    public Publisher<? extends Connection> create() {
+      return null;
+    }
+
+    @Override
+    public ConnectionFactoryMetadata getMetadata() {
+      return null;
+    }
+  }
+
+  private StubConnectionFactory configureConnection(ConnectionFactoryOptions options) {
+    GcpConnectionFactoryProvider p =
+        new GcpConnectionFactoryProvider() {
           @Override
-          public LowLevelHttpResponse execute() throws IOException {
-            MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
-            if (method.equals("GET") && url.contains("connectSettings")) {
-              ConnectSettings settings =
-                  new ConnectSettings()
-                      .setBackendType("SECOND_GEN")
-                      .setIpAddresses(
-                          ImmutableList.of(
-                              new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
-                              new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
-                      .setServerCaCert(new SslCert().setCert(R2dbcTestKeys.SERVER_CA_CERT))
-                      .setDatabaseVersion("POSTGRES14")
-                      .setRegion("myRegion");
-              settings.setFactory(jsonFactory);
-              response
-                  .setContent(settings.toPrettyString())
-                  .setContentType(Json.MEDIA_TYPE)
-                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-            } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
-              GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
-              try {
-                certResponse.setEphemeralCert(
-                    new SslCert().setCert(createEphemeralCert(certDuration)));
-                certResponse.setFactory(jsonFactory);
-              } catch (GeneralSecurityException
-                  | ExecutionException
-                  | OperatorCreationException e) {
-                throw new RuntimeException(e);
-              }
-              response
-                  .setContent(certResponse.toPrettyString())
-                  .setContentType(Json.MEDIA_TYPE)
-                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
-            }
-            return response;
+          ConnectionFactory tcpSocketConnectionFactory(
+              ConnectionConfig config,
+              ConnectionFactoryOptions.Builder optionBuilder,
+              Function<SslContextBuilder, SslContextBuilder> customizer) {
+            return new StubConnectionFactory(config);
+          }
+
+          @Override
+          ConnectionFactory unixSocketConnectionFactory(
+              ConnectionFactoryOptions.Builder optionBuilder, String socket) {
+            return unixFactory;
+          }
+
+          @Override
+          ConnectionFactoryOptions.Builder createBuilder(
+              ConnectionFactoryOptions connectionFactoryOptions) {
+            return ConnectionFactoryOptions.builder();
+          }
+
+          @Override
+          boolean supportedProtocol(String protocol) {
+            return "cloudsql".equals(protocol);
           }
         };
-      }
-    };
-  }
 
-  @Before
-  public void setup() throws GeneralSecurityException {
-
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-    PKCS8EncodedKeySpec privateKeySpec =
-        new PKCS8EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.CLIENT_PRIVATE_KEY));
-    PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-
-    X509EncodedKeySpec publicKeySpec =
-        new X509EncodedKeySpec(decodeBase64StripWhitespace(R2dbcTestKeys.CLIENT_PUBLIC_KEY));
-    PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-
-    clientKeyPair = Futures.immediateFuture(new KeyPair(publicKey, privateKey));
-
-    defaultExecutor = InternalConnectorRegistry.getDefaultExecutor();
-
-    ConnectionInfoRepositoryFactory repo =
-        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
-
-    internalConnectorRegistryStub =
-        new InternalConnectorRegistry(
-            clientKeyPair,
-            repo,
-            stubCredentialFactoryProvider,
-            3307,
-            InternalConnectorRegistry.DEFAULT_CONNECT_TIMEOUT_MS,
-            defaultExecutor);
+    return (StubConnectionFactory) p.create(options);
   }
 }

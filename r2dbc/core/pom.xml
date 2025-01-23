@@ -79,18 +79,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.apis</groupId>
-      <artifactId>google-api-services-sqladmin</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.http-client</groupId>
-      <artifactId>google-http-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.http-client</groupId>
-      <artifactId>google-http-client-gson</artifactId>
+      <groupId>com.google.truth</groupId>
+      <artifactId>truth</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
