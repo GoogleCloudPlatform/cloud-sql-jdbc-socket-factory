@@ -144,9 +144,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
                     .withRefreshStrategy(refreshStrategy)
                     .build())
             .build();
-    // Precompute SSL Data to trigger the initial refresh to happen immediately,
-    // and ensure enableIAMAuth is set correctly.
-    InternalConnectorRegistry.getInstance().getConnectionMetadata(config);
 
     String socket = (String) connectionFactoryOptions.getValue(UNIX_SOCKET);
     if (socket != null) {
