@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.sqlserver;
 
+import com.google.cloud.sql.core.CloudSqlInstanceName;
 import com.google.cloud.sql.core.ConnectionConfig;
 import com.google.cloud.sql.core.InternalConnectorRegistry;
 import com.google.common.annotations.VisibleForTesting;
@@ -25,7 +26,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -43,6 +43,7 @@ public class SocketFactory extends javax.net.SocketFactory {
 
   // props are protected, not private, so that they can be accessed from unit tests
   @VisibleForTesting protected Properties props = new Properties();
+  @VisibleForTesting protected String domainName;
 
   /**
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
@@ -50,7 +51,12 @@ public class SocketFactory extends javax.net.SocketFactory {
    */
   public SocketFactory(String socketFactoryConstructorArg) throws UnsupportedEncodingException {
     List<String> s = Splitter.on('?').splitToList(socketFactoryConstructorArg);
-    this.props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, s.get(0));
+    final String instanceOrDomainName = s.get(0);
+    if (CloudSqlInstanceName.isValidInstanceName(instanceOrDomainName)) {
+      this.props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, instanceOrDomainName);
+    } else {
+      domainName = instanceOrDomainName;
+    }
     if (s.size() == 2 && s.get(1).length() > 0) {
       Iterable<String> queryParams = Splitter.on('&').split(s.get(1));
       for (String param : queryParams) {
@@ -62,8 +68,8 @@ public class SocketFactory extends javax.net.SocketFactory {
               String.format("Malformed query param in socketFactoryConstructorArg : %s", param));
         }
         this.props.setProperty(
-            URLDecoder.decode(splitParam.get(0), StandardCharsets.UTF_8.name()),
-            URLDecoder.decode(splitParam.get(1), StandardCharsets.UTF_8.name()));
+            URLDecoder.decode(splitParam.get(0), "utf-8"),
+            URLDecoder.decode(splitParam.get(1), "utf-8"));
       }
     } else if (s.size() > 2) {
       throw new IllegalArgumentException(
@@ -75,7 +81,7 @@ public class SocketFactory extends javax.net.SocketFactory {
   public Socket createSocket() throws IOException {
     try {
       return InternalConnectorRegistry.getInstance()
-          .connect(ConnectionConfig.fromConnectionProperties(props));
+          .connect(ConnectionConfig.fromConnectionProperties(props, domainName));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

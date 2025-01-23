@@ -28,6 +28,7 @@ import org.junit.runners.JUnit4;
 public class JdbcSqlServerUnitTests {
 
   private static final String CONNECTION_NAME = "my-project:my-region:my-instance";
+  private static final String DOMAIN_NAME = "mydatabase.example.com";
 
   @Test
   public void checkConnectionStringNoQueryParams() throws UnsupportedEncodingException {
@@ -43,6 +44,23 @@ public class JdbcSqlServerUnitTests {
     SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
     assertThat(socketFactory.props.get(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY))
         .isEqualTo(CONNECTION_NAME);
+    assertThat(socketFactory.props.get("ipTypes")).isEqualTo("PRIVATE");
+  }
+
+  @Test
+  public void checkConnectionStringDomainNameNoQueryParams() throws UnsupportedEncodingException {
+    SocketFactory socketFactory = new SocketFactory(DOMAIN_NAME);
+    assertThat(socketFactory.props.get(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY)).isNull();
+    assertThat(socketFactory.domainName).isEqualTo(DOMAIN_NAME);
+  }
+
+  @Test
+  public void checkConnectionStringDomainNameWithQueryParam() throws UnsupportedEncodingException {
+    String socketFactoryConstructorArg =
+        String.format("%s?%s=%s", DOMAIN_NAME, "ipTypes", "PRIVATE");
+    SocketFactory socketFactory = new SocketFactory(socketFactoryConstructorArg);
+    assertThat(socketFactory.props.get(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY)).isNull();
+    assertThat(socketFactory.domainName).isEqualTo(DOMAIN_NAME);
     assertThat(socketFactory.props.get("ipTypes")).isEqualTo("PRIVATE");
   }
 
