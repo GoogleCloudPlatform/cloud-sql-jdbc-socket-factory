@@ -49,6 +49,7 @@ public class ConnectionConfigTest {
     final String wantAdminQuotaProject = "myNewProject";
     final String propRefreshStrategy = "Lazy";
     final RefreshStrategy wantRefreshStrategy = RefreshStrategy.LAZY;
+    final String wantDomainName = "db.example.com";
 
     Properties props = new Properties();
     props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, wantCsqlInstance);
@@ -66,7 +67,7 @@ public class ConnectionConfigTest {
         ConnectionConfig.CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY, wantAdminQuotaProject);
     props.setProperty(ConnectionConfig.CLOUD_SQL_REFRESH_STRATEGY_PROPERTY, propRefreshStrategy);
 
-    ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
+    ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props, wantDomainName);
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
     assertThat(c.getNamedConnector()).isEqualTo(wantNamedConnector);
@@ -81,6 +82,7 @@ public class ConnectionConfigTest {
     assertThat(c.getConnectorConfig().getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
     assertThat(c.getConnectorConfig().getRefreshStrategy()).isEqualTo(wantRefreshStrategy);
+    assertThat(c.getDomainName()).isEqualTo(wantDomainName);
   }
 
   @Test
@@ -96,6 +98,7 @@ public class ConnectionConfigTest {
     final String wantAdminServicePath = "sqladmin/";
     final String wantUnixSuffix = ".psql.5432";
     final String wantAdminQuotaProject = "myNewProject";
+    final String wantDomainName = "db.example.com";
 
     ConnectorConfig cc =
         new ConnectorConfig.Builder()
@@ -115,6 +118,7 @@ public class ConnectionConfigTest {
             .withUnixSocketPath(wantUnixSocket)
             .withUnixSocketPathSuffix(wantUnixSuffix)
             .withConnectorConfig(cc)
+            .withDomainName(wantDomainName)
             .build();
 
     assertThat(c.getCloudSqlInstance()).isEqualTo(wantCsqlInstance);
@@ -128,6 +132,7 @@ public class ConnectionConfigTest {
     assertThat(c.getConnectorConfig().getAdminServicePath()).isEqualTo(wantAdminServicePath);
     assertThat(c.getConnectorConfig().getAdminQuotaProject()).isEqualTo(wantAdminQuotaProject);
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
+    assertThat(c.getDomainName()).isEqualTo(wantDomainName);
   }
 
   @Test

@@ -28,6 +28,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -140,9 +141,11 @@ class Connector {
     }
   }
 
-  ConnectionInfoCache getConnection(ConnectionConfig config) {
+  ConnectionInfoCache getConnection(final ConnectionConfig config) {
+    final ConnectionConfig updatedConfig = resolveConnectionName(config);
+
     ConnectionInfoCache instance =
-        instances.computeIfAbsent(config, k -> createConnectionInfo(config));
+        instances.computeIfAbsent(updatedConfig, k -> createConnectionInfo(updatedConfig));
 
     // If the client certificate has expired (as when the computer goes to
     // sleep, and the refresh cycle cannot run), force a refresh immediately.
@@ -152,6 +155,44 @@ class Connector {
     instance.refreshIfExpired();
 
     return instance;
+  }
+
+  /**
+   * Updates the ConnectionConfig to ensure that the cloudSqlInstance field is set, resolving the
+   * domainName using the InstanceNameResolver.
+   *
+   * @param config the configuration to resolve.
+   * @return a ConnectionConfig guaranteed to have the CloudSqlInstance field set.
+   */
+  private ConnectionConfig resolveConnectionName(ConnectionConfig config) {
+    // If domainName is not set, return the original configuration unmodified.
+    if (config.getDomainName() == null || config.getDomainName().isEmpty()) {
+      return config;
+    }
+
+    // If both domainName and cloudSqlInstance are set, ignore the domain name. Return a new
+    // configuration with domainName set to null.
+    if (config.getCloudSqlInstance() != null && !config.getCloudSqlInstance().isEmpty()) {
+      return config.withDomainName(null);
+    }
+
+    // If only domainName is set, resolve the domain name.
+    try {
+      final String unresolvedName = config.getDomainName();
+      final Function<String, String> resolver =
+          config.getConnectorConfig().getInstanceNameResolver();
+      if (resolver != null) {
+        return config.withCloudSqlInstance(resolver.apply(unresolvedName));
+      } else {
+        throw new IllegalStateException(
+            "Can't resolve domain " + unresolvedName + ". ConnectorConfig.resolver is not set.");
+      }
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Cloud SQL connection name is invalid: \"%s\"", config.getCloudSqlInstance()),
+          e);
+    }
   }
 
   private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {

@@ -132,6 +132,90 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
+  public void create_successfulPublicConnectionWithDomainName()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .withConnectorConfig(
+                new ConnectorConfig.Builder()
+                    .withInstanceNameResolver((domainName) -> "myProject:myRegion:myInstance")
+                    .build())
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPrivateConnection_UsesInstanceName_DomainNameIgnored()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIVATE")
+            .build();
+
+    int port = sslServer.start(PRIVATE_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPrivateConnection_UsesInstanceName_EmptyDomainNameIgnored()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("")
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("PRIVATE")
+            .build();
+
+    int port = sslServer.start(PRIVATE_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_throwsErrorForDomainNameWithNoResolver()
+      throws IOException, InterruptedException {
+    // The server TLS certificate matches myProject:myRegion:myInstance
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector = newConnector(config.getConnectorConfig(), port);
+    IllegalStateException ex =
+        assertThrows(
+            IllegalStateException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
+
+    assertThat(ex).hasMessageThat().contains("ConnectorConfig.resolver is not set");
+  }
+
+  @Test
   public void create_successfulPublicConnection() throws IOException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();
     ConnectionConfig config =
