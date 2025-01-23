@@ -563,6 +563,123 @@ Properties connProps = new Properties();
 connProps.setProperty("cloudSqlRefreshStrategy", "lazy");
 ```
 
+
+
+### Using DNS domain names to identify instances
+
+The connector can be configured to use DNS to look up an instance. This would
+allow you to configure your application to connect to a database instance, and
+centrally configure which instance in your DNS zone.
+
+#### Configure your DNS Records
+
+Add a DNS TXT record for the Cloud SQL instance to a **private** DNS server
+or a private Google Cloud DNS Zone used by your application.
+
+**Note:** You are strongly discouraged from adding DNS records for your
+Cloud SQL instances to a public DNS server. This would allow anyone on the
+internet to discover the Cloud SQL instance name.
+
+For example: suppose you wanted to use the domain name
+`prod-db.mycompany.example.com` to connect to your database instance
+`my-project:region:my-instance`. You would create the following DNS record:
+
+- Record type: `TXT`
+- Name: `prod-db.mycompany.example.com` – This is the domain name used by the application
+- Value: `my-project:region:my-instance` – This is the instance name
+
+
+### Creating the JDBC URL
+
+When specifying the JDBC connection URL, add the additional parameters:
+
+| Property         | Value                                                             |
+|------------------|-------------------------------------------------------------------|
+| socketFactory    | <SOCKET_FACTORY_CLASS>                                            |
+| user             | Database username                                                 |
+| password         | Database user's password                                          |
+
+Replace <SOCKET_FACTORY_CLASS> with the class name specific to your database.
+
+#### MySQL
+
+HOST: The domain name configured in your DNS TXT record. 
+
+Base JDBC URL: `jdbc:mysql://<HOST>/<DATABASE_NAME>`
+
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.mysql.SocketFactory`
+
+The full JDBC URL should look like this:
+
+```java
+String jdbcUrl = "jdbc:mysql://<HOST>/<DATABASE_NAME>?" 
+    + "&socketFactory=com.google.cloud.sql.mysql.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>" 
+    + "&password=<MYSQL_USER_PASSWORD>";
+```
+
+#### Maria DB
+
+HOST: The domain name configured in your DNS TXT record.
+
+Base JDBC URL: `jdbc:mariadb://<HOST>/<DATABASE_NAME>`
+
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.mariadb.SocketFactory`
+
+**Note:** You can use `mysql` as the scheme if you set `permitMysqlScheme` on
+the URL.
+Please refer to the
+MariaDB [documentation](https://mariadb.com/kb/en/about-mariadb-connector-j/#jdbcmysql-scheme-compatibility).
+
+The full JDBC URL should look like this:
+
+```java
+String jdbcUrl = "jdbc:mariadb://<HOST>/<DATABASE_NAME>?" 
+    + "&socketFactory=com.google.cloud.sql.mariadb.SocketFactory" 
+    + "&user=<MYSQL_USER_NAME>" 
+    + "&password=<MYSQL_USER_PASSWORD>";
+```
+
+#### Postgres
+
+Base JDBC URL: `jdbc:postgresql://<HOST>/<DATABASE_NAME>`
+
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.postgres.SocketFactory`
+
+When specifying the JDBC connection URL, add the additional parameters:
+
+The full JDBC URL should look like this:
+
+```java
+String jdbcUrl = "jdbc:postgresql://<HOST>/<DATABASE_NAME>?" 
+    + "&socketFactory=com.google.cloud.sql.postgres.SocketFactory" 
+    + "&user=<POSTGRESQL_USER_NAME>" 
+    + "&password=<POSTGRESQL_USER_PASSWORD>";
+```
+
+#### SQL Server
+
+Base JDBC URL: `jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>`
+
+SOCKET_FACTORY_CLASS: `com.google.cloud.sql.sqlserver.SocketFactory`
+
+The full JDBC URL should look like this:
+
+```java
+String jdbcUrl = "jdbc:sqlserver://localhost;" 
+    + "databaseName=<DATABASE_NAME>;" 
+    + "socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;" 
+    + "socketFactoryConstructorArg=<HOST>;" 
+    + "user=<USER_NAME>;" 
+    + "password=<PASSWORD>";
+```
+
+**Note:** The host portion of the JDBC URL is currently unused, and has no
+effect on the connection process. The SocketFactory will get your instances IP
+address based on the provided `socketFactoryConstructorArg` arg.
+
+
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)
