@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.23.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.22.0...v1.23.0) (2025-01-24)
+
+
+### Features
+
+* Automatically configure connections using DNS. Part of [#2043](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2043). ([#2047](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2047)) ([cb745f2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/cb745f2346907268fb326192de175fd268bc11ec))
+
+
+### Documentation
+
+* Add docs for connector configuration using DNS Names, Part of [#2043](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2043). ([#2102](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2102)) ([1860b76](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/1860b768c8992f8cd3f0a4e2c8cf254b41a8b612))
+
 ## [1.22.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.21.2...v1.22.0) (2025-01-16)
 
 
