@@ -124,11 +124,22 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
             ? RefreshStrategy.LAZY
             : RefreshStrategy.BACKGROUND;
 
+    final String r2dbcHostname = (String) connectionFactoryOptions.getRequiredValue(HOST);
+    final String cloudSqlInstance;
+    final String domainName;
+    if (CloudSqlInstanceName.isValidInstanceName(r2dbcHostname)) {
+      cloudSqlInstance = r2dbcHostname;
+      domainName = null;
+    } else {
+      cloudSqlInstance = null;
+      domainName = r2dbcHostname;
+    }
+
     Builder optionBuilder = createBuilder(connectionFactoryOptions);
-    String cloudSqlInstance = (String) connectionFactoryOptions.getRequiredValue(HOST);
     ConnectionConfig config =
         new ConnectionConfig.Builder()
             .withCloudSqlInstance(cloudSqlInstance)
+            .withDomainName(domainName)
             .withAuthType(enableIamAuth ? AuthType.IAM : AuthType.PASSWORD)
             .withIpTypes(ipTypes)
             .withNamedConnector(namedConnector)
