@@ -20,6 +20,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
   # https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x
   sudo ifconfig lo0 alias 127.0.0.2 up
+  sudo ifconfig lo0 alias 127.0.0.3 up
 fi
 
 echo -e "******************** Running tests... ********************\n"

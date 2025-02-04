@@ -25,6 +25,7 @@ import com.google.api.client.http.HttpRequestInitializer;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -218,6 +219,159 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
+  public void create_successfulPrivateConnectionWhenDomainNameValueChanges()
+      throws IOException, InterruptedException {
+
+    MutableDnsResolver resolver =
+        new MutableDnsResolver("db.example.com", "myProject:myRegion:myInstance");
+
+    FakeSslServer myInstance =
+        new FakeSslServer(
+            TestKeys.getServerKeyPair().getPrivate(), TestKeys.getCasServerCertChain());
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+            .build();
+
+    int port = myInstance.start(PRIVATE_IP);
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpPscCasTransport(Duration.ofSeconds(0)));
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
+            new DnsInstanceConnectionNameResolver(resolver));
+
+    // Open socket to initial instance
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+
+    // Change the mock DNS value, and restart the fake SSL server for the new instance
+    resolver.setInstanceName("myProject:myRegion:myInstance2");
+    myInstance.stop();
+    myInstance.start(PRIVATE_IP_2, port, TestKeys.getCasServerCertChain2());
+
+    // Attempt to connect to the new instance
+    Socket socket2 = connector.connect(config, TEST_MAX_REFRESH_MS);
+    assertThat(readLine(socket2)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_refreshConnectorWhenDomainNameValueChanges()
+      throws IOException, InterruptedException {
+
+    MutableDnsResolver resolver =
+        new MutableDnsResolver("db.example.com", "myProject:myRegion:myInstance");
+
+    FakeSslServer myInstance = new FakeSslServer();
+    Duration testFailoverPeriod = Duration.ofSeconds(1);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+            .withConnectorConfig(
+                new ConnectorConfig.Builder().withFailoverPeriod(testFailoverPeriod).build())
+            .build();
+
+    int port = myInstance.start(PRIVATE_IP);
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
+            new DnsInstanceConnectionNameResolver(resolver));
+
+    // Open socket to initial instance
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+    assertThat(socket.isClosed()).isFalse();
+
+    // Change the mock DNS value, and restart the fake SSL server for the new instance
+    resolver.setInstanceName("myProject:myRegion:myInstance2");
+    myInstance.stop();
+    myInstance.start(PRIVATE_IP_2, port, TestKeys.getCasServerCertChain2());
+
+    // Wait for more than 1 failover period to ensure the connector refreshes.
+    Thread.sleep(testFailoverPeriod.toMillis() * 2);
+
+    // Check that the socket to the old instance was closed, indicating that the domain changed.
+    assertThat(socket.isClosed()).isTrue();
+  }
+
+  @Test
+  public void create_noChangeWhenDomainNameFailsToResolve()
+      throws IOException, InterruptedException {
+
+    MutableDnsResolver resolver =
+        new MutableDnsResolver("db.example.com", "myProject:myRegion:myInstance");
+
+    FakeSslServer myInstance = new FakeSslServer();
+    Duration testFailoverPeriod = Duration.ofSeconds(1);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+            .withConnectorConfig(
+                new ConnectorConfig.Builder().withFailoverPeriod(testFailoverPeriod).build())
+            .build();
+
+    int port = myInstance.start(PRIVATE_IP);
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
+            new DnsInstanceConnectionNameResolver(resolver));
+
+    // Open socket to initial instance
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+
+    // Change the mock DNS value, and restart the fake SSL server for the new instance
+    resolver.clearInstanceName();
+
+    // Wait for more than 1 failover period to ensure the connector refreshes.
+    Thread.sleep(testFailoverPeriod.toMillis() * 2);
+
+    // Check that the socket to the old instance is open even though the domain no longer resolves.
+    assertThat(socket.isClosed()).isFalse();
+  }
+
+  @Test
   public void create_throwsErrorForUnresolvedDomainName() throws IOException {
     ConnectionConfig config =
         new ConnectionConfig.Builder()
@@ -308,7 +462,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            null);
+            new DnsInstanceConnectionNameResolver(
+                new MockDnsResolver("example.com", "myProject:myRegion:myInstance")));
 
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -714,6 +869,35 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
       }
       if ("badvalue.example.com".equals(domainName)) {
         return Collections.singletonList("not-an-instance-name");
+      }
+      throw new NameNotFoundException("Not found: " + domainName);
+    }
+  }
+
+  private static class MutableDnsResolver implements DnsResolver {
+    private final String domainName;
+    private String instanceName;
+
+    public MutableDnsResolver(String domainName, String instanceName) {
+      this.domainName = domainName;
+      this.instanceName = instanceName;
+    }
+
+    public synchronized void setInstanceName(String instanceName) {
+      this.instanceName = instanceName;
+    }
+
+    public synchronized void clearInstanceName() {
+      this.instanceName = null;
+    }
+
+    @Override
+    public synchronized Collection<String> resolveTxt(String domainName)
+        throws NameNotFoundException {
+      if (this.domainName != null
+          && this.domainName.equals(domainName)
+          && this.instanceName != null) {
+        return Collections.singletonList(this.instanceName);
       }
       throw new NameNotFoundException("Not found: " + domainName);
     }

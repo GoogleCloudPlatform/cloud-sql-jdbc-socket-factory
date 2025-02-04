@@ -82,4 +82,14 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
   public void close() {
     refreshStrategy.close();
   }
+
+  @Override
+  public boolean isClosed() {
+    return refreshStrategy.isClosed();
+  }
+
+  @Override
+  public ConnectionConfig getConfig() {
+    return config;
+  }
 }

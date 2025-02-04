@@ -18,6 +18,7 @@ package com.google.cloud.sql;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Objects;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -27,6 +28,7 @@ import java.util.function.Supplier;
  * a Cloud SQL Connector that may be used to connect to multiple Cloud SQL Instances.
  */
 public class ConnectorConfig {
+  public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -42,6 +44,12 @@ public class ConnectorConfig {
 
   private final RefreshStrategy refreshStrategy;
 
+  /**
+   * FailoverPeriod is the frequency with which the dialer will check if the DNS record has changed
+   * for connections configured using a DNS name.
+   */
+  private final Duration failoverPeriod;
+
   private ConnectorConfig(
       String targetPrincipal,
       List<String> delegates,
@@ -53,7 +61,8 @@ public class ConnectorConfig {
       String adminQuotaProject,
       String universeDomain,
       RefreshStrategy refreshStrategy,
-      Function<String, String> instanceNameResolver) {
+      Function<String, String> instanceNameResolver,
+      Duration failoverPeriod) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -65,6 +74,7 @@ public class ConnectorConfig {
     this.universeDomain = universeDomain;
     this.refreshStrategy = refreshStrategy;
     this.instanceNameResolver = instanceNameResolver;
+    this.failoverPeriod = failoverPeriod;
   }
 
   @Override
@@ -86,7 +96,8 @@ public class ConnectorConfig {
         && Objects.equal(adminQuotaProject, that.adminQuotaProject)
         && Objects.equal(universeDomain, that.universeDomain)
         && Objects.equal(refreshStrategy, that.refreshStrategy)
-        && Objects.equal(instanceNameResolver, that.instanceNameResolver);
+        && Objects.equal(instanceNameResolver, that.instanceNameResolver)
+        && Objects.equal(failoverPeriod, that.failoverPeriod);
   }
 
   @Override
@@ -102,7 +113,8 @@ public class ConnectorConfig {
         adminQuotaProject,
         universeDomain,
         refreshStrategy,
-        instanceNameResolver);
+        instanceNameResolver,
+        failoverPeriod);
   }
 
   public String getTargetPrincipal() {
@@ -149,6 +161,10 @@ public class ConnectorConfig {
     return instanceNameResolver;
   }
 
+  public Duration getFailoverPeriod() {
+    return failoverPeriod;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -163,6 +179,8 @@ public class ConnectorConfig {
     private String universeDomain;
     private RefreshStrategy refreshStrategy = RefreshStrategy.BACKGROUND;
     private Function<String, String> instanceNameResolver;
+
+    private Duration failoverPeriod = DEFAULT_FAILOVER_PERIOD;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -231,6 +249,12 @@ public class ConnectorConfig {
       return this;
     }
 
+    /** Chained setter for the FailoverPeriod field. */
+    public Builder withFailoverPeriod(Duration failoverPeriod) {
+      this.failoverPeriod = failoverPeriod;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -266,7 +290,8 @@ public class ConnectorConfig {
           adminQuotaProject,
           universeDomain,
           refreshStrategy,
-          instanceNameResolver);
+          instanceNameResolver,
+          failoverPeriod);
     }
   }
 }
