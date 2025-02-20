@@ -132,6 +132,7 @@ jobs:
             MYSQL_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
             MYSQL_IAM_USER_JAVA:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
             POSTGRES_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
+            POSTGRES_IAM_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_IAM_CONNECTION_NAME
             POSTGRES_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
             POSTGRES_IAM_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER_IAM_JAVA
             POSTGRES_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_PASS
@@ -156,6 +157,7 @@ jobs:
           MYSQL_DB: "${{ steps.secrets.outputs.MYSQL_DB }}"
           MYSQL_IAM_USER: "${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}"
           POSTGRES_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}"
+          POSTGRES_IAM_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_IAM_CONNECTION_NAME }}"
           POSTGRES_USER: "${{ steps.secrets.outputs.POSTGRES_USER }}"
           POSTGRES_IAM_USER: "${{ steps.secrets.outputs.POSTGRES_IAM_USER }}"
           POSTGRES_PASS: "${{ steps.secrets.outputs.POSTGRES_PASS }}"
@@ -239,6 +241,7 @@ jobs:
             MYSQL_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
             MYSQL_IAM_USER_JAVA:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
             POSTGRES_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
+            POSTGRES_IAM_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_IAM_CONNECTION_NAME
             POSTGRES_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
             POSTGRES_IAM_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER_IAM_JAVA
             POSTGRES_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_PASS
@@ -264,6 +267,7 @@ jobs:
           MYSQL_DB: "${{ steps.secrets.outputs.MYSQL_DB }}"
           MYSQL_IAM_USER: "${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}"
           POSTGRES_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}"
+          POSTGRES_IAM_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_IAM_CONNECTION_NAME }}"
           POSTGRES_USER: "${{ steps.secrets.outputs.POSTGRES_USER }}"
           POSTGRES_IAM_USER: "${{ steps.secrets.outputs.POSTGRES_IAM_USER }}"
           POSTGRES_PASS: "${{ steps.secrets.outputs.POSTGRES_PASS }}"
