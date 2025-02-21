@@ -26,7 +26,7 @@
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.14.2</version>
+    <version>1.14.3</version>
   </parent>
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -178,7 +178,7 @@
       <dependency>
         <groupId>com.google.oauth-client</groupId>
         <artifactId>google-oauth-client</artifactId>
-        <version>1.37.0</version>
+        <version>1.38.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>
@@ -323,7 +323,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.11.4</version>
+        <version>5.12.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -406,7 +406,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>3.14.0</version>
         <configuration>
           <source>8</source>
           <target>8</target>
@@ -718,12 +718,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.11.4</version>
+            <version>1.12.0</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.11.4</version>
+            <version>1.12.0</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -733,7 +733,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.11.4</version>
+          <version>5.12.0</version>
           <scope>test</scope>
         </dependency>
 
