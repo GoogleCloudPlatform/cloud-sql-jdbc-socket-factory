@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,12 +146,18 @@ public final class InternalConnectorRegistry {
     // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
     // this to 8, it's enough threads for most users, plus a safety factor of 2.
 
-    ScheduledThreadPoolExecutor executor =
-        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
+    // ScheduledThreadPoolExecutor executor =
+    //     (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
 
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    // executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
-        MoreExecutors.getExitingScheduledExecutorService(executor));
+        Executors.newScheduledThreadPool(
+            8,
+            r -> {
+              Thread t = new Thread(r);
+              t.setDaemon(true);
+              return t;
+            }));
   }
 
   /**
