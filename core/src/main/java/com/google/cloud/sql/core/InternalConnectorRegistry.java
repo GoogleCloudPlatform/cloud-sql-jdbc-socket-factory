@@ -146,10 +146,6 @@ public final class InternalConnectorRegistry {
     // configure 3 or fewer instances, requiring 6 threads during refresh. By setting
     // this to 8, it's enough threads for most users, plus a safety factor of 2.
 
-    // ScheduledThreadPoolExecutor executor =
-    //     (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(8);
-
-    // executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
         Executors.newScheduledThreadPool(
             8,
