@@ -46,9 +46,9 @@ import reactor.core.publisher.Mono;
 public class R2dbcMariadbIamAuthIntegrationTests {
 
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of("MYSQL_IAM_USER", "MYSQL_DB", "MYSQL_IAM_CONNECTION_NAME");
+      ImmutableList.of("MYSQL_IAM_USER", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
 
-  private static final String CONNECTION_NAME = System.getenv("MYSQL_IAM_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
 
