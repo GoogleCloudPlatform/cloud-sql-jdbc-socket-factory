@@ -38,11 +38,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class JdbcMariaDBIamAuthIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("MYSQL_IAM_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of("MYSQL_IAM_CONNECTION_NAME", "MYSQL_DB", "MYSQL_IAM_USER");
+      ImmutableList.of("MYSQL_CONNECTION_NAME", "MYSQL_DB", "MYSQL_IAM_USER");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;

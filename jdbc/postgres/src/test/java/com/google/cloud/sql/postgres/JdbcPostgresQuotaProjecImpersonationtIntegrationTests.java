@@ -38,14 +38,14 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class JdbcPostgresQuotaProjecImpersonationtIntegrationTests {
 
-  private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
+  private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
   private static final String QUOTA_PROJECT = System.getenv("QUOTA_PROJECT");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
-          "IMPERSONATED_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME", "QUOTA_PROJECT");
+          "IMPERSONATED_USER", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME", "QUOTA_PROJECT");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
