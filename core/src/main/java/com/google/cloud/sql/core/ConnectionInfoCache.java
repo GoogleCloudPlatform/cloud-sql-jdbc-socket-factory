@@ -33,4 +33,8 @@ interface ConnectionInfoCache {
   void refreshIfExpired();
 
   void close();
+
+  boolean isClosed();
+
+  ConnectionConfig getConfig();
 }

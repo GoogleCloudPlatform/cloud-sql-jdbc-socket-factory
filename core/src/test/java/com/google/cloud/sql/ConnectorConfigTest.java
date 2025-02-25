@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThrows;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Objects;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -395,6 +396,28 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  public void testNotEqual_withFailoverPeriod() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withFailoverPeriod(Duration.ofSeconds(5)).build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withFailoverPeriod(Duration.ofSeconds(6)).build();
+
+    assertThat(k1).isNotEqualTo(k2);
+    assertThat(k1.hashCode()).isNotEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testEqual_withFailoverPeriod() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder().withFailoverPeriod(Duration.ofSeconds(5)).build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder().withFailoverPeriod(Duration.ofSeconds(5)).build();
+
+    assertThat(k1).isEqualTo(k2);
+    assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
   public void testHashCode() {
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
@@ -427,7 +450,7 @@ public class ConnectorConfigTest {
                 wantAdminQuotaProject,
                 null, // universeDomain
                 wantRefreshStrategy, // refreshStrategy
-                null // instanceNameResolver
-                ));
+                null, // instanceNameResolver
+                ConnectorConfig.DEFAULT_FAILOVER_PERIOD));
   }
 }

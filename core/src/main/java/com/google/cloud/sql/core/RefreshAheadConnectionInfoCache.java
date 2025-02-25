@@ -88,11 +88,21 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
     refreshStrategy.close();
   }
 
+  @Override
+  public boolean isClosed() {
+    return refreshStrategy.isClosed();
+  }
+
   public RefreshAheadStrategy getRefreshStrategy() {
     return refreshStrategy;
   }
 
   public CloudSqlInstanceName getInstanceName() {
     return instanceName;
+  }
+
+  @Override
+  public ConnectionConfig getConfig() {
+    return config;
   }
 }
