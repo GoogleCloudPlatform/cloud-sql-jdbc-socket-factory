@@ -316,6 +316,13 @@ class RefreshAheadStrategy implements RefreshStrategy {
     }
   }
 
+  @Override
+  public boolean isClosed() {
+    synchronized (connectionInfoGuard) {
+      return closed;
+    }
+  }
+
   ListenableFuture<ConnectionInfo> getNext() {
     synchronized (connectionInfoGuard) {
       return this.next;

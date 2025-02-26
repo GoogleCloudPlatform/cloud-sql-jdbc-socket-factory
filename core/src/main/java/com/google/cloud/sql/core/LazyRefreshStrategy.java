@@ -124,8 +124,18 @@ public class LazyRefreshStrategy implements RefreshStrategy {
   @Override
   public void close() {
     synchronized (connectionInfoGuard) {
+      if (closed) {
+        return;
+      }
       closed = true;
       logger.debug(String.format("[%s] Lazy Refresh Operation: Connector closed.", name));
+    }
+  }
+
+  @Override
+  public boolean isClosed() {
+    synchronized (connectionInfoGuard) {
+      return closed;
     }
   }
 }
