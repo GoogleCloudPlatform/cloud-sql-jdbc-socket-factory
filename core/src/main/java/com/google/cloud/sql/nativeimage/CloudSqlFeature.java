@@ -45,6 +45,8 @@ final class CloudSqlFeature implements Feature {
   private static final String POSTGRES_SOCKET_CLASS = "com.google.cloud.sql.postgres.SocketFactory";
 
   private static final String MYSQL_SOCKET_CLASS = "com.google.cloud.sql.mysql.SocketFactory";
+  private static final String JNDI_DNS_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
+  private static final String JNDI_DNS_OBJECT_FACTORY = "com.sun.jndi.url.dns.dnsURLContextFactory";
 
   @Override
   public void beforeAnalysis(BeforeAnalysisAccess access) {
@@ -54,6 +56,10 @@ final class CloudSqlFeature implements Feature {
 
     // The Core Cloud SQL Socket
     NativeImageUtils.registerClassForReflection(access, CLOUD_SQL_SOCKET_CLASS);
+
+    // The JNDI DNS factory for looking up DNS names.
+    NativeImageUtils.registerClassForReflection(access, JNDI_DNS_FACTORY);
+    NativeImageUtils.registerClassForReflection(access, JNDI_DNS_OBJECT_FACTORY);
 
     // Register Hikari configs if used with Cloud SQL.
     if (access.findClassByName("com.zaxxer.hikari.HikariConfig") != null) {
