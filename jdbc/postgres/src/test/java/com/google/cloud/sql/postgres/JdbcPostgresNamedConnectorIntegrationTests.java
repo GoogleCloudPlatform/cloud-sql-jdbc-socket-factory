@@ -46,9 +46,9 @@ public class JdbcPostgresNamedConnectorIntegrationTests {
 
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
-  private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  private static final String DB_USER = System.getenv("POSTGRES_USER_IAM_JAVA");
   private static final ImmutableList<String> requiredEnvVars =
-      ImmutableList.of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
+      ImmutableList.of("POSTGRES_USER_IAM_JAVA", "POSTGRES_DB", "POSTGRES_IAM_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
   private HikariDataSource connectionPool;
