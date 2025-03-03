@@ -69,6 +69,9 @@ public class TestCertificateGenerator {
 
   private static final X500Name SERVER_CERT_SUBJECT =
       new X500Name("C=US,O=Google\\, Inc,CN=myProject:myInstance");
+
+  private static final X500Name SERVER_CERT_2_SUBJECT =
+      new X500Name("C=US,O=Google\\, Inc,CN=myProject:myInstance2");
   private static final X500Name DOMAIN_SERVER_CERT_SUBJECT =
       new X500Name("C=US,O=Google\\, Inc,CN=example.com:myProject:myInstance");
 
@@ -83,8 +86,11 @@ public class TestCertificateGenerator {
   private final X509Certificate serverCaCert;
   private final X509Certificate serverIntemediateCaCert;
   private final X509Certificate serverCertificate;
+  private final X509Certificate serverCertificate2;
   private final X509Certificate casServerCertificate;
+  private final X509Certificate casServerCertificate2;
   private final X509Certificate[] casServerCertificateChain;
+  private final X509Certificate[] casServerCertificateChain2;
   private final X509Certificate domainServerCertificate;
 
   private final String PEM_HEADER = "-----BEGIN CERTIFICATE-----";
@@ -126,6 +132,15 @@ public class TestCertificateGenerator {
               ONE_YEAR_FROM_NOW,
               null);
 
+      this.serverCertificate2 =
+          buildSignedCertificate(
+              SERVER_CERT_2_SUBJECT,
+              serverKeyPair.getPublic(),
+              SERVER_CA_SUBJECT,
+              serverCaKeyPair.getPrivate(),
+              ONE_YEAR_FROM_NOW,
+              null);
+
       this.serverIntemediateCaCert =
           buildSignedCertificate(
               SERVER_INTERMEDIATE_CA_SUBJECT,
@@ -144,9 +159,23 @@ public class TestCertificateGenerator {
               ONE_YEAR_FROM_NOW,
               Collections.singletonList(new GeneralName(GeneralName.dNSName, "db.example.com")));
 
+      this.casServerCertificate2 =
+          buildSignedCertificate(
+              SERVER_CERT_2_SUBJECT,
+              serverKeyPair.getPublic(),
+              SERVER_INTERMEDIATE_CA_SUBJECT,
+              serverIntermediateCaKeyPair.getPrivate(),
+              ONE_YEAR_FROM_NOW,
+              Collections.singletonList(new GeneralName(GeneralName.dNSName, "db.example.com")));
+
       this.casServerCertificateChain =
           new X509Certificate[] {
             this.casServerCertificate, this.serverIntemediateCaCert, this.serverCaCert
+          };
+
+      this.casServerCertificateChain2 =
+          new X509Certificate[] {
+            this.casServerCertificate2, this.serverIntemediateCaCert, this.serverCaCert
           };
 
       this.domainServerCertificate =
@@ -168,6 +197,10 @@ public class TestCertificateGenerator {
 
   public X509Certificate[] getCasServerCertificateChain() {
     return casServerCertificateChain;
+  }
+
+  public X509Certificate[] getCasServerCertificateChain2() {
+    return casServerCertificateChain2;
   }
 
   public KeyPair getServerKeyPair() {
@@ -276,6 +309,10 @@ public class TestCertificateGenerator {
   /** Returns the server-side proxy certificate. */
   public X509Certificate getServerCertificate() {
     return serverCertificate;
+  }
+
+  public X509Certificate getServerCertificate2() {
+    return serverCertificate2;
   }
 
   /** Creates a certificate with the given subject and signed by the root CA cert. */

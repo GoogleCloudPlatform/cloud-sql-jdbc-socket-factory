@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.RefreshStrategy;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.KeyPair;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -44,12 +46,13 @@ class Connector {
   private final ListenableFuture<KeyPair> localKeyPair;
   private final long minRefreshDelayMs;
 
-  private final ConcurrentHashMap<ConnectionConfig, ConnectionInfoCache> instances =
+  private final ConcurrentHashMap<ConnectionConfig, MonitoredCache> instances =
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
 
   private final InstanceConnectionNameResolver instanceNameResolver;
+  private final Timer instanceNameResolverTimer;
 
   Connector(
       ConnectorConfig config,
@@ -71,6 +74,7 @@ class Connector {
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
     this.instanceNameResolver = instanceNameResolver;
+    this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
   }
 
   public ConnectorConfig getConfig() {
@@ -114,7 +118,7 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
-    ConnectionInfoCache instance = getConnection(config);
+    MonitoredCache instance = getConnection(config);
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
       String instanceIp = metadata.getPreferredIpAddress();
@@ -134,6 +138,7 @@ class Connector {
       }
 
       logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
+      instance.addSocket(socket);
 
       return socket;
     } catch (IOException e) {
@@ -145,11 +150,21 @@ class Connector {
     }
   }
 
-  ConnectionInfoCache getConnection(final ConnectionConfig config) {
+  MonitoredCache getConnection(final ConnectionConfig config) {
     final ConnectionConfig updatedConfig = resolveConnectionName(config);
 
-    ConnectionInfoCache instance =
-        instances.computeIfAbsent(updatedConfig, k -> createConnectionInfo(updatedConfig));
+    // If the cache entry doesn't exist, or if the cache entry is closed,
+    // replace it.
+    MonitoredCache instance =
+        instances.compute(
+            updatedConfig,
+            (k, v) ->
+                v != null && !v.isClosed()
+                    ? v
+                    : new MonitoredCache(
+                        createConnectionInfo(updatedConfig),
+                        instanceNameResolverTimer,
+                        this::resolveDomain));
 
     // If the client certificate has expired (as when the computer goes to
     // sleep, and the refresh cycle cannot run), force a refresh immediately.
@@ -170,32 +185,36 @@ class Connector {
    */
   private ConnectionConfig resolveConnectionName(ConnectionConfig config) {
     // If domainName is not set, return the original configuration unmodified.
-    if (config.getDomainName() == null || config.getDomainName().isEmpty()) {
+    if (Strings.isNullOrEmpty(config.getDomainName())) {
       return config;
     }
 
     // If both domainName and cloudSqlInstance are set, ignore the domain name. Return a new
     // configuration with domainName set to null.
-    if (config.getCloudSqlInstance() != null && !config.getCloudSqlInstance().isEmpty()) {
+    if (!Strings.isNullOrEmpty(config.getCloudSqlInstance())) {
       return config.withDomainName(null);
     }
 
     // If only domainName is set, resolve the domain name.
     try {
-      final String unresolvedName = config.getDomainName();
-      final Function<String, String> resolver =
-          config.getConnectorConfig().getInstanceNameResolver();
-      CloudSqlInstanceName name;
-      if (resolver != null) {
-        name = instanceNameResolver.resolve(resolver.apply(unresolvedName));
-      } else {
-        name = instanceNameResolver.resolve(unresolvedName);
-      }
+      final CloudSqlInstanceName name = resolveDomain(config);
       return config.withCloudSqlInstance(name.getConnectionName());
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(
           String.format("Cloud SQL connection name is invalid: \"%s\"", config.getDomainName()), e);
     }
+  }
+
+  private CloudSqlInstanceName resolveDomain(ConnectionConfig config) {
+    final String unresolvedName = config.getDomainName();
+    final CloudSqlInstanceName name;
+    final Function<String, String> resolver = config.getConnectorConfig().getInstanceNameResolver();
+    if (resolver != null) {
+      name = instanceNameResolver.resolve(resolver.apply(unresolvedName));
+    } else {
+      name = instanceNameResolver.resolve(unresolvedName);
+    }
+    return name;
   }
 
   private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
@@ -220,6 +239,7 @@ class Connector {
 
   public void close() {
     logger.debug("Close all connections and remove them from cache.");
+    this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
   }

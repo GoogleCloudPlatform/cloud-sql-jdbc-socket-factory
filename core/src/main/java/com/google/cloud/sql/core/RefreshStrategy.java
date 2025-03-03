@@ -32,4 +32,7 @@ public interface RefreshStrategy {
    * refresh operations.
    */
   void close();
+
+  /** Returns true when the RefreshStrategy instance is closed. */
+  boolean isClosed();
 }
