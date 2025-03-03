@@ -78,11 +78,11 @@ function write_e2e_env(){
       MYSQL_PASS
       MYSQL_DB
       MYSQL_IAM_CONNECTION_NAME
-      MYSQL_USER_IAM
+      MYSQL_USER_IAM_JAVA
       POSTGRES_CONNECTION_NAME
       POSTGRES_IAM_CONNECTION_NAME
       POSTGRES_USER
-      POSTGRES_USER_IAM
+      POSTGRES_USER_IAM_JAVA
       POSTGRES_PASS
       POSTGRES_DB
       POSTGRES_CAS_CONNECTION_NAME
@@ -99,7 +99,7 @@ function write_e2e_env(){
       QUOTA_PROJECT
       )
 
-  if [[ -z "$TEST_PROJECT" ]] ; then
+  if [[ -z "${TEST_PROJECT:-}" ]] ; then
     echo "Set TEST_PROJECT environment variable to the project containing"
     echo "the e2e test suite secrets."
     exit 1
@@ -109,7 +109,7 @@ function write_e2e_env(){
   {
   for name in "${secret_vars[@]}" ; do
     val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$name")
-    echo "export $name=$val"
+    echo "export $name=\'$val\'"
   done
   } > "$1"
 
