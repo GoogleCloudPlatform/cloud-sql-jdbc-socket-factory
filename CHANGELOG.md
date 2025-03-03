@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.23.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.23.0...v1.23.1) (2025-02-14)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2105](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2105)) ([2dac773](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2dac7732990fb4b9ec8da04d272ad32a46aa70ae))
+* Update Non-major dependencies ([#2113](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2113)) ([bb44a33](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/bb44a337bbb4a2796d42c4378d188d5784596f5b))
+
 ## [1.23.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.22.0...v1.23.0) (2025-01-24)
 
 
