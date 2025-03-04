@@ -49,7 +49,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
   // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_IAM_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
-  private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  private static final String DB_USER = System.getenv("POSTGRES_USER_IAM_JAVA");
   // [END cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
