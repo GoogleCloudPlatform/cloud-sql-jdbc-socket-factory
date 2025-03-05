@@ -18,7 +18,9 @@ package com.google.cloud.sql.core;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.stream.Collectors;
+import javax.naming.Context;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -51,13 +53,19 @@ class JndiDnsResolver implements DnsResolver {
    * @throws javax.naming.NameNotFoundException when the domain name did not resolve.
    */
   @Override
+  @SuppressWarnings("JdkObsolete")
   public Collection<String> resolveTxt(String domainName)
       throws javax.naming.NameNotFoundException {
     try {
       // Notice: This is old Java 1.2 style code. It uses the ancient JNDI DNS Provider api.
       // See https://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-dns.html
+
+      // Explicitly reference the JNDI DNS classes. This is required for GraalVM.
+      Hashtable contextProps = new Hashtable<>();
+      contextProps.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
+      contextProps.put(Context.OBJECT_FACTORIES, "com.sun.jndi.url.dns.dnsURLContextFactory");
       Attribute attr =
-          new InitialDirContext()
+          new InitialDirContext(contextProps)
               .getAttributes(jndiPrefix + domainName, new String[] {"TXT"})
               .get("TXT");
       // attr.getAll() returns a Vector containing strings, one for each record returned by dns.
