@@ -46,8 +46,16 @@ public class TestKeys {
     return certs.getServerCertificate();
   }
 
+  public static X509Certificate getServerCert2() {
+    return certs.getServerCertificate2();
+  }
+
   public static String getServerCertPem() {
     return certs.getPemForCert(certs.getServerCertificate());
+  }
+
+  public static String getServerCert2Pem() {
+    return certs.getPemForCert(certs.getServerCertificate2());
   }
 
   public static KeyPair getServerKeyPair() {
@@ -59,12 +67,15 @@ public class TestKeys {
   }
 
   public static String createEphemeralCert(Duration certDuration) {
+    return createEphemeralCert("temporary-cert", certDuration);
+  }
+
+  public static String createEphemeralCert(String cn, Duration certDuration) {
     ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC")).minus(certDuration);
     ZonedDateTime notAfter = notBefore.plus(Duration.ofHours(1));
 
     return certs.getPemForCert(
-        certs.getEphemeralCertificate(
-            "temporary-cert", certs.getClientKey().getPublic(), notAfter.toInstant()));
+        certs.getEphemeralCertificate(cn, certs.getClientKey().getPublic(), notAfter.toInstant()));
   }
 
   public static KeyPair getDomainServerKeyPair() {
@@ -83,9 +94,24 @@ public class TestKeys {
     return certs.getCasServerCertificateChain();
   }
 
+  public static X509Certificate[] getCasServerCertChain2() {
+    return certs.getCasServerCertificateChain2();
+  }
+
   public static String getCasServerCertChainPem() {
     StringBuilder s = new StringBuilder();
     for (X509Certificate c : certs.getCasServerCertificateChain()) {
+      if (s.length() > 0) {
+        s.append("\n");
+      }
+      s.append(certs.getPemForCert(c));
+    }
+    return s.toString();
+  }
+
+  public static String getCasServerCertChain2Pem() {
+    StringBuilder s = new StringBuilder();
+    for (X509Certificate c : certs.getCasServerCertificateChain2()) {
       if (s.length() > 0) {
         s.append("\n");
       }

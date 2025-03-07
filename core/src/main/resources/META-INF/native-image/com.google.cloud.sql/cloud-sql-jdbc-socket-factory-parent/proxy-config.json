@@ -18,5 +18,17 @@
       "jnr.enxio.channels.Native$LibC",
       "jnr.ffi.provider.LoadedLibrary"
     ]
+  },
+  {
+    "name": "com.sun.jndi.dns.DnsContextFactory",
+    "interfaces": [
+      "javax.naming.spi.InitialContextFactory"
+    ]
+  },
+  {
+    "name": "com.sun.jndi.url.dns.dnsURLContextFactory",
+    "interfaces": [
+      "javax.naming.spi.ObjectFactory"
+    ]
   }
 ]
