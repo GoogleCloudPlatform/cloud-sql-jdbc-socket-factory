@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.services.sqladmin.model.DnsNameMapping;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
@@ -187,6 +188,31 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     int port = sslServer.start(PRIVATE_IP);
 
     Connector connector = newConnector(config.getConnectorConfig(), port, null, null, false);
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void create_successfulPublicConnectionWithDomainNameLegacyDns()
+      throws IOException, InterruptedException {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("db.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector connector =
+        newConnectorLegacyDnsField(
+            config.getConnectorConfig(),
+            port,
+            "db.example.com",
+            "myProject:myRegion:myInstance",
+            false);
 
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -516,7 +542,14 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(
-            fakeSuccessHttpTransport(TestKeys.getDomainServerCertPem(), Duration.ofSeconds(60)));
+            fakeSuccessHttpTransport(
+                TestKeys.getDomainServerCertPem(),
+                Duration.ofSeconds(60),
+                null,
+                false,
+                false,
+                null,
+                null));
 
     int port = sslServer.start(PUBLIC_IP);
     ConnectionConfig config =
@@ -819,12 +852,48 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
   }
 
+  private Connector newConnectorLegacyDnsField(
+      ConnectorConfig config, int port, String domainName, String instanceName, boolean cas) {
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpTransport(
+                TestKeys.getServerCertPem(),
+                Duration.ofSeconds(0),
+                null,
+                cas,
+                false,
+                domainName,
+                null));
+    Connector connector =
+        new Connector(
+            config,
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver(domainName, instanceName)));
+    return connector;
+  }
+
   private Connector newConnector(
       ConnectorConfig config, int port, String domainName, String instanceName, boolean cas) {
     ConnectionInfoRepositoryFactory factory =
         new StubConnectionInfoRepositoryFactory(
             fakeSuccessHttpTransport(
-                TestKeys.getServerCertPem(), Duration.ofSeconds(0), null, cas, false));
+                TestKeys.getServerCertPem(),
+                Duration.ofSeconds(0),
+                null,
+                cas,
+                false,
+                null,
+                Collections.singletonList(
+                    new DnsNameMapping()
+                        .setName(domainName)
+                        .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                        .setDnsScope("INSTANCE"))));
     Connector connector =
         new Connector(
             config,

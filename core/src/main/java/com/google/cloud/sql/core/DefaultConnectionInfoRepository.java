@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.model.ConnectSettings;
+import com.google.api.services.sqladmin.model.DnsNameMapping;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
@@ -287,10 +288,31 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       boolean pscEnabled =
           instanceMetadata.getPscEnabled() != null
               && instanceMetadata.getPscEnabled().booleanValue();
-      if (pscEnabled
-          && instanceMetadata.getDnsName() != null
-          && !instanceMetadata.getDnsName().isEmpty()) {
-        ipAddrs.put(IpType.PSC, instanceMetadata.getDnsName());
+
+      if (pscEnabled) {
+        // Search the dns_names field for the PSC DNS Name.
+        String pscDnsName = null;
+        if (instanceMetadata.getDnsNames() != null) {
+          for (DnsNameMapping dnm : instanceMetadata.getDnsNames()) {
+            if ("PRIVATE_SERVICE_CONNECT".equals(dnm.getConnectionType())
+                && "INSTANCE".equals(dnm.getDnsScope())) {
+              pscDnsName = dnm.getName();
+              break;
+            }
+          }
+        }
+
+        // If the psc dns name was not found, use the legacy dns_name field
+        if (pscDnsName == null
+            && instanceMetadata.getDnsName() != null
+            && !instanceMetadata.getDnsName().isEmpty()) {
+          pscDnsName = instanceMetadata.getDnsName();
+        }
+
+        // If the psc dns name was found, add it to the ipaddrs map.
+        if (pscDnsName != null) {
+          ipAddrs.put(IpType.PSC, pscDnsName);
+        }
       }
 
       // Verify the instance has at least one IP type assigned that can be used to connect.
@@ -301,6 +323,18 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                     + "IP address.",
                 instanceName.getConnectionName()));
       }
+
+      // Find a DNS name to use to validate the certificate from the dns_names field. Any
+      // name in the list may be used to validate the server TLS certificate.
+      // Fall back to legacy dns_name field if necessary.
+      String serverName = null;
+      if (instanceMetadata.getDnsNames() != null && !instanceMetadata.getDnsNames().isEmpty()) {
+        serverName = instanceMetadata.getDnsNames().get(0).getName();
+      }
+      if (serverName == null) {
+        serverName = instanceMetadata.getDnsName();
+      }
+
       // Update the Server CA certificate used to create the SSL connection with the instance.
       try {
         List<Certificate> instanceCaCertificates =
@@ -313,7 +347,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             ipAddrs,
             instanceCaCertificates,
             isCasManagedCertificate(instanceMetadata.getServerCaMode()),
-            instanceMetadata.getDnsName(),
+            serverName,
             pscEnabled);
       } catch (CertificateException ex) {
         throw new RuntimeException(

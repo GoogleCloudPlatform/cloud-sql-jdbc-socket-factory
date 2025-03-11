@@ -51,7 +51,7 @@ public class DefaultConnectionInfoRepositoryTest {
       throws ExecutionException, InterruptedException, GeneralSecurityException,
           OperatorCreationException {
     MockAdminApi mockAdminApi =
-        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL, false);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
     ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
@@ -85,7 +85,45 @@ public class DefaultConnectionInfoRepositoryTest {
         null,
         DATABASE_VERSION,
         SAMPLE_PCS_DNS_NAME,
-        DEFAULT_BASE_URL);
+        DEFAULT_BASE_URL,
+        false);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    assertThat(ipAddrs.size()).isEqualTo(1);
+  }
+
+  @Test
+  public void testFetchInstanceData_legacyPscDns_returnsPscForNonIpDatabase()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    mockAdminApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME,
+        null,
+        null,
+        DATABASE_VERSION,
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL,
+        true);
     mockAdminApi.addGenerateEphemeralCertResponse(
         INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
@@ -122,7 +160,8 @@ public class DefaultConnectionInfoRepositoryTest {
   public void testFetchInstanceData_throwsException_whenIamAuthnIsNotSupported()
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi =
-        buildMockAdminApi(INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL);
+        buildMockAdminApi(
+            INSTANCE_CONNECTION_NAME, "SQLSERVER_2019_STANDARD", DEFAULT_BASE_URL, false);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
     ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
@@ -149,7 +188,7 @@ public class DefaultConnectionInfoRepositoryTest {
   public void testFetchInstanceData_throwsException_whenRequestsTimeout()
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi =
-        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL);
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL, false);
     ConnectorConfig config = new ConnectorConfig.Builder().build();
     ConnectionInfoRepository repo =
         new StubConnectionInfoRepositoryFactory(new BadConnectionFactory())
@@ -182,7 +221,7 @@ public class DefaultConnectionInfoRepositoryTest {
     String adminServicePath = "sqladmin/";
     String baseUrl = adminRootUrl + adminServicePath;
     MockAdminApi mockAdminApi =
-        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, baseUrl);
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, baseUrl, false);
     ConnectorConfig config =
         new ConnectorConfig.Builder()
             .withAdminRootUrl(adminRootUrl)
@@ -210,7 +249,7 @@ public class DefaultConnectionInfoRepositoryTest {
 
   @SuppressWarnings("SameParameterValue")
   private MockAdminApi buildMockAdminApi(
-      String instanceConnectionName, String databaseVersion, String baseUrl)
+      String instanceConnectionName, String databaseVersion, String baseUrl, boolean legacyDnsName)
       throws GeneralSecurityException, OperatorCreationException {
     MockAdminApi mockAdminApi = new MockAdminApi();
     mockAdminApi.addConnectSettingsResponse(
@@ -219,7 +258,8 @@ public class DefaultConnectionInfoRepositoryTest {
         SAMPLE_PRIVATE_IP,
         databaseVersion,
         SAMPLE_PCS_DNS_NAME,
-        baseUrl);
+        baseUrl,
+        legacyDnsName);
     mockAdminApi.addGenerateEphemeralCertResponse(
         instanceConnectionName, Duration.ofHours(1), baseUrl);
     return mockAdminApi;

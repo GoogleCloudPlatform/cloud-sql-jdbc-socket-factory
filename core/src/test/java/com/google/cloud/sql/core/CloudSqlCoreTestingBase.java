@@ -30,6 +30,7 @@ import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
 import com.google.api.services.sqladmin.model.ConnectSettings;
+import com.google.api.services.sqladmin.model.DnsNameMapping;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
@@ -42,6 +43,7 @@ import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -169,6 +171,18 @@ public class CloudSqlCoreTestingBase {
 
   MockHttpTransport fakeSuccessHttpTransport(
       String serverCert, Duration certDuration, String baseUrl, boolean cas, boolean psc) {
+    return this.fakeSuccessHttpTransport(
+        serverCert, certDuration, baseUrl, cas, psc, cas ? "db.example.com" : null, null);
+  }
+
+  MockHttpTransport fakeSuccessHttpTransport(
+      String serverCert,
+      Duration certDuration,
+      String baseUrl,
+      boolean cas,
+      boolean psc,
+      String legacyDnsName,
+      List<DnsNameMapping> dnsNames) {
     final JsonFactory jsonFactory = new GsonFactory();
     return new MockHttpTransport() {
       @Override
@@ -205,7 +219,8 @@ public class CloudSqlCoreTestingBase {
                       .setDatabaseVersion("POSTGRES14")
                       .setRegion("myRegion")
                       .setPscEnabled(psc ? Boolean.TRUE : null)
-                      .setDnsName(cas || psc ? "db.example.com" : null)
+                      .setDnsName(legacyDnsName)
+                      .setDnsNames(dnsNames)
                       .setServerCaMode(
                           cas ? "GOOGLE_MANAGED_CAS_CA" : "GOOGLE_MANAGED_INTERNAL_CA");
               settings.setFactory(jsonFactory);
