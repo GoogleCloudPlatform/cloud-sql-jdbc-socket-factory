@@ -130,7 +130,7 @@ public class TestCertificateGenerator {
               SERVER_CA_SUBJECT,
               serverCaKeyPair.getPrivate(),
               ONE_YEAR_FROM_NOW,
-              null);
+              Collections.singletonList(new GeneralName(GeneralName.dNSName, "db.example.com")));
 
       this.serverCertificate2 =
           buildSignedCertificate(
@@ -139,7 +139,7 @@ public class TestCertificateGenerator {
               SERVER_CA_SUBJECT,
               serverCaKeyPair.getPrivate(),
               ONE_YEAR_FROM_NOW,
-              null);
+              Collections.singletonList(new GeneralName(GeneralName.dNSName, "db.example.com")));
 
       this.serverIntemediateCaCert =
           buildSignedCertificate(

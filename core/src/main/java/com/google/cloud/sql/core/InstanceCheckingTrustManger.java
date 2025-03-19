@@ -96,10 +96,12 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
       throw new CertificateException("Subject is missing");
     }
 
-    if (instanceMetadata.isCasManagedCertificate() || instanceMetadata.isPscEnabled()) {
-      checkSan(chain);
-    } else {
+    // If the instance metadata does not contain a domain name, use legacy CN validation
+    if (Strings.isNullOrEmpty(instanceMetadata.getDnsName())) {
       checkCn(chain);
+    } else {
+      // If there is a DNS name, check the Subject Alternative Names.
+      checkSan(chain);
     }
   }
 

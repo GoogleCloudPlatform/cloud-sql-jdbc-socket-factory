@@ -26,6 +26,7 @@ import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
 import com.google.api.services.sqladmin.model.ConnectSettings;
+import com.google.api.services.sqladmin.model.DnsNameMapping;
 import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.api.services.sqladmin.model.SslCert;
@@ -38,6 +39,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -83,7 +85,8 @@ public class MockAdminApi {
       String privateIp,
       String databaseVersion,
       String pscHostname,
-      String baseUrl) {
+      String baseUrl,
+      boolean legacyPscDnsName) {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     ArrayList<IpMapping> ipMappings = new ArrayList<>();
@@ -103,10 +106,19 @@ public class MockAdminApi {
             .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
             .setDatabaseVersion(databaseVersion)
             .setPscEnabled(pscHostname != null)
-            .setDnsName(pscHostname)
             .setPscEnabled(pscHostname != null)
             .setRegion(cloudSqlInstanceName.getRegionId());
     settings.setFactory(GsonFactory.getDefaultInstance());
+    if (legacyPscDnsName) {
+      settings.setDnsName(pscHostname);
+    } else {
+      settings.setDnsNames(
+          Collections.singletonList(
+              new DnsNameMapping()
+                  .setDnsScope("INSTANCE")
+                  .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                  .setName(pscHostname)));
+    }
 
     connectSettingsRequests.add(
         new ConnectSettingsRequest(cloudSqlInstanceName, settings, baseUrl));
