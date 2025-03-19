@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.24.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.23.1...v1.24.0) (2025-03-19)
+
+
+### Features
+
+* Automatically reset DNS-configured connections on DNS change ([#2056](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2056)) ([88631fc](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/88631fc3f17eb854c5d4e1751c1f918a69f9a77a))
+* Use standard TLS hostname validation for instances with DNS names. ([#2125](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2125)) ([a892017](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a892017507a6dbf82e34b865fe4309cde8e592c5))
+
+
+### Bug Fixes
+
+* Add GraalVM configuration for the JDK's DNS Resolver. ([#2123](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2123)) ([d276672](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d276672de4a6291ccc26e5cbc6c3805a3a49b8d2))
+* use daemon threads internally ([#2118](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2118)) ([c82d4ca](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c82d4ca2b01b3f8ab0c93a385465d2df38c16c40))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2115](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2115)) ([3f91c24](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3f91c246d75d678bd979d7b76d52b9e4d43f7b59))
+
 ## [1.23.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.23.0...v1.23.1) (2025-02-14)
 
 
