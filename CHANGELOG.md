@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.0...v1.24.1) (2025-03-27)
+
+
+### Bug Fixes
+
+* only keep track of sockets opened using domain name ([#2130](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2130)) ([071085c](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/071085cac1e2289dfaf4f685c6e3c3939e4f456a)), closes [#2129](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2129)
+
 ## [1.24.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.23.1...v1.24.0) (2025-03-19)
 
 
