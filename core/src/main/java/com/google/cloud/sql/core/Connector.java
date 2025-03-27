@@ -138,7 +138,11 @@ class Connector {
       }
 
       logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
-      instance.addSocket(socket);
+      // If this connection was opened using a domain name, then store it
+      // for later in case we need to forcibly close it on failover.
+      if (!Strings.isNullOrEmpty(config.getDomainName())) {
+        instance.addSocket(socket);
+      }
 
       return socket;
     } catch (IOException e) {
