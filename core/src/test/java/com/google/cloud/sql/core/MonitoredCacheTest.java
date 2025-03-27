@@ -71,7 +71,13 @@ public class MonitoredCacheTest {
     cache.addSocket(socket);
     Assert.assertEquals("1 socket in cache", 1, cache.getOpenSocketCount());
     socket.close();
-    Thread.sleep(20);
+
+    // Wait for the MonitoredCache task to clean up the socket, up to 500ms.
+    for (int i = 0; cache.getOpenSocketCount() > 0 && i < 10; i++) {
+      Thread.sleep(50);
+    }
+
+    // Ensure that the socket was removed from the cache.
     Assert.assertEquals("0 socket in cache", 0, cache.getOpenSocketCount());
   }
 
