@@ -16,15 +16,16 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.WeakHashMap;
 import java.util.function.Function;
 import javax.net.ssl.SSLSocket;
 import org.slf4j.Logger;
@@ -38,7 +39,11 @@ import org.slf4j.LoggerFactory;
 class MonitoredCache implements ConnectionInfoCache {
   private static final Logger logger = LoggerFactory.getLogger(Connector.class);
   private final ConnectionInfoCache cache;
-  private final List<Socket> sockets = Collections.synchronizedList(new ArrayList<>());
+  // Use weak references to hold the open sockets. If a socket is no longer in
+  // use by the application, the garabage collector will automatically remove
+  // it from this set.
+  private final Set<Socket> sockets =
+      Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
   private final Function<ConnectionConfig, CloudSqlInstanceName> resolve;
   private final TimerTask task;
 
@@ -49,6 +54,8 @@ class MonitoredCache implements ConnectionInfoCache {
     this.cache = cache;
     this.resolve = resolve;
 
+    // If this was configured with a domain name, start the domain name check
+    // and socket cleanup periodic task.
     if (!Strings.isNullOrEmpty(cache.getConfig().getDomainName())) {
       long failoverPeriod = cache.getConfig().getConnectorConfig().getFailoverPeriod().toMillis();
       this.task =
@@ -62,6 +69,11 @@ class MonitoredCache implements ConnectionInfoCache {
     } else {
       this.task = null;
     }
+  }
+
+  @VisibleForTesting
+  int getOpenSocketCount() {
+    return sockets.size();
   }
 
   private void checkDomainName() {
@@ -149,6 +161,10 @@ class MonitoredCache implements ConnectionInfoCache {
   }
 
   synchronized void addSocket(SSLSocket socket) {
-    sockets.add(socket);
+    // Only add the socket if this was configured using a domain name,
+    // and therefore the background socket cleanup task is running.
+    if (!Strings.isNullOrEmpty(cache.getConfig().getDomainName())) {
+      sockets.add(socket);
+    }
   }
 }
