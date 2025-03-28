@@ -13,7 +13,7 @@
 # limitations under the License.
 steps:
   - id: run integration tests
-    name: maven:3.9.6-openjdk-17
+    name: maven:3-openjdk-17
     entrypoint: bash
     env: 
       - "IP_TYPE=private"
