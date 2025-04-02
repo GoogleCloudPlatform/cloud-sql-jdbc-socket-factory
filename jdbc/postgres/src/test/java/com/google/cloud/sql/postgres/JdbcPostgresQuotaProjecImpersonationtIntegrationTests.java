@@ -42,6 +42,10 @@ public class JdbcPostgresQuotaProjecImpersonationtIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
   private static final String QUOTA_PROJECT = System.getenv("QUOTA_PROJECT");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null
+          ? "PUBLIC"
+          : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
@@ -74,6 +78,7 @@ public class JdbcPostgresQuotaProjecImpersonationtIntegrationTests {
     connProps.setProperty("sslmode", "disable");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("enableIamAuth", "true");
     connProps.setProperty("cloudSqlAdminQuotaProject", QUOTA_PROJECT);
 

@@ -47,6 +47,10 @@ public class JdbcPostgresNamedConnectorIntegrationTests {
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null
+          ? "PUBLIC"
+          : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
@@ -90,6 +94,7 @@ public class JdbcPostgresNamedConnectorIntegrationTests {
 
     // Configure Cloud SQL connector properties
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("enableIamAuth", "true");
 
     // Configure the named connector registered as "my-connector"
