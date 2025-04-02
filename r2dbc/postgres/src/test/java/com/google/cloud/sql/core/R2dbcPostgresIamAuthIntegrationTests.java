@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.cloud.sql.core.GcpConnectionFactoryProvider.ENABLE_IAM_AUTH;
+import static com.google.cloud.sql.core.GcpConnectionFactoryProvider.IP_TYPES;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
@@ -50,6 +51,8 @@ public class R2dbcPostgresIamAuthIntegrationTests {
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   // [END cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
@@ -79,6 +82,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
             .option(USER, DB_USER)
             .option(DATABASE, DB_NAME)
             .option(HOST, CONNECTION_NAME)
+            .option(IP_TYPES, IP_TYPE)
             .option(ENABLE_IAM_AUTH, true)
             .build();
 

@@ -41,6 +41,9 @@ public class JdbcMariaDBIamAuthIntegrationTests {
   private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
+
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_CONNECTION_NAME", "MYSQL_DB", "MYSQL_IAM_USER");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
@@ -70,6 +73,7 @@ public class JdbcMariaDBIamAuthIntegrationTests {
     connProps.setProperty("sslmode", "disable");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mariadb.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("enableIamAuth", "true");
 
     // Initialize connection pool

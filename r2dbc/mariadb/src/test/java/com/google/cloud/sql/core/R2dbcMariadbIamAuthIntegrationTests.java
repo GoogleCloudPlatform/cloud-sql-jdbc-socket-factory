@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.cloud.sql.core.GcpConnectionFactoryProvider.ENABLE_IAM_AUTH;
+import static com.google.cloud.sql.core.GcpConnectionFactoryProvider.IP_TYPES;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
@@ -51,6 +52,8 @@ public class R2dbcMariadbIamAuthIntegrationTests {
   private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
@@ -76,6 +79,7 @@ public class R2dbcMariadbIamAuthIntegrationTests {
             .option(USER, DB_USER)
             .option(DATABASE, DB_NAME)
             .option(HOST, CONNECTION_NAME)
+            .option(IP_TYPES, IP_TYPE)
             .option(ENABLE_IAM_AUTH, true)
             .build();
 

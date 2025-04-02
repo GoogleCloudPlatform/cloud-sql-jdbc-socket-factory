@@ -43,6 +43,8 @@ public class R2dbcPostgresPoolRemoteValidationIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_USER");
   private static final String DB_PASSWORD = System.getenv("POSTGRES_PASS");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
@@ -63,7 +65,8 @@ public class R2dbcPostgresPoolRemoteValidationIntegrationTests {
     // Set up URL parameters
     String r2dbcURL =
         String.format(
-            "r2dbc:gcp:postgres://%s:%s@%s/%s", DB_USER, DB_PASSWORD, CONNECTION_NAME, DB_NAME);
+            "r2dbc:gcp:postgres://%s:%s@%s/%s?ipTypes=%s",
+            DB_USER, DB_PASSWORD, CONNECTION_NAME, DB_NAME, IP_TYPE);
 
     // Initialize connection pool with REMOTE validation
     ConnectionFactory connectionFactory = ConnectionFactories.get(r2dbcURL);

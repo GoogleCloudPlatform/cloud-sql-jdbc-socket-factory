@@ -43,6 +43,8 @@ public class JdbcPostgresCustomerCasIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_USER");
   private static final String DB_PASSWORD = System.getenv("POSTGRES_CUSTOMER_CAS_PASS");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "POSTGRES_USER",
@@ -73,6 +75,7 @@ public class JdbcPostgresCustomerCasIntegrationTests {
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);
     connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
 
     // Initialize connection pool
