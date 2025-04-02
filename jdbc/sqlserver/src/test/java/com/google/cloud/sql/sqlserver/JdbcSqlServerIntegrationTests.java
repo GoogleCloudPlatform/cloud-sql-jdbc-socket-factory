@@ -41,8 +41,8 @@ public class JdbcSqlServerIntegrationTests {
   private static final String DB_NAME = System.getenv("SQLSERVER_DB");
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
-  private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
+  // private static final String IP_TYPE =
+  //     System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");
@@ -74,7 +74,7 @@ public class JdbcSqlServerIntegrationTests {
 
     config.addDataSourceProperty(
         "socketFactoryClass", "com.google.cloud.sql.sqlserver.SocketFactory");
-    config.addDataSourceProperty("ipTypes", IP_TYPE);
+    // config.addDataSourceProperty("ipTypes", IP_TYPE);
     config.addDataSourceProperty("socketFactoryConstructorArg", CONNECTION_NAME);
     config.addDataSourceProperty("encrypt", "false");
     config.setConnectionTimeout(30000); // 30s
