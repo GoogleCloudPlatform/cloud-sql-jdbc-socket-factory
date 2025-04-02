@@ -48,9 +48,7 @@ public class JdbcPostgresNamedConnectorIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);

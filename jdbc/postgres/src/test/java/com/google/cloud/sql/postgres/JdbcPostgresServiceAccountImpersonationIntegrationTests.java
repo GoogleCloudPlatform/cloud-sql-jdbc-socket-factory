@@ -46,9 +46,7 @@ public class JdbcPostgresServiceAccountImpersonationIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_DB", "POSTGRES_CONNECTION_NAME", "IMPERSONATED_USER");

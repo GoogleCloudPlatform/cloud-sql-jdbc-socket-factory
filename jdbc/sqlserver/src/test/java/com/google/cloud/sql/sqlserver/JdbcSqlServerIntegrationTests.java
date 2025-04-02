@@ -42,9 +42,7 @@ public class JdbcSqlServerIntegrationTests {
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "SQLSERVER_USER", "SQLSERVER_PASS", "SQLSERVER_DB", "SQLSERVER_CONNECTION_NAME");

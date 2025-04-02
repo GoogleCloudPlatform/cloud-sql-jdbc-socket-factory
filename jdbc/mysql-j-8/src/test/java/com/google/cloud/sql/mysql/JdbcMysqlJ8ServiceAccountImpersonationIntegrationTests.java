@@ -48,9 +48,7 @@ public class JdbcMysqlJ8ServiceAccountImpersonationIntegrationTests {
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME", "IMPERSONATED_USER");

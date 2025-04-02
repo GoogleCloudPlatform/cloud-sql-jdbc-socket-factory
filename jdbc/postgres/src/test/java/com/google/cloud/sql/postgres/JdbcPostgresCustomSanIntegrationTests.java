@@ -48,9 +48,7 @@ public class JdbcPostgresCustomSanIntegrationTests {
   private static final String DB_USER = System.getenv("POSTGRES_USER");
   private static final String DB_PASSWORD = System.getenv("POSTGRES_CUSTOMER_CAS_PASS");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
           "POSTGRES_USER",

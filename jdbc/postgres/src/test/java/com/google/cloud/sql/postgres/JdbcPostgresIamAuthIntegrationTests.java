@@ -51,9 +51,7 @@ public class JdbcPostgresIamAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   // [END cloud_sql_connector_postgres_jdbc_iam_auth]
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("POSTGRES_IAM_USER", "POSTGRES_DB", "POSTGRES_CONNECTION_NAME");

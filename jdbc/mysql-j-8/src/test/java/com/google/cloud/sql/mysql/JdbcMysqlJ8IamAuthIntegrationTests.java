@@ -42,9 +42,7 @@ public class JdbcMysqlJ8IamAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_IAM_USER");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_IAM_USER", "MYSQL_DB", "MYSQL_CONNECTION_NAME");

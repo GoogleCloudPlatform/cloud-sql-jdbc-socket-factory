@@ -43,9 +43,7 @@ public class JdbcPostgresQuotaProjecImpersonationtIntegrationTests {
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
   private static final String QUOTA_PROJECT = System.getenv("QUOTA_PROJECT");
   private static final String IP_TYPE =
-      System.getenv("IP_TYPE") == null
-          ? "PUBLIC"
-          : System.getenv("IP_TYPE");
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
