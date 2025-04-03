@@ -45,6 +45,8 @@ public class R2dbcSqlserverIntegrationTests {
   private static final String DB_NAME = System.getenv("SQLSERVER_DB");
   private static final String DB_USER = System.getenv("SQLSERVER_USER");
   private static final String DB_PASSWORD = System.getenv("SQLSERVER_PASS");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 
@@ -64,7 +66,8 @@ public class R2dbcSqlserverIntegrationTests {
     // Set up URL parameters
     String r2dbcURL =
         String.format(
-            "r2dbc:gcp:mssql://%s:%s@%s/%s", DB_USER, DB_PASSWORD, CONNECTION_NAME, DB_NAME);
+            "r2dbc:gcp:mssql://%s:%s@%s/%s?ipTypes=%s",
+            DB_USER, DB_PASSWORD, CONNECTION_NAME, DB_NAME, IP_TYPE);
 
     // Initialize connection pool
     ConnectionFactory connectionFactory = ConnectionFactories.get(r2dbcURL);

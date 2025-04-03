@@ -42,6 +42,8 @@ public class JdbcPostgresQuotaProjectIAMAuthIntegrationTests {
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_IAM_USER");
   private static final String QUOTA_PROJECT = System.getenv("QUOTA_PROJECT");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of(
@@ -74,6 +76,7 @@ public class JdbcPostgresQuotaProjectIAMAuthIntegrationTests {
     connProps.setProperty("socketFactory", "com.google.cloud.sql.postgres.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
     connProps.setProperty("enableIamAuth", "true");
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("cloudSqlAdminQuotaProject", QUOTA_PROJECT);
 
     // Initialize connection pool
