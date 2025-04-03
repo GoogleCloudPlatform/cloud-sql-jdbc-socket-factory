@@ -41,6 +41,8 @@ public class JdbcMysqlJ8IAMServiceAccountImpersonationIntegrationTests {
   private static final String CONNECTION_NAME = System.getenv("MYSQL_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String IMPERSONATED_USER = System.getenv("IMPERSONATED_USER");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
 
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_DB", "MYSQL_CONNECTION_NAME", "IMPERSONATED_USER");
@@ -69,6 +71,7 @@ public class JdbcMysqlJ8IAMServiceAccountImpersonationIntegrationTests {
     connProps.setProperty("sslmode", "disable");
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("enableIamAuth", "true");
 
     // Initialize connection pool

@@ -44,6 +44,8 @@ public class JdbcMysqlJ8DomainNameIntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
+  private static final String IP_TYPE =
+      System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
       ImmutableList.of("MYSQL_USER", "MYSQL_PASS", "MYSQL_DB", "MYSQL_CONNECTION_NAME");
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
@@ -68,6 +70,7 @@ public class JdbcMysqlJ8DomainNameIntegrationTests {
     Properties connProps = new Properties();
     connProps.setProperty("user", DB_USER);
     connProps.setProperty("password", DB_PASSWORD);
+    connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
 
     // Register a resolver that resolves `db.example.com` to the connection name
