@@ -200,7 +200,7 @@ jobs:
           ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   graalvm:
     # run job on periodic (schedule) event
-    if: "${{ github.event_name == 'schedule' }}"
+    # if: "${{ github.event_name == 'schedule' }}"
     name: graalvm native / linux
     runs-on: ubuntu-latest
     permissions:
