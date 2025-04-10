@@ -26,7 +26,7 @@
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.15.0</version>
+    <version>1.15.1</version>
   </parent>
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -78,8 +78,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <graal-sdk.version>24.2.0</graal-sdk.version>
-    <netty.version>4.1.119.Final</netty.version>
-    <ow2-asm.version>9.7.1</ow2-asm.version>
+    <netty.version>4.2.0.Final</netty.version>
+    <ow2-asm.version>9.8</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -113,7 +113,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.4.0-android</version>
+        <version>33.4.7-android</version>
       </dependency>
       <dependency>
         <groupId>com.google.j2objc</groupId>
@@ -133,7 +133,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.49.1</version>
+        <version>3.49.2</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -457,7 +457,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.2</version>
+        <version>3.5.3</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -624,7 +624,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -655,7 +655,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.12</version>
+            <version>0.8.13</version>
             <executions>
               <execution>
                 <id>prepare-agent</id>
@@ -938,7 +938,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
