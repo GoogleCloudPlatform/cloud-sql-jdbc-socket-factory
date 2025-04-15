@@ -30,14 +30,33 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
 /**
- * This is a workaround for a known bug in Conscrypt crypto in how it handles X509 auth type.
- * OpenJDK interpres the X509 certificate auth type as "UNKNOWN" while Conscrypt interpret the same
- * certificate as auth type "GENERIC". This incompatibility causes problems in the JDK.
+ * InstanceCheckingTrustManger implements custom TLS verification logic to gracefully and securely
+ * handle deviations from standard TLS hostname verification in existing Cloud SQL instance server
+ * certificates.
  *
- * <p>This adapter works around the issue by creating wrappers around all TrustManager instances. It
- * replaces "GENERIC" auth type with "UNKNOWN" auth type before delegating calls.
+ * <p>This is the verification algorithm:
  *
- * <p>See https://github.com/google/conscrypt/issues/1033#issuecomment-982701272
+ * <ol>
+ *   <li>Verify the server cert CA, using the CA certs from the instance metadata. Reject the
+ *       certificate if the CA is invalid. This is delegated to the default JSSE TLS provider.
+ *   <li>Check that the server cert contains a SubjectAlternativeName matching the DNS name in the
+ *       connector configuration OR the DNS Name from the instance metadata
+ *   <li>If the SubjectAlternativeName does not match, and if the server cert Subject.CN field is
+ *       not empty, check that the Subject.CN field contains the instance name. Reject the
+ *       certificate if both the #2 SAN check and #3 CN checks fail.
+ * </ol>
+ *
+ * <p>To summarize the deviations from standard TLS hostname verification:
+ *
+ * <p>Historically, Cloud SQL creates server certificates with the instance name in the Subject.CN
+ * field in the format "my-project:my-instance". The connector is expected to check that the
+ * instance name that the connector was configured to dial matches the server certificate Subject.CN
+ * field. Thus, the Subject.CN field for most Cloud SQL instances does not contain a well-formed DNS
+ * Name. This breaks standard TLS hostname verification.
+ *
+ * <p>Also, there are times when the instance metadata reports that an instance has a DNS name, but
+ * that DNS name does not yet appear in the SAN records of the server certificate. The client should
+ * fall back to validating the hostname using the instance name in the Subject.CN field.
  */
 class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
   private final X509ExtendedTrustManager tm;
@@ -96,26 +115,30 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
       throw new CertificateException("Subject is missing");
     }
 
-    // If the instance metadata does not contain a domain name, use legacy CN validation
-    if (Strings.isNullOrEmpty(instanceMetadata.getDnsName())) {
-      checkCn(chain);
-    } else {
-      // If there is a DNS name, check the Subject Alternative Names.
-      checkSan(chain);
-    }
-  }
-
-  private void checkSan(X509Certificate[] chain) throws CertificateException {
     final String dns;
     if (!Strings.isNullOrEmpty(instanceMetadata.getInstanceName().getDomainName())) {
       // If the connector is configured using a DNS name, validate the DNS name from the connector
       // config.
       dns = instanceMetadata.getInstanceName().getDomainName();
-    } else {
+    } else if (!Strings.isNullOrEmpty(instanceMetadata.getDnsName())) {
       // If the connector is configured with an instance name, validate the DNS name from
       // the instance metadata.
       dns = instanceMetadata.getDnsName();
+    } else {
+      dns = null;
     }
+
+    // If the instance metadata does not contain a domain name, and the connector was not
+    // configured with a domain name, use legacy CN validation.
+    if (dns == null) {
+      checkCn(chain);
+    } else {
+      // If there is a DNS name, check the Subject Alternative Names.
+      checkSan(dns, chain);
+    }
+  }
+
+  private void checkSan(String dns, X509Certificate[] chain) throws CertificateException {
 
     if (Strings.isNullOrEmpty(dns)) {
       throw new CertificateException(
@@ -128,11 +151,15 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
         return;
       }
     }
-    throw new CertificateException(
-        "Server certificate does not contain expected name '"
-            + dns
-            + "' for Cloud SQL instance "
-            + instanceMetadata.getInstanceName());
+    try {
+      checkCn(chain);
+    } catch (CertificateException e) {
+      throw new CertificateException(
+          "Server certificate does not contain expected name '"
+              + dns
+              + "' for Cloud SQL instance "
+              + instanceMetadata.getInstanceName());
+    }
   }
 
   private List<String> getSans(X509Certificate cert) throws CertificateException {

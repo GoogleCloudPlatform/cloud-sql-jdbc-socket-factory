@@ -40,19 +40,11 @@ import javax.net.ssl.TrustManagerFactory;
  * <p>class ConscryptWorkaroundTrustManager - the workaround for the Conscrypt bug.
  *
  * <p>class InstanceCheckingTrustManager - delegates TLS checks to the default provider and then
- * does custom hostname checking in accordance with these rules:
- *
- * <p>If the instance supports CAS certificates (instanceMetadata.casEnabled == true), or the
- * connection is being made to a PSC endpoint (instanceMetadata.pscEnabled == true) the connector
- * should validate that the server certificate subjectAlternativeNames contains an entry that
- * matches instanceMetadata.dnsName.
- *
- * <p>Otherwise, the connector should check that the Subject CN field contains the Cloud SQL
- * instance ID in the form: "project-name:instance-name"
+ * does custom hostname verification.
  */
 class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
 
-  static TrustManagerFactory newInstance(InstanceMetadata instanceMetadata)
+  static InstanceCheckingTrustManagerFactory newInstance(InstanceMetadata instanceMetadata)
       throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
 
     TrustManagerFactory delegate = TrustManagerFactory.getInstance("X.509");

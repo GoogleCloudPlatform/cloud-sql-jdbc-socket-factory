@@ -452,13 +452,35 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             config.getConnectorConfig(),
             port,
             "db.example.com",
-            "myProject:myRegion:myInstance",
+            "myProject:myRegion:otherInstance",
             true);
 
     SSLHandshakeException ex =
         assertThrows(SSLHandshakeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
 
     assertThat(ex).hasMessageThat().contains("Server certificate does not contain expected name");
+  }
+
+  @Test
+  public void create_fallbackToInstanceWhenDomainNameDoesntMatchServerCert() throws Exception {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("not-in-san.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector c =
+        newConnector(
+            config.getConnectorConfig(),
+            port,
+            "db.example.com",
+            "myProject:myRegion:myInstance",
+            true);
+
+    c.connect(config, TEST_MAX_REFRESH_MS);
   }
 
   @Test
