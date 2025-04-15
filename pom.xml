@@ -26,7 +26,7 @@
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.15.0</version>
+    <version>1.15.1</version>
   </parent>
 
   <name>Cloud SQL JDBC Socket Factory</name>
@@ -77,9 +77,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <graal-sdk.version>24.2.0</graal-sdk.version>
-    <netty.version>4.1.119.Final</netty.version>
-    <ow2-asm.version>9.7.1</ow2-asm.version>
+    <graal-sdk.version>24.2.1</graal-sdk.version>
+    <netty.version>4.2.0.Final</netty.version>
+    <ow2-asm.version>9.8</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -113,7 +113,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.4.0-android</version>
+        <version>33.4.8-android</version>
       </dependency>
       <dependency>
         <groupId>com.google.j2objc</groupId>
@@ -133,7 +133,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.49.1</version>
+        <version>3.49.2</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -143,7 +143,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.12.1</version>
+        <version>2.13.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
@@ -228,12 +228,12 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.4</version>
+        <version>3.7.5</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.2.4</version>
+        <version>1.2.5</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -328,7 +328,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.12.1</version>
+        <version>5.12.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -457,7 +457,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.2</version>
+        <version>3.5.3</version>
         <configuration>
           <reportNameSuffix>sponge_log</reportNameSuffix>
           <trimStackTrace>false</trimStackTrace>
@@ -624,7 +624,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -655,7 +655,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.12</version>
+            <version>0.8.13</version>
             <executions>
               <execution>
                 <id>prepare-agent</id>
@@ -723,12 +723,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.12.1</version>
+            <version>1.12.2</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.12.1</version>
+            <version>1.12.2</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -738,7 +738,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.12.1</version>
+          <version>5.12.2</version>
           <scope>test</scope>
         </dependency>
 
@@ -938,7 +938,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
