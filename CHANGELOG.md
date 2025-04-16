@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.24.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.1...v1.24.2) (2025-04-15)
+
+
+### Bug Fixes
+
+* Remove unsupported GraalVM UnsupportedExperimentalVMOptions flag. ([#2141](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2141)) ([652a30d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/652a30d8782d48a807a2532e16aff922065ba80d)), closes [#2140](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2140)
+* Roll back dependency update that broke R2DBC + MariaDB IAM E2E Test ([#2146](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2146)) ([8d2b2ef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/8d2b2efc2880328f3ff0e4d437f7ca4690ce51ec))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2127](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2127)) ([1edc758](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/1edc75857d592aeccaa1f489cad1fc76c7cecbb1))
+
 ## [1.24.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.0...v1.24.1) (2025-03-27)
 
 
