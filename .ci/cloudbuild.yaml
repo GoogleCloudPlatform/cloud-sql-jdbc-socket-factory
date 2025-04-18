@@ -65,7 +65,7 @@ availableSecrets:
     env: 'SQLSERVER_PASS'
   - versionName: 'projects/$PROJECT_ID/secrets/SQLSERVER_DB/versions/latest'
     env: 'SQLSERVER_DB'
-  - versionName: 'projects/$PROJECT_ID/secrets/QUOTA_PROJECT/versions/latest'
+  - versionName: 'projects/$PROJECT_ID/secrets/QUOTA_PROJECT_2/versions/latest'
     env: 'QUOTA_PROJECT'
   - versionName: 'projects/$PROJECT_ID/secrets/CLOUD_BUILD_SA/versions/latest'
     env: 'IMPERSONATED_USER'
