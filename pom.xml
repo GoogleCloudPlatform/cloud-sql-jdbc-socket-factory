@@ -78,7 +78,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <graal-sdk.version>24.2.1</graal-sdk.version>
-    <netty.version>4.2.0.Final</netty.version>
+    <netty.version>4.1.119.Final</netty.version>
     <ow2-asm.version>9.8</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
