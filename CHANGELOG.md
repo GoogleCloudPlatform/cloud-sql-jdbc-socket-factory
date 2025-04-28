@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.25.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.2...v1.25.0) (2025-04-28)
+
+
+### Features
+
+* Update TLS validation to use both SAN and CN fields. ([#2150](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2150)) ([e7d9cef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e7d9cefa0bee8f14dcaf34294889c89cd638dadc))
+
+
+### Bug Fixes
+
+* Roll back dependency update that broke R2DBC + MariaDB IAM E2E Test ([#2154](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2154)) ([2ac2d04](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2ac2d049cde8d141642ec5e38947c052dd286976))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2145](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2145)) ([119e644](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/119e644785766d32f09d8d4ffca5bec5d72027ff))
+
 ## [1.24.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.1...v1.24.2) (2025-04-15)
 
 
