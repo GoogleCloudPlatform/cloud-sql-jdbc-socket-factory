@@ -36,7 +36,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class JdbcMysqlJ8MCPIntegrationTests {
+public class JdbcMysqlJ8McpIntegrationTests {
 
   private static final String CONNECTION_NAME = System.getenv("MYSQL_MCP_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("MYSQL_DB");
