@@ -34,7 +34,10 @@ import com.google.auth.oauth2.OAuth2Credentials;
 import java.io.IOException;
 import java.util.Collections;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class CredentialFactoryTest {
 
   @Test

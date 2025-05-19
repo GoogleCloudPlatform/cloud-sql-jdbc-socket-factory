@@ -170,7 +170,7 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
       return names;
     }
 
-    for (List item : sanAsn1Field) {
+    for (List<?> item : sanAsn1Field) {
       Integer type = (Integer) item.get(0);
       // RFC 5280 section 4.2.1.6.  "Subject Alternative Name"
       // describes the structure of subjectAlternativeName record.
