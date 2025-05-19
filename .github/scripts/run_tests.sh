@@ -14,7 +14,10 @@
 # limitations under the License.
 
 # `-e` enables the script to automatically fail when a command fails
-set -e
+set -ex
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR=$( dirname "$SCRIPT_DIR" )
 
 if [[ $OSTYPE == 'darwin'* ]]; then
   # Add alias for 127.0.0.2 to be used as a loopback address
@@ -27,7 +30,16 @@ echo -e "******************** Running tests... ********************\n"
 echo "Running tests using Java:"
 java -version
 
-echo "Maven version: $(mvn --version)"
+# Use the mvn command
+if which mvn ; then
+  mvn_cmd="mvn"
+else
+  mvn_cmd="./mvnw"
+fi
+
+ls -al
+
+echo "Maven version: $($mvn_cmd --version)"
 
 echo "Job type: ${JOB_TYPE}"
 
@@ -36,11 +48,11 @@ set +e
 
 case ${JOB_TYPE} in
 test)
-    mvn -e -B clean -ntp test -P coverage -Dcheckstyle.skip
+    $mvn_cmd -e -B clean -ntp test -P coverage -Dcheckstyle.skip
     RETURN_CODE=$?
     ;;
 integration)
-    mvn -e -B clean -ntp verify -P e2e -P coverage -Dcheckstyle.skip
+    $mvn_cmd -e -B clean -ntp verify -P e2e -P coverage -Dcheckstyle.skip
     RETURN_CODE=$?
     ;;
 esac
