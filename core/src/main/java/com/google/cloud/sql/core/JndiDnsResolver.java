@@ -61,7 +61,7 @@ class JndiDnsResolver implements DnsResolver {
       // See https://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-dns.html
 
       // Explicitly reference the JNDI DNS classes. This is required for GraalVM.
-      Hashtable contextProps = new Hashtable<>();
+      Hashtable<String, String> contextProps = new Hashtable<>();
       contextProps.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
       contextProps.put(Context.OBJECT_FACTORIES, "com.sun.jndi.url.dns.dnsURLContextFactory");
       Attribute attr =

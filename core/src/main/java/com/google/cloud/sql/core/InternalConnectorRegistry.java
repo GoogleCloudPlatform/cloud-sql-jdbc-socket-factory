@@ -71,7 +71,7 @@ public final class InternalConnectorRegistry {
    * @deprecated Use {@link #setApplicationName(String)} to set the application name
    *     programmatically.
    */
-  static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
+  @Deprecated static final String USER_TOKEN_PROPERTY_NAME = "_CLOUD_SQL_USER_TOKEN";
 
   @VisibleForTesting
   InternalConnectorRegistry(

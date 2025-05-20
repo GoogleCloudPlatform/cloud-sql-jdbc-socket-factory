@@ -45,7 +45,10 @@ import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class ConnectorTest extends CloudSqlCoreTestingBase {
   ListeningScheduledExecutorService defaultExecutor;
   private final long TEST_MAX_REFRESH_MS = 5000L;

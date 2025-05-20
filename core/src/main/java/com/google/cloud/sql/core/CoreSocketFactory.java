@@ -23,6 +23,7 @@ package com.google.cloud.sql.core;
  * @deprecated Use the official java API instead.
  * @see com.google.cloud.sql.ConnectorRegistry
  */
+@SuppressWarnings("InlineMeSuggester")
 @Deprecated
 public final class CoreSocketFactory {
 
@@ -80,6 +81,7 @@ public final class CoreSocketFactory {
    * @deprecated Use the official java API instead.
    * @see com.google.cloud.sql.ConnectorRegistry
    */
+  @Deprecated
   static void setApplicationName(String artifactId) {
     InternalConnectorRegistry.setApplicationName(artifactId);
   }
