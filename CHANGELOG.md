@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.0...v1.25.1) (2025-05-21)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2155](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2155)) ([5b05cfe](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/5b05cfe905778ea817814a609403c466a28f35be))
+
 ## [1.25.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.2...v1.25.0) (2025-04-28)
 
 
