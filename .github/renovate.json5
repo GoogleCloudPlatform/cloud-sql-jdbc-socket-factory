@@ -65,6 +65,10 @@
       "matchManagers": ["github-actions"],
       "groupName": "dependencies for github",
       "commitMessagePrefix": "chore(deps):"
+    },
+    {
+      "matchPackagePatterns": ["^io.netty:netty-"],
+      "allowedVersions": "4.1.119.Final"
     }
   ]
 }
