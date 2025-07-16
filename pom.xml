@@ -77,8 +77,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
-    <graal-sdk.version>24.2.1</graal-sdk.version>
-    <netty.version>4.1.119.Final</netty.version>
+    <graal-sdk.version>24.2.2</graal-sdk.version>
+    <netty.version>4.2.3.Final</netty.version>
     <ow2-asm.version>9.8</ow2-asm.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
@@ -228,12 +228,12 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.7</version>
+        <version>3.7.8</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.2.7</version>
+        <version>1.2.8</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -388,7 +388,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.6.0</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <id>enforce</id>
@@ -519,7 +519,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-enforcer-plugin</artifactId>
-            <version>3.6.0</version>
+            <version>3.6.1</version>
             <executions>
               <execution>
                 <configuration>
