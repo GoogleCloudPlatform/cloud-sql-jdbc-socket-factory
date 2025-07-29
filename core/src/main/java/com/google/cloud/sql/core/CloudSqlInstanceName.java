@@ -96,6 +96,7 @@ public class CloudSqlInstanceName {
    * @param connectionName instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param domainName the domain name used to look up the instance, or null.
    */
+  @SuppressWarnings("ExpensiveLenientFormatString")
   CloudSqlInstanceName(String connectionName, String domainName) {
     Matcher matcher = CONNECTION_NAME.matcher(connectionName);
     checkArgument(
