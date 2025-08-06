@@ -51,7 +51,8 @@ public class CloudSqlInstanceName {
    * $: Matches the end of the string.<br>
    */
   private static final Pattern DOMAIN_NAME =
-      Pattern.compile("^(?=.{1,255}$)(?!-)[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
+      Pattern.compile(
+          "^(?:[_a-z0-9](?:[_a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?)?$");
 
   private final String projectId;
   private final String regionId;
