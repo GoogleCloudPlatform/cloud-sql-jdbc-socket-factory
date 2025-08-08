@@ -80,6 +80,7 @@
     <graal-sdk.version>24.2.1</graal-sdk.version>
     <netty.version>4.1.119.Final</netty.version>
     <ow2-asm.version>9.8</ow2-asm.version>
+    <errorprone.version>2.41.0</errorprone.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
@@ -188,7 +189,7 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.40.0</version>
+        <version>${errorprone.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -420,6 +421,7 @@
             <arg>-XDcompilePolicy=simple</arg>
             <arg>-Xplugin:ErrorProne</arg>
             <arg>-Xlint:-options</arg> <!-- ignore warning about deprecated java 8 src -->
+            <arg>--should-stop=ifError=FLOW</arg>
             <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
             <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
             <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
@@ -435,7 +437,7 @@
             <path>
               <groupId>com.google.errorprone</groupId>
               <artifactId>error_prone_core</artifactId>
-              <version>2.10.0</version>
+              <version>${errorprone.version}</version>
             </path>
           </annotationProcessorPaths>
           <failOnWarning>true</failOnWarning>
@@ -684,11 +686,8 @@
             <configuration>
               <fork>true</fork>
               <compilerArgs combine.self="override">
+                  <!-- Disable ErrorProne in the compiler. ErrorProne no longer supports JDK 11 and lower -->
                 <arg>-XDcompilePolicy=simple</arg>
-                <arg>-Xplugin:ErrorProne</arg>
-                <arg>
-                  -J-Xbootclasspath/p:${settings.localRepository}/com/google/errorprone/javac/${javac.version}/javac-${javac.version}.jar
-                </arg>
               </compilerArgs>
               <excludes>
                 <!-- Native image does not support Java 8 -->
@@ -699,6 +698,31 @@
         </plugins>
       </build>
     </profile>
+  <profile>
+      <id>jdk11</id>
+      <activation>
+          <jdk>11</jdk>
+      </activation>
+      <build>
+          <plugins>
+              <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-compiler-plugin</artifactId>
+                  <configuration>
+                      <fork>true</fork>
+                      <compilerArgs combine.self="override">
+                          <!-- Disable ErrorProne in the compiler. ErrorProne no longer supports JDK 11 and lower -->
+                          <arg>-XDcompilePolicy=simple</arg>
+                      </compilerArgs>
+                      <excludes>
+                          <!-- Native image does not support Java 8 -->
+                          <exclude>com/google/cloud/sql/nativeimage/*</exclude>
+                      </excludes>
+                  </configuration>
+              </plugin>
+          </plugins>
+      </build>
+  </profile>
 
     <profile>
       <!-- This profile is used to enable GraalVM native image testing

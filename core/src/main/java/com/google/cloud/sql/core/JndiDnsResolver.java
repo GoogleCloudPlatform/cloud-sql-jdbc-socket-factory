@@ -53,7 +53,7 @@ class JndiDnsResolver implements DnsResolver {
    * @throws javax.naming.NameNotFoundException when the domain name did not resolve.
    */
   @Override
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "BanJNDI"})
   public Collection<String> resolveTxt(String domainName)
       throws javax.naming.NameNotFoundException {
     try {
