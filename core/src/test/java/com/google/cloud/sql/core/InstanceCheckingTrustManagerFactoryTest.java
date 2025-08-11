@@ -176,12 +176,12 @@ public class InstanceCheckingTrustManagerFactoryTest {
 
     private final boolean cas;
 
-    public TestCase(
+    private TestCase(
         String desc, String serverName, String icn, String cn, String san, boolean valid) {
       this(desc, serverName, icn, cn, san, valid, false);
     }
 
-    public TestCase(
+    private TestCase(
         String desc,
         String serverName,
         String icn,

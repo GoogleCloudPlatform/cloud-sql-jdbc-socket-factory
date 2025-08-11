@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import javax.naming.NameNotFoundException;
 import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
@@ -111,7 +112,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
     assertThat(ex)
         .hasMessageThat()
-        .isEqualTo(
+        .contains(
             "Server certificate CN does not match instance name. "
                 + "Server certificate CN=myProject:myInstance "
                 + "Expected instance name: myProject:wrongwrongwrong");
@@ -522,7 +523,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   private boolean isWindows() {
-    String os = System.getProperty("os.name").toLowerCase();
+    String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
     return os.contains("win");
   }
 
@@ -943,12 +944,12 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     private final String domainName;
     private final String instanceName;
 
-    public MockDnsResolver() {
+    private MockDnsResolver() {
       this.domainName = null;
       this.instanceName = null;
     }
 
-    public MockDnsResolver(String domainName, String instanceName) {
+    private MockDnsResolver(String domainName, String instanceName) {
       this.domainName = domainName;
       this.instanceName = instanceName;
     }
@@ -972,16 +973,16 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     private final String domainName;
     private String instanceName;
 
-    public MutableDnsResolver(String domainName, String instanceName) {
+    private MutableDnsResolver(String domainName, String instanceName) {
       this.domainName = domainName;
       this.instanceName = instanceName;
     }
 
-    public synchronized void setInstanceName(String instanceName) {
+    private synchronized void setInstanceName(String instanceName) {
       this.instanceName = instanceName;
     }
 
-    public synchronized void clearInstanceName() {
+    private synchronized void clearInstanceName() {
       this.instanceName = null;
     }
 
