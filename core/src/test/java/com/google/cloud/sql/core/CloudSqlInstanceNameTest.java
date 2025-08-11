@@ -60,4 +60,14 @@ public class CloudSqlInstanceNameTest {
 
     assertThat(ex).hasMessageThat().contains("Cloud SQL connection name is invalid");
   }
+
+  @Test
+  public void testValidDomains() {
+    assertThat(CloudSqlInstanceName.isValidDomain("prod-db.mycompany.example.com")).isTrue();
+    assertThat(CloudSqlInstanceName.isValidDomain("example.com.")).isTrue();
+    assertThat(CloudSqlInstanceName.isValidDomain("-example.com")).isFalse();
+    assertThat(CloudSqlInstanceName.isValidDomain("example")).isFalse();
+    assertThat(CloudSqlInstanceName.isValidDomain("127.0.0.1")).isFalse();
+    assertThat(CloudSqlInstanceName.isValidDomain("0:0:0:0:0:0:0:1")).isFalse();
+  }
 }
