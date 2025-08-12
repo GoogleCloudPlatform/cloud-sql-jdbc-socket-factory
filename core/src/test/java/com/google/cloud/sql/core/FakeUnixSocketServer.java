@@ -16,6 +16,8 @@
 
 package com.google.cloud.sql.core;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -35,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * https://github.com/jnr/jnr-unixsocket/blob/master/src/test/java/jnr/unixsocket/example/UnixServer.java
  */
 class FakeUnixSocketServer {
-  private static Logger log = LoggerFactory.getLogger(FakeUnixSocketServer.class);
+  private static final Logger log = LoggerFactory.getLogger(FakeUnixSocketServer.class);
   private final String path;
   private final UnixSocketAddress address;
   private UnixServerSocketChannel channel;
@@ -104,24 +106,24 @@ class FakeUnixSocketServer {
     log.info("UnixServer EXIT");
   }
 
-  static interface Actor {
-    public boolean rxready();
+  interface Actor {
+    boolean rxready();
   }
 
   static final class ServerActor implements Actor {
     private final UnixServerSocketChannel channel;
 
-    public ServerActor(UnixServerSocketChannel channel) {
+    private ServerActor(UnixServerSocketChannel channel) {
       this.channel = channel;
     }
 
     @Override
-    public final boolean rxready() {
+    public boolean rxready() {
       log.info("Handling unix socket connect.");
       try {
         UnixSocketChannel client = channel.accept();
         client.configureBlocking(false);
-        ByteBuffer response = ByteBuffer.wrap("HELLO\n".getBytes("UTF-8"));
+        ByteBuffer response = ByteBuffer.wrap("HELLO\n".getBytes(UTF_8));
         client.write(response);
         log.info("Handling unix socket done.");
         return true;
