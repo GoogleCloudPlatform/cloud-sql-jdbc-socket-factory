@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.25.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.2...v1.25.3) (2025-08-12)
+
+
+### Bug Fixes
+
+* Use the -jre variant of Google Guava library for GraalVM compatability. ([#2187](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2187)) ([7fb819f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7fb819fb0d0856c337a8b7ec10ebce899ad496b3)), closes [#2178](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2178)
+
+
+### Dependencies
+
+* Update dependencies to latest. ([#2185](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2185)) ([163cdae](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/163cdaeda6f36cc2c0290aa86eed8a1224e3635c))
+
 ## [1.25.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.1...v1.25.2) (2025-07-14)
 
 
