@@ -69,6 +69,13 @@ function lint() {
 }
 
 
+## deps - updates dependencies to the latest version
+function deps() {
+  mvn versions:use-latest-versions
+  find . -name 'pom.xml.versionsBackup' -print0 | xargs -0 rm -f
+}
+
+
 # write_e2e_env - Loads secrets from the gcloud project and writes
 #     them to target/e2e.env to run e2e tests.
 #
