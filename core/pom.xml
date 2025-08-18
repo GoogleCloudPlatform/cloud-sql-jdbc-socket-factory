@@ -127,6 +127,11 @@
       <artifactId>google-oauth-client</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>dnsjava</groupId>
+      <artifactId>dnsjava</artifactId>
+    </dependency>
+
     <!-- com.google.cloud.sql.nativeimage.CloudSqlFeature needs the GraalVM
       dependencies for compilation. The provided-scope dependencies do not add
       additional dependencies to library users. -->

@@ -11,6 +11,7 @@ target/
 **/.project
 **/.settings/
 **/.classpath
+.vscode/
 
 # direnv
 .envrc
