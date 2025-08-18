@@ -124,7 +124,7 @@ function write_e2e_env(){
   {
   for name in "${secret_vars[@]}" ; do
     val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$name")
-    echo "export $name=$val"
+    echo "export $name='$val'"
   done
   } > "$outfile"
 
