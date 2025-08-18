@@ -30,12 +30,18 @@ function clean() {
 }
 
 ## build - Builds the project without running tests.
-function test() {
+function build() {
    mvn install -DskipTests=true
 }
 
 ## test - Runs local unit tests.
 function test() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "macOS detected. Setting up IP aliases for tests."
+    echo "You may be prompted for your password to run sudo."
+    sudo ifconfig lo0 alias 127.0.0.2 up
+    sudo ifconfig lo0 alias 127.0.0.3 up
+  fi
   mvn install
 }
 
@@ -80,14 +86,16 @@ function deps() {
 #     them to target/e2e.env to run e2e tests.
 #
 function write_e2e_env(){
+  # Set the default to .envrc file if no argument is passed
+  outfile="${1:-.envrc}"
   secret_vars=(MYSQL_CONNECTION_NAME
       MYSQL_USER
       MYSQL_PASS
       MYSQL_DB
-      MYSQL_IAM_CONNECTION_NAME
+      # MYSQL_IAM_CONNECTION_NAME
       MYSQL_USER_IAM_JAVA
       POSTGRES_CONNECTION_NAME
-      POSTGRES_IAM_CONNECTION_NAME
+      # POSTGRES_IAM_CONNECTION_NAME
       POSTGRES_USER
       POSTGRES_USER_IAM_JAVA
       POSTGRES_PASS
@@ -112,13 +120,13 @@ function write_e2e_env(){
     exit 1
   fi
 
-  echo "Getting test secrets from $TEST_PROJECT into $1"
+  echo "Getting test secrets from $TEST_PROJECT into $outfile"
   {
   for name in "${secret_vars[@]}" ; do
     val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$name")
-    echo "export $name=\'$val\'"
+    echo "export $name=$val"
   done
-  } > "$1"
+  } > "$outfile"
 
 }
 
