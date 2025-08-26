@@ -51,10 +51,9 @@ public class DnsJavaResolverTest {
   }
 
   @Test
-  public void testResolveTxt_notFound() throws NameNotFoundException {
+  public void testResolveTxt_notFound() {
     DnsJavaResolver resolver = new DnsJavaResolver();
-    Collection<String> records = resolver.resolveTxt(INVALID_DOMAIN_NAME);
-    assertThat(records).isEmpty();
+    assertThrows(NameNotFoundException.class, () -> resolver.resolveTxt(INVALID_DOMAIN_NAME));
   }
 
   @Test
