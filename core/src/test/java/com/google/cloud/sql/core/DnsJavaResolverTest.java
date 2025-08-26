@@ -26,6 +26,8 @@ import org.junit.Test;
 public class DnsJavaResolverTest {
 
   private static final String VALID_DOMAIN_NAME = "invalid-san-test.csqlconnectortest.com";
+  private static final String MULTI_STRING_RECORD_DOMAIN_NAME =
+      "test-multi-string-txt-record.csqlconnectortest.com";
   private static final String VALID_DOMAIN_NAME_DATA =
       "cloud-sql-connector-testing:us-central1:postgres-customer-cas-test";
   private static final String INVALID_DOMAIN_NAME = "not-a-real-domain.com";
@@ -38,6 +40,14 @@ public class DnsJavaResolverTest {
 
     // Check that the record contains the expected IP address.
     assertThat(records).contains(VALID_DOMAIN_NAME_DATA);
+  }
+
+  @Test
+  public void testResolveTxt_multiStringRecord() throws NameNotFoundException {
+    DnsJavaResolver resolver = new DnsJavaResolver();
+    Collection<String> records = resolver.resolveTxt(MULTI_STRING_RECORD_DOMAIN_NAME);
+    assertThat(records).isNotEmpty();
+    assertThat(records).containsExactly("string1", "string2");
   }
 
   @Test
