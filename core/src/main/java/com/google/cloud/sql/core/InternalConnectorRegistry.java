@@ -336,7 +336,7 @@ public final class InternalConnectorRegistry {
         MIN_REFRESH_DELAY_MS,
         connectTimeoutMs,
         serverProxyPort,
-        new DnsInstanceConnectionNameResolver(new JndiDnsResolver()));
+        new DnsInstanceConnectionNameResolver(new DnsJavaResolver()));
   }
 
   /** Register the configuration for a named connector. */
