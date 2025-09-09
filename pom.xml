@@ -150,7 +150,7 @@
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20250613-2.0.0</version>
+        <version>v1beta4-rev20250823-2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -188,9 +188,10 @@
         <version>2.41.0</version>
       </dependency>
       <dependency>
-        <groupId>com.github.jnr</groupId>
-        <artifactId>jnr-ffi</artifactId>
-        <version>2.2.17</version>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>4.32.0</version>
+        <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -531,132 +532,160 @@
           </annotationProcessorPaths>
           <failOnWarning>true</failOnWarning>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.3</version>
-        <configuration>
-          <reportNameSuffix>sponge_log</reportNameSuffix>
-          <trimStackTrace>false</trimStackTrace>
-          <excludes>
-            <exclude>**/*IntegrationTests</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>3.1.1</version>
-        <configuration>
-          <tagNameFormat>@{project.version}</tagNameFormat>
-          <useReleaseProfile>false</useReleaseProfile>
-          <releaseProfiles>release</releaseProfiles>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>com.coveo</groupId>
-        <artifactId>fmt-maven-plugin</artifactId>
-        <version>2.9</version>
         <executions>
+          <!-- compile generated sources first, with lint disabled -->
           <execution>
+            <id>default-compile</id>
             <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <style>google</style>
-          <verbose>true</verbose>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>com.google.googlejavaformat</groupId>
-            <artifactId>google-java-format</artifactId>
-            <version>1.7</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>com/google/cloud/sql/*</includes>
-          <includes>com/google/cloud/sql/CredentialFactory</includes>
-          <includes>com/google/cloud/sql/core/CoreSocketFactory</includes>
-          <includes>com/google/cloud/sql/mariadb/SocketFactory</includes>
-          <includes>com/google/cloud/sql/mysql/SocketFactory</includes>
-          <includes>com/google/cloud/sql/postgres/SocketFactory</includes>
-          <includes>com/google/cloud/sql/sqlserver/SocketFactory</includes>
-          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMysql</includes>
-          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderPostgres</includes>
-          <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMssql</includes>
-        </configuration>
-      </plugin>
-
-    </plugins>
-  </build>
-
-  <profiles>
-    <profile>
-      <id>lint</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>3.6.0</version>
-            <executions>
-              <execution>
-                <configuration>
-                  <rules>
-                    <dependencyConvergence>
-                      <excludes>
-                        <exclude>io.grpc:grpc-context</exclude>
-                      </excludes>
-                    </dependencyConvergence>
-                  </rules>
-                </configuration>
-                <phase>compile</phase>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>3.6.0</version>
+            <goals><goal>compile</goal></goals>
             <configuration>
-              <configLocation>google_checks.xml</configLocation>
-              <logViolationsToConsole>true</logViolationsToConsole>
-              <violationSeverity>warning</violationSeverity>
-              <failOnViolation>true</failOnViolation>
-              <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/target/generated-sources</compileSourceRoot>
+              </compileSourceRoots>
+              <failOnWarning>false</failOnWarning>
             </configuration>
-            <executions>
-              <execution>
-                <phase>compile</phase>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
+          </execution>
+          <!-- compile the real sources -->
+          <execution>
+            <id>compile-main-java</id>
+            <phase>compile</phase>
+            <goals><goal>compile</goal></goals>
+            <configuration>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.build.sourceDirectory}</compileSourceRoot>
+              </compileSourceRoots>
+            </configuration>
+          </execution>
+      </executions>
+    </plugin>
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <!--  There's a bug in the plugin that prevents us from failing on warning in the latest version (3.2.0).
-                  Once a new version (> 3.2.0) is released, we can upgrade the plugin to latest.
-                  See https://issues.apache.org/jira/browse/MDEP-753 -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <version>3.5.3</version>
+      <configuration>
+        <reportNameSuffix>sponge_log</reportNameSuffix>
+        <trimStackTrace>false</trimStackTrace>
+        <excludes>
+          <exclude>**/*IntegrationTests</exclude>
+        </excludes>
+      </configuration>
+    </plugin>
+
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-release-plugin</artifactId>
+      <version>3.1.1</version>
+      <configuration>
+        <tagNameFormat>@{project.version}</tagNameFormat>
+        <useReleaseProfile>false</useReleaseProfile>
+        <releaseProfiles>release</releaseProfiles>
+      </configuration>
+    </plugin>
+
+    <plugin>
+      <groupId>com.coveo</groupId>
+      <artifactId>fmt-maven-plugin</artifactId>
+      <version>2.9</version>
+      <executions>
+        <execution>
+          <phase>compile</phase>
+          <goals>
+            <goal>check</goal>
+          </goals>
+        </execution>
+      </executions>
+      <configuration>
+        <style>google</style>
+        <verbose>true</verbose>
+      </configuration>
+      <dependencies>
+        <dependency>
+          <groupId>com.google.googlejavaformat</groupId>
+          <artifactId>google-java-format</artifactId>
+          <version>1.7</version>
+        </dependency>
+      </dependencies>
+    </plugin>
+
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>clirr-maven-plugin</artifactId>
+      <configuration>
+        <includes>com/google/cloud/sql/*</includes>
+        <includes>com/google/cloud/sql/CredentialFactory</includes>
+        <includes>com/google/cloud/sql/core/CoreSocketFactory</includes>
+        <includes>com/google/cloud/sql/mariadb/SocketFactory</includes>
+        <includes>com/google/cloud/sql/mysql/SocketFactory</includes>
+        <includes>com/google/cloud/sql/postgres/SocketFactory</includes>
+        <includes>com/google/cloud/sql/sqlserver/SocketFactory</includes>
+        <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMysql</includes>
+        <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderPostgres</includes>
+        <includes>com/google/cloud/sql/core/GcpConnectionFactoryProviderMssql</includes>
+      </configuration>
+    </plugin>
+
+  </plugins>
+</build>
+
+<profiles>
+  <profile>
+    <id>lint</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.6.0</version>
+          <executions>
+            <execution>
+              <configuration>
+                <rules>
+                  <dependencyConvergence>
+                    <excludes>
+                      <exclude>io.grpc:grpc-context</exclude>
+                    </excludes>
+                  </dependencyConvergence>
+                </rules>
+              </configuration>
+              <phase>compile</phase>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.6.0</version>
+          <configuration>
+            <configLocation>google_checks.xml</configLocation>
+            <logViolationsToConsole>true</logViolationsToConsole>
+            <violationSeverity>warning</violationSeverity>
+            <failOnViolation>true</failOnViolation>
+            <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+            <sourceDirectories>
+              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+            </sourceDirectories>
+          </configuration>
+          <executions>
+            <execution>
+              <phase>compile</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <!--  There's a bug in the plugin that prevents us from failing on warning in the latest version (3.2.0).
+                Once a new version (> 3.2.0) is released, we can upgrade the plugin to latest.
+                See https://issues.apache.org/jira/browse/MDEP-753 -->
             <version>3.8.1</version>
             <configuration>
               <failOnWarning>true</failOnWarning>

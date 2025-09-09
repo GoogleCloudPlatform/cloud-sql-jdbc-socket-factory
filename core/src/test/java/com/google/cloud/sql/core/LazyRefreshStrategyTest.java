@@ -223,7 +223,13 @@ public class LazyRefreshStrategyTest {
     ExampleData(Instant expiration) {
       super(
           new InstanceMetadata(
-              new CloudSqlInstanceName("project:region:instance"), null, null, false, "", false),
+              new CloudSqlInstanceName("project:region:instance"),
+              null,
+              null,
+              false,
+              "",
+              false,
+              null),
           new SslData(null, null, null),
           expiration);
     }

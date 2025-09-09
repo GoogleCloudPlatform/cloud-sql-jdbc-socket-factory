@@ -54,6 +54,7 @@ public class ConnectionConfig {
   public static final List<IpType> DEFAULT_IP_TYPE_LIST =
       Arrays.asList(IpType.PUBLIC, IpType.PRIVATE);
   public static final String CLOUD_SQL_GOOGLE_CREDENTIALS_PATH = "cloudSqlGoogleCredentialsPath";
+  public static final String MDX_CLIENT_PROTOCOL_TYPE = "mdxClientProtocolType";
 
   private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
@@ -64,6 +65,7 @@ public class ConnectionConfig {
   private final AuthType authType;
   private final String unixSocketPathSuffix;
   private final String domainName;
+  private final String mdxClientProtocolType;
 
   /** Create a new ConnectionConfig from the well known JDBC Connection properties. */
   public static ConnectionConfig fromConnectionProperties(Properties props) {
@@ -116,6 +118,9 @@ public class ConnectionConfig {
             ? RefreshStrategy.LAZY
             : RefreshStrategy.BACKGROUND;
 
+    final String mdxClientProtocolType =
+        props.getProperty(ConnectionConfig.MDX_CLIENT_PROTOCOL_TYPE);
+
     return new ConnectionConfig(
         csqlInstanceName,
         namedConnection,
@@ -133,7 +138,8 @@ public class ConnectionConfig {
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
             .withRefreshStrategy(refreshStrategy)
-            .build());
+            .build(),
+        mdxClientProtocolType);
   }
 
   /**
@@ -197,7 +203,8 @@ public class ConnectionConfig {
       AuthType authType,
       String unixSocketPathSuffix,
       String domainName,
-      ConnectorConfig connectorConfig) {
+      ConnectorConfig connectorConfig,
+      String mdxClientProtocolType) {
     this.cloudSqlInstance = cloudSqlInstance;
     this.namedConnector = namedConnector;
     this.unixSocketPath = unixSocketPath;
@@ -206,6 +213,7 @@ public class ConnectionConfig {
     this.connectorConfig = connectorConfig;
     this.authType = authType;
     this.domainName = domainName;
+    this.mdxClientProtocolType = mdxClientProtocolType;
   }
 
   /** Creates a new instance of the ConnectionConfig with an updated connectorConfig. */
@@ -218,7 +226,8 @@ public class ConnectionConfig {
         authType,
         unixSocketPathSuffix,
         domainName,
-        config);
+        config,
+        mdxClientProtocolType);
   }
 
   /** Creates a new instance of the ConnectionConfig with an updated cloudSqlInstance. */
@@ -231,7 +240,8 @@ public class ConnectionConfig {
         authType,
         unixSocketPathSuffix,
         domainName,
-        connectorConfig);
+        connectorConfig,
+        mdxClientProtocolType);
   }
 
   /** Creates a new instance of the ConnectionConfig with an updated cloudSqlInstance. */
@@ -244,7 +254,22 @@ public class ConnectionConfig {
         authType,
         unixSocketPathSuffix,
         domainName,
-        connectorConfig);
+        connectorConfig,
+        mdxClientProtocolType);
+  }
+
+  /** Creates a new instance of the ConnectionConfig with an updated clientProtocolType. */
+  public ConnectionConfig withMdxClientProtocolType(String clientProtocolType) {
+    return new ConnectionConfig(
+        cloudSqlInstance,
+        namedConnector,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        domainName,
+        connectorConfig,
+        clientProtocolType);
   }
 
   public String getNamedConnector() {
@@ -279,6 +304,10 @@ public class ConnectionConfig {
     return domainName;
   }
 
+  public String getMdxClientProtocolType() {
+    return mdxClientProtocolType;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -290,6 +319,7 @@ public class ConnectionConfig {
     private ConnectorConfig connectorConfig = new ConnectorConfig.Builder().build();
     private AuthType authType = DEFAULT_AUTH_TYPE;
     private String domainName;
+    private String mdxClientProtocolType;
 
     /** Chained setter for CloudSqlInstance field. */
     public Builder withCloudSqlInstance(String cloudSqlInstance) {
@@ -345,6 +375,12 @@ public class ConnectionConfig {
       return this;
     }
 
+    /** Chained setter for MdxClientProtocolType field. */
+    public Builder withMdxClientProtocolType(String mdxClientProtocolType) {
+      this.mdxClientProtocolType = mdxClientProtocolType;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectionConfig build() {
       return new ConnectionConfig(
@@ -355,7 +391,8 @@ public class ConnectionConfig {
           authType,
           unixSocketPathSuffix,
           domainName,
-          connectorConfig);
+          connectorConfig,
+          mdxClientProtocolType);
     }
   }
 }
