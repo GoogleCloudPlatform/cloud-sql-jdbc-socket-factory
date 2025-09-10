@@ -198,6 +198,11 @@
         <version>0.38.23</version>
       </dependency>
       <dependency>
+        <groupId>dnsjava</groupId>
+        <artifactId>dnsjava</artifactId>
+        <version>3.2.2</version>
+      </dependency>
+      <dependency>
         <groupId>org.graalvm.sdk</groupId>
         <artifactId>nativeimage</artifactId>
         <version>24.2.2</version>
