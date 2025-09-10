@@ -46,7 +46,7 @@ class MdxSocket extends SSLSocket {
   private final AtomicBoolean firstWriteAttempted = new AtomicBoolean(false);
   private final AtomicBoolean firstReadAttempted = new AtomicBoolean(false);
   private final AtomicReference<MetadataExchange.MetadataExchangeResponse> response =
-      new AtomicReference();
+      new AtomicReference<>();
   private final MetadataExchange.MetadataExchangeRequest.ClientProtocolType clientProtocolType;
 
   MdxSocket(
@@ -59,6 +59,10 @@ class MdxSocket extends SSLSocket {
     this.in = new MdxInputStream(new BufferedInputStream(delegate.getInputStream()));
     this.out = new MdxOutputStream(delegate.getOutputStream());
     this.clientProtocolType = clientProtocolType;
+  }
+
+  MetadataExchange.MetadataExchangeResponse getMdxResponse() {
+    return response.get();
   }
 
   void sendMdxIfFirstWrite() throws IOException {

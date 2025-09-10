@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -54,6 +55,21 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Test;
 
 public class ProtocolHandlerTest {
+
+  public static final byte[] SERVER_DATA = "hello".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] CLIENT_DATA = "from client".getBytes(StandardCharsets.UTF_8);
+  public static final byte[] MDX_REQUEST_DATA;
+  public static final byte[] WANT_FULL_REQUEST_BYTES;
+
+  static {
+    byte[] wantClientMessage = CLIENT_DATA;
+    MDX_REQUEST_DATA = wantRequestBytes();
+    byte[] wantRequest = new byte[wantClientMessage.length + MDX_REQUEST_DATA.length];
+    System.arraycopy(MDX_REQUEST_DATA, 0, wantRequest, 0, MDX_REQUEST_DATA.length);
+    System.arraycopy(
+        wantClientMessage, 0, wantRequest, MDX_REQUEST_DATA.length, wantClientMessage.length);
+    WANT_FULL_REQUEST_BYTES = wantRequest;
+  }
 
   @Test
   public void testSendMdx() throws IOException {
@@ -85,35 +101,42 @@ public class ProtocolHandlerTest {
   public void testMdxSocket_clientWritesFirst_noMdxResponse() throws Exception {
     // 1. The client connects, writes to the server, sending an MDX request,
     //    reads from the server but receives no MDX response
+    AtomicReference<byte[]> requestBytes = new AtomicReference<>();
 
     // Setup SSL server that expects an MDX request, but does not send an MDX response.
     SslServer server =
         new SslServer(
             (in, out) -> {
               // Server reads the client's MDX request.
-              byte[] req = new byte[wantRequestBytes().length];
+              byte[] req = new byte[CLIENT_DATA.length];
               new DataInputStream(in).readFully(req);
-              assertThat(req).isEqualTo(wantRequestBytes());
+              requestBytes.set(req);
 
               // Server writes a non-MDX response.
               out.write("hello".getBytes(StandardCharsets.UTF_8));
+              out.flush();
             });
     SslServer.SslServerParams p = server.start();
 
     // Setup client socket
-    Socket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
+    MdxSocket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
 
     // Client writes, which should trigger the MDX exchange.
-    socket.getOutputStream().write("from client".getBytes(StandardCharsets.UTF_8));
+    socket.getOutputStream().write(CLIENT_DATA);
+    socket.getOutputStream().flush();
 
     // The server should not have sent an MDX response, so the client should
     // read the raw "hello" from the server.
     byte[] fromServer = new byte[5];
     new DataInputStream(socket.getInputStream()).readFully(fromServer);
-    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+    while (requestBytes.get() == null) {
+      Thread.sleep(10);
+    }
 
     socket.close();
     server.stop();
+    assertThat(fromServer).isEqualTo(SERVER_DATA);
+    assertThat(socket.getMdxResponse()).isNull();
   }
 
   @Test
@@ -127,35 +150,42 @@ public class ProtocolHandlerTest {
         new SslServer(
             (in, out) -> {
               // Server reads the client's MDX request.
-              byte[] req = new byte[wantRequestBytes().length];
+              byte[] req = new byte[WANT_FULL_REQUEST_BYTES.length];
               new DataInputStream(in).readFully(req);
               requestBytes.set(req);
               // Server writes an MDX response.
               out.write(wantResponseBytes("hello".getBytes(StandardCharsets.UTF_8)));
+              out.flush();
             });
 
     SslServer.SslServerParams p = server.start();
 
     // Setup client socket
-    Socket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
+    MdxSocket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
 
     // Client writes, which should trigger the MDX exchange.
-    socket.getOutputStream().write("from client".getBytes(StandardCharsets.UTF_8));
+    socket.getOutputStream().write(CLIENT_DATA);
+    socket.getOutputStream().flush();
 
     // The server should have sent an MDX response, so the client should
     // read the "hello" from the server.
     byte[] fromServer = new byte[5];
     new DataInputStream(socket.getInputStream()).readFully(fromServer);
-    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
-
-    assertThat(requestBytes.get()).isEqualTo(wantRequestBytes());
+    while (requestBytes.get() == null) {
+      Thread.sleep(10);
+    }
 
     socket.close();
     server.stop();
+
+    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+    assertThat(requestBytes.get()).isEqualTo(WANT_FULL_REQUEST_BYTES);
+    assertThat(socket.getMdxResponse()).isNotNull();
   }
 
   @Test
   public void testMdxSocket_clientReadsFirst_noMdxResponse() throws Exception {
+
     // 3. The client connects, reads from the server but receives no MDX response,
     //    then writes to the server, sending an MDX request
     AtomicReference<byte[]> requestBytes = new AtomicReference<>();
@@ -166,36 +196,43 @@ public class ProtocolHandlerTest {
             (in, out) -> {
               // Server writes a non-MDX response.
               out.write("hello".getBytes(StandardCharsets.UTF_8));
+              out.flush();
 
               // Server reads the client's MDX request.
-              byte[] req = new byte[wantRequestBytes().length];
+              byte[] req = new byte[WANT_FULL_REQUEST_BYTES.length];
               new DataInputStream(in).readFully(req);
               requestBytes.set(req);
             });
     SslServer.SslServerParams p = server.start();
 
     // Setup client socket
-    Socket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
+    MdxSocket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
 
     // The server should not have sent an MDX response, so the client should
     // read the raw "hello" from the server.
     byte[] fromServer = new byte[5];
     new DataInputStream(socket.getInputStream()).readFully(fromServer);
-    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
-    assertThat(requestBytes.get()).isNull();
 
     // Client writes, which should trigger the MDX exchange.
-    socket.getOutputStream().write("from client".getBytes(StandardCharsets.UTF_8));
+    socket.getOutputStream().write(CLIENT_DATA);
+    socket.getOutputStream().flush();
+    while (requestBytes.get() == null) {
+      Thread.sleep(10);
+    }
 
     socket.close();
     server.stop();
+
+    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+    assertThat(requestBytes.get()).isEqualTo(WANT_FULL_REQUEST_BYTES);
+    assertThat(socket.getMdxResponse()).isNull();
   }
 
   @Test
-  public void testMdxSocket_clientReadsFirst_receivesMdxResponse() throws Exception {
-    // 4. The client connects, reads from the server and receives an MDX response,
+  public void testMdxSocket_clientReadsFirst_receivesMdxResponse_writesMdxRequest()
+      throws Exception {
+    // 4. The client connects, reads from the server and receives no MDX response,
     //    then writes to the server, sending an MDX request
-
     AtomicReference<byte[]> requestBytes = new AtomicReference<>();
 
     // Setup SSL server that expects an MDX request and sends an MDX response.
@@ -204,32 +241,39 @@ public class ProtocolHandlerTest {
             (in, out) -> {
               // Server writes a non-MDX response.
               out.write("hello".getBytes(StandardCharsets.UTF_8));
+              out.flush();
 
               // Server reads the client's MDX request.
-              byte[] req = new byte[wantRequestBytes().length];
+              byte[] req = new byte[WANT_FULL_REQUEST_BYTES.length];
               new DataInputStream(in).readFully(req);
               requestBytes.set(req);
             });
     SslServer.SslServerParams p = server.start();
 
     // Setup client socket
-    Socket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
+    MdxSocket socket = new ProtocolHandler("ua").connect(p.getSocket(), "tls");
 
-    // The server should have sent an MDX response, so the client should
+    // The server should not send MDX response, so the client should
     // read the "hello" from the server.
     byte[] fromServer = new byte[5];
     new DataInputStream(socket.getInputStream()).readFully(fromServer);
-    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
 
     // Client writes, which should trigger the MDX exchange.
-    socket.getOutputStream().write("from client".getBytes(StandardCharsets.UTF_8));
-    assertThat(requestBytes.get()).isNull();
+    socket.getOutputStream().write(CLIENT_DATA);
+    socket.getOutputStream().flush();
+    while (requestBytes.get() == null) {
+      Thread.sleep(10);
+    }
 
     socket.close();
     server.stop();
+
+    assertThat(fromServer).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+    assertThat(requestBytes.get()).isEqualTo(WANT_FULL_REQUEST_BYTES);
+    assertThat(socket.getMdxResponse()).isNull();
   }
 
-  private static byte[] wantRequestBytes() throws IOException {
+  private static byte[] wantRequestBytes() {
     ByteArrayOutputStream wantOut = new ByteArrayOutputStream();
     MetadataExchange.MetadataExchangeRequest req =
         MetadataExchange.MetadataExchangeRequest.newBuilder()
@@ -238,39 +282,46 @@ public class ProtocolHandlerTest {
             .build();
     int size = req.getSerializedSize();
 
-    // Write the protocoal header
-    wantOut.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
-    // Write the uint32 size
-    wantOut.write((size >>> 24) & 0xFF);
-    wantOut.write((size >>> 16) & 0xFF);
-    wantOut.write((size >>> 8) & 0xFF);
-    wantOut.write(size & 0xFF);
-    // Write the protobuf
-    req.writeTo(wantOut);
-    wantOut.flush();
+    try {
+      // Write the protocoal header
+      wantOut.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
+      // Write the uint32 size
+      wantOut.write((byte) ((size >>> 24) & 0xFF));
+      wantOut.write((byte) ((size >>> 16) & 0xFF));
+      wantOut.write((byte) ((size >>> 8) & 0xFF));
+      wantOut.write((byte) (size & 0xFF));
+      // Write the protobuf
+      req.writeTo(wantOut);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     return wantOut.toByteArray();
   }
 
-  private static byte[] wantResponseBytes(byte[] data) throws IOException {
+  private static byte[] wantResponseBytes(byte[] data) {
     ByteArrayOutputStream wantOut = new ByteArrayOutputStream();
     MetadataExchange.MetadataExchangeResponse res =
         MetadataExchange.MetadataExchangeResponse.newBuilder()
             .setResponseStatusCode(MetadataExchange.MetadataExchangeResponse.ResponseStatusCode.OK)
             .build();
-
     int size = res.getSerializedSize();
 
-    // Write the protocoal header
-    wantOut.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
-    // Write the uint32 size
-    wantOut.write((size >>> 24) & 0xFF);
-    wantOut.write((size >>> 16) & 0xFF);
-    wantOut.write((size >>> 8) & 0xFF);
-    wantOut.write(size & 0xFF);
-    // Write the protobuf
-    res.writeTo(wantOut);
-    wantOut.write(data);
-    wantOut.flush();
+    try {
+      // Write the protocoal header
+      wantOut.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
+      // Write the uint32 size
+      wantOut.write((size >>> 24) & 0xFF);
+      wantOut.write((size >>> 16) & 0xFF);
+      wantOut.write((size >>> 8) & 0xFF);
+      wantOut.write(size & 0xFF);
+      // Write the protobuf
+      res.writeTo(wantOut);
+      wantOut.write(data);
+      wantOut.flush();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return wantOut.toByteArray();
   }
 
@@ -312,6 +363,8 @@ public class ProtocolHandlerTest {
                     }
                     handler.accept(s.getInputStream(), s.getOutputStream());
                   }
+                } catch (SocketException e) {
+                  // do nothing, we don't care if the socket was closed.
                 } catch (Exception e) {
                   throw new RuntimeException(e);
                 }
