@@ -46,7 +46,8 @@ class TestDataSupplier implements ConnectionInfoRepository {
               null,
               false,
               "",
-              false),
+              false,
+              null),
           new SslData(null, createKeyManagerFactory(), null),
           Instant.now().plus(1, ChronoUnit.HOURS));
 
