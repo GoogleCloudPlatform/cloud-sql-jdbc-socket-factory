@@ -30,12 +30,18 @@ function clean() {
 }
 
 ## build - Builds the project without running tests.
-function test() {
+function build() {
    mvn install -DskipTests=true
 }
 
 ## test - Runs local unit tests.
 function test() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "macOS detected. Setting up IP aliases for tests."
+    echo "You may be prompted for your password to run sudo."
+    sudo ifconfig lo0 alias 127.0.0.2 up
+    sudo ifconfig lo0 alias 127.0.0.3 up
+  fi
   mvn install
 }
 
@@ -80,31 +86,35 @@ function deps() {
 #     them to target/e2e.env to run e2e tests.
 #
 function write_e2e_env(){
-  secret_vars=(MYSQL_CONNECTION_NAME
-      MYSQL_USER
-      MYSQL_PASS
-      MYSQL_DB
-      MYSQL_IAM_CONNECTION_NAME
-      MYSQL_USER_IAM_JAVA
-      POSTGRES_CONNECTION_NAME
-      POSTGRES_IAM_CONNECTION_NAME
-      POSTGRES_USER
-      POSTGRES_USER_IAM_JAVA
-      POSTGRES_PASS
-      POSTGRES_DB
-      POSTGRES_CAS_CONNECTION_NAME
-      POSTGRES_CAS_PASS
-      POSTGRES_CUSTOMER_CAS_CONNECTION_NAME
-      POSTGRES_CUSTOMER_CAS_PASS
-      POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME
-      POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME
-      SQLSERVER_CONNECTION_NAME
-      SQLSERVER_USER
-      SQLSERVER_PASS
-      SQLSERVER_DB
-      IMPERSONATED_USER
-      QUOTA_PROJECT
-      )
+  # Set the default to .envrc file if no argument is passed
+  outfile="${1:-.envrc}"
+  secret_vars=(
+    MYSQL_CONNECTION_NAME=MYSQL_CONNECTION_NAME
+    MYSQL_USER=MYSQL_USER
+    MYSQL_USER_IAM=MYSQL_USER_IAM_GO
+    MYSQL_PASS=MYSQL_PASS
+    MYSQL_DB=MYSQL_DB
+    MYSQL_MCP_CONNECTION_NAME=MYSQL_MCP_CONNECTION_NAME
+    MYSQL_MCP_PASS=MYSQL_MCP_PASS
+    POSTGRES_CONNECTION_NAME=POSTGRES_CONNECTION_NAME
+    POSTGRES_USER=POSTGRES_USER
+    POSTGRES_USER_IAM=POSTGRES_USER_IAM_GO
+    POSTGRES_PASS=POSTGRES_PASS
+    POSTGRES_DB=POSTGRES_DB
+    POSTGRES_CAS_CONNECTION_NAME=POSTGRES_CAS_CONNECTION_NAME
+    POSTGRES_CAS_PASS=POSTGRES_CAS_PASS
+    POSTGRES_CUSTOMER_CAS_CONNECTION_NAME=POSTGRES_CUSTOMER_CAS_CONNECTION_NAME
+    POSTGRES_CUSTOMER_CAS_PASS=POSTGRES_CUSTOMER_CAS_PASS
+    POSTGRES_CUSTOMER_CAS_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_DOMAIN_NAME
+    POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME
+    POSTGRES_MCP_CONNECTION_NAME=POSTGRES_MCP_CONNECTION_NAME
+    POSTGRES_MCP_PASS=POSTGRES_MCP_PASS
+    SQLSERVER_CONNECTION_NAME=SQLSERVER_CONNECTION_NAME
+    SQLSERVER_USER=SQLSERVER_USER
+    SQLSERVER_PASS=SQLSERVER_PASS
+    SQLSERVER_DB=SQLSERVER_DB
+    QUOTA_PROJECT=QUOTA_PROJECT
+  )
 
   if [[ -z "${TEST_PROJECT:-}" ]] ; then
     echo "Set TEST_PROJECT environment variable to the project containing"
@@ -112,13 +122,16 @@ function write_e2e_env(){
     exit 1
   fi
 
-  echo "Getting test secrets from $TEST_PROJECT into $1"
+  echo "Getting test secrets from $TEST_PROJECT into $outfile"
   {
-  for name in "${secret_vars[@]}" ; do
-    val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$name")
-    echo "export $name=\'$val\'"
+  for env_name in "${secret_vars[@]}" ; do
+    env_var_name="${env_name%%=*}"
+    secret_name="${env_name##*=}"
+    set -x
+    val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$secret_name")
+    echo "export $env_var_name='$val'"
   done
-  } > "$1"
+  } > "$outfile"
 
 }
 
