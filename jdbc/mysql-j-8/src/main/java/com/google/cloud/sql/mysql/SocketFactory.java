@@ -60,9 +60,10 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
     T socket =
         (T)
             InternalConnectorRegistry.getInstance()
-                .connect(
-                    ConnectionConfig.fromConnectionProperties(props, host)
-                        .withMdxClientProtocolType("tls"));
+                .connect(ConnectionConfig.fromConnectionProperties(props, host));
+    // TODO: When MDX is fully supported by the server,
+    //      add this configuration to automatically set the client protocol type to TLS.
+    //      .withMdxClientProtocolType("tls"));
     return socket;
   }
 

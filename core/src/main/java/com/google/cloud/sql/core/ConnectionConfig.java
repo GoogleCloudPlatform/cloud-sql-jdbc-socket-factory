@@ -259,7 +259,7 @@ public class ConnectionConfig {
   }
 
   /** Creates a new instance of the ConnectionConfig with an updated clientProtocolType. */
-  public ConnectionConfig withMdxClientProtocolType(String clientProtocolType) {
+  public ConnectionConfig withMdxClientProtocolType(String mdxClientProtocolType) {
     return new ConnectionConfig(
         cloudSqlInstance,
         namedConnector,
@@ -269,7 +269,7 @@ public class ConnectionConfig {
         unixSocketPathSuffix,
         domainName,
         connectorConfig,
-        clientProtocolType);
+        mdxClientProtocolType);
   }
 
   public String getNamedConnector() {
