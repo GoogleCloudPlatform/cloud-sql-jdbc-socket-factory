@@ -110,12 +110,12 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.4.8-jre</version>
+        <version>33.5.0-jre</version>
       </dependency>
       <dependency>
         <groupId>com.google.j2objc</groupId>
         <artifactId>j2objc-annotations</artifactId>
-        <version>3.0.0</version>
+        <version>3.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -130,7 +130,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.49.5</version>
+        <version>3.51.0</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -140,42 +140,42 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.13.1</version>
+        <version>2.13.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
         <artifactId>google-api-client</artifactId>
-        <version>2.8.0</version>
+        <version>2.8.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20250613-2.0.0</version>
+        <version>v1beta4-rev20250908-2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>1.47.1</version>
+        <version>2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>1.47.1</version>
+        <version>2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-jackson2</artifactId>
-        <version>1.47.1</version>
+        <version>2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-credentials</artifactId>
-        <version>1.37.1</version>
+        <version>1.39.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-oauth2-http</artifactId>
-        <version>1.37.1</version>
+        <version>1.39.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.oauth-client</groupId>
@@ -200,12 +200,12 @@
       <dependency>
         <groupId>dnsjava</groupId>
         <artifactId>dnsjava</artifactId>
-        <version>3.2.2</version>
+        <version>3.6.3</version>
       </dependency>
       <dependency>
         <groupId>org.graalvm.sdk</groupId>
         <artifactId>nativeimage</artifactId>
-        <version>24.2.2</version>
+        <version>25.0.0</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
@@ -215,7 +215,7 @@
       <dependency>
         <groupId>com.google.api</groupId>
         <artifactId>gax</artifactId>
-        <version>2.69.0</version>
+        <version>2.70.2</version>
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
@@ -230,47 +230,47 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.8</version>
+        <version>3.7.11</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.2.8</version>
+        <version>1.2.10</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-unix-common</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-codec</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-resolver</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.1.127.Final</version>
       </dependency>
       <!-- Logging -->
       <dependency> 
@@ -282,7 +282,7 @@
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.4.4</version>
+        <version>1.4.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -330,7 +330,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.13.4</version>
+        <version>6.0.0-RC3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
