@@ -207,8 +207,16 @@ jobs:
           chmod +x ./flakybot
           ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   graalvm:
-    # run job on periodic (schedule) event
-    if: "${{ github.event_name == 'schedule' }}"
+    # run job on periodic (schedule) event or pull request from dependabot or renovate
+    if: |
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'pull_request' &&
+        (
+          github.actor == 'dependabot[bot]' ||
+          github.actor == 'renovate[bot]'
+        )
+      )
     name: graalvm native / linux
     runs-on: ubuntu-latest
     permissions:
