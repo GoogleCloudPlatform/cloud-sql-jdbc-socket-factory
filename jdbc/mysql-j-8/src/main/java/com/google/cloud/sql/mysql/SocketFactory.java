@@ -60,7 +60,8 @@ public class SocketFactory implements com.mysql.cj.protocol.SocketFactory {
     T socket =
         (T)
             InternalConnectorRegistry.getInstance()
-                .connect(ConnectionConfig.fromConnectionProperties(props, host)
+                .connect(
+                    ConnectionConfig.fromConnectionProperties(props, host)
                         .withMdxClientProtocolType("tls"));
     return socket;
   }
