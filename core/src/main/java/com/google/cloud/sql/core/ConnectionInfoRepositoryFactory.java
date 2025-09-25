@@ -23,4 +23,6 @@ import com.google.cloud.sql.ConnectorConfig;
 interface ConnectionInfoRepositoryFactory {
 
   ConnectionInfoRepository create(HttpRequestInitializer credentials, ConnectorConfig config);
+
+  String getUserAgents();
 }

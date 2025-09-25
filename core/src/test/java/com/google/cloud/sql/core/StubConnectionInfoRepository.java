@@ -42,7 +42,13 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
-              new CloudSqlInstanceName("project:region:instance"), ips, null, false, "", false),
+              new CloudSqlInstanceName("project:region:instance"),
+              ips,
+              null,
+              false,
+              "",
+              false,
+              null),
           new SslData(
               null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
           Instant.now().plus(1, ChronoUnit.HOURS));
