@@ -115,7 +115,7 @@
       <dependency>
         <groupId>com.google.j2objc</groupId>
         <artifactId>j2objc-annotations</artifactId>
-        <version>3.0.0</version>
+        <version>3.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -130,7 +130,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>3.49.5</version>
+        <version>3.51.0</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -140,17 +140,17 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.13.1</version>
+        <version>2.13.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
         <artifactId>google-api-client</artifactId>
-        <version>2.8.0</version>
+        <version>2.8.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20250823-2.0.0</version>
+        <version>v1beta4-rev20250915-2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -170,12 +170,12 @@
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-credentials</artifactId>
-        <version>1.37.1</version>
+        <version>1.39.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-oauth2-http</artifactId>
-        <version>1.37.1</version>
+        <version>1.39.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.oauth-client</groupId>
@@ -185,12 +185,12 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.41.0</version>
+        <version>2.42.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
-        <version>4.32.0</version>
+        <version>4.32.1</version>
         <scope>compile</scope>
       </dependency>
       <dependency>
@@ -216,7 +216,7 @@
       <dependency>
         <groupId>com.google.api</groupId>
         <artifactId>gax</artifactId>
-        <version>2.69.0</version>
+        <version>2.70.2</version>
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
@@ -231,37 +231,37 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.8</version>
+        <version>3.7.11</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.2.8</version>
+        <version>1.2.10</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-unix-common</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -271,7 +271,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-resolver</artifactId>
-        <version>4.1.123.Final</version>
+        <version>4.2.6.Final</version>
       </dependency>
       <!-- Logging -->
       <dependency> 
@@ -283,7 +283,7 @@
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.4.4</version>
+        <version>1.4.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -372,7 +372,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>versions-maven-plugin</artifactId>
-          <version>2.18.0</version>
+          <version>2.19.1</version>
           <configuration>
             <ruleSet>
               <ignoreVersions>
@@ -479,7 +479,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.6.0</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <id>enforce</id>
@@ -502,7 +502,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.14.0</version>
+        <version>3.14.1</version>
         <configuration>
           <source>8</source>
           <target>8</target>
@@ -562,7 +562,7 @@
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-surefire-plugin</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
       <configuration>
         <reportNameSuffix>sponge_log</reportNameSuffix>
         <trimStackTrace>false</trimStackTrace>
@@ -636,7 +636,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.1</version>
           <executions>
             <execution>
               <configuration>
@@ -732,7 +732,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.3</version>
+            <version>3.5.4</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
@@ -853,12 +853,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.13.3</version>
+            <version>1.13.4</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.13.3</version>
+            <version>1.13.4</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -868,7 +868,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.13.3</version>
+          <version>5.13.4</version>
           <scope>test</scope>
         </dependency>
 
@@ -968,7 +968,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.11.2</version>
+            <version>3.12.0</version>
             <configuration>
               <source>8</source>
               <sourcepath>src/main/java</sourcepath>
@@ -1068,7 +1068,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.5.3</version>
+            <version>3.5.4</version>
             <executions>
               <execution>
                 <phase>integration-test</phase>
