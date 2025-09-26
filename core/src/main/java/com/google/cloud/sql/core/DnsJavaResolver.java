@@ -81,7 +81,7 @@ public class DnsJavaResolver implements DnsResolver {
         throw new NameNotFoundException("DNS record not found for " + domainName);
       }
       if (resultCode == Lookup.TYPE_NOT_FOUND) {
-        return Collections.emptyList();
+        throw new NameNotFoundException("DNS record type TXT not found for " + domainName);
       }
       if (resultCode != Lookup.SUCCESSFUL) {
         throw new RuntimeException(

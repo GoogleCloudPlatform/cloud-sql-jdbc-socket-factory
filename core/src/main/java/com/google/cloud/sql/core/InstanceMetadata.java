@@ -30,6 +30,7 @@ class InstanceMetadata {
   private final boolean casManagedCertificate;
   private final String dnsName;
   private final boolean pscEnabled;
+  private final List<String> mdxProtocolSupport;
 
   InstanceMetadata(
       CloudSqlInstanceName instanceName,
@@ -37,13 +38,15 @@ class InstanceMetadata {
       List<Certificate> instanceCaCertificates,
       boolean casManagedCertificate,
       String dnsName,
-      boolean pscEnabled) {
+      boolean pscEnabled,
+      List<String> mdxProtocolSupport) {
     this.instanceName = instanceName;
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificates = instanceCaCertificates;
     this.casManagedCertificate = casManagedCertificate;
     this.dnsName = dnsName;
     this.pscEnabled = pscEnabled;
+    this.mdxProtocolSupport = mdxProtocolSupport;
   }
 
   Map<IpType, String> getIpAddrs() {
@@ -68,5 +71,9 @@ class InstanceMetadata {
 
   public CloudSqlInstanceName getInstanceName() {
     return instanceName;
+  }
+
+  public List<String> getMdxProtocolSupport() {
+    return mdxProtocolSupport;
   }
 }

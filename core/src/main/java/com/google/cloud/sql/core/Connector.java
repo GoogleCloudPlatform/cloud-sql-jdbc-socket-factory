@@ -53,6 +53,7 @@ class Connector {
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final Timer instanceNameResolverTimer;
+  private final ProtocolHandler mdxProtocolHandler;
 
   Connector(
       ConnectorConfig config,
@@ -63,7 +64,8 @@ class Connector {
       long minRefreshDelayMs,
       long refreshTimeoutMs,
       int serverProxyPort,
-      InstanceConnectionNameResolver instanceNameResolver) {
+      InstanceConnectionNameResolver instanceNameResolver,
+      ProtocolHandler mdxProtocolHandler) {
     this.config = config;
 
     this.adminApi =
@@ -75,6 +77,7 @@ class Connector {
     this.serverProxyPort = serverProxyPort;
     this.instanceNameResolver = instanceNameResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
+    this.mdxProtocolHandler = mdxProtocolHandler;
   }
 
   public ConnectorConfig getConfig() {
@@ -135,6 +138,11 @@ class Connector {
       } catch (IOException e) {
         logger.debug("TLS handshake failed!");
         throw e;
+      }
+
+      if (metadata.isMdxClientProtocolTypeSupport()
+          && !Strings.isNullOrEmpty(config.getMdxClientProtocolType())) {
+        socket = mdxProtocolHandler.connect(socket, config.getMdxClientProtocolType());
       }
 
       logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));

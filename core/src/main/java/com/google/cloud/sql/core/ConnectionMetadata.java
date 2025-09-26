@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import java.util.List;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -29,18 +30,21 @@ public class ConnectionMetadata {
   private final KeyManagerFactory keyManagerFactory;
   private final TrustManagerFactory trustManagerFactory;
   private final SSLContext sslContext;
+  private final List<String> mdxProtocolSupport;
 
   /** Construct an immutable ConnectionMetadata. */
   public ConnectionMetadata(
       String preferredIpAddress,
       KeyManagerFactory keyManagerFactory,
       TrustManagerFactory trustManagerFactory,
-      SSLContext sslContext) {
+      SSLContext sslContext,
+      List<String> mdxProtocolSupport) {
 
     this.preferredIpAddress = preferredIpAddress;
     this.keyManagerFactory = keyManagerFactory;
     this.trustManagerFactory = trustManagerFactory;
     this.sslContext = sslContext;
+    this.mdxProtocolSupport = mdxProtocolSupport;
   }
 
   public String getPreferredIpAddress() {
@@ -57,5 +61,13 @@ public class ConnectionMetadata {
 
   public SSLContext getSslContext() {
     return sslContext;
+  }
+
+  public List<String> getMdxProtocolSupport() {
+    return mdxProtocolSupport;
+  }
+
+  public boolean isMdxClientProtocolTypeSupport() {
+    return mdxProtocolSupport != null && mdxProtocolSupport.contains("CLIENT_PROTOCOL_TYPE");
   }
 }

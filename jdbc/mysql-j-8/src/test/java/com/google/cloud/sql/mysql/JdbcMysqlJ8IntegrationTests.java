@@ -19,6 +19,7 @@ package com.google.cloud.sql.mysql;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -42,6 +43,7 @@ public class JdbcMysqlJ8IntegrationTests {
   private static final String DB_NAME = System.getenv("MYSQL_DB");
   private static final String DB_USER = System.getenv("MYSQL_USER");
   private static final String DB_PASSWORD = System.getenv("MYSQL_PASS");
+  private static final String ADMIN_API_URL = System.getenv("ADMIN_API_URL");
   private static final String IP_TYPE =
       System.getenv("IP_TYPE") == null ? "PUBLIC" : System.getenv("IP_TYPE");
   private static final ImmutableList<String> requiredEnvVars =
@@ -70,6 +72,9 @@ public class JdbcMysqlJ8IntegrationTests {
     connProps.setProperty("socketFactory", "com.google.cloud.sql.mysql.SocketFactory");
     connProps.setProperty("ipTypes", IP_TYPE);
     connProps.setProperty("cloudSqlInstance", CONNECTION_NAME);
+    if (!Strings.isNullOrEmpty(ADMIN_API_URL)) {
+      connProps.setProperty("cloudSqlAdminRootUrl", ADMIN_API_URL);
+    }
 
     // Initialize connection pool
     HikariConfig config = new HikariConfig();

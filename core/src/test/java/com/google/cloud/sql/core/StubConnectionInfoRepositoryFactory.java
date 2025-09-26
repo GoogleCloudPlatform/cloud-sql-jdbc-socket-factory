@@ -67,4 +67,9 @@ public class StubConnectionInfoRepositoryFactory implements ConnectionInfoReposi
     }
     return new DefaultConnectionInfoRepository(adminApiBuilder.build());
   }
+
+  @Override
+  public String getUserAgents() {
+    return "cloudsql-mock-ua";
+  }
 }

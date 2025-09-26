@@ -75,6 +75,7 @@ class ConnectionInfo {
         preferredIp,
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
-        sslData.getSslContext());
+        sslData.getSslContext(),
+        instanceMetadata.getMdxProtocolSupport());
   }
 }

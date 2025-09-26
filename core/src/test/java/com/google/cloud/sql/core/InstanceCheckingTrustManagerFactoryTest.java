@@ -67,7 +67,8 @@ public class InstanceCheckingTrustManagerFactoryTest {
             caCerts,
             false,
             null,
-            false);
+            false,
+            null);
 
     InstanceCheckingTrustManagerFactory f =
         InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata);

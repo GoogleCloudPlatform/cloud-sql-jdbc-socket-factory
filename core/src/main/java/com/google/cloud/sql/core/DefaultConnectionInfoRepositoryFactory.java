@@ -48,6 +48,11 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
     return new DefaultConnectionInfoRepository(adminApiBuilder);
   }
 
+  @Override
+  public String getUserAgents() {
+    return this.userAgents;
+  }
+
   private SQLAdmin getApiBuilder(
       HttpRequestInitializer requestInitializer, ConnectorConfig config) {
     HttpTransport httpTransport;
