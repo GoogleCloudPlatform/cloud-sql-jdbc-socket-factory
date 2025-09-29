@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.26.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.3...v1.26.0) (2025-09-29)
+
+
+### Features
+
+* Add DnsJavaResolver and related test ([#2193](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2193)) ([28d0192](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/28d019211135dcf4482dfa831dd45e5297dd7a35))
+* Metadata Exchange support for the Java connector. ([#2200](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2200)) ([243bee0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/243bee0bbd8a8c1da31dd80efc04b7bcacb5eb71))
+* remove and replace JndiDnsResolve with DnsJavaResolver ([#2195](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2195)) ([6eabbe1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6eabbe18896c925d01a61a136a6d27cad7de8e3f))
+
+
+### Bug Fixes
+
+* build script ([#2194](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2194)) ([0a0c338](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0a0c3380324d932cfc9be9c0c0cebb9adf0c16e2))
+
 ## [1.25.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.2...v1.25.3) (2025-08-12)
 
 
