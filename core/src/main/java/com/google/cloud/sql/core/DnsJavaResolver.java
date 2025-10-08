@@ -19,7 +19,6 @@ package com.google.cloud.sql.core;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.stream.Collectors;
 import javax.naming.NameNotFoundException;
 import org.xbill.DNS.Lookup;
@@ -91,7 +90,7 @@ public class DnsJavaResolver implements DnsResolver {
       // 5. Process the records, sort them, and return.
       Record[] records = lookup.getAnswers();
       if (records == null || records.length == 0) {
-        return Collections.emptyList();
+        throw new NameNotFoundException("DNS record type TXT not found for " + domainName);
       }
 
       // A single TXT record can contain multiple strings, so we use flatMap.
