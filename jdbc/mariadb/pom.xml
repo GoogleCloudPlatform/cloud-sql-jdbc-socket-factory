@@ -22,11 +22,11 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.25.2-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.25.4-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>mariadb-socket-factory</artifactId>
-  <version>1.25.2-SNAPSHOT</version><!-- {x-version-update:mariadb-socket-factory:current} -->
+  <version>1.25.4-SNAPSHOT</version><!-- {x-version-update:mariadb-socket-factory:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL MariaDB Socket Factory</name>
@@ -49,7 +49,7 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.5</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
@@ -87,7 +87,7 @@
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.5.3</version>
+          <version>3.5.5</version>
         </dependency>
       </dependencies>
     </profile>
@@ -101,7 +101,7 @@
         <dependency>
           <groupId>org.mariadb.jdbc</groupId>
           <artifactId>mariadb-java-client</artifactId>
-          <version>3.5.3</version>
+          <version>3.5.5</version>
         </dependency>
       </dependencies>
     </profile>

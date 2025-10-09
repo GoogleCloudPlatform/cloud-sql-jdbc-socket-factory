@@ -64,6 +64,7 @@ public final class InternalConnectorRegistry {
   private final int serverProxyPort;
   private final long connectTimeoutMs;
   private final ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory;
+  private final ProtocolHandler mdxProtocolHandler;
 
   /**
    * Property used to set the application name for the underlying SQLAdmin client.
@@ -87,6 +88,7 @@ public final class InternalConnectorRegistry {
     this.executor = executor;
     this.localKeyPair = localKeyPair;
     this.connectTimeoutMs = connectTimeoutMs;
+    this.mdxProtocolHandler = new ProtocolHandler(connectionInfoRepositoryFactory.getUserAgents());
   }
 
   /** Returns the {@link InternalConnectorRegistry} singleton. */
@@ -336,7 +338,8 @@ public final class InternalConnectorRegistry {
         MIN_REFRESH_DELAY_MS,
         connectTimeoutMs,
         serverProxyPort,
-        new DnsInstanceConnectionNameResolver(new JndiDnsResolver()));
+        new DnsInstanceConnectionNameResolver(new DnsJavaResolver()),
+        this.mdxProtocolHandler);
   }
 
   /** Register the configuration for a named connector. */

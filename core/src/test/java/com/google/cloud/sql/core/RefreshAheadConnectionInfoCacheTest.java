@@ -263,7 +263,13 @@ public class RefreshAheadConnectionInfoCacheTest {
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
-              new CloudSqlInstanceName("project:region:instance"), ips, null, false, "", false),
+              new CloudSqlInstanceName("project:region:instance"),
+              ips,
+              null,
+              false,
+              "",
+              false,
+              null),
           new SslData(
               null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
           Instant.now().plus(amount, unit));
@@ -585,7 +591,8 @@ public class RefreshAheadConnectionInfoCacheTest {
                 null,
                 false,
                 "",
-                false),
+                false,
+                null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
@@ -645,7 +652,8 @@ public class RefreshAheadConnectionInfoCacheTest {
                 null,
                 false,
                 "",
-                false),
+                false,
+                null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
