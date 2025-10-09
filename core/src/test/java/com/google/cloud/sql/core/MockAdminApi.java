@@ -207,22 +207,22 @@ public class MockAdminApi {
     private final ConnectSettings settings;
     private final String baseUrl;
 
-    public ConnectSettingsRequest(
+    private ConnectSettingsRequest(
         CloudSqlInstanceName cloudSqlInstanceName, ConnectSettings settings, String baseUrl) {
       this.cloudSqlInstanceName = cloudSqlInstanceName;
       this.settings = settings;
       this.baseUrl = baseUrl;
     }
 
-    public ConnectSettings getSettings() {
+    private ConnectSettings getSettings() {
       return settings;
     }
 
-    public CloudSqlInstanceName getCloudSqlInstanceName() {
+    private CloudSqlInstanceName getCloudSqlInstanceName() {
       return cloudSqlInstanceName;
     }
 
-    public String getBaseUrl() {
+    private String getBaseUrl() {
       return baseUrl;
     }
   }
@@ -233,7 +233,7 @@ public class MockAdminApi {
     private final GenerateEphemeralCertResponse generateEphemeralCertResponse;
     private final String baseUrl;
 
-    public GenerateEphemeralCertRequest(
+    private GenerateEphemeralCertRequest(
         CloudSqlInstanceName instanceConnectionName,
         GenerateEphemeralCertResponse generateEphemeralCertResponse,
         String baseUrl) {
@@ -242,15 +242,15 @@ public class MockAdminApi {
       this.baseUrl = baseUrl;
     }
 
-    public CloudSqlInstanceName getCloudSqlInstanceName() {
+    private CloudSqlInstanceName getCloudSqlInstanceName() {
       return cloudSqlInstanceName;
     }
 
-    public GenerateEphemeralCertResponse getGenerateEphemeralCertResponse() {
+    private GenerateEphemeralCertResponse getGenerateEphemeralCertResponse() {
       return generateEphemeralCertResponse;
     }
 
-    public String getBaseUrl() {
+    private String getBaseUrl() {
       return baseUrl;
     }
   }
@@ -259,7 +259,7 @@ public class MockAdminApi {
     private final String refreshToken;
     private final Date expirationTime;
 
-    public MockRefreshHandler(String refreshToken, Date expirationTime) {
+    private MockRefreshHandler(String refreshToken, Date expirationTime) {
       this.refreshToken = refreshToken;
       this.expirationTime = expirationTime;
     }

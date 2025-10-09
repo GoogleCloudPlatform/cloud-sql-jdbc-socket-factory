@@ -57,11 +57,11 @@ public class RefreshCalculatorTest {
     this.refreshCalculator = new RefreshCalculator();
   }
 
-  private static final Instant NOW = Instant.now().truncatedTo(SECONDS);
   private final RefreshCalculator refreshCalculator;
 
   @Test
   public void testDuration() {
+    final Instant NOW = Instant.now().truncatedTo(SECONDS);
     Duration nextRefresh =
         Duration.ofSeconds(
             refreshCalculator.calculateSecondsUntilNextRefresh(NOW, NOW.plus(input)));

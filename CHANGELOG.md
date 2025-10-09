@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.25.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.2...v1.25.3) (2025-08-12)
+
+
+### Bug Fixes
+
+* Use the -jre variant of Google Guava library for GraalVM compatability. ([#2187](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2187)) ([7fb819f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7fb819fb0d0856c337a8b7ec10ebce899ad496b3)), closes [#2178](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2178)
+
+
+### Dependencies
+
+* Update dependencies to latest. ([#2185](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2185)) ([163cdae](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/163cdaeda6f36cc2c0290aa86eed8a1224e3635c))
+
+## [1.25.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.1...v1.25.2) (2025-07-14)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2163](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2163)) ([a33acf5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a33acf505b6ff6e8633801e6b9bc54eeed6e6e6d))
+* use latest shared config ([#2171](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2171)) ([0fbbd10](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0fbbd10aaf57ac017fb90a08b69e22c7d1dc0c01))
+
 ## [1.25.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.0...v1.25.1) (2025-05-21)
 
 
