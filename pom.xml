@@ -331,7 +331,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.13.4</version>
+        <version>6.0.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -853,12 +853,12 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.13.3</version>
+            <version>6.0.0</version>
           </dependency>
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
-            <version>1.13.3</version>
+            <version>6.0.0</version>
           </dependency>
         </dependencies>
       </dependencyManagement>
@@ -868,7 +868,7 @@
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
-          <version>5.13.3</version>
+          <version>6.0.0</version>
           <scope>test</scope>
         </dependency>
 
