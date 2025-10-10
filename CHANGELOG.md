@@ -1,5 +1,73 @@
 # Changelog
 
+## [1.26.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.3...v1.26.0) (2025-10-09)
+
+
+### Features
+
+* Add DnsJavaResolver and related test ([#2193](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2193)) ([28d0192](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/28d019211135dcf4482dfa831dd45e5297dd7a35))
+* Metadata Exchange support for the Java connector. ([#2200](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2200)) ([243bee0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/243bee0bbd8a8c1da31dd80efc04b7bcacb5eb71))
+* remove and replace JndiDnsResolve with DnsJavaResolver ([#2195](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2195)) ([6eabbe1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6eabbe18896c925d01a61a136a6d27cad7de8e3f))
+
+
+### Bug Fixes
+
+* build script ([#2194](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2194)) ([0a0c338](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0a0c3380324d932cfc9be9c0c0cebb9adf0c16e2))
+
+
+### Dependencies
+
+* Update dependency com.google.http-client:google-http-client to v2 ([#2189](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2189)) ([b16506e](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b16506e2cca88eb7d0db02191e77475d62424328))
+* Update dependency com.google.http-client:google-http-client-jackson2 to v2 ([#2191](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2191)) ([4f0ca60](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4f0ca609f464274f3796a02277c9694d58c665b8))
+* Update dependency com.microsoft.sqlserver:mssql-jdbc to v13 ([#2192](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2192)) ([cf3d163](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/cf3d163da9986e07df57d74bedfa3843775fc647))
+* Update dependency dnsjava:dnsjava to v3.6.0 [SECURITY] ([#2203](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2203)) ([4008552](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/4008552e3cb670fc82b406cae3883bbf85be9923))
+* Update dependency maven to v3.9.11 ([#2167](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2167)) ([34e5370](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/34e5370c190871787c6fbe762b36e22a6f87a77c))
+* Update junit-framework monorepo to v6 ([#2210](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2210)) ([d25c1a3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d25c1a3a4074f84113bd769df82257351ad500c2))
+
+## [1.25.3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.2...v1.25.3) (2025-08-12)
+
+
+### Bug Fixes
+
+* Use the -jre variant of Google Guava library for GraalVM compatability. ([#2187](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2187)) ([7fb819f](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7fb819fb0d0856c337a8b7ec10ebce899ad496b3)), closes [#2178](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2178)
+
+
+### Dependencies
+
+* Update dependencies to latest. ([#2185](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2185)) ([163cdae](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/163cdaeda6f36cc2c0290aa86eed8a1224e3635c))
+
+## [1.25.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.1...v1.25.2) (2025-07-14)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2163](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2163)) ([a33acf5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a33acf505b6ff6e8633801e6b9bc54eeed6e6e6d))
+* use latest shared config ([#2171](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2171)) ([0fbbd10](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0fbbd10aaf57ac017fb90a08b69e22c7d1dc0c01))
+
+## [1.25.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.0...v1.25.1) (2025-05-21)
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2155](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2155)) ([5b05cfe](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/5b05cfe905778ea817814a609403c466a28f35be))
+
+## [1.25.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.2...v1.25.0) (2025-04-28)
+
+
+### Features
+
+* Update TLS validation to use both SAN and CN fields. ([#2150](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2150)) ([e7d9cef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e7d9cefa0bee8f14dcaf34294889c89cd638dadc))
+
+
+### Bug Fixes
+
+* Roll back dependency update that broke R2DBC + MariaDB IAM E2E Test ([#2154](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2154)) ([2ac2d04](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2ac2d049cde8d141642ec5e38947c052dd286976))
+
+
+### Dependencies
+
+* Update Non-major dependencies ([#2145](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2145)) ([119e644](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/119e644785766d32f09d8d4ffca5bec5d72027ff))
+
 ## [1.24.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.24.1...v1.24.2) (2025-04-15)
 
 

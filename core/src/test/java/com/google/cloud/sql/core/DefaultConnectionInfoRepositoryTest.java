@@ -36,7 +36,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import javax.net.ssl.SSLContext;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class DefaultConnectionInfoRepositoryTest {
 
   public static final String SAMPLE_PUBLIC_IP = "34.1.2.3";

@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-        java-version: ["8", "11", "17"]
+        java-version: ["8", "11", "17", "24"]
       fail-fast: false
     permissions:
       contents: "read"
@@ -40,10 +40,10 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up JDK
-        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
         with:
           distribution: "zulu"
           java-version: ${{matrix.java-version}}
@@ -52,7 +52,7 @@ jobs:
         name: Authenticate to Google Cloud
         # only needed for Flakybot on periodic (schedule) and continuous (push) events
         if: ${{ github.event_name == 'schedule' || github.event_name == 'push' }}
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ vars.PROVIDER_NAME }}
           service_account: ${{ vars.SERVICE_ACCOUNT }}
@@ -105,17 +105,17 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up JDK
-        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
         with:
           distribution: "zulu"
           java-version: ${{matrix.java-version}}
 
       - id: auth
         name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ vars.PROVIDER_NAME }}
           service_account: ${{ vars.SERVICE_ACCOUNT }}
@@ -123,13 +123,15 @@ jobs:
 
       - id: secrets
         name: Get secrets
-        uses: google-github-actions/get-secretmanager-secrets@e5bb06c2ca53b244f978d33348d18317a7f263ce # v2.2.2
+        uses: google-github-actions/get-secretmanager-secrets@bc9c54b29fdffb8a47776820a7d26e77b379d262 # v3.0.0
         with:
           secrets: |-
             MYSQL_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_CONNECTION_NAME
             MYSQL_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER
             MYSQL_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_PASS
             MYSQL_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
+            MYSQL_MCP_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT}}/MYSQL_MCP_CONNECTION_NAME
+            MYSQL_MCP_PASS:${{ vars.GOOGLE_CLOUD_PROJECT}}/MYSQL_MCP_PASS
             MYSQL_IAM_USER_JAVA:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
             POSTGRES_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
             POSTGRES_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
@@ -142,6 +144,8 @@ jobs:
             POSTGRES_CUSTOMER_CAS_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS
             POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME
             POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME
+            POSTGRES_MCP_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_MCP_CONNECTION_NAME
+            POSTGRES_MCP_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_MCP_PASS
             SQLSERVER_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_CONNECTION_NAME
             SQLSERVER_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_USER
             SQLSERVER_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
@@ -154,6 +158,8 @@ jobs:
           MYSQL_USER: "${{ steps.secrets.outputs.MYSQL_USER }}"
           MYSQL_PASS: "${{ steps.secrets.outputs.MYSQL_PASS }}"
           MYSQL_DB: "${{ steps.secrets.outputs.MYSQL_DB }}"
+          MYSQL_MCP_CONNECTION_NAME: "${{ steps.secrets.outputs.MYSQL_MCP_CONNECTION_NAME }}"
+          MYSQL_MCP_PASS: "${{ steps.secrets.outputs.MYSQL_MCP_PASS }}"
           MYSQL_IAM_USER: "${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}"
           POSTGRES_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}"
           POSTGRES_USER: "${{ steps.secrets.outputs.POSTGRES_USER }}"
@@ -166,6 +172,8 @@ jobs:
           POSTGRES_CUSTOMER_CAS_PASS: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS }}"
           POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME }}"
           POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME }}"
+          POSTGRES_MCP_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_MCP_CONNECTION_NAME }}"
+          POSTGRES_MCP_PASS: "${{ steps.secrets.outputs.POSTGRES_MCP_PASS }}"
           SQLSERVER_CONNECTION_NAME: "${{ steps.secrets.outputs.SQLSERVER_CONNECTION_NAME }}"
           SQLSERVER_USER: "${{ steps.secrets.outputs.SQLSERVER_USER }}"
           SQLSERVER_PASS: "${{ steps.secrets.outputs.SQLSERVER_PASS }}"
@@ -199,8 +207,16 @@ jobs:
           chmod +x ./flakybot
           ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
   graalvm:
-    # run job on periodic (schedule) event
-    if: "${{ github.event_name == 'schedule' }}"
+    # run job on periodic (schedule) event or pull request from dependabot or renovate
+    if: |
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'pull_request' &&
+        (
+          github.actor == 'dependabot[bot]' ||
+          github.actor == 'renovate[bot]'
+        )
+      )
     name: graalvm native / linux
     runs-on: ubuntu-latest
     permissions:
@@ -210,7 +226,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up GraalVM
         uses: graalvm/setup-graalvm@4a200f28cd70d1940b5e33bd00830b7dc71a7e2b # v1.2.6
@@ -222,7 +238,7 @@ jobs:
 
       - id: auth
         name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ vars.PROVIDER_NAME }}
           service_account: ${{ vars.SERVICE_ACCOUNT }}
@@ -230,13 +246,15 @@ jobs:
 
       - id: secrets
         name: Get secrets
-        uses: google-github-actions/get-secretmanager-secrets@e5bb06c2ca53b244f978d33348d18317a7f263ce # v2.2.2
+        uses: google-github-actions/get-secretmanager-secrets@bc9c54b29fdffb8a47776820a7d26e77b379d262 # v3.0.0
         with:
           secrets: |-
             MYSQL_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_CONNECTION_NAME
             MYSQL_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER
             MYSQL_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_PASS
             MYSQL_DB:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_DB
+            MYSQL_MCP_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT}}/MYSQL_MCP_CONNECTION_NAME
+            MYSQL_MCP_PASS:${{ vars.GOOGLE_CLOUD_PROJECT}}/MYSQL_MCP_PASS
             MYSQL_IAM_USER_JAVA:${{ vars.GOOGLE_CLOUD_PROJECT }}/MYSQL_USER_IAM_JAVA
             POSTGRES_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CONNECTION_NAME
             POSTGRES_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_USER
@@ -249,6 +267,8 @@ jobs:
             POSTGRES_CUSTOMER_CAS_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS
             POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME
             POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME
+            POSTGRES_MCP_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_MCP_CONNECTION_NAME
+            POSTGRES_MCP_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/POSTGRES_MCP_PASS
             SQLSERVER_CONNECTION_NAME:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_CONNECTION_NAME
             SQLSERVER_USER:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_USER
             SQLSERVER_PASS:${{ vars.GOOGLE_CLOUD_PROJECT }}/SQLSERVER_PASS
@@ -262,6 +282,8 @@ jobs:
           MYSQL_USER: "${{ steps.secrets.outputs.MYSQL_USER }}"
           MYSQL_PASS: "${{ steps.secrets.outputs.MYSQL_PASS }}"
           MYSQL_DB: "${{ steps.secrets.outputs.MYSQL_DB }}"
+          MYSQL_MCP_CONNECTION_NAME: "${{ steps.secrets.outputs.MYSQL_MCP_CONNECTION_NAME }}"
+          MYSQL_MCP_PASS: "${{ steps.secrets.outputs.MYSQL_MCP_PASS }}"
           MYSQL_IAM_USER: "${{ steps.secrets.outputs.MYSQL_IAM_USER_JAVA }}"
           POSTGRES_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_CONNECTION_NAME }}"
           POSTGRES_USER: "${{ steps.secrets.outputs.POSTGRES_USER }}"
@@ -274,6 +296,8 @@ jobs:
           POSTGRES_CUSTOMER_CAS_PASS: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS }}"
           POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME }}"
           POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME: "${{ steps.secrets.outputs.POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME }}"
+          POSTGRES_MCP_CONNECTION_NAME: "${{ steps.secrets.outputs.POSTGRES_MCP_CONNECTION_NAME }}"
+          POSTGRES_MCP_PASS: "${{ steps.secrets.outputs.POSTGRES_MCP_PASS }}"
           SQLSERVER_CONNECTION_NAME: "${{ steps.secrets.outputs.SQLSERVER_CONNECTION_NAME }}"
           SQLSERVER_USER: "${{ steps.secrets.outputs.SQLSERVER_USER }}"
           SQLSERVER_PASS: "${{ steps.secrets.outputs.SQLSERVER_PASS }}"

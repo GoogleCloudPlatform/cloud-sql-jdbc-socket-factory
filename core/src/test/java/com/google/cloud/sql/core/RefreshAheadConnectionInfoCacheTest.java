@@ -41,7 +41,10 @@ import javax.net.ssl.KeyManagerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class RefreshAheadConnectionInfoCacheTest {
 
   public static final long TEST_TIMEOUT_MS = 3000;
@@ -260,7 +263,13 @@ public class RefreshAheadConnectionInfoCacheTest {
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
-              new CloudSqlInstanceName("project:region:instance"), ips, null, false, "", false),
+              new CloudSqlInstanceName("project:region:instance"),
+              ips,
+              null,
+              false,
+              "",
+              false,
+              null),
           new SslData(
               null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
           Instant.now().plus(amount, unit));
@@ -582,7 +591,8 @@ public class RefreshAheadConnectionInfoCacheTest {
                 null,
                 false,
                 "",
-                false),
+                false,
+                null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();
@@ -642,7 +652,8 @@ public class RefreshAheadConnectionInfoCacheTest {
                 null,
                 false,
                 "",
-                false),
+                false,
+                null),
             sslData,
             Instant.now().plus(1, ChronoUnit.HOURS));
     AtomicInteger refreshCount = new AtomicInteger();

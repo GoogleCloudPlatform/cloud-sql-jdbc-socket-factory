@@ -348,7 +348,8 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             instanceCaCertificates,
             isCasManagedCertificate(instanceMetadata.getServerCaMode()),
             serverName,
-            pscEnabled);
+            pscEnabled,
+            instanceMetadata.getMdxProtocolSupport());
       } catch (CertificateException ex) {
         throw new RuntimeException(
             String.format(
@@ -463,6 +464,9 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       kmf.init(authKeyStore, new char[0]);
 
+      // The InstanceCheckingTrustManagerFactory implements the custom certificate validation
+      // logic. After using the standard TLS CA chain of trust, it will implement a custom
+      // hostname verification to gracefully handle the hostnames in Cloud SQL server certificates.
       TrustManagerFactory tmf = InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata);
 
       SSLContext sslContext;

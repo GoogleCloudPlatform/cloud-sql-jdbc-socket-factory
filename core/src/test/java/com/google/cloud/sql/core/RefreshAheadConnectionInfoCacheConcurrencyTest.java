@@ -30,9 +30,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@RunWith(JUnit4.class)
 public class RefreshAheadConnectionInfoCacheConcurrencyTest {
 
   public static final int DEFAULT_WAIT = 200;

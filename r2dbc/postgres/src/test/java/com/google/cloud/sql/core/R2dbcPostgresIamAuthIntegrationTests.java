@@ -66,8 +66,7 @@ public class R2dbcPostgresIamAuthIntegrationTests {
     requiredEnvVars.forEach(
         (varName) ->
             assertWithMessage(
-                    String.format(
-                        "Environment variable '%s' must be set to perform these tests.", varName))
+                    "Environment variable '%s' must be set to perform these tests.", varName)
                 .that(System.getenv(varName))
                 .isNotEmpty());
 

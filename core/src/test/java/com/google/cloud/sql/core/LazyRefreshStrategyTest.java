@@ -24,7 +24,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class LazyRefreshStrategyTest {
   public static final long TEST_TIMEOUT_MS = 3000;
 
@@ -220,7 +223,13 @@ public class LazyRefreshStrategyTest {
     ExampleData(Instant expiration) {
       super(
           new InstanceMetadata(
-              new CloudSqlInstanceName("project:region:instance"), null, null, false, "", false),
+              new CloudSqlInstanceName("project:region:instance"),
+              null,
+              null,
+              false,
+              "",
+              false,
+              null),
           new SslData(null, null, null),
           expiration);
     }

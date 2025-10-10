@@ -253,6 +253,40 @@ public class TestCertificateGenerator {
     return new JcaX509CertificateConverter().getCertificate(certificateHolder);
   }
 
+  public X509Certificate[] createServerCertificate(String cn, String san, boolean cas)
+      throws GeneralSecurityException, OperatorCreationException, CertIOException {
+    Duration validFor = Duration.ofHours(1);
+    ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC"));
+    ZonedDateTime notAfter = notBefore.plus(validFor);
+
+    Collection<GeneralName> sans =
+        san != null
+            ? Collections.singletonList(new GeneralName(GeneralName.dNSName, san))
+            : Collections.emptyList();
+
+    if (cas) {
+      X509Certificate cert =
+          buildSignedCertificate(
+              new X500Name("CN=" + cn),
+              serverKeyPair.getPublic(),
+              SERVER_INTERMEDIATE_CA_SUBJECT,
+              serverIntermediateCaKeyPair.getPrivate(),
+              notAfter.toInstant(),
+              sans);
+      return new X509Certificate[] {cert, this.serverIntemediateCaCert, this.serverCaCert};
+    } else {
+      X509Certificate cert =
+          buildSignedCertificate(
+              new X500Name("CN=" + cn),
+              serverKeyPair.getPublic(),
+              SERVER_CA_SUBJECT,
+              serverCaKeyPair.getPrivate(),
+              notAfter.toInstant(),
+              sans);
+      return new X509Certificate[] {cert, this.serverIntemediateCaCert, this.serverCaCert};
+    }
+  }
+
   /** Returns the PEM encoded certificate. */
   public String getPemForCert(X509Certificate certificate) {
     StringBuilder sb = new StringBuilder();

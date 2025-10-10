@@ -40,12 +40,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import javax.naming.NameNotFoundException;
 import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class ConnectorTest extends CloudSqlCoreTestingBase {
   ListeningScheduledExecutorService defaultExecutor;
   private final long TEST_MAX_REFRESH_MS = 5000L;
@@ -108,7 +112,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
 
     assertThat(ex)
         .hasMessageThat()
-        .isEqualTo(
+        .contains(
             "Server certificate CN does not match instance name. "
                 + "Server certificate CN=myProject:myInstance "
                 + "Expected instance name: myProject:wrongwrongwrong");
@@ -278,7 +282,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver));
+            new DnsInstanceConnectionNameResolver(resolver),
+            new ProtocolHandler("test"));
 
     // Open socket to initial instance
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
@@ -328,7 +333,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver));
+            new DnsInstanceConnectionNameResolver(resolver),
+            new ProtocolHandler("test"));
 
     // Open socket to initial instance
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
@@ -381,7 +387,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver));
+            new DnsInstanceConnectionNameResolver(resolver),
+            new ProtocolHandler("test"));
 
     // Open socket to initial instance
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
@@ -452,13 +459,35 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             config.getConnectorConfig(),
             port,
             "db.example.com",
-            "myProject:myRegion:myInstance",
+            "myProject:myRegion:otherInstance",
             true);
 
     SSLHandshakeException ex =
         assertThrows(SSLHandshakeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
 
     assertThat(ex).hasMessageThat().contains("Server certificate does not contain expected name");
+  }
+
+  @Test
+  public void create_fallbackToInstanceWhenDomainNameDoesntMatchServerCert() throws Exception {
+    FakeSslServer sslServer = new FakeSslServer();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("not-in-san.example.com")
+            .withIpTypes("PRIMARY")
+            .build();
+
+    int port = sslServer.start(PUBLIC_IP);
+
+    Connector c =
+        newConnector(
+            config.getConnectorConfig(),
+            port,
+            "db.example.com",
+            "myProject:myRegion:myInstance",
+            true);
+
+    c.connect(config, TEST_MAX_REFRESH_MS);
   }
 
   @Test
@@ -489,7 +518,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             TEST_MAX_REFRESH_MS,
             port,
             new DnsInstanceConnectionNameResolver(
-                new MockDnsResolver("example.com", "myProject:myRegion:myInstance")));
+                new MockDnsResolver("example.com", "myProject:myRegion:myInstance")),
+            new ProtocolHandler("test"));
 
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -497,7 +527,7 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   private boolean isWindows() {
-    String os = System.getProperty("os.name").toLowerCase();
+    String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
     return os.contains("win");
   }
 
@@ -567,7 +597,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -632,7 +663,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     // Use a different project to get Api Not Enabled Error.
     TerminalException ex =
@@ -665,7 +697,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     // Use a different instance to simulate incorrect permissions.
     TerminalException ex =
@@ -698,7 +731,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     // If the gateway is down, then this is a temporary error, not a fatal error.
     RuntimeException ex =
@@ -741,7 +775,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -775,7 +810,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -808,7 +844,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
 
@@ -847,7 +884,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver()));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver()),
+            new ProtocolHandler("test"));
 
     assertThrows(RuntimeException.class, () -> c.connect(config, TEST_MAX_REFRESH_MS));
   }
@@ -874,7 +912,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver(domainName, instanceName)));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver(domainName, instanceName)),
+            new ProtocolHandler("test"));
     return connector;
   }
 
@@ -904,7 +943,8 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(new MockDnsResolver(domainName, instanceName)));
+            new DnsInstanceConnectionNameResolver(new MockDnsResolver(domainName, instanceName)),
+            new ProtocolHandler("test"));
     return connector;
   }
 
@@ -918,12 +958,12 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     private final String domainName;
     private final String instanceName;
 
-    public MockDnsResolver() {
+    private MockDnsResolver() {
       this.domainName = null;
       this.instanceName = null;
     }
 
-    public MockDnsResolver(String domainName, String instanceName) {
+    private MockDnsResolver(String domainName, String instanceName) {
       this.domainName = domainName;
       this.instanceName = instanceName;
     }
@@ -947,16 +987,16 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     private final String domainName;
     private String instanceName;
 
-    public MutableDnsResolver(String domainName, String instanceName) {
+    private MutableDnsResolver(String domainName, String instanceName) {
       this.domainName = domainName;
       this.instanceName = instanceName;
     }
 
-    public synchronized void setInstanceName(String instanceName) {
+    private synchronized void setInstanceName(String instanceName) {
       this.instanceName = instanceName;
     }
 
-    public synchronized void clearInstanceName() {
+    private synchronized void clearInstanceName() {
       this.instanceName = null;
     }
 

@@ -21,7 +21,10 @@ import static com.google.common.truth.Truth.assertThat;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class RetryingCallableTest {
   @Test
   public void testConstructorIllegalArguments() throws Exception {
