@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.26.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.26.0...v1.26.1) (2025-10-16)
+
+
+### Bug Fixes
+
+* Add maven-javadoc-plugin to pom.xml ([#2217](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2217)) ([b8a5b49](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b8a5b494f91c852e89e0a1ba69777a8b3cdcbeb5))
+
+
+### Dependencies
+
+* Update dependency org.graalvm.sdk:nativeimage to v25 ([#2209](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2209)) ([b9cbc57](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/b9cbc5732b9db505a3a0c1236d8dfefd666888ef))
+
 ## [1.26.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.25.3...v1.26.0) (2025-10-09)
 
 
