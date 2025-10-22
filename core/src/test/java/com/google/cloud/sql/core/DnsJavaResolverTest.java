@@ -22,10 +22,13 @@ import static org.junit.Assert.assertThrows;
 import java.util.Collection;
 import javax.naming.NameNotFoundException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class DnsJavaResolverTest {
 
-  private static final String VALID_DOMAIN_NAME = "invalid-san-test.csqlconnectortest.com";
+  private static final String VALID_DOMAIN_NAME = "valid-san-test.csqlconnectortest.com";
   private static final String MULTI_STRING_RECORD_DOMAIN_NAME =
       "test-multi-string-txt-record.csqlconnectortest.com";
   private static final String VALID_DOMAIN_NAME_DATA =
