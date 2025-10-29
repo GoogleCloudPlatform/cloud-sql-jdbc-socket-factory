@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.26.1...v1.27.0) (2025-10-29)
+
+
+### Features
+
+* Automatically set MDX client_protocol_type=TLS for MySQL connections. ([#2207](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2207)) ([87b3765](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/87b3765c125a278c55316874df9e9903fae62b81))
+
 ## [1.26.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.26.0...v1.26.1) (2025-10-16)
 
 
