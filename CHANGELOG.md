@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.27.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.0...v1.27.1) (2025-12-09)
+
+
+### Documentation
+
+* Add Cloud Run and JDBC connector examples ([#2229](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2229)) ([7f09830](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7f098306db216a1e71aa70f468c830fd6e4c256c))
+* Update documentation to describe how to use Advanced DR write endpoint. ([#2226](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2226)) ([06e7204](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/06e72040b2ec42b50eafc365d1022429de6c5ef4))
+
 ## [1.27.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.26.1...v1.27.0) (2025-10-29)
 
 
