@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
-import static io.r2dbc.spi.ConnectionFactoryOptions.PASSWORD;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 
@@ -46,7 +45,6 @@ import reactor.core.publisher.Mono;
 
 @RunWith(JUnit4.class)
 public class R2dbcPostgresIamAuthIntegrationTests {
-
   // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
   private static final String CONNECTION_NAME = System.getenv("POSTGRES_CONNECTION_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
@@ -71,13 +69,13 @@ public class R2dbcPostgresIamAuthIntegrationTests {
                 .isNotEmpty());
 
     // [START cloud_sql_connector_postgres_r2dbc_iam_auth]
+    System.out.println("Using IAM user: " + DB_USER);
     // Set up ConnectionFactoryOptions
     ConnectionFactoryOptions options =
         ConnectionFactoryOptions.builder()
             .option(DRIVER, "gcp")
             .option(PROTOCOL, "postgresql")
             // Password must be set to a nonempty value to bypass driver validation errors
-            .option(PASSWORD, "password")
             .option(USER, DB_USER)
             .option(DATABASE, DB_NAME)
             .option(HOST, CONNECTION_NAME)

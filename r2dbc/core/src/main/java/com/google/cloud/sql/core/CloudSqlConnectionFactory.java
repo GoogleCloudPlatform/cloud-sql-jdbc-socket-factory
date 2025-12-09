@@ -55,7 +55,6 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
             .getConnectionMetadata(config)
             .getPreferredIpAddress();
     builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
-
     return Mono.from(supplier.get().create(builder.build()).create())
         .map(c -> new CloudSqlConnection(config, c));
   }
