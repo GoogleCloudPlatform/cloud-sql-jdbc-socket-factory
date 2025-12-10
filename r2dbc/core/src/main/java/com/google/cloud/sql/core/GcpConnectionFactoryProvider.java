@@ -174,6 +174,11 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
           sslContextBuilder.trustManager(connectionMetadata.getTrustManagerFactory());
           sslContextBuilder.protocols("TLSv1.2");
 
+          // Disable the default SSL hostname verification. Cloud SQL instances
+          // require custom hostname checking logic, which is implemented in the
+          // InstanceCheckingTrustManagerFactory.
+          sslContextBuilder.endpointIdentificationAlgorithm("");
+
           return sslContextBuilder;
         };
     return tcpSocketConnectionFactory(config, optionBuilder, sslFunction);
