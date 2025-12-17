@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.1...v1.27.2) (2025-12-17)
+
+
+### Bug Fixes
+
+* Update the R2DBC connectors to work with Netty 4.2+ ([#2240](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2240)) ([efa8bb9](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/efa8bb980f205b8edb5d841929cfb8602d1573eb)), closes [#2227](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2227)
+
 ## [1.27.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.0...v1.27.1) (2025-12-09)
 
 
