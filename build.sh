@@ -39,8 +39,12 @@ function test() {
   if [[ "$(uname -s)" == "Darwin" ]]; then
     echo "macOS detected. Setting up IP aliases for tests."
     echo "You may be prompted for your password to run sudo."
-    sudo ifconfig lo0 alias 127.0.0.2 up
-    sudo ifconfig lo0 alias 127.0.0.3 up
+    if ! ifconfig lo0 | grep -q 127.0.0.2 ; then
+      sudo ifconfig lo0 alias 127.0.0.2 up
+    fi
+    if ! ifconfig lo0 | grep -q 127.0.0.3 ; then
+      sudo ifconfig lo0 alias 127.0.0.3 up
+    fi
   fi
   mvn -P coverage test
 }
@@ -91,7 +95,7 @@ function write_e2e_env(){
   secret_vars=(
     MYSQL_CONNECTION_NAME=MYSQL_CONNECTION_NAME
     MYSQL_USER=MYSQL_USER
-    MYSQL_USER_IAM=MYSQL_USER_IAM_GO
+    IMPERSONATED_USER=IMPERSONATED_USER
     MYSQL_PASS=MYSQL_PASS
     MYSQL_DB=MYSQL_DB
     MYSQL_MCP_CONNECTION_NAME=MYSQL_MCP_CONNECTION_NAME
@@ -105,8 +109,8 @@ function write_e2e_env(){
     POSTGRES_CAS_PASS=POSTGRES_CAS_PASS
     POSTGRES_CUSTOMER_CAS_CONNECTION_NAME=POSTGRES_CUSTOMER_CAS_CONNECTION_NAME
     POSTGRES_CUSTOMER_CAS_PASS=POSTGRES_CUSTOMER_CAS_PASS
-    POSTGRES_CUSTOMER_CAS_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_DOMAIN_NAME
-    POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME
+    POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_DOMAIN_NAME
+    POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME
     POSTGRES_MCP_CONNECTION_NAME=POSTGRES_MCP_CONNECTION_NAME
     POSTGRES_MCP_PASS=POSTGRES_MCP_PASS
     SQLSERVER_CONNECTION_NAME=SQLSERVER_CONNECTION_NAME
@@ -131,6 +135,10 @@ function write_e2e_env(){
     val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$secret_name")
     echo "export $env_var_name='$val'"
   done
+
+  echo "export MYSQL_IAM_USER='$(whoami)'"
+  echo "export POSTGRES_IAM_USER='$(whoami)@google.com'"
+
   } > "$outfile"
 
 }
