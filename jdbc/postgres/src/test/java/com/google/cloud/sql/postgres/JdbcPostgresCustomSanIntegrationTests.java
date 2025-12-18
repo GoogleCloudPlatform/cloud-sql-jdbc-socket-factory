@@ -41,9 +41,9 @@ import org.junit.runners.JUnit4;
 public class JdbcPostgresCustomSanIntegrationTests {
 
   private static final String DOMAIN_NAME =
-      System.getenv("POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME");
+      System.getenv("POSTGRES_CUSTOMER_CAS_VALID_DOMAIN_NAME");
   private static final String INVALID_DOMAIN_NAME =
-      System.getenv("POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME");
+      System.getenv("POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME");
   private static final String DB_NAME = System.getenv("POSTGRES_DB");
   private static final String DB_USER = System.getenv("POSTGRES_USER");
   private static final String DB_PASSWORD = System.getenv("POSTGRES_CUSTOMER_CAS_PASS");
@@ -54,8 +54,8 @@ public class JdbcPostgresCustomSanIntegrationTests {
           "POSTGRES_USER",
           "POSTGRES_CUSTOMER_CAS_PASS",
           "POSTGRES_DB",
-          "POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME",
-          "POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME");
+          "POSTGRES_CUSTOMER_CAS_VALID_DOMAIN_NAME",
+          "POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME");
 
   @Rule public Timeout globalTimeout = new Timeout(80, TimeUnit.SECONDS);
 

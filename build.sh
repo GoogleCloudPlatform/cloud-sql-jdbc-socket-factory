@@ -55,13 +55,16 @@ function e2e() {
 }
 
 
-## e2e - Runs end-to-end integration tests.
+## e2e_graalvm - Runs end-to-end integration tests using graalvm
 function e2e_graalvm() {
+  graalvm_tools
+
   if [[ ! -f .envrc ]] ; then
     write_e2e_env .envrc
   fi
   source .envrc
-  .github/scripts/run_tests_graalvm_native.sh
+  export JAVA_HOME=$PWD/.tools/graalvm-ce-jdk-24/Contents/Home
+  JOB_TYPE=integration .github/scripts/run_tests_graalvm_native.sh
 }
 
 ## fix - Fixes java code format.
@@ -74,6 +77,42 @@ function lint() {
   mvn -P lint install -DskipTests=true
 }
 
+function download_and_expand() {
+  url=$1
+  tarFile=$2
+  directory=$3
+
+    if [[ ! -f "$tarFile" ]] ; then
+      curl -L -o "$tarFile" "$url"
+    fi
+    if [[ ! -d "$directory" ]] ; then
+      mkdir -p "$directory"
+      tar -xf "$tarFile" -C "$directory" --strip-components=1 || (rm "$tarFile" ; exit 1)
+    fi
+}
+
+function graalvm_tools() {
+  mkdir -p .tools
+
+  # Download the GraalVM and unzip into .tools
+  if [[ $(uname) == "Darwin" ]] ; then
+    oracle_24_url="https://download.oracle.com/graalvm/24/latest/graalvm-jdk-24_macos-aarch64_bin.tar.gz"
+    ce_24_url="https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-24.0.2/graalvm-community-jdk-24.0.2_macos-aarch64_bin.tar.gz"
+    ce_21_url="https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_macos-aarch64_bin.tar.gz"
+  elif [[ $(uname) == "Linux" ]] ; then
+    oracle_24_url="https://download.oracle.com/graalvm/24/latest/graalvm-jdk-24_linux-x64_bin.tar.gz"
+    ce_24_url="https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-24.0.2/graalvm-community-jdk-24.0.2_linux-x64_bin.tar.gz"
+    ce_21_url="https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-x64_bin.tar.gz"
+  fi
+
+  download_and_expand "$oracle_24_url" ".tools/graalvm_oracle_24.gz" ".tools/graalvm-jdk-24"
+  download_and_expand "$ce_24_url" ".tools/graalvm_ce_24.gz" ".tools/graalvm-ce-jdk-24"
+  download_and_expand "$ce_21_url" ".tools/graalvm_ce_21.gz" ".tools/graalvm-ce-jdk-21"
+}
+
+# write_e2e_env - Loads secrets from the gcloud project and writes
+#     them to target/e2e.env to run e2e tests.
+#
 
 ## deps - updates dependencies to the latest version
 function deps() {
@@ -81,38 +120,137 @@ function deps() {
   find . -name 'pom.xml.versionsBackup' -print0 | xargs -0 rm -f
 }
 
+function grant_iam_user_pg() {
+  instance_name=$1
+  root_user=$2
+  root_pass=$3
+  new_iam_user=$4
+  echo
+  echo "*"
+  echo "* Grant access to the database to the current user by executing this sql statement: "
+  echo "*"
+  echo "*  GRANT ALL ON SCHEMA $POSTGRES_DB TO '$new_iam_user';"
+  echo "*"
+  echo "*    database password: $root_pass"
+  echo "*"
+  echo
+  gcloud alpha sql connect --project="${TEST_PROJECT}" --user="$root_user" "$instance_name" --database "$POSTGRES_DB"
+}
+
+function grant_iam_user_mysql() {
+  instance_name=$1
+  root_user=$2
+  root_pass=$3
+  new_iam_user=$4
+
+  echo
+  echo "*"
+  echo "* Grant access to the database to the current user by executing this sql statement: "
+  echo "*"
+  echo "*  GRANT ALL ON proxy-testing TO $new_iam_user@'%'; FLUSH PRIVILEGES;"
+  echo "*"
+  echo "*    database password: $root_pass"
+  echo "*"
+  gcloud alpha sql connect --project="${TEST_PROJECT}" --user="$root_user" "$instance_name" --database "$MYSQL_DB"
+}
+
+## grant_local_iam_user - Logs into each test database and prints out instructions on how to grant
+##    the currently authenticated gcloud user access to the database schema.
+function grant_local_iam_user() {
+  if [[ ! -f .envrc ]] ; then
+    write_e2e_env .envrc
+  fi
+  source "$SCRIPT_DIR/.envrc"
+
+  local_user=$(gcloud auth list --format 'value(account)' | tr -d '\n')
+  set -x
+  grant_iam_user_mysql "${MYSQL_MCP_CONNECTION_NAME##*:}" "$MYSQL_USER" "$MYSQL_MCP_PASS" "${local_user%%@*}"
+  grant_iam_user_mysql "${MYSQL_CONNECTION_NAME##*:}" "$MYSQL_USER" "$MYSQL_PASS" "${local_user%%@*}"
+  grant_iam_user_pg "${POSTGRES_CONNECTION_NAME##*:}" "$POSTGRES_USER" "$POSTGRES_PASS" "$local_user"
+  grant_iam_user_pg "${POSTGRES_CAS_CONNECTION_NAME##*:}" "$POSTGRES_CAS_USER" "$POSTGRES_PASS" "$local_user"
+  grant_iam_user_pg "${POSTGRES_MCP_CONNECTION_NAME##*:}" "$POSTGRES_MCP_USER" "$POSTGRES_PASS" "$local_user"
+}
+
+## add_local_iam_user - Adds the currently authenticated gcloud user to all IAM test databases
+function add_local_iam_user() {
+  if [[ ! -f .envrc ]] ; then
+    write_e2e_env .envrc
+  fi
+  source "$SCRIPT_DIR/.envrc"
+
+  local_user=$(gcloud auth list --format 'value(account)' | tr -d '\n')
+
+  mysql_instances=( "${MYSQL_CONNECTION_NAME##*:}"
+    "${MYSQL_MCP_CONNECTION_NAME##*:}" )
+
+  pg_instances=(
+    "${POSTGRES_CAS_CONNECTION_NAME##*:}"
+    "${POSTGRES_CONNECTION_NAME##*:}"
+    "${POSTGRES_MCP_CONNECTION_NAME##*:}"
+    )
+
+  for inst in "${mysql_instances[@]}" ; do
+    if gcloud sql users describe "${local_user%%@*}" \
+                                  --host=% \
+                                  --instance="$inst" \
+                                  --project="${TEST_PROJECT}"  > /dev/null  2>&1 ; then
+      echo "user %local_user exists in $inst"
+    else
+      gcloud sql users create "$local_user" \
+                         --instance="$inst" \
+                         --host=% \
+                         --type=cloud_iam_user \
+                         --project="${TEST_PROJECT}"
+     fi
+  done
+
+  for inst in "${pg_instances[@]}" ; do
+    if gcloud sql users describe "$local_user" \
+                                  --host=% \
+                                  --instance="$inst" \
+                                  --project="${TEST_PROJECT}" > /dev/null  2>&1  ; then
+      echo "user %local_user exists in $inst"
+    else
+      gcloud sql users create "$local_user" \
+                         --instance="$inst" \
+                         --host=% \
+                         --type=cloud_iam_user \
+                         --project="${TEST_PROJECT}"
+    fi
+    export PGPASSWORD=
+    gcloud sql connect -u
+  done
+}
 
 # write_e2e_env - Loads secrets from the gcloud project and writes
 #     them to target/e2e.env to run e2e tests.
-#
 function write_e2e_env(){
   # Set the default to .envrc file if no argument is passed
   outfile="${1:-.envrc}"
   secret_vars=(
     MYSQL_CONNECTION_NAME=MYSQL_CONNECTION_NAME
     MYSQL_USER=MYSQL_USER
-    MYSQL_USER_IAM=MYSQL_USER_IAM_GO
     MYSQL_PASS=MYSQL_PASS
     MYSQL_DB=MYSQL_DB
     MYSQL_MCP_CONNECTION_NAME=MYSQL_MCP_CONNECTION_NAME
     MYSQL_MCP_PASS=MYSQL_MCP_PASS
     POSTGRES_CONNECTION_NAME=POSTGRES_CONNECTION_NAME
     POSTGRES_USER=POSTGRES_USER
-    POSTGRES_USER_IAM=POSTGRES_USER_IAM_GO
     POSTGRES_PASS=POSTGRES_PASS
     POSTGRES_DB=POSTGRES_DB
     POSTGRES_CAS_CONNECTION_NAME=POSTGRES_CAS_CONNECTION_NAME
     POSTGRES_CAS_PASS=POSTGRES_CAS_PASS
     POSTGRES_CUSTOMER_CAS_CONNECTION_NAME=POSTGRES_CUSTOMER_CAS_CONNECTION_NAME
     POSTGRES_CUSTOMER_CAS_PASS=POSTGRES_CUSTOMER_CAS_PASS
-    POSTGRES_CUSTOMER_CAS_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_DOMAIN_NAME
-    POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME
+    POSTGRES_CUSTOMER_CAS_VALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_PASS_VALID_DOMAIN_NAME
+    POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME
     POSTGRES_MCP_CONNECTION_NAME=POSTGRES_MCP_CONNECTION_NAME
     POSTGRES_MCP_PASS=POSTGRES_MCP_PASS
     SQLSERVER_CONNECTION_NAME=SQLSERVER_CONNECTION_NAME
     SQLSERVER_USER=SQLSERVER_USER
     SQLSERVER_PASS=SQLSERVER_PASS
     SQLSERVER_DB=SQLSERVER_DB
+    IMPERSONATED_USER=IMPERSONATED_USER
     QUOTA_PROJECT=QUOTA_PROJECT
   )
 
@@ -123,6 +261,9 @@ function write_e2e_env(){
   fi
 
   echo "Getting test secrets from $TEST_PROJECT into $outfile"
+  local_user=$(gcloud auth list --format 'value(account)' | tr -d '\n')
+
+  echo "Getting test secrets from $TEST_PROJECT into $1"
   {
   for env_name in "${secret_vars[@]}" ; do
     env_var_name="${env_name%%=*}"
@@ -131,6 +272,9 @@ function write_e2e_env(){
     val=$(gcloud secrets versions access latest --project "$TEST_PROJECT" --secret="$secret_name")
     echo "export $env_var_name='$val'"
   done
+  # Set IAM User env vars to the local gcloud user
+  echo "export MYSQL_IAM_USER='${local_user%%@*}'"
+  echo "export POSTGRES_IAM_USER='$local_user'"
   } > "$outfile"
 
 }
