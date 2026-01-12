@@ -27,7 +27,6 @@ import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.NonNull;
 
 /** {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol. */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
@@ -48,7 +47,6 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   }
 
   @Override
-  @NonNull
   public Publisher<? extends Connection> create() {
     String hostIp =
         InternalConnectorRegistry.getInstance()
@@ -60,7 +58,6 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   }
 
   @Override
-  @NonNull
   public ConnectionFactoryMetadata getMetadata() {
     String hostIp =
         InternalConnectorRegistry.getInstance()
