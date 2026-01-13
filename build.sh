@@ -18,6 +18,8 @@
 SCRIPT_DIR=$(cd -P "$(dirname "$0")" >/dev/null 2>&1 && pwd)
 SCRIPT_FILE="${SCRIPT_DIR}/$(basename "$0")"
 
+mvn_cmd=$SCRIPT_DIR/mvnw
+
 ##
 ## Local Development
 ##
@@ -26,12 +28,12 @@ SCRIPT_FILE="${SCRIPT_DIR}/$(basename "$0")"
 
 ## clean - Cleans the build output
 function clean() {
-  mvn clean
+  $mvn_cmd clean
 }
 
 ## build - Builds the project without running tests.
 function build() {
-   mvn install -DskipTests=true
+   $mvn_cmd install -DskipTests=true
 }
 
 ## test - Runs local unit tests.
@@ -46,7 +48,7 @@ function test() {
       sudo ifconfig lo0 alias 127.0.0.3 up
     fi
   fi
-  mvn -P coverage test
+  $mvn_cmd -P coverage test
 }
 
 ## e2e - Runs end-to-end integration tests.
@@ -70,18 +72,18 @@ function e2e_graalvm() {
 
 ## fix - Fixes java code format.
 function fix() {
-  mvn com.coveo:fmt-maven-plugin:format
+  $mvn_cmd com.coveo:fmt-maven-plugin:format
 }
 
 ## lint - runs the java lint
 function lint() {
-  mvn -P lint install -DskipTests=true
+  $mvn_cmd -P lint install -DskipTests=true
 }
 
 
 ## deps - updates dependencies to the latest version
 function deps() {
-  mvn versions:use-latest-versions
+  $mvn_cmd versions:use-latest-versions
   find . -name 'pom.xml.versionsBackup' -print0 | xargs -0 rm -f
 }
 
