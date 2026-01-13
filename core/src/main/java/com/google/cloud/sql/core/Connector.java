@@ -24,9 +24,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -52,6 +55,7 @@ class Connector {
   private final ConnectorConfig config;
 
   private final InstanceConnectionNameResolver instanceNameResolver;
+  private final DnsResolver dnsResolver;
   private final Timer instanceNameResolverTimer;
   private final ProtocolHandler mdxProtocolHandler;
 
@@ -65,9 +69,9 @@ class Connector {
       long refreshTimeoutMs,
       int serverProxyPort,
       InstanceConnectionNameResolver instanceNameResolver,
+      DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
     this.config = config;
-
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
     this.instanceCredentialFactory = instanceCredentialFactory;
@@ -76,6 +80,7 @@ class Connector {
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
     this.instanceNameResolver = instanceNameResolver;
+    this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;
   }
@@ -125,6 +130,40 @@ class Connector {
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
       String instanceIp = metadata.getPreferredIpAddress();
+
+      // If a domain name was used to connect, resolve it to an IP address
+      if (!Strings.isNullOrEmpty(instance.getConfig().getDomainName())) {
+        try {
+          List<InetAddress> addrs = dnsResolver.resolveHost(instance.getConfig().getDomainName());
+          if (addrs != null && !addrs.isEmpty()) {
+            logger.debug(
+                String.format(
+                    "[%s] custom DNS name %s resolved to %s, using it to connect",
+                    instance.getConfig().getCloudSqlInstance(),
+                    instance.getConfig().getDomainName(),
+                    addrs.get(0).getHostAddress()));
+            instanceIp = addrs.get(0).getHostAddress();
+          } else {
+            logger.debug(
+                String.format(
+                    "[%s] custom DNS name %s resolved but returned no entries, using %s from"
+                        + " instance metadata",
+                    instance.getConfig().getCloudSqlInstance(),
+                    instance.getConfig().getDomainName(),
+                    instanceIp));
+          }
+        } catch (UnknownHostException e) {
+          logger.debug(
+              String.format(
+                  "[%s] custom DNS name %s did not resolve to an IP address: %s, using %s from"
+                      + " instance metadata",
+                  instance.getConfig().getCloudSqlInstance(),
+                  instance.getConfig().getDomainName(),
+                  e.getMessage(),
+                  instanceIp));
+        }
+      }
+
       logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
 
       SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
