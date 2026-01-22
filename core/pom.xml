@@ -23,10 +23,10 @@
   <parent>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>jdbc-socket-factory-parent</artifactId>
-    <version>1.27.2-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+    <version>1.28.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
   </parent>
   <artifactId>jdbc-socket-factory-core</artifactId>
-  <version>1.27.2-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-core:current} -->
+  <version>1.28.1-SNAPSHOT</version><!-- {x-version-update:jdbc-socket-factory-core:current} -->
   <packaging>jar</packaging>
 
   <name>Cloud SQL Core Socket Factory (Core Library, don't depend on this directly)</name>
@@ -61,13 +61,13 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-enxio</artifactId>
-      <version>0.32.18</version>
+      <version>0.32.19</version>
     </dependency>
 
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.38.23</version>
+      <version>0.38.24</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
