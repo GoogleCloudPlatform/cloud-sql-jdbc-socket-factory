@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.0...v1.28.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* reset refreshRunning on TerminalException in RefreshAheadStrategy ([#2253](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2253)) ([7432584](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/74325849aa19faf57890f73dc4ef87c7de30d05d))
+
 ## [1.28.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.1...v1.28.0) (2026-01-13)
 
 
