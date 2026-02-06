@@ -14,7 +14,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # --- Final Stage ---
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21.0.10_7-jre-alpine
 
 WORKDIR /app
 COPY --from=builder /app/target/cloud-sql-sqlserver-sample-1.0-SNAPSHOT.jar ./app.jar
