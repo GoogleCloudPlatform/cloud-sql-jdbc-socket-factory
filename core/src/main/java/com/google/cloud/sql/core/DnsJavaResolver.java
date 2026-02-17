@@ -16,11 +16,15 @@
 
 package com.google.cloud.sql.core;
 
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import javax.naming.NameNotFoundException;
+import org.xbill.DNS.ARecord;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.SimpleResolver;
@@ -103,6 +107,46 @@ public class DnsJavaResolver implements DnsResolver {
     } catch (TextParseException e) {
       // This happens if the domainName is not a valid format.
       throw new RuntimeException("Invalid domain name format: " + domainName, e);
+    }
+  }
+
+  /**
+   * Resolve an A record.
+   *
+   * @param hostName the hostname to look up
+   * @return the resolved IP addresses
+   * @throws UnknownHostException if no records are found.
+   */
+  @Override
+  public List<InetAddress> resolveHost(String hostName) throws UnknownHostException {
+    try {
+      Lookup lookup = new Lookup(hostName, Type.A);
+      if (this.resolver != null) {
+        lookup.setResolver(this.resolver);
+      }
+      lookup.run();
+
+      int resultCode = lookup.getResult();
+      if (resultCode == Lookup.HOST_NOT_FOUND) {
+        throw new UnknownHostException("DNS record not found for " + hostName);
+      }
+      if (resultCode != Lookup.SUCCESSFUL) {
+        throw new UnknownHostException(
+            "DNS lookup failed for " + hostName + ": " + lookup.getErrorString());
+      }
+
+      Record[] records = lookup.getAnswers();
+      if (records == null || records.length == 0) {
+        return Collections.emptyList();
+      }
+
+      return Arrays.stream(records)
+          .map(r -> (ARecord) r)
+          .map(ARecord::getAddress)
+          .collect(Collectors.toList());
+
+    } catch (TextParseException e) {
+      throw new UnknownHostException("Invalid domain name format: " + hostName);
     }
   }
 }

@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.28.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.1...v1.28.0) (2026-01-13)
+
+
+### Features
+
+* Use configured DNS name to lookup instance IP address ([#2244](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2244)) ([f89e805](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f89e8057b7c9568e85c8ceb8beb7b9df9f9b9e69)), closes [#2243](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2243)
+
+
+### Bug Fixes
+
+* Update the R2DBC connectors to work with Netty 4.2+ ([#2240](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2240)) ([efa8bb9](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/efa8bb980f205b8edb5d841929cfb8602d1573eb)), closes [#2227](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2227)
+
+
+### Dependencies
+
+* Update project dependencies to latest ([#2249](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2249)) ([6881969](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/6881969e2e792c056de65c12637c09f7e4cfa993))
+
+## [1.27.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.27.0...v1.27.1) (2025-12-09)
+
+
+### Documentation
+
+* Add Cloud Run and JDBC connector examples ([#2229](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2229)) ([7f09830](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7f098306db216a1e71aa70f468c830fd6e4c256c))
+* Update documentation to describe how to use Advanced DR write endpoint. ([#2226](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2226)) ([06e7204](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/06e72040b2ec42b50eafc365d1022429de6c5ef4))
+
 ## [1.27.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.26.1...v1.27.0) (2025-10-29)
 
 

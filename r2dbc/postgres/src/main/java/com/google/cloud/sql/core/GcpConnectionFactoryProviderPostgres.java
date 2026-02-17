@@ -22,6 +22,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.postgresql.client.SSLMode;
+import io.r2dbc.postgresql.client.SSLNegotiation;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
@@ -51,7 +52,8 @@ public class GcpConnectionFactoryProviderPostgres extends GcpConnectionFactoryPr
       Function<SslContextBuilder, SslContextBuilder> customizer) {
     builder
         .option(PostgresqlConnectionFactoryProvider.SSL_CONTEXT_BUILDER_CUSTOMIZER, customizer)
-        .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.TUNNEL)
+        .option(PostgresqlConnectionFactoryProvider.SSL_MODE, SSLMode.REQUIRE)
+        .option(PostgresqlConnectionFactoryProvider.SSL_NEGOTIATION, SSLNegotiation.TUNNEL)
         .option(PostgresqlConnectionFactoryProvider.TCP_NODELAY, true)
         .option(PostgresqlConnectionFactoryProvider.TCP_KEEPALIVE, true);
 
