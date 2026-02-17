@@ -19,9 +19,9 @@ for t in "${types[@]}"; do
 echo "### $t" >> release_table.md
 echo "| filename | sha256 hash |" >> release_table.md
 echo "|----------|-------------|" >> release_table.md
-for f in $(gsutil ls "gs://$BUCKET_NAME/v$VERSION/*$t*"); do
+for f in $(gcloud storage ls "gs://$BUCKET_NAME/v$VERSION/*$t*"); do
     file=$(basename "$f")
-    sha=$(gsutil cat "$f" | sha256sum --binary | head -c 64)
+    sha=$(gcloud storage cat "$f" | sha256sum --binary | head -c 64)
     echo "| [$file](https://storage.googleapis.com/$BUCKET_NAME/v$VERSION/$file) | $sha |" >> release_table.md
 done
 echo -e "\n\n" >> release_table.md
