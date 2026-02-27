@@ -36,7 +36,7 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>libraries-bom</artifactId>
-        <version>26.42.0</version>
+        <version>26.76.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -47,12 +47,12 @@
     <dependency>
         <groupId>com.google.cloud.sql</groupId>
         <artifactId>postgres-socket-factory</artifactId>
-        <version>1.27.0</version>
+        <version>1.28.1</version>
     </dependency>
     <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
-        <version>42.7.7</version>
+        <version>42.7.10</version>
     </dependency>
     <dependency>
         <groupId>com.zaxxer</groupId>
@@ -69,7 +69,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.0</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <phase>package</phase>
