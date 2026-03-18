@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.28.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.1...v1.28.2) (2026-03-18)
+
+
+### Dependencies
+
+* Update dependency com.microsoft.sqlserver:mssql-jdbc to v13.4.0.jre8 [SECURITY] ([#2260](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2260)) ([c08f45a](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c08f45ae174d14384e597031002044ca48c6f31d))
+* Update dependency maven to v3.9.14 ([#2259](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2259)) ([f064c26](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/f064c26ad46b2da4f4f6e4ebb217743e2152a024))
+
 ## [1.28.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.0...v1.28.1) (2026-02-18)
 
 
