@@ -16,7 +16,6 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.services.CommonGoogleClientRequestInitializer;
 import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
 import com.google.api.client.http.HttpRequestInitializer;
@@ -53,11 +52,13 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
     return this.userAgents;
   }
 
+  @SuppressWarnings("deprecation")
   private SQLAdmin getApiBuilder(
       HttpRequestInitializer requestInitializer, ConnectorConfig config) {
     HttpTransport httpTransport;
     try {
-      httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+      httpTransport =
+          com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport();
     } catch (GeneralSecurityException | IOException err) {
       throw new RuntimeException("Unable to initialize HTTP transport", err);
     }

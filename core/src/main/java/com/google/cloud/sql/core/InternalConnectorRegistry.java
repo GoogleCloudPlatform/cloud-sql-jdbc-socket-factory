@@ -339,6 +339,7 @@ public final class InternalConnectorRegistry {
         connectTimeoutMs,
         serverProxyPort,
         new DnsInstanceConnectionNameResolver(new DnsJavaResolver()),
+        new DnsJavaResolver(),
         this.mdxProtocolHandler);
   }
 

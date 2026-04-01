@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.function.Function;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.annotation.NonNull;
 
 /** {@link ConnectionFactoryProvider} for proxied access to GCP Postgres and MySQL instances. */
 public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryProvider {
@@ -77,7 +76,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   abstract boolean supportedProtocol(String protocol);
 
   @Override
-  @NonNull
   public ConnectionFactory create(ConnectionFactoryOptions connectionFactoryOptions) {
     String protocol = (String) connectionFactoryOptions.getRequiredValue(PROTOCOL);
     if (!supportedProtocol(protocol)) {
@@ -174,6 +172,11 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
           sslContextBuilder.trustManager(connectionMetadata.getTrustManagerFactory());
           sslContextBuilder.protocols("TLSv1.2");
 
+          // Disable the default SSL hostname verification. Cloud SQL instances
+          // require custom hostname checking logic, which is implemented in the
+          // InstanceCheckingTrustManagerFactory.
+          sslContextBuilder.endpointIdentificationAlgorithm("");
+
           return sslContextBuilder;
         };
     return tcpSocketConnectionFactory(config, optionBuilder, sslFunction);
@@ -191,7 +194,6 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
   }
 
   @Override
-  @NonNull
   public String getDriver() {
     return "gcp";
   }

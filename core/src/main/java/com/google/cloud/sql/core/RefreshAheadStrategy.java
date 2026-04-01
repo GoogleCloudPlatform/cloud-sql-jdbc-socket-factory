@@ -276,6 +276,9 @@ class RefreshAheadStrategy implements RefreshStrategy {
       final Throwable cause = e.getCause();
       if (cause instanceof TerminalException) {
         logger.debug(String.format("[%s] Refresh Operation: Failed! No retry.", name), e);
+        synchronized (connectionInfoGuard) {
+          refreshRunning = false;
+        }
         throw (TerminalException) cause;
       }
 

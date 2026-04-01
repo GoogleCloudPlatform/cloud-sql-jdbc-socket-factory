@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Before;
@@ -512,6 +513,50 @@ public class RefreshAheadStrategyTest {
     // Raising TerminalException stops the refresher's executor from running the next task.
     assertThrows(TerminalException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
     assertThat(refreshCount.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void testGetConnectionInfo_throwsTerminalException_forceRefreshResumes()
+      throws InterruptedException, TimeoutException {
+    ExampleData data = new ExampleData(Instant.now().plus(1, ChronoUnit.HOURS));
+    AtomicInteger refreshCount = new AtomicInteger();
+
+    RefreshAheadStrategy r =
+        new RefreshAheadStrategy(
+            "RefresherTest.testGetConnectionInfo_throwsTerminalException_forceRefreshResumes",
+            executorService,
+            () -> {
+              int c = refreshCount.get();
+              ExampleData refreshResult = data;
+              if (c == 0) { // refresh 0 should throw an exception
+                refreshCount.incrementAndGet();
+                throw new TerminalException("Not authorized");
+              }
+              // refresh 2 and on should return data immediately
+              refreshCount.incrementAndGet();
+              return Futures.immediateFuture(refreshResult);
+            },
+            rateLimiter);
+
+    // Raising TerminalException stops the refresher's executor from running the next task.
+    assertThrows(TerminalException.class, () -> r.getConnectionInfo(TEST_TIMEOUT_MS));
+    assertThat(refreshCount.get()).isEqualTo(1);
+
+    // Manually force a refresh
+    r.forceRefresh();
+
+    // getConnectionInfo again, and assert the refresh operation completed.
+    new PauseCondition()
+        .waitForCondition(
+            () -> {
+              try {
+                return r.getConnectionInfo(TEST_TIMEOUT_MS) == data;
+              } catch (TerminalException e) {
+                return false;
+              }
+            },
+            1000L);
+    assertThat(refreshCount.get()).isEqualTo(2);
   }
 
   @Test
