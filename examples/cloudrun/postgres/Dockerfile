@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # --- Final Stage ---
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25.0.2_10-jre-alpine
 
 WORKDIR /app
 COPY --from=builder /app/target/cloud-sql-postgres-sample-1.0-SNAPSHOT.jar ./app.jar
