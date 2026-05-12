@@ -49,6 +49,7 @@ public class SocketFactory extends javax.net.SocketFactory {
    * Implements the {@link SocketFactory} constructor, which can be used to create authenticated
    * connections to a Cloud SQL instance.
    */
+  @SuppressWarnings("JdkObsolete")
   public SocketFactory(String socketFactoryConstructorArg) throws UnsupportedEncodingException {
     List<String> s = Splitter.on('?').splitToList(socketFactoryConstructorArg);
     final String instanceOrDomainName = s.get(0);

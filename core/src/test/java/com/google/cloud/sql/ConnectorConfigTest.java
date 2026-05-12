@@ -112,6 +112,7 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  @SuppressWarnings("AssertThrowsMinimizer")
   public void testBuild_failsWhenAdminAPIAndUniverseDomainAreSet() {
     final String wantAdminRootUrl = "https://googleapis.example.com/";
     final String wantUniverseDomain = "test-universe.test";
@@ -126,6 +127,7 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  @SuppressWarnings("AssertThrowsMinimizer")
   public void testBuild_failsWhenManyGoogleCredentialFieldsSet() {
     final Supplier<GoogleCredentials> wantGoogleCredentialSupplier =
         () -> GoogleCredentials.create(null);
