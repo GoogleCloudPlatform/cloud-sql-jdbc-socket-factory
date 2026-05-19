@@ -16,7 +16,12 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.IpType;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -26,7 +31,8 @@ import javax.net.ssl.TrustManagerFactory;
  * instance.
  */
 public class ConnectionMetadata {
-  private final String preferredIpAddress;
+  private final List<String> preferredIpAddresses;
+  private final Map<IpType, List<String>> ipAddrs;
   private final KeyManagerFactory keyManagerFactory;
   private final TrustManagerFactory trustManagerFactory;
   private final SSLContext sslContext;
@@ -34,21 +40,77 @@ public class ConnectionMetadata {
 
   /** Construct an immutable ConnectionMetadata. */
   public ConnectionMetadata(
-      String preferredIpAddress,
+      List<String> preferredIpAddresses,
+      Map<IpType, List<String>> ipAddrs,
       KeyManagerFactory keyManagerFactory,
       TrustManagerFactory trustManagerFactory,
       SSLContext sslContext,
       List<String> mdxProtocolSupport) {
 
-    this.preferredIpAddress = preferredIpAddress;
+    this.preferredIpAddresses = preferredIpAddresses;
+    this.ipAddrs = ipAddrs;
     this.keyManagerFactory = keyManagerFactory;
     this.trustManagerFactory = trustManagerFactory;
     this.sslContext = sslContext;
     this.mdxProtocolSupport = mdxProtocolSupport;
   }
 
+  /** Construct an immutable ConnectionMetadata (Deprecated). */
+  @Deprecated
+  public ConnectionMetadata(
+      String preferredIpAddress,
+      Map<IpType, String> ipAddrs,
+      KeyManagerFactory keyManagerFactory,
+      TrustManagerFactory trustManagerFactory,
+      SSLContext sslContext,
+      List<String> mdxProtocolSupport) {
+    this(
+        Collections.singletonList(preferredIpAddress),
+        compatMap(ipAddrs),
+        keyManagerFactory,
+        trustManagerFactory,
+        sslContext,
+        mdxProtocolSupport);
+  }
+
+  private static Map<IpType, List<String>> compatMap(Map<IpType, String> map) {
+    Map<IpType, List<String>> newMap = new HashMap<>();
+    if (map != null) {
+      map.forEach((k, v) -> newMap.put(k, Collections.singletonList(v)));
+    }
+    return newMap;
+  }
+
+  @Deprecated
   public String getPreferredIpAddress() {
-    return preferredIpAddress;
+    return preferredIpAddresses == null || preferredIpAddresses.isEmpty()
+        ? null
+        : preferredIpAddresses.get(0);
+  }
+
+  public List<String> getPreferredIpAddresses() {
+    return preferredIpAddresses;
+  }
+
+  /**
+   * Returns the map of IP addresses.
+   *
+   * @return the map of IP addresses.
+   * @deprecated use {@link #getAllIpAddrs()} instead.
+   */
+  @Deprecated
+  public Map<IpType, String> getIpAddrs() {
+    if (ipAddrs == null) {
+      return null;
+    }
+    return ipAddrs.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, e -> e.getValue().isEmpty() ? null : e.getValue().get(0)));
+  }
+
+  public Map<IpType, List<String>> getAllIpAddrs() {
+    return ipAddrs;
   }
 
   public KeyManagerFactory getKeyManagerFactory() {

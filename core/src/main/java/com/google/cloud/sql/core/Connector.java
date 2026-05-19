@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +75,10 @@ class Connector {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
+    if (instanceNameResolver instanceof DnsInstanceConnectionNameResolver) {
+      ((DnsInstanceConnectionNameResolver) instanceNameResolver)
+          .setSqlAdmin(this.adminApi.getSqlAdmin());
+    }
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -129,7 +134,8 @@ class Connector {
     MonitoredCache instance = getConnection(config);
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
-      String instanceIp = metadata.getPreferredIpAddress();
+      List<String> preferredIps = metadata.getPreferredIpAddresses();
+      List<String> targets = new ArrayList<>();
 
       // If a domain name was used to connect, resolve it to an IP address
       if (!Strings.isNullOrEmpty(instance.getConfig().getDomainName())) {
@@ -142,7 +148,9 @@ class Connector {
                     instance.getConfig().getCloudSqlInstance(),
                     instance.getConfig().getDomainName(),
                     addrs.get(0).getHostAddress()));
-            instanceIp = addrs.get(0).getHostAddress();
+            for (InetAddress addr : addrs) {
+              targets.add(addr.getHostAddress());
+            }
           } else {
             logger.debug(
                 String.format(
@@ -150,7 +158,8 @@ class Connector {
                         + " instance metadata",
                     instance.getConfig().getCloudSqlInstance(),
                     instance.getConfig().getDomainName(),
-                    instanceIp));
+                    preferredIps.get(0)));
+            targets.addAll(preferredIps);
           }
         } catch (UnknownHostException e) {
           logger.debug(
@@ -160,23 +169,42 @@ class Connector {
                   instance.getConfig().getCloudSqlInstance(),
                   instance.getConfig().getDomainName(),
                   e.getMessage(),
-                  instanceIp));
+                  preferredIps.get(0)));
+          targets.addAll(preferredIps);
+        }
+      } else {
+        targets.addAll(preferredIps);
+      }
+
+      IOException lastEx = null;
+      SSLSocket socket = null;
+      String successfulIp = null;
+      for (String targetIp : targets) {
+        logger.debug(String.format("[%s] Connecting to instance.", targetIp));
+        try {
+          socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
+          socket.setKeepAlive(true);
+          socket.setTcpNoDelay(true);
+          socket.connect(new InetSocketAddress(targetIp, serverProxyPort));
+          socket.startHandshake();
+          successfulIp = targetIp;
+          lastEx = null; // success
+          break;
+        } catch (IOException e) {
+          logger.debug(String.format("[%s] Connection failed: %s", targetIp, e.getMessage()));
+          lastEx = e;
+          if (socket != null) {
+            try {
+              socket.close();
+            } catch (IOException ce) {
+              // ignore
+            }
+          }
         }
       }
 
-      logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
-
-      SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
-      socket.setKeepAlive(true);
-      socket.setTcpNoDelay(true);
-
-      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-
-      try {
-        socket.startHandshake();
-      } catch (IOException e) {
-        logger.debug("TLS handshake failed!");
-        throw e;
+      if (lastEx != null) {
+        throw lastEx;
       }
 
       if (metadata.isMdxClientProtocolTypeSupport()
@@ -184,7 +212,7 @@ class Connector {
         socket = mdxProtocolHandler.connect(socket, config.getMdxClientProtocolType());
       }
 
-      logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
+      logger.debug(String.format("[%s] Connected to instance successfully.", successfulIp));
       instance.addSocket(socket);
 
       return socket;

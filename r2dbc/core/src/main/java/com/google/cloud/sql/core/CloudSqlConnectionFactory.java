@@ -51,7 +51,8 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
     String hostIp =
         InternalConnectorRegistry.getInstance()
             .getConnectionMetadata(config)
-            .getPreferredIpAddress();
+            .getPreferredIpAddresses()
+            .get(0);
     builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
     return Mono.from(supplier.get().create(builder.build()).create())
         .map(c -> new CloudSqlConnection(config, c));
@@ -62,7 +63,8 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
     String hostIp =
         InternalConnectorRegistry.getInstance()
             .getConnectionMetadata(config)
-            .getPreferredIpAddress();
+            .getPreferredIpAddresses()
+            .get(0);
     builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
     return supplier.get().create(builder.build()).getMetadata();
   }

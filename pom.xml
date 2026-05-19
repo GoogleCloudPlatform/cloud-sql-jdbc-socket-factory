@@ -679,7 +679,7 @@
                 junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
                 com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,com.github.jnr:jnr-enxio,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,com.github.jnr:jnr-enxio,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials,com.google.protobuf:protobuf-java
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -823,7 +823,7 @@
                   <artifactId>maven-compiler-plugin</artifactId>
                   <configuration>
                       <compilerArgs combine.children="append">
-                          <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg>
+                          <!-- <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg> -->
                           <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
