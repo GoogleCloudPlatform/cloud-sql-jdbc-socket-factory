@@ -36,4 +36,6 @@ interface ConnectionInfoRepository {
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       KeyPair keyPair);
+
+  com.google.api.services.sqladmin.SQLAdmin getSqlAdmin();
 }

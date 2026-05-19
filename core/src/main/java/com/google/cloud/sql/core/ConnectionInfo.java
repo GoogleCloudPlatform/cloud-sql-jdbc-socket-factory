@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.IpType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
@@ -45,7 +46,7 @@ class ConnectionInfo {
     return sslContext;
   }
 
-  Map<IpType, String> getIpAddrs() {
+  Map<IpType, List<String>> getIpAddrs() {
     return instanceMetadata.getIpAddrs();
   }
 
@@ -55,15 +56,15 @@ class ConnectionInfo {
 
   ConnectionMetadata toConnectionMetadata(
       ConnectionConfig config, CloudSqlInstanceName instanceName) {
-    String preferredIp = null;
+    List<String> preferredIps = null;
 
     for (IpType ipType : config.getIpTypes()) {
-      preferredIp = getIpAddrs().get(ipType);
-      if (preferredIp != null) {
+      preferredIps = getIpAddrs().get(ipType);
+      if (preferredIps != null && !preferredIps.isEmpty()) {
         break;
       }
     }
-    if (preferredIp == null) {
+    if (preferredIps == null || preferredIps.isEmpty()) {
       throw new IllegalArgumentException(
           String.format(
               "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
@@ -72,7 +73,8 @@ class ConnectionInfo {
     }
 
     return new ConnectionMetadata(
-        preferredIp,
+        preferredIps,
+        getIpAddrs(),
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),

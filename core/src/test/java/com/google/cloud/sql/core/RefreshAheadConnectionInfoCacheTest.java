@@ -259,7 +259,8 @@ public class RefreshAheadConnectionInfoCacheTest {
   }
 
   private static ConnectionInfo newConnectionInfo(long amount, ChronoUnit unit) {
-    Map<IpType, String> ips = Collections.singletonMap(IpType.PUBLIC, "10.1.1.1");
+    Map<IpType, List<String>> ips =
+        Collections.singletonMap(IpType.PUBLIC, Collections.singletonList("10.1.1.1"));
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
@@ -585,9 +586,9 @@ public class RefreshAheadConnectionInfoCacheTest {
             new InstanceMetadata(
                 new CloudSqlInstanceName("project:region:instance"),
                 ImmutableMap.of(
-                    IpType.PUBLIC, "10.1.2.3",
-                    IpType.PRIVATE, "10.10.10.10",
-                    IpType.PSC, "abcde.12345.us-central1.sql.goog"),
+                    IpType.PUBLIC, Collections.singletonList("10.1.2.3"),
+                    IpType.PRIVATE, Collections.singletonList("10.10.10.10"),
+                    IpType.PSC, Collections.singletonList("abcde.12345.us-central1.sql.goog")),
                 null,
                 false,
                 "",
@@ -636,8 +637,8 @@ public class RefreshAheadConnectionInfoCacheTest {
           assertThat(
                   connectionInfoCache
                       .getConnectionMetadata(TEST_TIMEOUT_MS)
-                      .getPreferredIpAddress())
-              .isEqualTo(wantsIp);
+                      .getPreferredIpAddresses())
+              .containsExactly(wantsIp);
         });
   }
 
@@ -648,7 +649,7 @@ public class RefreshAheadConnectionInfoCacheTest {
         new ConnectionInfo(
             new InstanceMetadata(
                 new CloudSqlInstanceName("project:region:instance"),
-                ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"),
+                ImmutableMap.of(IpType.PUBLIC, Collections.singletonList("10.1.2.3")),
                 null,
                 false,
                 "",
