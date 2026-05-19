@@ -73,6 +73,7 @@ class ConnectionInfo {
 
     return new ConnectionMetadata(
         preferredIp,
+        getIpAddrs(),
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),

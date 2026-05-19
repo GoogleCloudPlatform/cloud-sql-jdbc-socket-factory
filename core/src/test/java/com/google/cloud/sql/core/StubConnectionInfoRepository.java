@@ -78,4 +78,9 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
     refreshCount.incrementAndGet();
     return newConnectionInfo();
   }
+
+  @Override
+  public com.google.api.services.sqladmin.SQLAdmin getSqlAdmin() {
+    return null;
+  }
 }

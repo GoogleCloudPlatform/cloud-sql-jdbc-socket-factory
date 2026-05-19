@@ -105,4 +105,9 @@ class TestDataSupplier implements ConnectionInfoRepository {
     successCounter.incrementAndGet();
     return response;
   }
+
+  @Override
+  public com.google.api.services.sqladmin.SQLAdmin getSqlAdmin() {
+    return null;
+  }
 }
