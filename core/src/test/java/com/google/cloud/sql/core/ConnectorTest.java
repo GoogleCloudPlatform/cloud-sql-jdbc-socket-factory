@@ -27,7 +27,15 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.v1beta4.StreamSqlDataRequest;
+import com.google.cloud.sql.v1beta4.StreamSqlDataResponse;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.StreamObserver;
+import io.grpc.testing.GrpcCleanupRule;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -45,16 +53,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.naming.NameNotFoundException;
 import javax.net.ssl.SSLHandshakeException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class ConnectorTest extends CloudSqlCoreTestingBase {
+  @Rule public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
   ListeningScheduledExecutorService defaultExecutor;
   private final long TEST_MAX_REFRESH_MS = 5000L;
 
@@ -160,6 +171,115 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
 
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void connect_SqlDataSuccess() throws IOException, InterruptedException {
+    FakeSqlDataService sqlDataService = new FakeSqlDataService();
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("SQL_DATA")
+            .build();
+
+    Connector connector =
+        newConnectorWithSqlData(config.getConnectorConfig(), 0, null, null, false, sqlDataService);
+
+    try (Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS)) {
+      assertThat(socket).isNotNull();
+      assertThat(socket.isClosed()).isFalse();
+
+      // Verify StartSession was received
+      StreamSqlDataRequest receivedRequest = sqlDataService.requests.poll(5, TimeUnit.SECONDS);
+      assertThat(receivedRequest).isNotNull();
+      assertThat(receivedRequest.hasStartSession()).isTrue();
+    }
+  }
+
+  @Test
+  public void connect_SqlDataFallback() throws IOException, InterruptedException {
+    FakeSqlDataService sqlDataService = new FakeSqlDataService();
+    sqlDataService.failHandshake = true; // Force fallback
+
+    FakeSslServer sslServer = new FakeSslServer();
+    int fallbackPort = sslServer.start(PRIVATE_IP);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("SQL_DATA")
+            .build();
+
+    Connector connector =
+        newConnectorWithSqlData(
+            config.getConnectorConfig(), fallbackPort, null, null, false, sqlDataService);
+
+    try (Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS)) {
+      // Should connect to the FakeSslServer (fallback)
+      assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+
+      // Verify that subsequent connection to the same instance skips SQL Data Service
+      assertThat(sqlDataService.requests.size()).isEqualTo(1);
+
+      // Clear requests to make sure we don't see new ones
+      sqlDataService.requests.clear();
+
+      // Connect again
+      try (Socket socket2 = connector.connect(config, TEST_MAX_REFRESH_MS)) {
+        assertThat(readLine(socket2)).isEqualTo(SERVER_MESSAGE);
+
+        // Verify no new requests were sent to SQL Data Service
+        assertThat(sqlDataService.requests).isEmpty();
+      }
+    }
+  }
+
+  @Test
+  public void connect_SqlDataNoFallbackOnOtherErrors() throws IOException, InterruptedException {
+    FakeSqlDataService sqlDataService =
+        new FakeSqlDataService() {
+          @Override
+          public StreamObserver<StreamSqlDataRequest> streamSqlData(
+              StreamObserver<StreamSqlDataResponse> responseObserver) {
+            return new StreamObserver<StreamSqlDataRequest>() {
+              @Override
+              public void onNext(StreamSqlDataRequest request) {
+                if (request.hasStartSession()) {
+                  // Fail with INTERNAL instead of FAILED_PRECONDITION
+                  responseObserver.onError(
+                      Status.INTERNAL.withDescription("Internal error").asRuntimeException());
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {}
+
+              @Override
+              public void onCompleted() {}
+            };
+          }
+        };
+
+    FakeSslServer sslServer = new FakeSslServer();
+    int fallbackPort = sslServer.start(PUBLIC_IP);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("SQL_DATA")
+            .build();
+
+    Connector connector =
+        newConnectorWithSqlData(
+            config.getConnectorConfig(), fallbackPort, null, null, false, sqlDataService);
+
+    // Should NOT fall back, should throw IOException caused by StatusRuntimeException (INTERNAL)
+    IOException ex =
+        assertThrows(IOException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
+    assertThat(ex).hasMessageThat().contains("Failed to connect via SQL Data Service");
+    assertThat(ex.getCause()).isInstanceOf(StatusRuntimeException.class);
+    assertThat(((StatusRuntimeException) ex.getCause()).getStatus().getCode())
+        .isEqualTo(Status.Code.INTERNAL);
   }
 
   @Test
@@ -1062,5 +1182,61 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     public List<InetAddress> resolveHost(String hostName) {
       return Collections.emptyList();
     }
+  }
+
+  private Connector newConnectorWithSqlData(
+      ConnectorConfig config,
+      int port,
+      String domainName,
+      String instanceName,
+      boolean cas,
+      FakeSqlDataService sqlDataService)
+      throws IOException {
+
+    String serverName = InProcessServerBuilder.generateName();
+    grpcCleanup.register(
+        InProcessServerBuilder.forName(serverName)
+            .directExecutor()
+            .addService(sqlDataService)
+            .build()
+            .start());
+
+    io.grpc.ManagedChannel channel =
+        grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
+
+    CredentialFactory credentialFactory =
+        stubCredentialFactoryProvider.getInstanceCredentialFactory(config);
+    SqlDataClient sqlDataClient =
+        new SqlDataClient(config, credentialFactory, "test-agent", channel);
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(
+            fakeSuccessHttpTransport(
+                TestKeys.getServerCertPem(),
+                Duration.ofSeconds(0),
+                null,
+                cas,
+                false,
+                null,
+                Collections.singletonList(
+                    new DnsNameMapping()
+                        .setName(domainName)
+                        .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                        .setDnsScope("INSTANCE"))));
+    DnsResolver dnsResolver = new MockDnsResolver(domainName, instanceName);
+
+    return new Connector(
+        config,
+        factory,
+        credentialFactory,
+        defaultExecutor,
+        clientKeyPair,
+        10,
+        TEST_MAX_REFRESH_MS,
+        port,
+        new DnsInstanceConnectionNameResolver(dnsResolver),
+        dnsResolver,
+        new ProtocolHandler("test"),
+        sqlDataClient);
   }
 }
