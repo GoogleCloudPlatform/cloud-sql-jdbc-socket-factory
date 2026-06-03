@@ -21,6 +21,7 @@ import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Splitter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,9 @@ public class ConnectionConfig {
       Arrays.asList(IpType.PUBLIC, IpType.PRIVATE);
   public static final String CLOUD_SQL_GOOGLE_CREDENTIALS_PATH = "cloudSqlGoogleCredentialsPath";
   public static final String MDX_CLIENT_PROTOCOL_TYPE = "mdxClientProtocolType";
+  public static final String CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY = "cloudSqlSqlDataEndpoint";
+  public static final String CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY =
+      "cloudSqlSqlDataStreamTimeout";
 
   private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
@@ -121,14 +125,16 @@ public class ConnectionConfig {
     final String mdxClientProtocolType =
         props.getProperty(ConnectionConfig.MDX_CLIENT_PROTOCOL_TYPE);
 
-    return new ConnectionConfig(
-        csqlInstanceName,
-        namedConnection,
-        unixSocketPath,
-        ipTypes,
-        authType,
-        unixSocketPathSuffix,
-        domainName,
+    final String sqlDataEndpoint =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY);
+    final String sqlDataStreamTimeoutStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY);
+    final Duration sqlDataStreamTimeout =
+        sqlDataStreamTimeoutStr != null
+            ? Duration.ofMillis(Long.parseLong(sqlDataStreamTimeoutStr))
+            : null;
+
+    ConnectorConfig.Builder connectorConfigBuilder =
         new ConnectorConfig.Builder()
             .withTargetPrincipal(targetPrincipal)
             .withDelegates(delegates)
@@ -137,8 +143,24 @@ public class ConnectionConfig {
             .withGoogleCredentialsPath(googleCredentialsPath)
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
-            .withRefreshStrategy(refreshStrategy)
-            .build(),
+            .withRefreshStrategy(refreshStrategy);
+
+    if (sqlDataEndpoint != null) {
+      connectorConfigBuilder.withSqlDataEndpoint(sqlDataEndpoint);
+    }
+    if (sqlDataStreamTimeout != null) {
+      connectorConfigBuilder.withSqlDataStreamTimeout(sqlDataStreamTimeout);
+    }
+
+    return new ConnectionConfig(
+        csqlInstanceName,
+        namedConnection,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        domainName,
+        connectorConfigBuilder.build(),
         mdxClientProtocolType);
   }
 
@@ -157,6 +179,9 @@ public class ConnectionConfig {
         result.add(IpType.PRIVATE);
       } else if (type.trim().equalsIgnoreCase("PSC")) {
         result.add(IpType.PSC);
+      } else if (type.trim().equalsIgnoreCase("SQL_DATA")
+          || type.trim().equalsIgnoreCase("SQLDATA")) {
+        result.add(IpType.SQL_DATA);
       } else {
         throw new IllegalArgumentException(
             "Unsupported IP type: " + type + " found in ipTypes parameter");

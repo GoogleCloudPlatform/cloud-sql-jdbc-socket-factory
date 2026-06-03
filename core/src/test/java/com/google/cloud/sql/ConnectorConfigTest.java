@@ -456,6 +456,8 @@ public class ConnectorConfigTest {
                 null, // universeDomain
                 wantRefreshStrategy, // refreshStrategy
                 null, // instanceNameResolver
-                ConnectorConfig.DEFAULT_FAILOVER_PERIOD));
+                ConnectorConfig.DEFAULT_FAILOVER_PERIOD,
+                "sqladmin.googleapis.com",
+                Duration.ofHours(2)));
   }
 }

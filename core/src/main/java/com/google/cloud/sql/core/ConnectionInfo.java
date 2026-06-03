@@ -59,8 +59,18 @@ class ConnectionInfo {
     List<String> preferredIps = null;
 
     for (IpType ipType : config.getIpTypes()) {
-      preferredIps = getIpAddrs().get(ipType);
-      if (preferredIps != null && !preferredIps.isEmpty()) {
+      if (ipType == IpType.SQL_DATA) {
+        preferredIps = getIpAddrs().get(IpType.PRIVATE);
+        if (preferredIps == null) {
+          preferredIps = getIpAddrs().get(IpType.PSC);
+        }
+        if (preferredIps == null) {
+          preferredIps = getIpAddrs().get(IpType.PUBLIC);
+        }
+      } else {
+        preferredIps = getIpAddrs().get(ipType);
+      }
+      if (preferredIps != null) {
         break;
       }
     }

@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -54,6 +55,8 @@ class Connector {
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
+  private final SqlDataClient sqlDataClient;
+  private final ConcurrentHashMap<String, Boolean> sqlDataUnsupported = new ConcurrentHashMap<>();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -71,10 +74,42 @@ class Connector {
       int serverProxyPort,
       DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
+    this(
+        config,
+        connectionInfoRepositoryFactory,
+        instanceCredentialFactory,
+        executor,
+        localKeyPair,
+        minRefreshDelayMs,
+        refreshTimeoutMs,
+        serverProxyPort,
+        null,
+        dnsResolver,
+        mdxProtocolHandler,
+        new SqlDataClient(
+            config, instanceCredentialFactory, InternalConnectorRegistry.getUserAgents()));
+  }
+
+  Connector(
+      ConnectorConfig config,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
+      CredentialFactory instanceCredentialFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> localKeyPair,
+      long minRefreshDelayMs,
+      long refreshTimeoutMs,
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver,
+      DnsResolver dnsResolver,
+      ProtocolHandler mdxProtocolHandler,
+      SqlDataClient sqlDataClient) {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
-    this.instanceNameResolver = new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
+    this.instanceNameResolver =
+        instanceNameResolver != null
+            ? instanceNameResolver
+            : new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -83,6 +118,7 @@ class Connector {
     this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;
+    this.sqlDataClient = sqlDataClient;
   }
 
   public ConnectorConfig getConfig() {
@@ -126,6 +162,35 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
+    final ConnectionConfig resolvedConfig = resolveConnectionName(config);
+    CloudSqlInstanceName instanceName =
+        new CloudSqlInstanceName(resolvedConfig.getCloudSqlInstance());
+
+    if (!resolvedConfig.getIpTypes().isEmpty()
+        && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
+      if (!sqlDataUnsupported.containsKey(instanceName.getConnectionName())) {
+        logger.debug(
+            String.format(
+                "[%s] Attempting SQL Data Service connection.", instanceName.getConnectionName()));
+        Socket sqlDataSocket = sqlDataClient.connect(instanceName, timeoutMs);
+        return new FallbackSocket(
+            sqlDataSocket,
+            () -> connectDirect(config, timeoutMs),
+            () -> {
+              logger.warn(
+                  String.format(
+                      "[%s] SQL Data Service not supported for this instance. "
+                          + "Falling back to direct IP.",
+                      instanceName.getConnectionName()));
+              sqlDataUnsupported.put(instanceName.getConnectionName(), true);
+            });
+      }
+    }
+
+    return connectDirect(config, timeoutMs);
+  }
+
+  private Socket connectDirect(ConnectionConfig config, long timeoutMs) throws IOException {
     MonitoredCache instance = getConnection(config);
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
@@ -312,5 +377,21 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+    this.sqlDataClient.close();
+  }
+
+  private boolean isPreconditionFailed(Throwable t) {
+    while (t != null) {
+      if (t instanceof io.grpc.StatusRuntimeException) {
+        return ((io.grpc.StatusRuntimeException) t).getStatus().getCode()
+            == io.grpc.Status.Code.FAILED_PRECONDITION;
+      }
+      if (t instanceof io.grpc.StatusException) {
+        return ((io.grpc.StatusException) t).getStatus().getCode()
+            == io.grpc.Status.Code.FAILED_PRECONDITION;
+      }
+      t = t.getCause();
+    }
+    return false;
   }
 }

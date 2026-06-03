@@ -50,6 +50,9 @@ public class ConnectorConfig {
    */
   private final Duration failoverPeriod;
 
+  private final String sqlDataEndpoint;
+  private final Duration sqlDataStreamTimeout;
+
   private ConnectorConfig(
       String targetPrincipal,
       List<String> delegates,
@@ -62,7 +65,9 @@ public class ConnectorConfig {
       String universeDomain,
       RefreshStrategy refreshStrategy,
       Function<String, String> instanceNameResolver,
-      Duration failoverPeriod) {
+      Duration failoverPeriod,
+      String sqlDataEndpoint,
+      Duration sqlDataStreamTimeout) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -75,6 +80,8 @@ public class ConnectorConfig {
     this.refreshStrategy = refreshStrategy;
     this.instanceNameResolver = instanceNameResolver;
     this.failoverPeriod = failoverPeriod;
+    this.sqlDataEndpoint = sqlDataEndpoint;
+    this.sqlDataStreamTimeout = sqlDataStreamTimeout;
   }
 
   @Override
@@ -97,7 +104,9 @@ public class ConnectorConfig {
         && Objects.equal(universeDomain, that.universeDomain)
         && Objects.equal(refreshStrategy, that.refreshStrategy)
         && Objects.equal(instanceNameResolver, that.instanceNameResolver)
-        && Objects.equal(failoverPeriod, that.failoverPeriod);
+        && Objects.equal(failoverPeriod, that.failoverPeriod)
+        && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
+        && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout);
   }
 
   @Override
@@ -114,7 +123,9 @@ public class ConnectorConfig {
         universeDomain,
         refreshStrategy,
         instanceNameResolver,
-        failoverPeriod);
+        failoverPeriod,
+        sqlDataEndpoint,
+        sqlDataStreamTimeout);
   }
 
   public String getTargetPrincipal() {
@@ -165,6 +176,14 @@ public class ConnectorConfig {
     return failoverPeriod;
   }
 
+  public String getSqlDataEndpoint() {
+    return sqlDataEndpoint;
+  }
+
+  public Duration getSqlDataStreamTimeout() {
+    return sqlDataStreamTimeout;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -181,6 +200,8 @@ public class ConnectorConfig {
     private Function<String, String> instanceNameResolver;
 
     private Duration failoverPeriod = DEFAULT_FAILOVER_PERIOD;
+    private String sqlDataEndpoint = "sqladmin.googleapis.com";
+    private Duration sqlDataStreamTimeout = Duration.ofHours(2);
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -255,6 +276,18 @@ public class ConnectorConfig {
       return this;
     }
 
+    /** Chained setter for the SqlDataEndpoint field. */
+    public Builder withSqlDataEndpoint(String sqlDataEndpoint) {
+      this.sqlDataEndpoint = sqlDataEndpoint;
+      return this;
+    }
+
+    /** Chained setter for the SqlDataStreamTimeout field. */
+    public Builder withSqlDataStreamTimeout(Duration sqlDataStreamTimeout) {
+      this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -291,7 +324,9 @@ public class ConnectorConfig {
           universeDomain,
           refreshStrategy,
           instanceNameResolver,
-          failoverPeriod);
+          failoverPeriod,
+          sqlDataEndpoint,
+          sqlDataStreamTimeout);
     }
   }
 }

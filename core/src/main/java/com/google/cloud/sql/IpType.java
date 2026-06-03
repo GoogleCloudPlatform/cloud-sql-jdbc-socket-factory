@@ -20,5 +20,6 @@ package com.google.cloud.sql;
 public enum IpType {
   PUBLIC,
   PRIVATE,
-  PSC;
+  PSC,
+  SQL_DATA;
 }
