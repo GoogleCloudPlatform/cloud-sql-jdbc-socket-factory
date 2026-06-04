@@ -42,6 +42,22 @@
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-common-protos</artifactId>
+    </dependency>
   </dependencies>
 
 
@@ -80,7 +96,19 @@
               <optimizeCodegen>false</optimizeCodegen>
               <protocVersion>3.23.0</protocVersion>
               <includeStdTypes>true</includeStdTypes>
-              <outputOptions></outputOptions>
+              <includeDirectories>
+                <includeDirectory>src/main/protobuf</includeDirectory>
+                <includeDirectory>src/main/proto_imports</includeDirectory>
+              </includeDirectories>
+              <outputTargets>
+                <outputTarget>
+                  <type>java</type>
+                </outputTarget>
+                <outputTarget>
+                  <type>grpc-java</type>
+                  <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.81.0:exe:${os.detected.classifier}</pluginArtifact>
+                </outputTarget>
+              </outputTargets>
             </configuration>
           </execution>
         </executions>
