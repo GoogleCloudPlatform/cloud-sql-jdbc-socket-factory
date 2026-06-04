@@ -33,7 +33,7 @@ function clean() {
 
 ## build - Builds the project without running tests.
 function build() {
-   $mvn_cmd install -DskipTests=true
+   $mvn_cmd install -DskipTests=true "$@"
 }
 
 ## test - Runs local unit tests.
