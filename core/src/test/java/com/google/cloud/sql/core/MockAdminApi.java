@@ -52,18 +52,25 @@ public class MockAdminApi {
   private static final Pattern CONNECT_SETTINGS_PATTERN =
       Pattern.compile(
           "(?<baseUrl>.*)sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*)/connectSettings");
+  private static final Pattern CONNECT_SETTINGS_BY_DNS_NAME_PATTERN =
+      Pattern.compile(
+          "(?<baseUrl>.*)sql/v1beta4/dns/(?<dnsName>.*)/locations/(?<location>.*):resolveConnectSettings");
   private static final Pattern GENERATE_EPHEMERAL_CERT_PATTERN =
       Pattern.compile(
           "(?<baseUrl>.*)sql/v1beta4/projects/(?<project>.*)/instances/(?<instance>.*):generateEphemeralCert");
   private final KeyPair clientKeyPair;
   private final List<ConnectSettingsRequest> connectSettingsRequests;
   private final AtomicInteger allConnectSettingsRequestsIndex;
+  private final List<ConnectSettingsByDnsNameRequest> connectSettingsByDnsNameRequests;
+  private final AtomicInteger allConnectSettingsByDnsNameRequestsIndex;
   private final List<GenerateEphemeralCertRequest> generateEphemeralCertRequests;
   private final AtomicInteger generateEphemeralCertRequestsIndex;
 
   public MockAdminApi() throws NoSuchAlgorithmException, InvalidKeySpecException {
     connectSettingsRequests = new ArrayList<>();
     allConnectSettingsRequestsIndex = new AtomicInteger(0);
+    connectSettingsByDnsNameRequests = new ArrayList<>();
+    allConnectSettingsByDnsNameRequestsIndex = new AtomicInteger(0);
     generateEphemeralCertRequests = new ArrayList<>();
     generateEphemeralCertRequestsIndex = new AtomicInteger(0);
 
@@ -124,6 +131,53 @@ public class MockAdminApi {
         new ConnectSettingsRequest(cloudSqlInstanceName, settings, baseUrl));
   }
 
+  public void addConnectSettingsByDnsNameResponse(
+      String dnsName,
+      String location,
+      String instanceConnectionName,
+      String publicIp,
+      String privateIp,
+      String databaseVersion,
+      String pscHostname,
+      String baseUrl,
+      boolean legacyPscDnsName) {
+    CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
+
+    ArrayList<IpMapping> ipMappings = new ArrayList<>();
+    if (publicIp != null && !publicIp.isEmpty()) {
+      ipMappings.add(new IpMapping().setIpAddress(publicIp).setType("PRIMARY"));
+    }
+    if (privateIp != null && !privateIp.isEmpty()) {
+      ipMappings.add(new IpMapping().setIpAddress(privateIp).setType("PRIVATE"));
+    }
+    if (ipMappings.isEmpty()) {
+      ipMappings = null;
+    }
+    ConnectSettings settings =
+        new ConnectSettings()
+            .setBackendType("SECOND_GEN")
+            .setIpAddresses(ipMappings)
+            .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
+            .setDatabaseVersion(databaseVersion)
+            .setPscEnabled(pscHostname != null)
+            .setRegion(cloudSqlInstanceName.getRegionId())
+            .setConnectionName(instanceConnectionName);
+    settings.setFactory(GsonFactory.getDefaultInstance());
+    if (legacyPscDnsName) {
+      settings.setDnsName(pscHostname);
+    } else {
+      settings.setDnsNames(
+          Collections.singletonList(
+              new DnsNameMapping()
+                  .setDnsScope("INSTANCE")
+                  .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                  .setName(pscHostname)));
+    }
+
+    connectSettingsByDnsNameRequests.add(
+        new ConnectSettingsByDnsNameRequest(dnsName, location, settings, baseUrl));
+  }
+
   public void addGenerateEphemeralCertResponse(
       String instanceConnectionName, Duration ephemeralCertExpiration, String baseUrl)
       throws GeneralSecurityException, OperatorCreationException {
@@ -161,6 +215,23 @@ public class MockAdminApi {
               }
               return new MockLowLevelHttpResponse()
                   .setContent(connectSettingsRequest.getSettings().toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
+                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+            }
+
+            // GET connect settings by DNS name
+            Matcher connectSettingsByDnsNameMatcher =
+                CONNECT_SETTINGS_BY_DNS_NAME_PATTERN.matcher(url);
+            if (method.equals("GET") && connectSettingsByDnsNameMatcher.matches()) {
+              int i = allConnectSettingsByDnsNameRequestsIndex.getAndIncrement();
+              ConnectSettingsByDnsNameRequest req = connectSettingsByDnsNameRequests.get(i);
+              if (!connectSettingsByDnsNameMatcher.group("dnsName").equals(req.getDnsName())
+                  || !connectSettingsByDnsNameMatcher.group("location").equals(req.getLocation())
+                  || !connectSettingsByDnsNameMatcher.group("baseUrl").equals(req.getBaseUrl())) {
+                throw new RuntimeException("Unrecognized request: GET " + url);
+              }
+              return new MockLowLevelHttpResponse()
+                  .setContent(req.getSettings().toPrettyString())
                   .setContentType(Json.MEDIA_TYPE)
                   .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
             }
@@ -267,6 +338,37 @@ public class MockAdminApi {
     @Override
     public AccessToken refreshAccessToken() throws IOException {
       return new AccessToken(refreshToken, expirationTime);
+    }
+  }
+
+  private static class ConnectSettingsByDnsNameRequest {
+    private final String dnsName;
+    private final String location;
+    private final ConnectSettings settings;
+    private final String baseUrl;
+
+    private ConnectSettingsByDnsNameRequest(
+        String dnsName, String location, ConnectSettings settings, String baseUrl) {
+      this.dnsName = dnsName;
+      this.location = location;
+      this.settings = settings;
+      this.baseUrl = baseUrl;
+    }
+
+    private String getDnsName() {
+      return dnsName;
+    }
+
+    private String getLocation() {
+      return location;
+    }
+
+    private ConnectSettings getSettings() {
+      return settings;
+    }
+
+    private String getBaseUrl() {
+      return baseUrl;
     }
   }
 }

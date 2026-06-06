@@ -544,4 +544,9 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     // Fallback to the generic description
     return new RuntimeException(message, ex);
   }
+
+  @Override
+  public com.google.api.services.sqladmin.SQLAdmin getSqlAdmin() {
+    return apiClient;
+  }
 }

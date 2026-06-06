@@ -74,6 +74,10 @@ class Connector {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
+    if (instanceNameResolver instanceof DnsInstanceConnectionNameResolver) {
+      ((DnsInstanceConnectionNameResolver) instanceNameResolver)
+          .setSqlAdmin(this.adminApi.getSqlAdmin());
+    }
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -144,15 +148,18 @@ class Connector {
                     addrs.get(0).getHostAddress()));
             instanceIp = addrs.get(0).getHostAddress();
           } else {
+            String fallbackIp = getFallbackIp(instanceIp, metadata);
             logger.debug(
                 String.format(
                     "[%s] custom DNS name %s resolved but returned no entries, using %s from"
                         + " instance metadata",
                     instance.getConfig().getCloudSqlInstance(),
                     instance.getConfig().getDomainName(),
-                    instanceIp));
+                    fallbackIp));
+            instanceIp = fallbackIp;
           }
         } catch (UnknownHostException e) {
+          String fallbackIp = getFallbackIp(instanceIp, metadata);
           logger.debug(
               String.format(
                   "[%s] custom DNS name %s did not resolve to an IP address: %s, using %s from"
@@ -160,7 +167,8 @@ class Connector {
                   instance.getConfig().getCloudSqlInstance(),
                   instance.getConfig().getDomainName(),
                   e.getMessage(),
-                  instanceIp));
+                  fallbackIp));
+          instanceIp = fallbackIp;
         }
       }
 
@@ -289,5 +297,16 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+  }
+
+  private String getFallbackIp(String currentIp, ConnectionMetadata metadata) {
+    if (com.google.common.net.InetAddresses.isInetAddress(currentIp)) {
+      return currentIp;
+    }
+    String fallback = metadata.getIpAddrs().get(com.google.cloud.sql.IpType.PRIVATE);
+    if (fallback == null) {
+      fallback = metadata.getIpAddrs().get(com.google.cloud.sql.IpType.PUBLIC);
+    }
+    return fallback != null ? fallback : currentIp;
   }
 }

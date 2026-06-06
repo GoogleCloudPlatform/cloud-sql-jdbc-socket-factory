@@ -27,4 +27,6 @@ interface DnsResolver {
   Collection<String> resolveTxt(String domainName) throws NameNotFoundException;
 
   List<InetAddress> resolveHost(String hostName) throws UnknownHostException;
+
+  String resolveCname(String domainName) throws NameNotFoundException;
 }
