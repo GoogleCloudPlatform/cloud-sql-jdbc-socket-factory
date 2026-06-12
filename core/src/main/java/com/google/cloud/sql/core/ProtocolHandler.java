@@ -17,6 +17,8 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.core.mdx.MetadataExchange;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -94,6 +96,12 @@ class ProtocolHandler {
     return clientProtocolType;
   }
 
+  // Maximum allowed size for an MDX response. A MetadataExchangeResponse is a
+  // small message (two short fields), so 16 KiB is an ample cap that prevents
+  // a malicious peer from forcing an unbounded allocation (e.g. ~2 GiB) that
+  // would crash the JVM with an uncatchable OutOfMemoryError.
+  private static final int MAX_MDX_RESPONSE_SIZE = 16 * 1024;
+
   MetadataExchange.MetadataExchangeResponse readMdxResponse(InputStream in) throws IOException {
     // Mark the input stream so we can reset it if the server doesn't speak MDX.
     // 8 bytes is enough for the header (8)
@@ -108,8 +116,26 @@ class ProtocolHandler {
       return null;
     }
 
-    // Read the 4-byte big-endian size.
-    int sizeL = (in.read() << 24) | (in.read() << 16) | (in.read() << 8) | in.read();
+    // Read the 4-byte big-endian size. DataInputStream.readInt() throws
+    // EOFException on a short read instead of silently producing a negative
+    // value from -1 bytes.
+    int sizeL;
+    try {
+      sizeL = new DataInputStream(in).readInt();
+    } catch (EOFException e) {
+      throw new IOException("Failed to read MDX response size: stream ended.", e);
+    }
+
+    // Reject non-positive or oversized lengths to prevent unbounded
+    // allocation triggered by a malfunctioning peer.
+    if (sizeL <= 0 || sizeL > MAX_MDX_RESPONSE_SIZE) {
+      throw new IOException(
+          "Invalid MDX response size: "
+              + sizeL
+              + " (must be in (0, "
+              + MAX_MDX_RESPONSE_SIZE
+              + "]).");
+    }
 
     // Read the response bytes.
     byte[] responseBytes = new byte[sizeL];
