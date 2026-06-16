@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import com.google.api.services.sqladmin.model.DnsNameMapping;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
@@ -28,6 +29,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -70,10 +73,10 @@ public class DefaultConnectionInfoRepositoryTest {
             .get();
     assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
-    assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
-    assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
-    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PUBLIC)).containsExactly(SAMPLE_PUBLIC_IP);
+    assertThat(ipAddrs.get(IpType.PRIVATE)).containsExactly(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get(IpType.PSC)).containsExactly(SAMPLE_PCS_DNS_NAME);
   }
 
   @Test
@@ -108,8 +111,8 @@ public class DefaultConnectionInfoRepositoryTest {
             .get();
     assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
-    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PSC)).containsExactly(SAMPLE_PCS_DNS_NAME);
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
 
@@ -145,8 +148,8 @@ public class DefaultConnectionInfoRepositoryTest {
             .get();
     assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
-    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PSC)).containsExactly(SAMPLE_PCS_DNS_NAME);
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
 
@@ -244,10 +247,10 @@ public class DefaultConnectionInfoRepositoryTest {
             .get();
     assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
 
-    Map<IpType, String> ipAddrs = connectionInfo.getIpAddrs();
-    assertThat(ipAddrs.get(IpType.PUBLIC)).isEqualTo(SAMPLE_PUBLIC_IP);
-    assertThat(ipAddrs.get(IpType.PRIVATE)).isEqualTo(SAMPLE_PRIVATE_IP);
-    assertThat(ipAddrs.get(IpType.PSC)).isEqualTo(SAMPLE_PCS_DNS_NAME);
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PUBLIC)).containsExactly(SAMPLE_PUBLIC_IP);
+    assertThat(ipAddrs.get(IpType.PRIVATE)).containsExactly(SAMPLE_PRIVATE_IP);
+    assertThat(ipAddrs.get(IpType.PSC)).containsExactly(SAMPLE_PCS_DNS_NAME);
   }
 
   @SuppressWarnings("SameParameterValue")
@@ -266,5 +269,54 @@ public class DefaultConnectionInfoRepositoryTest {
     mockAdminApi.addGenerateEphemeralCertResponse(
         instanceConnectionName, Duration.ofHours(1), baseUrl);
     return mockAdminApi;
+  }
+
+  @Test
+  public void testFetchInstanceData_multiplePscDns_sorted()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    List<DnsNameMapping> dnsNames =
+        Arrays.asList(
+            new DnsNameMapping()
+                .setDnsScope("INSTANCE")
+                .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                .setName("dns1.sql.goog"),
+            new DnsNameMapping()
+                .setDnsScope("INSTANCE")
+                .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                .setName("dns2.sql-psc.goog"),
+            new DnsNameMapping()
+                .setDnsScope("INSTANCE")
+                .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                .setName("dns3.sql.goog"));
+
+    mockAdminApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME, null, null, DATABASE_VERSION, dnsNames, DEFAULT_BASE_URL);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    // Should be sorted: .sql-psc.goog first
+    assertThat(ipAddrs.get(IpType.PSC))
+        .containsExactly("dns2.sql-psc.goog", "dns1.sql.goog", "dns3.sql.goog")
+        .inOrder();
+    assertThat(ipAddrs.size()).isEqualTo(1);
   }
 }

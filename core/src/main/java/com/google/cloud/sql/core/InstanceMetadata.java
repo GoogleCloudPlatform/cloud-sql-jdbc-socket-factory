@@ -25,7 +25,7 @@ import java.util.Map;
 class InstanceMetadata {
 
   private final CloudSqlInstanceName instanceName;
-  private final Map<IpType, String> ipAddrs;
+  private final Map<IpType, List<String>> ipAddrs;
   private final List<Certificate> instanceCaCertificates;
   private final boolean casManagedCertificate;
   private final String dnsName;
@@ -34,7 +34,7 @@ class InstanceMetadata {
 
   InstanceMetadata(
       CloudSqlInstanceName instanceName,
-      Map<IpType, String> ipAddrs,
+      Map<IpType, List<String>> ipAddrs,
       List<Certificate> instanceCaCertificates,
       boolean casManagedCertificate,
       String dnsName,
@@ -49,7 +49,7 @@ class InstanceMetadata {
     this.mdxProtocolSupport = mdxProtocolSupport;
   }
 
-  Map<IpType, String> getIpAddrs() {
+  Map<IpType, List<String>> getIpAddrs() {
     return ipAddrs;
   }
 

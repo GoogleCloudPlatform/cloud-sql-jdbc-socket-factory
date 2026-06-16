@@ -151,7 +151,7 @@
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20260510-2.0.0</version>
+        <version>v1beta4-rev0-2.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
@@ -823,7 +823,7 @@
                   <artifactId>maven-compiler-plugin</artifactId>
                   <configuration>
                       <compilerArgs combine.children="append">
-                          <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg>
+                          <!-- <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg> -->
                           <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
