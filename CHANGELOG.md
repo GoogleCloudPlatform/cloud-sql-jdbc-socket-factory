@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.4...v1.28.5) (2026-06-26)
+
+
+### Bug Fixes
+
+* Enforce size limit on the MDX response ([61585ef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/61585ef75772d6904feee979261911ba74d56ac7))
+
 ## [1.28.4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.3...v1.28.4) (2026-05-26)
 
 
