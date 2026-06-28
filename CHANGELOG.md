@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.5...v1.28.6) (2026-06-28)
+
+
+### Bug Fixes
+
+* Update dependency maven to v3.9.16 ([#2281](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2281)) ([7e003ad](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7e003ad5501b695ba1ff14136808495709a38b5d))
+
 ## [1.28.5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.4...v1.28.5) (2026-06-26)
 
 
