@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -53,6 +54,8 @@ class Connector {
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
+  private final SqlDataClient sqlDataClient;
+  private final ConcurrentHashMap<String, Boolean> sqlDataUnsupported = new ConcurrentHashMap<>();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -71,6 +74,35 @@ class Connector {
       InstanceConnectionNameResolver instanceNameResolver,
       DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
+    this(
+        config,
+        connectionInfoRepositoryFactory,
+        instanceCredentialFactory,
+        executor,
+        localKeyPair,
+        minRefreshDelayMs,
+        refreshTimeoutMs,
+        serverProxyPort,
+        instanceNameResolver,
+        dnsResolver,
+        mdxProtocolHandler,
+        new SqlDataClient(
+            config, instanceCredentialFactory, InternalConnectorRegistry.getUserAgents()));
+  }
+
+  Connector(
+      ConnectorConfig config,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
+      CredentialFactory instanceCredentialFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> localKeyPair,
+      long minRefreshDelayMs,
+      long refreshTimeoutMs,
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver,
+      DnsResolver dnsResolver,
+      ProtocolHandler mdxProtocolHandler,
+      SqlDataClient sqlDataClient) {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
@@ -83,6 +115,7 @@ class Connector {
     this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;
+    this.sqlDataClient = sqlDataClient;
   }
 
   public ConnectorConfig getConfig() {
@@ -124,6 +157,34 @@ class Connector {
               config.getCloudSqlInstance(), unixSocket));
       UnixSocketAddress socketAddress = new UnixSocketAddress(new File(unixSocket));
       return UnixSocketChannel.open(socketAddress).socket();
+    }
+
+    final ConnectionConfig resolvedConfig = resolveConnectionName(config);
+    CloudSqlInstanceName instanceName =
+        new CloudSqlInstanceName(resolvedConfig.getCloudSqlInstance());
+
+    if (!resolvedConfig.getIpTypes().isEmpty()
+        && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
+      if (!sqlDataUnsupported.containsKey(instanceName.getConnectionName())) {
+        try {
+          logger.debug(
+              String.format(
+                  "[%s] Attempting SQL Data Service connection.",
+                  instanceName.getConnectionName()));
+          return sqlDataClient.connect(instanceName, timeoutMs);
+        } catch (Exception e) {
+          if (isPreconditionFailed(e)) {
+            logger.warn(
+                String.format(
+                    "[%s] SQL Data Service not supported for this instance. "
+                        + "Falling back to direct IP.",
+                    instanceName.getConnectionName()));
+            sqlDataUnsupported.put(instanceName.getConnectionName(), true);
+          } else {
+            throw e;
+          }
+        }
+      }
     }
 
     MonitoredCache instance = getConnection(config);
@@ -289,5 +350,21 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+    this.sqlDataClient.close();
+  }
+
+  private boolean isPreconditionFailed(Throwable t) {
+    while (t != null) {
+      if (t instanceof io.grpc.StatusRuntimeException) {
+        return ((io.grpc.StatusRuntimeException) t).getStatus().getCode()
+            == io.grpc.Status.Code.FAILED_PRECONDITION;
+      }
+      if (t instanceof io.grpc.StatusException) {
+        return ((io.grpc.StatusException) t).getStatus().getCode()
+            == io.grpc.Status.Code.FAILED_PRECONDITION;
+      }
+      t = t.getCause();
+    }
+    return false;
   }
 }

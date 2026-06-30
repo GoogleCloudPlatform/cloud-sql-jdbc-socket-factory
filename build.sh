@@ -33,7 +33,7 @@ function clean() {
 
 ## build - Builds the project without running tests.
 function build() {
-   $mvn_cmd install -DskipTests=true
+   $mvn_cmd install -DskipTests=true "$@"
 }
 
 ## test - Runs local unit tests.
@@ -48,7 +48,7 @@ function test() {
       sudo ifconfig lo0 alias 127.0.0.3 up
     fi
   fi
-  $mvn_cmd -P coverage test
+  $mvn_cmd -P coverage test "$@"
 }
 
 ## e2e - Runs end-to-end integration tests.

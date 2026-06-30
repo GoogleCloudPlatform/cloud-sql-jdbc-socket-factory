@@ -195,6 +195,11 @@
         <scope>compile</scope>
       </dependency>
       <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-google-common-protos</artifactId>
+        <version>2.64.1</version>
+      </dependency>
+      <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.38.25</version>
@@ -228,6 +233,37 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-context</artifactId>
         <version>1.82.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-protobuf</artifactId>
+        <version>1.81.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-stub</artifactId>
+        <version>1.81.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-netty</artifactId>
+        <version>1.81.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-auth</artifactId>
+        <version>1.81.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-testing</artifactId>
+        <version>1.81.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-inprocess</artifactId>
+        <version>1.81.0</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
