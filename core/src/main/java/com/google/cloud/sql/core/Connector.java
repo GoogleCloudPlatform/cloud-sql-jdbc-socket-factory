@@ -69,22 +69,17 @@ class Connector {
       long minRefreshDelayMs,
       long refreshTimeoutMs,
       int serverProxyPort,
-      InstanceConnectionNameResolver instanceNameResolver,
       DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
-    if (instanceNameResolver instanceof DnsInstanceConnectionNameResolver) {
-      ((DnsInstanceConnectionNameResolver) instanceNameResolver)
-          .setSqlAdmin(this.adminApi.getSqlAdmin());
-    }
+    this.instanceNameResolver = new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
-    this.instanceNameResolver = instanceNameResolver;
     this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;

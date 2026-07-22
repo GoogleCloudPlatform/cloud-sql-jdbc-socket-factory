@@ -286,7 +286,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -338,7 +337,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -393,7 +391,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -526,7 +523,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -584,7 +580,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -642,7 +637,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -725,7 +719,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -794,7 +787,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -831,7 +823,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -869,7 +860,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -916,7 +906,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -955,7 +944,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -991,7 +979,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -1033,7 +1020,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -1063,7 +1049,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
     return connector;
@@ -1096,7 +1081,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
     return connector;

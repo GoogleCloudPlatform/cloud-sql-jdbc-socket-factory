@@ -558,7 +558,16 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   @Override
-  public com.google.api.services.sqladmin.SQLAdmin getSqlAdmin() {
-    return apiClient;
+  public String resolveConnectionName(String region, String dnsName) {
+    try {
+      ConnectSettings settings =
+          new ApiClientRetryingCallable<>(
+                  () -> apiClient.connect().resolve(region, dnsName).execute())
+              .call();
+      return settings.getConnectionName();
+    } catch (Exception ex) {
+      throw new RuntimeException(
+          String.format("Failed to resolve PSC DNS name %s in region %s", dnsName, region), ex);
+    }
   }
 }

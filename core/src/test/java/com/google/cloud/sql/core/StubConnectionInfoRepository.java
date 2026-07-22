@@ -82,7 +82,7 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   @Override
-  public com.google.api.services.sqladmin.SQLAdmin getSqlAdmin() {
-    return null;
+  public String resolveConnectionName(String region, String dnsName) {
+    throw new UnsupportedOperationException();
   }
 }

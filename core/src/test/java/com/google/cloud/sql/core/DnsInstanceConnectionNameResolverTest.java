@@ -19,9 +19,12 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
-import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.cloud.sql.AuthType;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,15 +37,6 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class DnsInstanceConnectionNameResolverTest {
-
-  private SQLAdmin buildSqlAdmin(MockAdminApi mockAdminApi) {
-    return new SQLAdmin.Builder(
-            mockAdminApi.getHttpTransport(),
-            com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
-            null)
-        .setApplicationName("test")
-        .build();
-  }
 
   private static class FakeDnsResolver implements DnsResolver {
     private final Map<String, Collection<String>> txtEntries = new HashMap<>();
@@ -78,10 +72,47 @@ public class DnsInstanceConnectionNameResolverTest {
     }
   }
 
+  private static class FakeConnectionInfoRepository implements ConnectionInfoRepository {
+    private final Map<String, String> resolvedNames = new HashMap<>();
+
+    public void putResolution(String region, String dnsName, String connectionName) {
+      resolvedNames.put(region + ":" + dnsName, connectionName);
+    }
+
+    @Override
+    public String resolveConnectionName(String region, String dnsName) {
+      String key = region + ":" + dnsName;
+      if (resolvedNames.containsKey(key)) {
+        return resolvedNames.get(key);
+      }
+      throw new RuntimeException("Failed to resolve PSC DNS name: " + dnsName);
+    }
+
+    @Override
+    public ListenableFuture<ConnectionInfo> getConnectionInfo(
+        CloudSqlInstanceName instanceName,
+        AccessTokenSupplier accessTokenSupplier,
+        AuthType authType,
+        ListeningScheduledExecutorService executor,
+        ListenableFuture<KeyPair> keyPair) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ConnectionInfo getConnectionInfoSync(
+        CloudSqlInstanceName instanceName,
+        AccessTokenSupplier accessTokenSupplier,
+        AuthType authType,
+        KeyPair keyPair) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   @Test
   public void testResolve_validInstanceName() {
     DnsInstanceConnectionNameResolver resolver =
-        new DnsInstanceConnectionNameResolver(new FakeDnsResolver());
+        new DnsInstanceConnectionNameResolver(
+            new FakeDnsResolver(), new FakeConnectionInfoRepository());
     CloudSqlInstanceName name = resolver.resolve("my-project:my-region:my-instance");
     assertThat(name.getConnectionName()).isEqualTo("my-project:my-region:my-instance");
     assertThat(name.getProjectId()).isEqualTo("my-project");
@@ -95,7 +126,8 @@ public class DnsInstanceConnectionNameResolverTest {
     FakeDnsResolver fakeDns = new FakeDnsResolver();
     fakeDns.putTxt("db.example.com", "my-project:my-region:my-instance");
 
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, new FakeConnectionInfoRepository());
     CloudSqlInstanceName name = resolver.resolve("db.example.com");
     assertThat(name.getConnectionName()).isEqualTo("my-project:my-region:my-instance");
     assertThat(name.getDomainName()).isEqualTo("db.example.com");
@@ -106,21 +138,11 @@ public class DnsInstanceConnectionNameResolverTest {
     String dnsName = "0123456789ab.fedcba9876543.europe-north2.sql-psc.goog";
     String realConnectionName = "my-project:europe-north2:my-instance";
 
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    mockAdminApi.addConnectSettingsByDnsNameResponse(
-        dnsName + ".",
-        "europe-north2",
-        realConnectionName,
-        "34.1.2.3",
-        "10.0.0.1",
-        "POSTGRES_14",
-        dnsName + ".",
-        "https://sqladmin.googleapis.com/",
-        false);
+    FakeConnectionInfoRepository fakeRepo = new FakeConnectionInfoRepository();
+    fakeRepo.putResolution("europe-north2", dnsName + ".", realConnectionName);
 
     DnsInstanceConnectionNameResolver resolver =
-        new DnsInstanceConnectionNameResolver(new FakeDnsResolver());
-    resolver.setSqlAdmin(buildSqlAdmin(mockAdminApi));
+        new DnsInstanceConnectionNameResolver(new FakeDnsResolver(), fakeRepo);
 
     CloudSqlInstanceName name = resolver.resolve(dnsName);
     assertThat(name.getConnectionName()).isEqualTo(realConnectionName);
@@ -136,23 +158,14 @@ public class DnsInstanceConnectionNameResolverTest {
     String cnameTarget = "0123456789ab.fedcba9876543.europe-north2.sql-psc.goog";
     String realConnectionName = "my-project:europe-north2:my-instance";
 
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    mockAdminApi.addConnectSettingsByDnsNameResponse(
-        cnameTarget + ".",
-        "europe-north2",
-        realConnectionName,
-        "34.1.2.3",
-        "10.0.0.1",
-        "POSTGRES_14",
-        cnameTarget + ".",
-        "https://sqladmin.googleapis.com/",
-        false);
+    FakeConnectionInfoRepository fakeRepo = new FakeConnectionInfoRepository();
+    fakeRepo.putResolution("europe-north2", cnameTarget + ".", realConnectionName);
 
     FakeDnsResolver fakeDns = new FakeDnsResolver();
     fakeDns.putCname(dnsName, cnameTarget);
 
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
-    resolver.setSqlAdmin(buildSqlAdmin(mockAdminApi));
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, fakeRepo);
 
     CloudSqlInstanceName name = resolver.resolve(dnsName);
     assertThat(name.getConnectionName()).isEqualTo(realConnectionName);
@@ -166,24 +179,15 @@ public class DnsInstanceConnectionNameResolverTest {
     String cnameTarget = "0123456789ab.fedcba9876543.europe-north2.sql-psc.goog";
     String realConnectionName = "my-project:europe-north2:my-instance";
 
-    MockAdminApi mockAdminApi = new MockAdminApi();
-    mockAdminApi.addConnectSettingsByDnsNameResponse(
-        cnameTarget + ".",
-        "europe-north2",
-        realConnectionName,
-        "34.1.2.3",
-        "10.0.0.1",
-        "POSTGRES_14",
-        cnameTarget + ".",
-        "https://sqladmin.googleapis.com/",
-        false);
+    FakeConnectionInfoRepository fakeRepo = new FakeConnectionInfoRepository();
+    fakeRepo.putResolution("europe-north2", cnameTarget + ".", realConnectionName);
 
     FakeDnsResolver fakeDns = new FakeDnsResolver();
     fakeDns.putCname(dnsName, cname2);
     fakeDns.putCname(cname2, cnameTarget);
 
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
-    resolver.setSqlAdmin(buildSqlAdmin(mockAdminApi));
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, fakeRepo);
 
     CloudSqlInstanceName name = resolver.resolve(dnsName);
     assertThat(name.getConnectionName()).isEqualTo(realConnectionName);
@@ -200,7 +204,8 @@ public class DnsInstanceConnectionNameResolverTest {
     fakeDns.putCname(cname2, cname3);
     fakeDns.putTxt(cname3, "my-project:my-region:my-instance");
 
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, new FakeConnectionInfoRepository());
     CloudSqlInstanceName name = resolver.resolve(dnsName);
     assertThat(name.getConnectionName()).isEqualTo("my-project:my-region:my-instance");
     assertThat(name.getDomainName()).isEqualTo(cname3);
@@ -217,7 +222,8 @@ public class DnsInstanceConnectionNameResolverTest {
     };
 
     DnsInstanceConnectionNameResolver resolver =
-        new DnsInstanceConnectionNameResolver(new FakeDnsResolver());
+        new DnsInstanceConnectionNameResolver(
+            new FakeDnsResolver(), new FakeConnectionInfoRepository());
     for (String dnsName : invalidDnsNames) {
       assertThrows(IllegalArgumentException.class, () -> resolver.resolve(dnsName));
     }
@@ -231,7 +237,8 @@ public class DnsInstanceConnectionNameResolverTest {
     fakeDns.putCname(dnsName, cname2);
     fakeDns.putCname(cname2, dnsName); // Loop!
 
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, new FakeConnectionInfoRepository());
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> resolver.resolve(dnsName));
     assertThat(ex.getMessage()).contains("CNAME loop detected");
@@ -243,7 +250,8 @@ public class DnsInstanceConnectionNameResolverTest {
     for (int i = 1; i <= 10; i++) {
       fakeDns.putCname("name" + i + ".example.com", "name" + (i + 1) + ".example.com");
     }
-    DnsInstanceConnectionNameResolver resolver = new DnsInstanceConnectionNameResolver(fakeDns);
+    DnsInstanceConnectionNameResolver resolver =
+        new DnsInstanceConnectionNameResolver(fakeDns, new FakeConnectionInfoRepository());
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> resolver.resolve("name1.example.com"));
     assertThat(ex.getMessage()).contains("CNAME lookup limit exceeded");

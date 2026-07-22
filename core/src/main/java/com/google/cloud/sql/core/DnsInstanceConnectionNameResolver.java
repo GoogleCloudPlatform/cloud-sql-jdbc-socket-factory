@@ -39,14 +39,12 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
           "^([a-f0-9]{12})\\.([^.]+)\\.([a-z0-9]+-[a-z0-9]+)\\.(sql|sql-psa|sql-psc)\\.goog\\.?$");
 
   private final DnsResolver dnsResolver;
-  private com.google.api.services.sqladmin.SQLAdmin sqlAdmin;
+  private final ConnectionInfoRepository connectionInfoRepository;
 
-  public DnsInstanceConnectionNameResolver(DnsResolver dnsResolver) {
+  public DnsInstanceConnectionNameResolver(
+      DnsResolver dnsResolver, ConnectionInfoRepository connectionInfoRepository) {
     this.dnsResolver = dnsResolver;
-  }
-
-  void setSqlAdmin(com.google.api.services.sqladmin.SQLAdmin sqlAdmin) {
-    this.sqlAdmin = sqlAdmin;
+    this.connectionInfoRepository = connectionInfoRepository;
   }
 
   @Override
@@ -60,16 +58,11 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
     Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanName.toLowerCase());
     if (pscDnsMatcher.matches()) {
       String region = pscDnsMatcher.group(3);
-      if (sqlAdmin == null) {
-        throw new IllegalArgumentException("SQLAdmin client is not configured in the resolver.");
-      }
       String dnsNameWithDot = cleanName.endsWith(".") ? cleanName : cleanName + ".";
       try {
-        com.google.api.services.sqladmin.model.ConnectSettings metadata =
-            new ApiClientRetryingCallable<>(
-                    () -> sqlAdmin.connect().resolve(region, dnsNameWithDot).execute())
-                .call();
-        return new CloudSqlInstanceName(metadata.getConnectionName(), cleanName);
+        String connectionName =
+            connectionInfoRepository.resolveConnectionName(region, dnsNameWithDot);
+        return new CloudSqlInstanceName(connectionName, cleanName);
       } catch (Exception ex) {
         throw new IllegalArgumentException("Failed to resolve PSC DNS name: " + cleanName, ex);
       }
@@ -108,16 +101,11 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
       Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanCurrent.toLowerCase());
       if (pscDnsMatcher.matches()) {
         String region = pscDnsMatcher.group(3);
-        if (sqlAdmin == null) {
-          throw new IllegalArgumentException("SQLAdmin client is not configured in the resolver.");
-        }
         String dnsNameWithDot = cleanCurrent.endsWith(".") ? cleanCurrent : cleanCurrent + ".";
         try {
-          com.google.api.services.sqladmin.model.ConnectSettings metadata =
-              new ApiClientRetryingCallable<>(
-                      () -> sqlAdmin.connect().resolve(region, dnsNameWithDot).execute())
-                  .call();
-          return new CloudSqlInstanceName(metadata.getConnectionName(), name);
+          String connectionName =
+              connectionInfoRepository.resolveConnectionName(region, dnsNameWithDot);
+          return new CloudSqlInstanceName(connectionName, name);
         } catch (Exception ex) {
           throw new IllegalArgumentException("Failed to resolve PSC DNS name: " + cleanCurrent, ex);
         }

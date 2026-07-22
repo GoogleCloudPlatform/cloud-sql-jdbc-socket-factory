@@ -37,5 +37,5 @@ interface ConnectionInfoRepository {
       AuthType authType,
       KeyPair keyPair);
 
-  com.google.api.services.sqladmin.SQLAdmin getSqlAdmin();
+  String resolveConnectionName(String region, String dnsName);
 }
