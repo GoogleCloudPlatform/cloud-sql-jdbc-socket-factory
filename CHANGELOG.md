@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.29.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.6...v1.29.0) (2026-07-23)
+
+
+### Features
+
+* Add PSC DNS and Global Write Endpoint support to Java Connector ([#2286](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2286)) ([3bb0597](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3bb05973bd247b5ba4fe371e058818774bb18e64))
+
+
+### Bug Fixes
+
+* update java dependencies ([#2298](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2298)) ([386bd2d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/386bd2df965de4887de70d9b2556f17df18456cb))
+
 ## [1.28.6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.5...v1.28.6) (2026-06-28)
 
 
