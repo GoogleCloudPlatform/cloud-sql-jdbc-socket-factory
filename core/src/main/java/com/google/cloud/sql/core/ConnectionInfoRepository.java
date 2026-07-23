@@ -36,4 +36,6 @@ interface ConnectionInfoRepository {
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       KeyPair keyPair);
+
+  String resolveConnectionName(String region, String dnsName);
 }

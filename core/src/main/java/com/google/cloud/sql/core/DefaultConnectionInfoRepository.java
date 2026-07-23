@@ -49,6 +49,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -271,14 +272,14 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
       checkDatabaseCompatibility(instanceMetadata, authType, instanceName.getConnectionName());
 
-      Map<IpType, String> ipAddrs = new HashMap<>();
+      Map<IpType, List<String>> ipAddrs = new HashMap<>();
       if (instanceMetadata.getIpAddresses() != null) {
         // Update the IP addresses and types need to connect with the instance.
         for (IpMapping addr : instanceMetadata.getIpAddresses()) {
           if ("PRIVATE".equals(addr.getType())) {
-            ipAddrs.put(IpType.PRIVATE, addr.getIpAddress());
+            ipAddrs.put(IpType.PRIVATE, Collections.singletonList(addr.getIpAddress()));
           } else if ("PRIMARY".equals(addr.getType())) {
-            ipAddrs.put(IpType.PUBLIC, addr.getIpAddress());
+            ipAddrs.put(IpType.PUBLIC, Collections.singletonList(addr.getIpAddress()));
           }
           // otherwise, we don't know how to handle this type, ignore it.
         }
@@ -291,27 +292,38 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
       if (pscEnabled) {
         // Search the dns_names field for the PSC DNS Name.
-        String pscDnsName = null;
+        List<String> pscDnsNames = new ArrayList<>();
         if (instanceMetadata.getDnsNames() != null) {
           for (DnsNameMapping dnm : instanceMetadata.getDnsNames()) {
             if ("PRIVATE_SERVICE_CONNECT".equals(dnm.getConnectionType())
                 && "INSTANCE".equals(dnm.getDnsScope())) {
-              pscDnsName = dnm.getName();
-              break;
+              pscDnsNames.add(dnm.getName());
             }
           }
         }
 
         // If the psc dns name was not found, use the legacy dns_name field
-        if (pscDnsName == null
+        if (pscDnsNames.isEmpty()
             && instanceMetadata.getDnsName() != null
             && !instanceMetadata.getDnsName().isEmpty()) {
-          pscDnsName = instanceMetadata.getDnsName();
+          pscDnsNames.add(instanceMetadata.getDnsName());
         }
 
         // If the psc dns name was found, add it to the ipaddrs map.
-        if (pscDnsName != null) {
-          ipAddrs.put(IpType.PSC, pscDnsName);
+        if (!pscDnsNames.isEmpty()) {
+          pscDnsNames.sort(
+              (addr1, addr2) -> {
+                boolean addr1IsPsc = addr1.endsWith(".sql-psc.goog");
+                boolean addr2IsPsc = addr2.endsWith(".sql-psc.goog");
+                if (addr1IsPsc && !addr2IsPsc) {
+                  return -1; // addr1 comes first
+                }
+                if (!addr1IsPsc && addr2IsPsc) {
+                  return 1; // addr2 comes first
+                }
+                return 0;
+              });
+          ipAddrs.put(IpType.PSC, pscDnsNames);
         }
       }
 
@@ -543,5 +555,19 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     }
     // Fallback to the generic description
     return new RuntimeException(message, ex);
+  }
+
+  @Override
+  public String resolveConnectionName(String region, String dnsName) {
+    try {
+      ConnectSettings settings =
+          new ApiClientRetryingCallable<>(
+                  () -> apiClient.connect().resolve(region, dnsName).execute())
+              .call();
+      return settings.getConnectionName();
+    } catch (Exception ex) {
+      throw new RuntimeException(
+          String.format("Failed to resolve PSC DNS name %s in region %s", dnsName, region), ex);
+    }
   }
 }

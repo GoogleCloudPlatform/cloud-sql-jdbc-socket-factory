@@ -17,7 +17,11 @@
 package com.google.cloud.sql.core;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.naming.NameNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +34,17 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
   private static final Logger logger =
       LoggerFactory.getLogger(DnsInstanceConnectionNameResolver.class);
 
-  private final DnsResolver dnsResolver;
+  private static final Pattern PSC_DNS_PATTERN =
+      Pattern.compile(
+          "^([a-f0-9]{12})\\.([^.]+)\\.([a-z0-9]+-[a-z0-9]+)\\.(sql|sql-psa|sql-psc)\\.goog\\.?$");
 
-  public DnsInstanceConnectionNameResolver(DnsResolver dnsResolver) {
+  private final DnsResolver dnsResolver;
+  private final ConnectionInfoRepository connectionInfoRepository;
+
+  public DnsInstanceConnectionNameResolver(
+      DnsResolver dnsResolver, ConnectionInfoRepository connectionInfoRepository) {
     this.dnsResolver = dnsResolver;
+    this.connectionInfoRepository = connectionInfoRepository;
   }
 
   @Override
@@ -41,6 +52,20 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
     if (CloudSqlInstanceName.isValidInstanceName(name)) {
       // name contains a well-formed instance name.
       return new CloudSqlInstanceName(name);
+    }
+
+    String cleanName = name.endsWith(".") ? name.substring(0, name.length() - 1) : name;
+    Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanName.toLowerCase());
+    if (pscDnsMatcher.matches()) {
+      String region = pscDnsMatcher.group(3);
+      String dnsNameWithDot = cleanName.endsWith(".") ? cleanName : cleanName + ".";
+      try {
+        String connectionName =
+            connectionInfoRepository.resolveConnectionName(region, dnsNameWithDot);
+        return new CloudSqlInstanceName(connectionName, cleanName);
+      } catch (Exception ex) {
+        throw new IllegalArgumentException("Failed to resolve PSC DNS name: " + cleanName, ex);
+      }
     }
 
     if (CloudSqlInstanceName.isValidDomain(name)) {
@@ -57,41 +82,97 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
   }
 
   private CloudSqlInstanceName resolveDomainName(String name) {
-    // Next, attempt to resolve DNS name.
-    Collection<String> instanceNames;
-    try {
-      instanceNames = this.dnsResolver.resolveTxt(name);
-    } catch (NameNotFoundException ne) {
-      // No DNS record found. This is not a valid instance name.
-      throw new IllegalArgumentException(
-          String.format(
-              "Unable to resolve TXT record containing the instance name for "
-                  + "domain name \"%s\".",
-              name));
+    String current = name;
+    IllegalArgumentException txtException = null;
+    Set<String> visited = new HashSet<>();
+
+    for (int depth = 0; depth < 10; depth++) {
+      if (!visited.add(current.toLowerCase())) {
+        throw new IllegalArgumentException(
+            String.format("CNAME loop detected for \"%s\"", current));
+      }
+
+      if (CloudSqlInstanceName.isValidInstanceName(current)) {
+        return new CloudSqlInstanceName(current, name);
+      }
+
+      String cleanCurrent =
+          current.endsWith(".") ? current.substring(0, current.length() - 1) : current;
+      Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanCurrent.toLowerCase());
+      if (pscDnsMatcher.matches()) {
+        String region = pscDnsMatcher.group(3);
+        String dnsNameWithDot = cleanCurrent.endsWith(".") ? cleanCurrent : cleanCurrent + ".";
+        try {
+          String connectionName =
+              connectionInfoRepository.resolveConnectionName(region, dnsNameWithDot);
+          return new CloudSqlInstanceName(connectionName, name);
+        } catch (Exception ex) {
+          throw new IllegalArgumentException("Failed to resolve PSC DNS name: " + cleanCurrent, ex);
+        }
+      }
+
+      if (!CloudSqlInstanceName.isValidDomain(current)) {
+        throw new IllegalArgumentException(
+            String.format("[%s] CNAME target is not a valid domain name", current));
+      }
+
+      final String finalCurrent = current; // Effectively final copy for lambda
+      Collection<String> instanceNames;
+      try {
+        instanceNames = this.dnsResolver.resolveTxt(finalCurrent);
+        if (!instanceNames.isEmpty()) {
+          // Use the first valid instance name from the list
+          return instanceNames.stream()
+              .map(
+                  target -> {
+                    try {
+                      return new CloudSqlInstanceName(target, finalCurrent);
+                    } catch (IllegalArgumentException e) {
+                      logger.info(
+                          "Unable to parse instance name in TXT record for "
+                              + "domain name \"{}\" with target \"{}\"",
+                          finalCurrent,
+                          target,
+                          e);
+                      return null;
+                    }
+                  })
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          String.format(
+                              "Unable to parse values of TXT record for \"%s\".", finalCurrent)));
+        }
+      } catch (NameNotFoundException ne) {
+        txtException =
+            new IllegalArgumentException(
+                String.format(
+                    "Unable to resolve TXT record containing the instance name for "
+                        + "domain name \"%s\".",
+                    current),
+                ne);
+      }
+
+      // If TXT lookup failed or returned no valid records, check CNAME record
+      String cname;
+      try {
+        cname = this.dnsResolver.resolveCname(current);
+      } catch (NameNotFoundException ne) {
+        // If CNAME lookup also fails, throw the original TXT exception
+        if (txtException != null) {
+          throw txtException;
+        }
+        throw new IllegalArgumentException(
+            String.format("Unable to resolve CNAME record for domain name \"%s\".", current), ne);
+      }
+
+      cname = cname.endsWith(".") ? cname.substring(0, cname.length() - 1) : cname;
+      current = cname;
     }
 
-    // Use the first valid instance name from the list
-    // or throw an IllegalArgumentException if none of the values can be parsed.
-    return instanceNames.stream()
-        .map(
-            target -> {
-              try {
-                return new CloudSqlInstanceName(target, name);
-              } catch (IllegalArgumentException e) {
-                logger.info(
-                    "Unable to parse instance name in TXT record for "
-                        + "domain name \"{}\" with target \"{}\"",
-                    name,
-                    target,
-                    e);
-                return null;
-              }
-            })
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    String.format("Unable to parse values of TXT record for \"%s\".", name)));
+    throw new IllegalArgumentException(
+        String.format("CNAME lookup limit exceeded (max 10) for \"%s\"", name));
   }
 }

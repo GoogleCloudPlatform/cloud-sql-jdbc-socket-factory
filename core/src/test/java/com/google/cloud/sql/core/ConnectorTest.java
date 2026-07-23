@@ -286,7 +286,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -338,7 +337,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -393,7 +391,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(resolver),
             resolver,
             new ProtocolHandler("test"));
 
@@ -526,7 +523,120 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
+            dnsResolver,
+            new ProtocolHandler("test"));
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void testConnect_dnsResolutionFailureFallbackToPrivateIp() throws Exception {
+    if (isWindows()) {
+      return;
+    }
+
+    PrivateKey privateKey = TestKeys.getServerKeyPair().getPrivate();
+    X509Certificate[] cert = TestKeys.getCasServerCertChain();
+    FakeSslServer sslServer = new FakeSslServer(privateKey, cert);
+    int port = sslServer.start(PRIVATE_IP);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("example.com")
+            .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+            .build();
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpCasTransport(Duration.ZERO));
+
+    DnsResolver dnsResolver =
+        new DnsResolver() {
+          @Override
+          public Collection<String> resolveTxt(String domainName) {
+            return Collections.singletonList("myProject:myRegion:myInstance");
+          }
+
+          @Override
+          public List<InetAddress> resolveHost(String hostName)
+              throws java.net.UnknownHostException {
+            throw new java.net.UnknownHostException("Mock DNS failure");
+          }
+
+          @Override
+          public String resolveCname(String domainName) throws NameNotFoundException {
+            throw new NameNotFoundException("Not found in mock");
+          }
+        };
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
+            dnsResolver,
+            new ProtocolHandler("test"));
+
+    Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS);
+
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+  }
+
+  @Test
+  public void testConnect_dnsResolutionEmptyFallbackToPrivateIp() throws Exception {
+    if (isWindows()) {
+      return;
+    }
+
+    PrivateKey privateKey = TestKeys.getServerKeyPair().getPrivate();
+    X509Certificate[] cert = TestKeys.getCasServerCertChain();
+    FakeSslServer sslServer = new FakeSslServer(privateKey, cert);
+    int port = sslServer.start(PRIVATE_IP);
+
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withDomainName("example.com")
+            .withIpTypes(Collections.singletonList(IpType.PRIVATE))
+            .build();
+
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpCasTransport(Duration.ZERO));
+
+    DnsResolver dnsResolver =
+        new DnsResolver() {
+          @Override
+          public Collection<String> resolveTxt(String domainName) {
+            return Collections.singletonList("myProject:myRegion:myInstance");
+          }
+
+          @Override
+          public List<InetAddress> resolveHost(String hostName)
+              throws java.net.UnknownHostException {
+            return Collections.emptyList();
+          }
+
+          @Override
+          public String resolveCname(String domainName) throws NameNotFoundException {
+            throw new NameNotFoundException("Not found in mock");
+          }
+        };
+
+    Connector connector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            stubCredentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            port,
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -609,7 +719,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -678,7 +787,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -715,7 +823,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -753,7 +860,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -800,7 +906,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -839,7 +944,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -875,7 +979,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -917,7 +1020,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             DEFAULT_SERVER_PROXY_PORT,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
 
@@ -947,7 +1049,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
     return connector;
@@ -980,7 +1081,6 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
             10,
             TEST_MAX_REFRESH_MS,
             port,
-            new DnsInstanceConnectionNameResolver(dnsResolver),
             dnsResolver,
             new ProtocolHandler("test"));
     return connector;
@@ -1028,6 +1128,11 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
       }
       return Collections.emptyList();
     }
+
+    @Override
+    public String resolveCname(String domainName) throws NameNotFoundException {
+      throw new NameNotFoundException("Not found in mock: " + domainName);
+    }
   }
 
   private static class MutableDnsResolver implements DnsResolver {
@@ -1061,6 +1166,11 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
     @Override
     public List<InetAddress> resolveHost(String hostName) {
       return Collections.emptyList();
+    }
+
+    @Override
+    public synchronized String resolveCname(String domainName) throws NameNotFoundException {
+      throw new NameNotFoundException("Not found in mock: " + domainName);
     }
   }
 }
