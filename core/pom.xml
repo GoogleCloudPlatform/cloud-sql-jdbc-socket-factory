@@ -85,6 +85,10 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.google.errorprone</groupId>
@@ -215,7 +219,33 @@
       <artifactId>schemas</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-auth</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-testing</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-inprocess</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -239,6 +269,7 @@
           <usedDependencies>
             <!-- This dependency is not used at compile-time. -->
             <dependency>ch.qos.logback:logback-classic</dependency>
+            <dependency>io.grpc:grpc-netty</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
