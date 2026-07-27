@@ -215,10 +215,11 @@ public class DnsInstanceConnectionNameResolverTest {
   public void testResolve_fails_invalidPattern() {
     String[] invalidDnsNames = {
       "0123456789ab.fedcba9876543.europe-north2.sql-psc.goog.com", // wrong suffix domain
-      "0123456789ag.fedcba9876543.europe-north2.sql-psc.goog", // non-hex char 'g' in hash
-      "0123456789a.fedcba9876543.europe-north2.sql-psc.goog", // wrong hash length (11)
-      "0123456789abc.fedcba9876543.europe-north2.sql-psc.goog", // wrong hash length (13)
-      "0123456789ab.fedcba9876543.europenorth2.sql-psc.goog", // region has no hyphen
+      "0123456789ab.fedcba9876543.europe-north2.sql-psc.goog.other", // wrong suffix
+      "0123456789ab..europe-north2.sql-psc.goog", // empty project label
+      "-abc.def.ghi.sql.goog", // label starts with hyphen
+      "abc-.def.ghi.sql.goog", // label ends with hyphen
+      "abc.def.ghi.sql-other.goog", // invalid suffix type
     };
 
     DnsInstanceConnectionNameResolver resolver =
