@@ -22,6 +22,7 @@ import com.google.cloud.sql.ConnectorConfig;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Timer;
+import java.util.TimerTask;
 import javax.naming.NameNotFoundException;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLSession;
@@ -260,6 +261,64 @@ public class MonitoredCacheTest {
     Assert.assertFalse("Cache should not be closed on 500", mockCache.isClosed());
     Assert.assertFalse("Socket should not be closed on 500", socket.closed);
     cache.close();
+  }
+
+  private static class SpyTimer extends Timer {
+    boolean scheduled;
+
+    @Override
+    public void schedule(TimerTask task, long delay, long period) {
+      this.scheduled = true;
+    }
+  }
+
+  @Test
+  public void testMonitoredCache_OptimizationForImmutableNames_CustomDns() {
+    CloudSqlInstanceName name = new CloudSqlInstanceName("proj:reg:inst", "db.example.com");
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("proj:reg:inst")
+            .withDomainName("db.example.com")
+            .build();
+    MockCache mockCache = new MockCache(config);
+    SpyTimer spyTimer = new SpyTimer();
+
+    MonitoredCache cache = new MonitoredCache(mockCache, spyTimer, connectionConfig -> name);
+    Assert.assertTrue("Timer should be scheduled for custom DNS", spyTimer.scheduled);
+  }
+
+  @Test
+  public void testMonitoredCache_OptimizationForImmutableNames_ImmutableInstanceDns() {
+    CloudSqlInstanceName name =
+        new CloudSqlInstanceName(
+            "proj:reg:inst", "0123456789ab.fedcba9876543.us-central1.sql-psc.goog");
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("proj:reg:inst")
+            .withDomainName("0123456789ab.fedcba9876543.us-central1.sql-psc.goog")
+            .build();
+    MockCache mockCache = new MockCache(config);
+    SpyTimer spyTimer = new SpyTimer();
+
+    MonitoredCache cache = new MonitoredCache(mockCache, spyTimer, connectionConfig -> name);
+    Assert.assertFalse(
+        "Timer should NOT be scheduled for immutable instance DNS", spyTimer.scheduled);
+  }
+
+  @Test
+  public void testMonitoredCache_OptimizationForImmutableNames_MutableGlobalDns() {
+    CloudSqlInstanceName name =
+        new CloudSqlInstanceName("proj:reg:inst", "0123456789ab.fedcba9876543.global.sql-psc.goog");
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("proj:reg:inst")
+            .withDomainName("0123456789ab.fedcba9876543.global.sql-psc.goog")
+            .build();
+    MockCache mockCache = new MockCache(config);
+    SpyTimer spyTimer = new SpyTimer();
+
+    MonitoredCache cache = new MonitoredCache(mockCache, spyTimer, connectionConfig -> name);
+    Assert.assertTrue("Timer should be scheduled for mutable global DNS", spyTimer.scheduled);
   }
 
   private static class MockSslSocket extends SSLSocket {
