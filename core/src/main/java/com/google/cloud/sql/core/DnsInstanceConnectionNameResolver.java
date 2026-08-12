@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.naming.NameNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +32,6 @@ import org.slf4j.LoggerFactory;
 class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolver {
   private static final Logger logger =
       LoggerFactory.getLogger(DnsInstanceConnectionNameResolver.class);
-
-  private static final Pattern PSC_DNS_PATTERN =
-      Pattern.compile(
-          "^([a-f0-9]{12})\\.([^.]+)\\.([a-z0-9]+-[a-z0-9]+)\\.(sql|sql-psa|sql-psc)\\.goog\\.?$");
 
   private final DnsResolver dnsResolver;
   private final ConnectionInfoRepository connectionInfoRepository;
@@ -55,8 +50,9 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
     }
 
     String cleanName = name.endsWith(".") ? name.substring(0, name.length() - 1) : name;
-    Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanName.toLowerCase());
-    if (pscDnsMatcher.matches()) {
+    Matcher pscDnsMatcher =
+        CloudSqlInstanceName.INSTANCE_DNS_NAME_PATTERN.matcher(cleanName.toLowerCase());
+    if (pscDnsMatcher.matches() && !pscDnsMatcher.group(3).equals("global")) {
       String region = pscDnsMatcher.group(3);
       String dnsNameWithDot = cleanName.endsWith(".") ? cleanName : cleanName + ".";
       try {
@@ -98,8 +94,9 @@ class DnsInstanceConnectionNameResolver implements InstanceConnectionNameResolve
 
       String cleanCurrent =
           current.endsWith(".") ? current.substring(0, current.length() - 1) : current;
-      Matcher pscDnsMatcher = PSC_DNS_PATTERN.matcher(cleanCurrent.toLowerCase());
-      if (pscDnsMatcher.matches()) {
+      Matcher pscDnsMatcher =
+          CloudSqlInstanceName.INSTANCE_DNS_NAME_PATTERN.matcher(cleanCurrent.toLowerCase());
+      if (pscDnsMatcher.matches() && !pscDnsMatcher.group(3).equals("global")) {
         String region = pscDnsMatcher.group(3);
         String dnsNameWithDot = cleanCurrent.endsWith(".") ? cleanCurrent : cleanCurrent + ".";
         try {

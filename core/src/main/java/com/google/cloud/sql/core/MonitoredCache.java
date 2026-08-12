@@ -27,6 +27,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.WeakHashMap;
 import java.util.function.Function;
+import javax.naming.NameNotFoundException;
 import javax.net.ssl.SSLSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,8 @@ class MonitoredCache implements ConnectionInfoCache {
 
     // If this was configured with a domain name, start the domain name check
     // and socket cleanup periodic task.
-    if (!Strings.isNullOrEmpty(cache.getConfig().getDomainName())) {
+    String domainName = cache.getConfig().getDomainName();
+    if (!Strings.isNullOrEmpty(domainName) && !CloudSqlInstanceName.isInstanceDnsName(domainName)) {
       long failoverPeriod = cache.getConfig().getConnectorConfig().getFailoverPeriod().toMillis();
       this.task =
           new TimerTask() {
@@ -90,10 +92,16 @@ class MonitoredCache implements ConnectionInfoCache {
         return;
       }
     } catch (RuntimeException e) {
+      if (isNonTransient(e)) {
+        logger.info(
+            "Domain name resolution failed with non-transient error, closing connections.", e);
+        this.close();
+        return;
+      }
       // The domain name failed to resolve. Log the error and continue. Do not close the
       // connections on a dns error.
       logger.debug(
-          "Cloud SQL Instance associated with domain name {} did not resolve {}.",
+          "Cloud SQL Instance associated with domain name {} did not resolve (transient error) {}.",
           cache.getConfig().getDomainName(),
           cache.getConfig().getCloudSqlInstance(),
           e);
@@ -109,6 +117,35 @@ class MonitoredCache implements ConnectionInfoCache {
         }
       }
     }
+  }
+
+  private boolean isNonTransient(RuntimeException e) {
+    if (e instanceof TerminalException) {
+      return true;
+    }
+    if (e instanceof IllegalArgumentException) {
+      // If the cause is NameNotFoundException, it is a DNS lookup failure, which we treat as
+      // transient.
+      if (e.getCause() instanceof NameNotFoundException) {
+        return false;
+      }
+      // Other IllegalArgumentException (e.g. invalid name format) are non-transient.
+      return true;
+    }
+    // Check for GoogleJsonResponseException if it is wrapped in cause
+    Throwable cause = e.getCause();
+    while (cause != null) {
+      if (cause instanceof com.google.api.client.googleapis.json.GoogleJsonResponseException) {
+        int statusCode =
+            ((com.google.api.client.googleapis.json.GoogleJsonResponseException) cause)
+                .getStatusCode();
+        if (statusCode == 403 || statusCode == 404) {
+          return true;
+        }
+      }
+      cause = cause.getCause();
+    }
+    return false;
   }
 
   @Override
