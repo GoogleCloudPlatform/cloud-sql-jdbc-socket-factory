@@ -10,6 +10,11 @@ export POSTGRES_USER="postgres-user"
 export POSTGRES_PASS="postgres-password"
 export POSTGRES_DB="postgres-db-name"
 
+export POSTGRES_AIDE_CONNECTION_NAME="project:region:instance"
+export POSTGRES_AIDE_USER="postgres-aide-user"
+export POSTGRES_AIDE_PASS="postgres-aide-password"
+export POSTGRES_AIDE_DB="postgres-aide-db-name"
+
 export SQLSERVER_CONNECTION_NAME="project:region:instance"
 export SQLSERVER_USER="sqlserver-user"
 export SQLSERVER_PASS="sqlserver-password"
