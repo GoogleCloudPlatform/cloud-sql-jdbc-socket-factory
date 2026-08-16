@@ -92,13 +92,78 @@ class FallbackSocket extends Socket {
   }
 
   @Override
+  public boolean getKeepAlive() throws SocketException {
+    return getActiveSocket().getKeepAlive();
+  }
+
+  @Override
   public void setTcpNoDelay(boolean on) throws SocketException {
     getActiveSocket().setTcpNoDelay(on);
   }
 
   @Override
+  public boolean getTcpNoDelay() throws SocketException {
+    return getActiveSocket().getTcpNoDelay();
+  }
+
+  @Override
   public void setSoTimeout(int timeout) throws SocketException {
     getActiveSocket().setSoTimeout(timeout);
+  }
+
+  @Override
+  public int getSoTimeout() throws SocketException {
+    return getActiveSocket().getSoTimeout();
+  }
+
+  @Override
+  public void shutdownInput() throws IOException {
+    getActiveSocket().shutdownInput();
+  }
+
+  @Override
+  public void shutdownOutput() throws IOException {
+    getActiveSocket().shutdownOutput();
+  }
+
+  @Override
+  public boolean isInputShutdown() {
+    return getActiveSocket().isInputShutdown();
+  }
+
+  @Override
+  public boolean isOutputShutdown() {
+    return getActiveSocket().isOutputShutdown();
+  }
+
+  @Override
+  public java.net.InetAddress getInetAddress() {
+    return getActiveSocket().getInetAddress();
+  }
+
+  @Override
+  public java.net.InetAddress getLocalAddress() {
+    return getActiveSocket().getLocalAddress();
+  }
+
+  @Override
+  public int getPort() {
+    return getActiveSocket().getPort();
+  }
+
+  @Override
+  public int getLocalPort() {
+    return getActiveSocket().getLocalPort();
+  }
+
+  @Override
+  public SocketAddress getRemoteSocketAddress() {
+    return getActiveSocket().getRemoteSocketAddress();
+  }
+
+  @Override
+  public SocketAddress getLocalSocketAddress() {
+    return getActiveSocket().getLocalSocketAddress();
   }
 
   @Override
@@ -132,20 +197,33 @@ class FallbackSocket extends Socket {
     }
 
     @Override
-    public synchronized void write(byte[] b, int off, int len) throws IOException {
-      if (directSocket != null) {
-        directSocket.getOutputStream().write(b, off, len);
+    public void write(byte[] b, int off, int len) throws IOException {
+      if (b == null) {
+        throw new NullPointerException();
+      }
+      if (off < 0 || len < 0 || len > b.length - off) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (len == 0) {
         return;
       }
-      if (!firstReadDone) {
-        initialWrites.write(b, off, len);
+      synchronized (FallbackSocket.this) {
+        if (directSocket != null) {
+          directSocket.getOutputStream().write(b, off, len);
+          return;
+        }
+        if (!firstReadDone) {
+          initialWrites.write(b, off, len);
+        }
+        sqlDataSocket.getOutputStream().write(b, off, len);
       }
-      sqlDataSocket.getOutputStream().write(b, off, len);
     }
 
     @Override
-    public synchronized void flush() throws IOException {
-      getActiveSocket().getOutputStream().flush();
+    public void flush() throws IOException {
+      synchronized (FallbackSocket.this) {
+        getActiveSocket().getOutputStream().flush();
+      }
     }
   }
 
@@ -158,36 +236,54 @@ class FallbackSocket extends Socket {
     }
 
     @Override
-    public synchronized int read(byte[] b, int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
+      if (b == null) {
+        throw new NullPointerException();
+      }
+      if (off < 0 || len < 0 || len > b.length - off) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (len == 0) {
+        return 0;
+      }
+
       if (directSocket != null) {
         return directSocket.getInputStream().read(b, off, len);
       }
 
       try {
         int n = sqlDataSocket.getInputStream().read(b, off, len);
-        firstReadDone = true;
-        initialWrites.reset();
+        synchronized (FallbackSocket.this) {
+          firstReadDone = true;
+          initialWrites.reset();
+        }
         return n;
       } catch (IOException e) {
-        if (!firstReadDone && isPreconditionFailed(e)) {
-          onFallback.run();
-          try {
-            sqlDataSocket.close();
-          } catch (IOException ignored) {
-            // ignore
-          }
+        Socket targetSocket;
+        synchronized (FallbackSocket.this) {
+          if (!firstReadDone && isPreconditionFailed(e)) {
+            onFallback.run();
+            try {
+              sqlDataSocket.close();
+            } catch (IOException ignored) {
+              // ignore
+            }
 
-          directSocket = fallbackSupplier.get();
-          byte[] buffered = initialWrites.toByteArray();
-          initialWrites.reset();
-          if (buffered.length > 0) {
-            directSocket.getOutputStream().write(buffered);
-            directSocket.getOutputStream().flush();
+            Socket fallback = fallbackSupplier.get();
+            byte[] buffered = initialWrites.toByteArray();
+            initialWrites.reset();
+            if (buffered.length > 0) {
+              fallback.getOutputStream().write(buffered);
+              fallback.getOutputStream().flush();
+            }
+            directSocket = fallback;
+            firstReadDone = true;
+            targetSocket = fallback;
+          } else {
+            throw e;
           }
-          firstReadDone = true;
-          return directSocket.getInputStream().read(b, off, len);
         }
-        throw e;
+        return targetSocket.getInputStream().read(b, off, len);
       }
     }
   }

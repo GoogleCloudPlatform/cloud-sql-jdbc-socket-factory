@@ -39,7 +39,10 @@ class SqlDataSocket extends Socket {
   private final InputStream inputStream;
   private final OutputStream outputStream;
   private volatile boolean closed = false;
-  private Throwable error = null;
+  private volatile Throwable error = null;
+  private int soTimeout = 0;
+  private boolean keepAlive = false;
+  private boolean tcpNoDelay = false;
 
   SqlDataSocket(BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream) {
     this.bidiStream = bidiStream;
@@ -136,6 +139,60 @@ class SqlDataSocket extends Socket {
   }
 
   @Override
+  public void setKeepAlive(boolean on) {
+    this.keepAlive = on;
+  }
+
+  @Override
+  public boolean getKeepAlive() {
+    return this.keepAlive;
+  }
+
+  @Override
+  public void setTcpNoDelay(boolean on) {
+    this.tcpNoDelay = on;
+  }
+
+  @Override
+  public boolean getTcpNoDelay() {
+    return this.tcpNoDelay;
+  }
+
+  @Override
+  public void setSoTimeout(int timeout) {
+    this.soTimeout = timeout;
+  }
+
+  @Override
+  public int getSoTimeout() {
+    return this.soTimeout;
+  }
+
+  @Override
+  public void shutdownInput() throws IOException {
+    // No-op for bidi stream socket
+  }
+
+  @Override
+  public void shutdownOutput() throws IOException {
+    try {
+      bidiStream.closeSend();
+    } catch (Exception e) {
+      throw new IOException("Failed to shutdown stream output", e);
+    }
+  }
+
+  @Override
+  public boolean isInputShutdown() {
+    return closed;
+  }
+
+  @Override
+  public boolean isOutputShutdown() {
+    return closed;
+  }
+
+  @Override
   public void connect(java.net.SocketAddress endpoint) throws IOException {
     // Already connected
   }
@@ -161,6 +218,15 @@ class SqlDataSocket extends Socket {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
+      if (b == null) {
+        throw new NullPointerException();
+      }
+      if (off < 0 || len < 0 || len > b.length - off) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (len == 0) {
+        return 0;
+      }
       if (error != null) {
         throw createIoException(error);
       }
@@ -202,6 +268,15 @@ class SqlDataSocket extends Socket {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+      if (b == null) {
+        throw new NullPointerException();
+      }
+      if (off < 0 || len < 0 || len > b.length - off) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (len == 0) {
+        return;
+      }
       if (error != null) {
         throw createIoException(error);
       }
