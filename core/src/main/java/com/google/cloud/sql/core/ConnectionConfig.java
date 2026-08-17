@@ -59,6 +59,8 @@ public class ConnectionConfig {
   public static final String CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY = "cloudSqlSqlDataEndpoint";
   public static final String CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY =
       "cloudSqlSqlDataStreamTimeout";
+  public static final String CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY =
+      "cloudSqlResourceExhaustedCooldownPeriod";
 
   private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
@@ -143,6 +145,22 @@ public class ConnectionConfig {
       }
     }
 
+    final String cooldownPeriodStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY);
+    Duration cooldownPeriod = null;
+    if (cooldownPeriodStr != null && !cooldownPeriodStr.trim().isEmpty()) {
+      try {
+        cooldownPeriod = Duration.ofMillis(Long.parseLong(cooldownPeriodStr.trim()));
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Invalid value for %s: %s",
+                ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY,
+                cooldownPeriodStr),
+            e);
+      }
+    }
+
     ConnectorConfig.Builder connectorConfigBuilder =
         new ConnectorConfig.Builder()
             .withTargetPrincipal(targetPrincipal)
@@ -159,6 +177,9 @@ public class ConnectionConfig {
     }
     if (sqlDataStreamTimeout != null) {
       connectorConfigBuilder.withSqlDataStreamTimeout(sqlDataStreamTimeout);
+    }
+    if (cooldownPeriod != null) {
+      connectorConfigBuilder.withResourceExhaustedCooldownPeriod(cooldownPeriod);
     }
 
     return new ConnectionConfig(

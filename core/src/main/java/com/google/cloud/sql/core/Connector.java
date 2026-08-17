@@ -200,6 +200,11 @@ class Connector {
             throw t;
           }
           if (FallbackSocket.isPreconditionFailed(t)) {
+            logger.warn(
+                String.format(
+                    "[%s] SQL Data Service not supported for this instance. "
+                        + "Falling back to direct IP.",
+                    instanceName.getConnectionName()));
             state.setAllowed(false);
             return connectDirect(config, timeoutMs);
           }
@@ -414,6 +419,7 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+    this.sqlDataConnState.clear();
     this.sqlDataClient.close();
   }
 }

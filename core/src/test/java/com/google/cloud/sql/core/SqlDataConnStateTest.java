@@ -108,4 +108,24 @@ public class SqlDataConnStateTest {
     assertThat(state.getCooldownUntil()).isNull();
     assertThat(state.isCooldownActive(Instant.now())).isFalse();
   }
+
+  @Test
+  public void testConstructor_NullOrNegativeDurationDefaults() {
+    SqlDataConnState stateNull = new SqlDataConnState(null);
+    stateNull.onResourceExhausted(new RuntimeException("err"));
+    assertThat(stateNull.isCooldownActive(Instant.now())).isTrue();
+
+    SqlDataConnState stateNegative = new SqlDataConnState(Duration.ofSeconds(-5));
+    stateNegative.onResourceExhausted(new RuntimeException("err"));
+    assertThat(stateNegative.isCooldownActive(Instant.now())).isTrue();
+  }
+
+  @Test
+  public void testCooldownBackoff_NullOrZeroDuration() {
+    assertThat(SqlDataConnState.cooldownBackoff(null, 1, new Random())).isEqualTo(Duration.ZERO);
+    assertThat(SqlDataConnState.cooldownBackoff(Duration.ZERO, 1, new Random()))
+        .isEqualTo(Duration.ZERO);
+    assertThat(SqlDataConnState.cooldownBackoff(Duration.ofSeconds(-1), 1, new Random()))
+        .isEqualTo(Duration.ZERO);
+  }
 }

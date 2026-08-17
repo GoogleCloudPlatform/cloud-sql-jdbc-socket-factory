@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.ConnectorConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
@@ -36,8 +37,11 @@ class SqlDataConnState {
   }
 
   SqlDataConnState(Duration baseCooldownPeriod, Random random) {
-    this.baseCooldownPeriod = baseCooldownPeriod;
-    this.random = random;
+    this.baseCooldownPeriod =
+        baseCooldownPeriod != null && !baseCooldownPeriod.isNegative()
+            ? baseCooldownPeriod
+            : ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
+    this.random = random != null ? random : new Random();
   }
 
   synchronized boolean isAllowed() {
@@ -79,7 +83,12 @@ class SqlDataConnState {
   }
 
   static Duration cooldownBackoff(Duration base, int attempt, Random random) {
-    double exp = (attempt - 1) + random.nextDouble();
+    if (base == null || base.isNegative() || base.isZero()) {
+      return Duration.ZERO;
+    }
+    int effAttempt = Math.max(1, attempt);
+    Random rnd = random != null ? random : new Random();
+    double exp = (effAttempt - 1) + rnd.nextDouble();
     long millis = (long) (base.toMillis() * Math.pow(BACKOFF_MULTIPLIER, exp));
     return Duration.ofMillis(millis);
   }

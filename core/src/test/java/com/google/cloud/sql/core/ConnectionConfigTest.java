@@ -162,4 +162,26 @@ public class ConnectionConfigTest {
     assertThat(c1.getNamedConnector()).isEqualTo(wantNamedConnector);
     assertThat(c1.getConnectorConfig()).isSameInstanceAs(cc);
   }
+
+  @Test
+  public void testConfigFromProps_ResourceExhaustedCooldownPeriod() {
+    Properties props = new Properties();
+    props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, "proj:region:inst");
+    props.setProperty(
+        ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY, "7500");
+
+    ConnectionConfig c = ConnectionConfig.fromConnectionProperties(props);
+    assertThat(c.getConnectorConfig().getResourceExhaustedCooldownPeriod())
+        .isEqualTo(java.time.Duration.ofMillis(7500));
+
+    // Test invalid value
+    Properties invalidProps = new Properties();
+    invalidProps.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, "proj:region:inst");
+    invalidProps.setProperty(
+        ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY, "not-a-number");
+
+    org.junit.Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> ConnectionConfig.fromConnectionProperties(invalidProps));
+  }
 }
