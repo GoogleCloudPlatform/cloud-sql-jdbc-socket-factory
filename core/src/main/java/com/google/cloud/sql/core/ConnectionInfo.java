@@ -61,16 +61,16 @@ class ConnectionInfo {
     for (IpType ipType : config.getIpTypes()) {
       if (ipType == IpType.SQL_DATA) {
         preferredIps = getIpAddrs().get(IpType.PRIVATE);
-        if (preferredIps == null) {
+        if (preferredIps == null || preferredIps.isEmpty()) {
           preferredIps = getIpAddrs().get(IpType.PSC);
         }
-        if (preferredIps == null) {
+        if (preferredIps == null || preferredIps.isEmpty()) {
           preferredIps = getIpAddrs().get(IpType.PUBLIC);
         }
       } else {
         preferredIps = getIpAddrs().get(ipType);
       }
-      if (preferredIps != null) {
+      if (preferredIps != null && !preferredIps.isEmpty()) {
         break;
       }
     }
