@@ -32,6 +32,7 @@ import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +57,7 @@ class Connector {
   private final int serverProxyPort;
   private final ConnectorConfig config;
   private final SqlDataClient sqlDataClient;
-  private final ConcurrentHashMap<String, Boolean> sqlDataUnsupported = new ConcurrentHashMap<>();
+  private final Set<String> sqlDataUnsupported = ConcurrentHashMap.newKeySet();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -168,7 +169,7 @@ class Connector {
 
     if (!resolvedConfig.getIpTypes().isEmpty()
         && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
-      if (!sqlDataUnsupported.containsKey(instanceName.getConnectionName())) {
+      if (!sqlDataUnsupported.contains(instanceName.getConnectionName())) {
         logger.debug(
             String.format(
                 "[%s] Attempting SQL Data Service connection.", instanceName.getConnectionName()));
@@ -182,7 +183,7 @@ class Connector {
                       "[%s] SQL Data Service not supported for this instance. "
                           + "Falling back to direct IP.",
                       instanceName.getConnectionName()));
-              sqlDataUnsupported.put(instanceName.getConnectionName(), true);
+              sqlDataUnsupported.add(instanceName.getConnectionName());
             });
       }
     }
@@ -378,20 +379,5 @@ class Connector {
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
     this.sqlDataClient.close();
-  }
-
-  private boolean isPreconditionFailed(Throwable t) {
-    while (t != null) {
-      if (t instanceof io.grpc.StatusRuntimeException) {
-        return ((io.grpc.StatusRuntimeException) t).getStatus().getCode()
-            == io.grpc.Status.Code.FAILED_PRECONDITION;
-      }
-      if (t instanceof io.grpc.StatusException) {
-        return ((io.grpc.StatusException) t).getStatus().getCode()
-            == io.grpc.Status.Code.FAILED_PRECONDITION;
-      }
-      t = t.getCause();
-    }
-    return false;
   }
 }
