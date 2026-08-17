@@ -30,9 +30,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -57,7 +57,8 @@ class Connector {
   private final int serverProxyPort;
   private final ConnectorConfig config;
   private final SqlDataClient sqlDataClient;
-  private final Set<String> sqlDataUnsupported = ConcurrentHashMap.newKeySet();
+  private final ConcurrentHashMap<String, SqlDataConnState> sqlDataConnState =
+      new ConcurrentHashMap<>();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -169,22 +170,57 @@ class Connector {
 
     if (!resolvedConfig.getIpTypes().isEmpty()
         && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
-      if (!sqlDataUnsupported.contains(instanceName.getConnectionName())) {
+      SqlDataConnState state =
+          sqlDataConnState.computeIfAbsent(
+              instanceName.getConnectionName(),
+              k ->
+                  new SqlDataConnState(
+                      config.getConnectorConfig() != null
+                          ? config.getConnectorConfig().getResourceExhaustedCooldownPeriod()
+                          : this.config.getResourceExhaustedCooldownPeriod()));
+
+      if (state.isAllowed()) {
+        if (state.isCooldownActive(Instant.now())) {
+          throw new ResourceExhaustedException(
+              String.format(
+                  "[%s] Resource exhausted: cooldown active", instanceName.getConnectionName()),
+              state.getLastErr());
+        }
+
         logger.debug(
             String.format(
                 "[%s] Attempting SQL Data Service connection.", instanceName.getConnectionName()));
-        Socket sqlDataSocket = sqlDataClient.connect(instanceName, timeoutMs);
-        return new FallbackSocket(
-            sqlDataSocket,
-            () -> connectDirect(config, timeoutMs),
-            () -> {
-              logger.warn(
-                  String.format(
-                      "[%s] SQL Data Service not supported for this instance. "
-                          + "Falling back to direct IP.",
-                      instanceName.getConnectionName()));
-              sqlDataUnsupported.add(instanceName.getConnectionName());
-            });
+
+        Socket sqlDataSocket;
+        try {
+          sqlDataSocket = sqlDataClient.connect(instanceName, timeoutMs);
+        } catch (IOException | RuntimeException t) {
+          if (ResourceExhaustedTrackingSocket.isResourceExhausted(t)) {
+            state.onResourceExhausted(t);
+            throw t;
+          }
+          if (FallbackSocket.isPreconditionFailed(t)) {
+            state.setAllowed(false);
+            return connectDirect(config, timeoutMs);
+          }
+          throw t;
+        }
+
+        Socket fallbackSocket =
+            new FallbackSocket(
+                sqlDataSocket,
+                () -> connectDirect(config, timeoutMs),
+                () -> {
+                  logger.warn(
+                      String.format(
+                          "[%s] SQL Data Service not supported for this instance. "
+                              + "Falling back to direct IP.",
+                          instanceName.getConnectionName()));
+                  state.setAllowed(false);
+                });
+
+        return new ResourceExhaustedTrackingSocket(
+            fallbackSocket, state::onResourceExhausted, state::onSuccess);
       }
     }
 

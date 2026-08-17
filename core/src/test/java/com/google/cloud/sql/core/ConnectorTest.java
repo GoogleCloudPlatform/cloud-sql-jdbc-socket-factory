@@ -285,6 +285,69 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
+  public void connect_SqlDataResourceExhausted_Cooldown() throws Exception {
+    FakeSqlDataService sqlDataService =
+        new FakeSqlDataService() {
+          @Override
+          public StreamObserver<StreamSqlDataRequest> streamSqlData(
+              StreamObserver<StreamSqlDataResponse> responseObserver) {
+            return new StreamObserver<StreamSqlDataRequest>() {
+              @Override
+              public void onNext(StreamSqlDataRequest request) {
+                if (request.hasStartSession()) {
+                  responseObserver.onError(
+                      Status.RESOURCE_EXHAUSTED
+                          .withDescription("resource busy")
+                          .asRuntimeException());
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {}
+
+              @Override
+              public void onCompleted() {}
+            };
+          }
+        };
+
+    Duration cooldown = Duration.ofMillis(300);
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withIpTypes("SQL_DATA")
+            .withConnectorConfig(
+                new ConnectorConfig.Builder().withResourceExhaustedCooldownPeriod(cooldown).build())
+            .build();
+
+    Connector connector =
+        newConnectorWithSqlData(config.getConnectorConfig(), 0, null, null, false, sqlDataService);
+
+    // First connect succeeds in creating socket, but first read fails with RESOURCE_EXHAUSTED
+    try (Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS)) {
+      IOException ex = assertThrows(IOException.class, () -> readLine(socket));
+      assertThat(ex.getCause()).isInstanceOf(StatusRuntimeException.class);
+      assertThat(((StatusRuntimeException) ex.getCause()).getStatus().getCode())
+          .isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
+    }
+
+    // Second connect immediately should fail with ResourceExhaustedException (cooldown active)
+    ResourceExhaustedException reEx =
+        assertThrows(
+            ResourceExhaustedException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
+    assertThat(reEx).hasMessageThat().contains("cooldown active");
+
+    // Wait for cooldown to expire (attempt 1 max backoff ~ 300 * 1.618 = 485ms)
+    Thread.sleep(650);
+
+    // Third connect after cooldown should attempt SQL Data Service again
+    try (Socket socket = connector.connect(config, TEST_MAX_REFRESH_MS)) {
+      IOException ex = assertThrows(IOException.class, () -> readLine(socket));
+      assertThat(ex.getCause()).isInstanceOf(StatusRuntimeException.class);
+    }
+  }
+
+  @Test
   public void create_successfulPrivateConnection_UsesInstanceName_DomainNameIgnored()
       throws IOException, InterruptedException {
     FakeSslServer sslServer = new FakeSslServer();

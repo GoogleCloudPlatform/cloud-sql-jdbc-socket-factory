@@ -29,6 +29,7 @@ import java.util.function.Supplier;
  */
 public class ConnectorConfig {
   public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
+  public static final Duration DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD = Duration.ofSeconds(5);
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -52,6 +53,7 @@ public class ConnectorConfig {
 
   private final String sqlDataEndpoint;
   private final Duration sqlDataStreamTimeout;
+  private final Duration resourceExhaustedCooldownPeriod;
 
   private ConnectorConfig(
       String targetPrincipal,
@@ -67,7 +69,8 @@ public class ConnectorConfig {
       Function<String, String> instanceNameResolver,
       Duration failoverPeriod,
       String sqlDataEndpoint,
-      Duration sqlDataStreamTimeout) {
+      Duration sqlDataStreamTimeout,
+      Duration resourceExhaustedCooldownPeriod) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -82,6 +85,7 @@ public class ConnectorConfig {
     this.failoverPeriod = failoverPeriod;
     this.sqlDataEndpoint = sqlDataEndpoint;
     this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+    this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
   }
 
   @Override
@@ -106,7 +110,8 @@ public class ConnectorConfig {
         && Objects.equal(instanceNameResolver, that.instanceNameResolver)
         && Objects.equal(failoverPeriod, that.failoverPeriod)
         && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
-        && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout);
+        && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout)
+        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod);
   }
 
   @Override
@@ -125,7 +130,8 @@ public class ConnectorConfig {
         instanceNameResolver,
         failoverPeriod,
         sqlDataEndpoint,
-        sqlDataStreamTimeout);
+        sqlDataStreamTimeout,
+        resourceExhaustedCooldownPeriod);
   }
 
   public String getTargetPrincipal() {
@@ -184,6 +190,10 @@ public class ConnectorConfig {
     return sqlDataStreamTimeout;
   }
 
+  public Duration getResourceExhaustedCooldownPeriod() {
+    return resourceExhaustedCooldownPeriod;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -202,6 +212,7 @@ public class ConnectorConfig {
     private Duration failoverPeriod = DEFAULT_FAILOVER_PERIOD;
     private String sqlDataEndpoint = "sqladmin.googleapis.com";
     private Duration sqlDataStreamTimeout = Duration.ofHours(2);
+    private Duration resourceExhaustedCooldownPeriod = DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -292,6 +303,14 @@ public class ConnectorConfig {
       return this;
     }
 
+    /** Chained setter for the ResourceExhaustedCooldownPeriod field. */
+    public Builder withResourceExhaustedCooldownPeriod(Duration resourceExhaustedCooldownPeriod) {
+      if (resourceExhaustedCooldownPeriod != null) {
+        this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
+      }
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -330,7 +349,8 @@ public class ConnectorConfig {
           instanceNameResolver,
           failoverPeriod,
           sqlDataEndpoint,
-          sqlDataStreamTimeout);
+          sqlDataStreamTimeout,
+          resourceExhaustedCooldownPeriod);
     }
   }
 }

@@ -178,7 +178,7 @@ class FallbackSocket extends Socket {
     getActiveSocket().connect(endpoint, timeout);
   }
 
-  private static boolean isPreconditionFailed(Throwable t) {
+  static boolean isPreconditionFailed(Throwable t) {
     while (t != null) {
       if (t instanceof StatusRuntimeException) {
         return ((StatusRuntimeException) t).getStatus().getCode()
