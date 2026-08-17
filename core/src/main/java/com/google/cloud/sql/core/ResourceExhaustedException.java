@@ -22,6 +22,8 @@ import java.io.IOException;
  * ResourceExhaustedException represents a temporary failure because the SQL Data Service is busy.
  */
 public class ResourceExhaustedException extends IOException {
+  private static final long serialVersionUID = 1L;
+
   /**
    * Constructs a new {@code ResourceExhaustedException} with the specified detail message.
    *
@@ -40,5 +42,14 @@ public class ResourceExhaustedException extends IOException {
    */
   public ResourceExhaustedException(String message, Throwable cause) {
     super(message, cause);
+  }
+
+  /**
+   * Constructs a new {@code ResourceExhaustedException} with the specified cause.
+   *
+   * @param cause the cause
+   */
+  public ResourceExhaustedException(Throwable cause) {
+    super(cause);
   }
 }

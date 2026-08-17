@@ -222,4 +222,45 @@ public class FallbackSocketTest {
         .isEqualTo(Status.Code.INTERNAL);
     assertThat(fallbackCalled.get()).isFalse();
   }
+
+  @Test
+  public void testStreamClose_ClosesSocket() throws IOException {
+    MockSocket mockSqlData = new MockSocket(new ByteArrayInputStream(new byte[] {1, 2, 3}));
+    FallbackSocket socket =
+        new FallbackSocket(
+            mockSqlData,
+            () -> {
+              throw new AssertionError("Fallback should not be called");
+            },
+            () -> {});
+
+    socket.getInputStream().close();
+    assertThat(socket.isClosed()).isTrue();
+
+    MockSocket mockSqlData2 = new MockSocket(new ByteArrayInputStream(new byte[] {1, 2, 3}));
+    FallbackSocket socket2 =
+        new FallbackSocket(
+            mockSqlData2,
+            () -> {
+              throw new AssertionError("Fallback should not be called");
+            },
+            () -> {});
+
+    socket2.getOutputStream().close();
+    assertThat(socket2.isClosed()).isTrue();
+  }
+
+  @Test
+  public void testStreamAvailable_Delegates() throws IOException {
+    MockSocket mockSqlData = new MockSocket(new ByteArrayInputStream(new byte[] {1, 2, 3, 4}));
+    FallbackSocket socket =
+        new FallbackSocket(
+            mockSqlData,
+            () -> {
+              throw new AssertionError("Fallback should not be called");
+            },
+            () -> {});
+
+    assertThat(socket.getInputStream().available()).isEqualTo(4);
+  }
 }

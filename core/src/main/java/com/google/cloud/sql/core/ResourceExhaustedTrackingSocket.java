@@ -163,6 +163,9 @@ class ResourceExhaustedTrackingSocket extends Socket {
 
   static boolean isResourceExhausted(Throwable t) {
     while (t != null) {
+      if (t instanceof ResourceExhaustedException) {
+        return true;
+      }
       if (t instanceof StatusRuntimeException) {
         return ((StatusRuntimeException) t).getStatus().getCode() == Status.Code.RESOURCE_EXHAUSTED;
       }
@@ -213,6 +216,18 @@ class ResourceExhaustedTrackingSocket extends Socket {
         throw e;
       }
     }
+
+    @Override
+    public void close() throws IOException {
+      try {
+        ResourceExhaustedTrackingSocket.this.close();
+      } catch (IOException e) {
+        if (isResourceExhausted(e)) {
+          onResourceExhausted.accept(e);
+        }
+        throw e;
+      }
+    }
   }
 
   private class TrackingInputStream extends InputStream {
@@ -225,9 +240,18 @@ class ResourceExhaustedTrackingSocket extends Socket {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
+      if (b == null) {
+        throw new NullPointerException();
+      }
+      if (off < 0 || len < 0 || len > b.length - off) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (len == 0) {
+        return 0;
+      }
       try {
         int n = socket.getInputStream().read(b, off, len);
-        if (!firstReadDone) {
+        if (!firstReadDone && (n > 0 || n == -1)) {
           synchronized (ResourceExhaustedTrackingSocket.this) {
             if (!firstReadDone) {
               firstReadDone = true;
@@ -242,6 +266,16 @@ class ResourceExhaustedTrackingSocket extends Socket {
         }
         throw e;
       }
+    }
+
+    @Override
+    public int available() throws IOException {
+      return socket.getInputStream().available();
+    }
+
+    @Override
+    public void close() throws IOException {
+      ResourceExhaustedTrackingSocket.this.close();
     }
   }
 }

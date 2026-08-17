@@ -259,4 +259,43 @@ public class SqlDataClientTest {
 
     socket.close();
   }
+
+  @Test
+  public void testStreamClose_ClosesSocket() throws Exception {
+    CloudSqlInstanceName instanceName = new CloudSqlInstanceName("proj:reg:inst");
+
+    Socket socket = client.connect(instanceName, 5000);
+    socket.getInputStream().close();
+    assertThat(socket.isClosed()).isTrue();
+
+    Socket socket2 = client.connect(instanceName, 5000);
+    socket2.getOutputStream().close();
+    assertThat(socket2.isClosed()).isTrue();
+  }
+
+  @Test
+  public void testStreamAvailable() throws Exception {
+    CloudSqlInstanceName instanceName = new CloudSqlInstanceName("proj:reg:inst");
+
+    Socket socket = client.connect(instanceName, 5000);
+    serviceImpl.requests.poll(5, TimeUnit.SECONDS);
+
+    assertThat(socket.getInputStream().available()).isEqualTo(0);
+
+    byte[] serverData = "packet".getBytes(UTF_8);
+    serviceImpl.responseObserver.onNext(
+        StreamSqlDataResponse.newBuilder()
+            .setData(DataPacket.newBuilder().setData(ByteString.copyFrom(serverData)).build())
+            .build());
+
+    // Read 2 bytes
+    byte[] buf = new byte[2];
+    int n = socket.getInputStream().read(buf);
+    assertThat(n).isEqualTo(2);
+
+    // available() should report remaining 4 bytes in block
+    assertThat(socket.getInputStream().available()).isEqualTo(4);
+
+    socket.close();
+  }
 }

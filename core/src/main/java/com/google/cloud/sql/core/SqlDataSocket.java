@@ -301,6 +301,26 @@ class SqlDataSocket extends Socket {
       currentOffset += toCopy;
       return toCopy;
     }
+
+    @Override
+    public int available() throws IOException {
+      if (closed) {
+        return 0;
+      }
+      if (error != null) {
+        throw createIoException(error);
+      }
+      int count = 0;
+      if (currentBlock != null) {
+        count += Math.max(0, currentBlock.length - currentOffset);
+      }
+      return count;
+    }
+
+    @Override
+    public void close() throws IOException {
+      SqlDataSocket.this.close();
+    }
   }
 
   private class SqlDataOutputStream extends OutputStream {
@@ -342,6 +362,11 @@ class SqlDataSocket extends Socket {
       } catch (Exception e) {
         throw new IOException("Failed to write to stream", e);
       }
+    }
+
+    @Override
+    public void close() throws IOException {
+      SqlDataSocket.this.close();
     }
   }
 }

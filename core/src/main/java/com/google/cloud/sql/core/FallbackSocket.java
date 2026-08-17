@@ -230,6 +230,11 @@ class FallbackSocket extends Socket {
         getActiveSocket().getOutputStream().flush();
       }
     }
+
+    @Override
+    public void close() throws IOException {
+      FallbackSocket.this.close();
+    }
   }
 
   private class FallbackInputStream extends InputStream {
@@ -290,6 +295,16 @@ class FallbackSocket extends Socket {
         }
         return targetSocket.getInputStream().read(b, off, len);
       }
+    }
+
+    @Override
+    public int available() throws IOException {
+      return getActiveSocket().getInputStream().available();
+    }
+
+    @Override
+    public void close() throws IOException {
+      FallbackSocket.this.close();
     }
   }
 }

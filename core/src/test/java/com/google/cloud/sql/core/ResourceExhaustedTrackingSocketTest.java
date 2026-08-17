@@ -140,6 +140,63 @@ public class ResourceExhaustedTrackingSocketTest {
     assertThat(successCalled.get()).isFalse();
   }
 
+  @Test
+  public void testStreamClose_ClosesSocket() throws IOException {
+    ByteArrayInputStream in = new ByteArrayInputStream(new byte[] {1, 2, 3});
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    MockSocket mockSocket = new MockSocket(in, out);
+
+    ResourceExhaustedTrackingSocket trackingSocket =
+        new ResourceExhaustedTrackingSocket(mockSocket, t -> {}, () -> {});
+
+    trackingSocket.getInputStream().close();
+    assertThat(mockSocket.isClosed()).isTrue();
+
+    MockSocket mockSocket2 = new MockSocket(in, out);
+    ResourceExhaustedTrackingSocket trackingSocket2 =
+        new ResourceExhaustedTrackingSocket(mockSocket2, t -> {}, () -> {});
+
+    trackingSocket2.getOutputStream().close();
+    assertThat(mockSocket2.isClosed()).isTrue();
+  }
+
+  @Test
+  public void testStreamAvailable_Delegates() throws IOException {
+    ByteArrayInputStream in = new ByteArrayInputStream(new byte[] {1, 2, 3, 4});
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    MockSocket mockSocket = new MockSocket(in, out);
+
+    ResourceExhaustedTrackingSocket trackingSocket =
+        new ResourceExhaustedTrackingSocket(mockSocket, t -> {}, () -> {});
+
+    assertThat(trackingSocket.getInputStream().available()).isEqualTo(4);
+  }
+
+  @Test
+  public void testResourceExhaustedException_Matches() {
+    ResourceExhaustedException ex = new ResourceExhaustedException("busy");
+    assertThat(ResourceExhaustedTrackingSocket.isResourceExhausted(ex)).isTrue();
+  }
+
+  @Test
+  public void testZeroLengthRead_DoesNotTriggerSuccess() throws IOException {
+    ByteArrayInputStream in = new ByteArrayInputStream(new byte[] {1, 2, 3});
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    MockSocket mockSocket = new MockSocket(in, out);
+
+    AtomicBoolean successCalled = new AtomicBoolean(false);
+    ResourceExhaustedTrackingSocket trackingSocket =
+        new ResourceExhaustedTrackingSocket(mockSocket, t -> {}, () -> successCalled.set(true));
+
+    int n = trackingSocket.getInputStream().read(new byte[0]);
+    assertThat(n).isEqualTo(0);
+    assertThat(successCalled.get()).isFalse();
+
+    n = trackingSocket.getInputStream().read(new byte[1]);
+    assertThat(n).isEqualTo(1);
+    assertThat(successCalled.get()).isTrue();
+  }
+
   private static class MockSocket extends Socket {
     private final InputStream in;
     private final OutputStream out;
