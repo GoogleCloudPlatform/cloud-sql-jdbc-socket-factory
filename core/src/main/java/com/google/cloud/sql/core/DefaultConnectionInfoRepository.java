@@ -32,6 +32,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -58,6 +60,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,8 +129,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     SslData sslContext =
         createSslData(keyPair, metadata, ephemeralCertificate, instanceName, authType);
 
-    return createConnectionInfo(
-        instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
+    ConnectionInfo info =
+        createConnectionInfo(
+            instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
+    if (authType == AuthType.IAM) {
+      probeConnection(instanceName, info);
+    }
+    return info;
   }
 
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
@@ -170,19 +179,73 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     ListenableFuture<ConnectionInfo> done =
         Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
             .call(
-                () ->
-                    createConnectionInfo(
-                        instanceName,
-                        authType,
-                        Futures.getDone(token),
-                        Futures.getDone(metadataFuture),
-                        Futures.getDone(ephemeralCertificateFuture),
-                        Futures.getDone(sslContextFuture)),
+                () -> {
+                  ConnectionInfo info =
+                      createConnectionInfo(
+                          instanceName,
+                          authType,
+                          Futures.getDone(token),
+                          Futures.getDone(metadataFuture),
+                          Futures.getDone(ephemeralCertificateFuture),
+                          Futures.getDone(sslContextFuture));
+                  if (authType == AuthType.IAM) {
+                    probeConnection(instanceName, info);
+                  }
+                  return info;
+                },
                 executor);
 
     done.addListener(
         () -> logger.debug(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
     return done;
+  }
+
+  private static void probeConnection(CloudSqlInstanceName instanceName, ConnectionInfo info) {
+    List<String> targets = new ArrayList<>();
+    if (instanceName.getDomainName() != null && !instanceName.getDomainName().isEmpty()) {
+      targets.add(instanceName.getDomainName());
+    } else {
+      Map<IpType, List<String>> ipAddrs = info.getIpAddrs();
+      for (IpType ipType : Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC)) {
+        List<String> ips = ipAddrs.get(ipType);
+        if (ips != null && !ips.isEmpty()) {
+          targets.addAll(ips);
+        }
+      }
+    }
+
+    if (targets.isEmpty()) {
+      logger.debug(
+          "[{}] Proactive IAM token refresh probe skipped: no target IP addresses", instanceName);
+      return;
+    }
+
+    int port = 3307;
+    for (String target : targets) {
+      try (Socket socket = new Socket()) {
+        logger.debug("[{}] Probing IAM token refresh on {}:{}", instanceName, target, port);
+        socket.connect(new InetSocketAddress(target, port), 15000);
+        socket.setSoTimeout(15000);
+        SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
+        try (SSLSocket sslSocket =
+            (SSLSocket) socketFactory.createSocket(socket, target, port, true)) {
+          sslSocket.setUseClientMode(true);
+          sslSocket.startHandshake();
+          logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
+          return;
+        }
+      } catch (Exception e) {
+        logger.debug(
+            "[{}] Probing IAM token refresh on {}:{} failed: {}",
+            instanceName,
+            target,
+            port,
+            e.getMessage());
+      }
+    }
+    logger.debug(
+        "[{}] Proactive IAM token refresh probe encountered error across all targets",
+        instanceName);
   }
 
   private static ConnectionInfo createConnectionInfo(
