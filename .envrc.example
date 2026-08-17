@@ -15,6 +15,11 @@ export POSTGRES_AIDE_USER="postgres-aide-user"
 export POSTGRES_AIDE_PASS="postgres-aide-password"
 export POSTGRES_AIDE_DB="postgres-aide-db-name"
 
+export POSTGRES_FALLBACK_CONNECTION_NAME="project:region:instance"
+export POSTGRES_FALLBACK_USER="postgres-fallback-user"
+export POSTGRES_FALLBACK_PASS="postgres-fallback-password"
+export POSTGRES_FALLBACK_DB="postgres-fallback-db-name"
+
 export SQLSERVER_CONNECTION_NAME="project:region:instance"
 export SQLSERVER_USER="sqlserver-user"
 export SQLSERVER_PASS="sqlserver-password"

@@ -29,6 +29,7 @@ import com.google.cloud.sql.v1beta4.SqlDataServiceSettings;
 import com.google.cloud.sql.v1beta4.StartSession;
 import com.google.cloud.sql.v1beta4.StreamSqlDataRequest;
 import com.google.cloud.sql.v1beta4.StreamSqlDataResponse;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
@@ -38,6 +39,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,7 @@ class SqlDataClient {
   private final Duration timeout;
   private final Object channelLock = new Object();
   private final ManagedChannel externalChannel;
+  private final ExecutorService readerExecutor;
   private ManagedChannel channel;
   private SqlDataServiceClient client;
 
@@ -70,6 +74,9 @@ class SqlDataClient {
     this.userAgent = userAgent;
     this.timeout = config.getSqlDataStreamTimeout();
     this.externalChannel = externalChannel;
+    this.readerExecutor =
+        Executors.newCachedThreadPool(
+            new ThreadFactoryBuilder().setNameFormat("sql-data-reader-%d").setDaemon(true).build());
   }
 
   private ManagedChannel getChannel() {
@@ -141,7 +148,7 @@ class SqlDataClient {
     headers.put(
         "x-goog-request-params",
         Collections.singletonList(
-            String.format("instance_id=%s&location_id=%s", instanceId, locationId)));
+            String.format("location_id=%s&instance_id=%s", locationId, instanceId)));
 
     GrpcCallContext context = GrpcCallContext.createDefault().withExtraHeaders(headers);
 
@@ -156,23 +163,20 @@ class SqlDataClient {
       throw new IOException("Failed to initiate SQL Data Service stream", e);
     }
 
-    SqlDataSocket socket = new SqlDataSocket(bidiStream);
+    int timeoutMs = (int) Math.min(connectTimeoutMs > 0 ? connectTimeoutMs : 0, Integer.MAX_VALUE);
+    SqlDataSocket socket = new SqlDataSocket(bidiStream, timeoutMs);
 
-    Thread readerThread =
-        new Thread(
-            () -> {
-              try {
-                for (StreamSqlDataResponse response : bidiStream) {
-                  socket.onNextResponse(response);
-                }
-                socket.onCompletedResponse();
-              } catch (Exception e) {
-                socket.onErrorResponse(e);
-              }
-            },
-            "sql-data-reader-" + instanceName.getConnectionName());
-    readerThread.setDaemon(true);
-    readerThread.start();
+    readerExecutor.execute(
+        () -> {
+          try {
+            for (StreamSqlDataResponse response : bidiStream) {
+              socket.onNextResponse(response);
+            }
+            socket.onCompletedResponse();
+          } catch (Exception e) {
+            socket.onErrorResponse(e);
+          }
+        });
 
     // Send StartSession
     StreamSqlDataRequest startRequest =
@@ -200,6 +204,15 @@ class SqlDataClient {
         logger.debug("Closing SqlDataServiceClient");
         client.close();
         client = null;
+      }
+      readerExecutor.shutdown();
+      try {
+        if (!readerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+          readerExecutor.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        readerExecutor.shutdownNow();
+        Thread.currentThread().interrupt();
       }
       if (channel != null) {
         if (externalChannel == null) {

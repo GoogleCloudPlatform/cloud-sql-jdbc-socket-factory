@@ -16,6 +16,8 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.api.gax.rpc.ApiException;
+import com.google.api.gax.rpc.StatusCode;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
@@ -184,6 +186,9 @@ class FallbackSocket extends Socket {
       }
       if (t instanceof StatusException) {
         return ((StatusException) t).getStatus().getCode() == Status.Code.FAILED_PRECONDITION;
+      }
+      if (t instanceof ApiException) {
+        return ((ApiException) t).getStatusCode().getCode() == StatusCode.Code.FAILED_PRECONDITION;
       }
       t = t.getCause();
     }

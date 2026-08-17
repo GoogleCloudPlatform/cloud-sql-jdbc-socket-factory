@@ -26,26 +26,45 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class SqlDataSocket extends Socket {
   private static final Logger logger = LoggerFactory.getLogger(SqlDataSocket.class);
+  static final int DEFAULT_QUEUE_CAPACITY = 256;
 
   private final BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream;
-  private final BlockingQueue<byte[]> readQueue = new LinkedBlockingQueue<>();
+  private final BlockingQueue<byte[]> readQueue;
   private final InputStream inputStream;
   private final OutputStream outputStream;
   private volatile boolean closed = false;
   private volatile Throwable error = null;
-  private int soTimeout = 0;
+  private volatile int soTimeout = 0;
   private boolean keepAlive = false;
   private boolean tcpNoDelay = false;
 
   SqlDataSocket(BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream) {
+    this(bidiStream, 0, DEFAULT_QUEUE_CAPACITY);
+  }
+
+  SqlDataSocket(
+      BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream, int connectTimeoutMs) {
+    this(bidiStream, connectTimeoutMs, DEFAULT_QUEUE_CAPACITY);
+  }
+
+  SqlDataSocket(
+      BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream,
+      int connectTimeoutMs,
+      int queueCapacity) {
     this.bidiStream = bidiStream;
+    this.soTimeout = Math.max(0, connectTimeoutMs);
+    this.readQueue = new LinkedBlockingQueue<>(queueCapacity);
     this.inputStream = new SqlDataInputStream();
     this.outputStream = new SqlDataOutputStream();
   }
@@ -55,7 +74,16 @@ class SqlDataSocket extends Socket {
     if (response.hasData()) {
       byte[] data = response.getData().getData().toByteArray();
       if (data.length > 0) {
-        readQueue.add(data);
+        try {
+          while (!closed) {
+            if (readQueue.offer(data, 100, TimeUnit.MILLISECONDS)) {
+              break;
+            }
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          logger.debug("Interrupted while offering data to readQueue", e);
+        }
       }
     } else if (response.hasTerminateSession()) {
       logger.debug("Received TerminateSession from server");
@@ -66,12 +94,12 @@ class SqlDataSocket extends Socket {
   void onErrorResponse(Throwable t) {
     logger.debug("Received error from server stream", t);
     this.error = t;
-    readQueue.add(new byte[0]); // Sentinel to unblock read
+    readQueue.offer(new byte[0]); // Sentinel to unblock read
   }
 
   void onCompletedResponse() {
     logger.debug("Server stream completed");
-    readQueue.add(new byte[0]); // Sentinel to unblock read
+    readQueue.offer(new byte[0]); // Sentinel to unblock read
   }
 
   private IOException createIoException(Throwable err) {
@@ -125,7 +153,7 @@ class SqlDataSocket extends Socket {
     }
 
     // Sentinel to unblock any waiting reader
-    readQueue.add(new byte[0]);
+    readQueue.offer(new byte[0]);
   }
 
   @Override
@@ -159,7 +187,10 @@ class SqlDataSocket extends Socket {
   }
 
   @Override
-  public void setSoTimeout(int timeout) {
+  public void setSoTimeout(int timeout) throws SocketException {
+    if (timeout < 0) {
+      throw new IllegalArgumentException("timeout can't be negative");
+    }
     this.soTimeout = timeout;
   }
 
@@ -193,12 +224,12 @@ class SqlDataSocket extends Socket {
   }
 
   @Override
-  public void connect(java.net.SocketAddress endpoint) throws IOException {
+  public void connect(SocketAddress endpoint) throws IOException {
     // Already connected
   }
 
   @Override
-  public void connect(java.net.SocketAddress endpoint, int timeout) throws IOException {
+  public void connect(SocketAddress endpoint, int timeout) throws IOException {
     // Already connected
   }
 
@@ -236,7 +267,19 @@ class SqlDataSocket extends Socket {
 
       if (currentBlock == null || currentOffset >= currentBlock.length) {
         try {
-          currentBlock = readQueue.take();
+          int timeout = soTimeout;
+          if (timeout > 0) {
+            currentBlock = readQueue.poll(timeout, TimeUnit.MILLISECONDS);
+            if (currentBlock == null) {
+              if (closed) {
+                return -1;
+              }
+              throw new SocketTimeoutException(
+                  "Read timed out after " + timeout + "ms from SQL Data Service");
+            }
+          } else {
+            currentBlock = readQueue.take();
+          }
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw new IOException("Read interrupted", e);

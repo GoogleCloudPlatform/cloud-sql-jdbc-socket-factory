@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -217,5 +218,45 @@ public class SqlDataClientTest {
     // Reading after server onCompleted should return -1 (EOF)
     int read = socket.getInputStream().read();
     assertThat(read).isEqualTo(-1);
+  }
+
+  @Test
+  public void testRead_TimeoutThrowsSocketTimeoutException() throws Exception {
+    CloudSqlInstanceName instanceName = new CloudSqlInstanceName("proj:reg:inst");
+
+    // Connect with 200ms timeout
+    Socket socket = client.connect(instanceName, 200);
+    // Consume StartSession
+    serviceImpl.requests.poll(5, TimeUnit.SECONDS);
+
+    assertThat(socket.getSoTimeout()).isEqualTo(200);
+
+    // No data sent by server; read should time out after 200ms
+    InputStream in = socket.getInputStream();
+    SocketTimeoutException ex =
+        assertThrows(SocketTimeoutException.class, () -> in.read(new byte[10]));
+    assertThat(ex).hasMessageThat().contains("Read timed out after 200ms");
+
+    socket.close();
+  }
+
+  @Test
+  public void testSetSoTimeout() throws Exception {
+    CloudSqlInstanceName instanceName = new CloudSqlInstanceName("proj:reg:inst");
+
+    Socket socket = client.connect(instanceName, 5000);
+    assertThat(socket.getSoTimeout()).isEqualTo(5000);
+
+    socket.setSoTimeout(150);
+    assertThat(socket.getSoTimeout()).isEqualTo(150);
+
+    // Consume StartSession
+    serviceImpl.requests.poll(5, TimeUnit.SECONDS);
+
+    InputStream in = socket.getInputStream();
+    SocketTimeoutException ex = assertThrows(SocketTimeoutException.class, () -> in.read());
+    assertThat(ex).hasMessageThat().contains("Read timed out after 150ms");
+
+    socket.close();
   }
 }
