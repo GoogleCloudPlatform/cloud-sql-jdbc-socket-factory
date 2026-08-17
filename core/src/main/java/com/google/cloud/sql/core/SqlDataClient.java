@@ -149,8 +149,12 @@ class SqlDataClient {
       context = context.withTimeoutDuration(timeout);
     }
 
-    BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream =
-        currentClient.streamSqlDataCallable().call(context);
+    BidiStream<StreamSqlDataRequest, StreamSqlDataResponse> bidiStream;
+    try {
+      bidiStream = currentClient.streamSqlDataCallable().call(context);
+    } catch (Exception e) {
+      throw new IOException("Failed to initiate SQL Data Service stream", e);
+    }
 
     SqlDataSocket socket = new SqlDataSocket(bidiStream);
 
@@ -198,15 +202,17 @@ class SqlDataClient {
         client = null;
       }
       if (channel != null) {
-        logger.debug("Closing gRPC channel");
-        channel.shutdown();
-        try {
-          if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
+        if (externalChannel == null) {
+          logger.debug("Closing gRPC channel");
+          channel.shutdown();
+          try {
+            if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
+              channel.shutdownNow();
+            }
+          } catch (InterruptedException e) {
             channel.shutdownNow();
+            Thread.currentThread().interrupt();
           }
-        } catch (InterruptedException e) {
-          channel.shutdownNow();
-          Thread.currentThread().interrupt();
         }
         channel = null;
       }

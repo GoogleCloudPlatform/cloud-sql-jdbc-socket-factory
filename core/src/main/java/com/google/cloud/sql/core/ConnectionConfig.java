@@ -129,10 +129,19 @@ public class ConnectionConfig {
         props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY);
     final String sqlDataStreamTimeoutStr =
         props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY);
-    final Duration sqlDataStreamTimeout =
-        sqlDataStreamTimeoutStr != null
-            ? Duration.ofMillis(Long.parseLong(sqlDataStreamTimeoutStr))
-            : null;
+    Duration sqlDataStreamTimeout = null;
+    if (sqlDataStreamTimeoutStr != null && !sqlDataStreamTimeoutStr.trim().isEmpty()) {
+      try {
+        sqlDataStreamTimeout = Duration.ofMillis(Long.parseLong(sqlDataStreamTimeoutStr.trim()));
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Invalid value for %s: %s",
+                ConnectionConfig.CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY,
+                sqlDataStreamTimeoutStr),
+            e);
+      }
+    }
 
     ConnectorConfig.Builder connectorConfigBuilder =
         new ConnectorConfig.Builder()

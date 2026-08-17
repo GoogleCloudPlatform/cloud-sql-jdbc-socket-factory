@@ -278,13 +278,17 @@ public class ConnectorConfig {
 
     /** Chained setter for the SqlDataEndpoint field. */
     public Builder withSqlDataEndpoint(String sqlDataEndpoint) {
-      this.sqlDataEndpoint = sqlDataEndpoint;
+      if (sqlDataEndpoint != null && !sqlDataEndpoint.trim().isEmpty()) {
+        this.sqlDataEndpoint = sqlDataEndpoint.trim();
+      }
       return this;
     }
 
     /** Chained setter for the SqlDataStreamTimeout field. */
     public Builder withSqlDataStreamTimeout(Duration sqlDataStreamTimeout) {
-      this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+      if (sqlDataStreamTimeout != null) {
+        this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+      }
       return this;
     }
 
