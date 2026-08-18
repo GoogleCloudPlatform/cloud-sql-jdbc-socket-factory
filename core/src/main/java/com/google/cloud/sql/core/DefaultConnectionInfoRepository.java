@@ -72,6 +72,8 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final String USER_PROJECT_HEADER_NAME = "X-Goog-User-Project";
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
+  private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MS = 45000;
   private final SQLAdmin apiClient;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
 
@@ -116,6 +118,22 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       KeyPair keyPair) {
+    return getConnectionInfoSync(
+        instanceName,
+        accessTokenSupplier,
+        authType,
+        keyPair,
+        ConnectionConfig.DEFAULT_IP_TYPE_LIST);
+  }
+
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
+  @Override
+  public ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair,
+      List<IpType> ipTypes) {
     Optional<AccessToken> token = null;
     try {
       token = accessTokenSupplier.get();
@@ -133,7 +151,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         createConnectionInfo(
             instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
     if (authType == AuthType.IAM) {
-      probeConnection(instanceName, info);
+      probeConnection(instanceName, info, ipTypes);
     }
     return info;
   }
@@ -146,6 +164,24 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
+    return getConnectionInfo(
+        instanceName,
+        accessTokenSupplier,
+        authType,
+        executor,
+        keyPair,
+        ConnectionConfig.DEFAULT_IP_TYPE_LIST);
+  }
+
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
+  @Override
+  public ListenableFuture<ConnectionInfo> getConnectionInfo(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> keyPair,
+      List<IpType> ipTypes) {
 
     ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
@@ -189,7 +225,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
                           Futures.getDone(ephemeralCertificateFuture),
                           Futures.getDone(sslContextFuture));
                   if (authType == AuthType.IAM) {
-                    probeConnection(instanceName, info);
+                    probeConnection(instanceName, info, ipTypes);
                   }
                   return info;
                 },
@@ -200,35 +236,45 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     return done;
   }
 
-  private static void probeConnection(CloudSqlInstanceName instanceName, ConnectionInfo info) {
+  private static void probeConnection(
+      CloudSqlInstanceName instanceName, ConnectionInfo info, List<IpType> ipTypes) {
     List<String> targets = new ArrayList<>();
     if (instanceName.getDomainName() != null && !instanceName.getDomainName().isEmpty()) {
       targets.add(instanceName.getDomainName());
     } else {
       Map<IpType, List<String>> ipAddrs = info.getIpAddrs();
-      for (IpType ipType : Arrays.asList(IpType.PSC, IpType.PRIVATE, IpType.PUBLIC)) {
+      List<IpType> preferredTypes =
+          (ipTypes != null && !ipTypes.isEmpty()) ? ipTypes : ConnectionConfig.DEFAULT_IP_TYPE_LIST;
+      for (IpType ipType : preferredTypes) {
         List<String> ips = ipAddrs.get(ipType);
         if (ips != null && !ips.isEmpty()) {
           targets.addAll(ips);
+          break;
         }
       }
     }
 
     if (targets.isEmpty()) {
       logger.debug(
-          "[{}] Proactive IAM token refresh probe skipped: no target IP addresses", instanceName);
+          "[{}] Proactive IAM token refresh probe skipped: no matching target IP addresses",
+          instanceName);
       return;
     }
 
-    int port = 3307;
     for (String target : targets) {
       try (Socket socket = new Socket()) {
-        logger.debug("[{}] Probing IAM token refresh on {}:{}", instanceName, target, port);
-        socket.connect(new InetSocketAddress(target, port), 15000);
-        socket.setSoTimeout(15000);
+        logger.debug(
+            "[{}] Probing IAM token refresh on {}:{}",
+            instanceName,
+            target,
+            DEFAULT_SERVER_PROXY_PORT);
+        socket.connect(
+            new InetSocketAddress(target, DEFAULT_SERVER_PROXY_PORT), DEFAULT_CONNECT_TIMEOUT_MS);
+        socket.setSoTimeout(DEFAULT_CONNECT_TIMEOUT_MS);
         SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
         try (SSLSocket sslSocket =
-            (SSLSocket) socketFactory.createSocket(socket, target, port, true)) {
+            (SSLSocket)
+                socketFactory.createSocket(socket, target, DEFAULT_SERVER_PROXY_PORT, true)) {
           sslSocket.setUseClientMode(true);
           sslSocket.startHandshake();
           logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
@@ -239,7 +285,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             "[{}] Probing IAM token refresh on {}:{} failed: {}",
             instanceName,
             target,
-            port,
+            DEFAULT_SERVER_PROXY_PORT,
             e.getMessage());
       }
     }
