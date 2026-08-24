@@ -618,6 +618,7 @@ public class RefreshAheadConnectionInfoCacheTest {
     values.put(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), "10.10.10.10");
     values.put(Collections.singletonList(IpType.PRIVATE), "10.10.10.10");
     values.put(Collections.singletonList(IpType.PSC), "abcde.12345.us-central1.sql.goog");
+    values.put(Collections.singletonList(IpType.SQL_DATA), "10.10.10.10");
 
     values.forEach(
         (ipTypes, wantsIp) -> {
@@ -640,6 +641,91 @@ public class RefreshAheadConnectionInfoCacheTest {
                       .getPreferredIpAddresses())
               .containsExactly(wantsIp);
         });
+  }
+
+  @Test
+  public void testGetPreferredIpTypes_SqlDataPreferenceOrder() {
+    SslData sslData = new SslData(null, null, null);
+
+    // 1. When PSC and PUBLIC are available (no PRIVATE), prefers PSC
+    ConnectionInfo pscAndPublicInfo =
+        new ConnectionInfo(
+            new InstanceMetadata(
+                new CloudSqlInstanceName("project:region:instance"),
+                ImmutableMap.of(
+                    IpType.PUBLIC, Collections.singletonList("10.1.2.3"),
+                    IpType.PSC, Collections.singletonList("abcde.12345.us-central1.sql.goog")),
+                null,
+                false,
+                "",
+                false,
+                null),
+            sslData,
+            Instant.now().plus(1, ChronoUnit.HOURS));
+
+    RefreshAheadConnectionInfoCache pscCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withIpTypes(Collections.singletonList(IpType.SQL_DATA))
+                .build(),
+            new StubConnectionInfoRepository() {
+              @Override
+              public ListenableFuture<ConnectionInfo> getConnectionInfo(
+                  CloudSqlInstanceName instanceName,
+                  AccessTokenSupplier accessTokenSupplier,
+                  AuthType authType,
+                  ListeningScheduledExecutorService executor,
+                  ListenableFuture<KeyPair> keyPair) {
+                return Futures.immediateFuture(pscAndPublicInfo);
+              }
+            },
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+
+    assertThat(pscCache.getConnectionMetadata(TEST_TIMEOUT_MS).getPreferredIpAddresses())
+        .containsExactly("abcde.12345.us-central1.sql.goog");
+
+    // 2. When only PUBLIC is available (no PRIVATE or PSC), prefers PUBLIC
+    ConnectionInfo publicOnlyInfo =
+        new ConnectionInfo(
+            new InstanceMetadata(
+                new CloudSqlInstanceName("project:region:instance"),
+                ImmutableMap.of(IpType.PUBLIC, Collections.singletonList("10.1.2.3")),
+                null,
+                false,
+                "",
+                false,
+                null),
+            sslData,
+            Instant.now().plus(1, ChronoUnit.HOURS));
+
+    RefreshAheadConnectionInfoCache publicCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withIpTypes(Collections.singletonList(IpType.SQL_DATA))
+                .build(),
+            new StubConnectionInfoRepository() {
+              @Override
+              public ListenableFuture<ConnectionInfo> getConnectionInfo(
+                  CloudSqlInstanceName instanceName,
+                  AccessTokenSupplier accessTokenSupplier,
+                  AuthType authType,
+                  ListeningScheduledExecutorService executor,
+                  ListenableFuture<KeyPair> keyPair) {
+                return Futures.immediateFuture(publicOnlyInfo);
+              }
+            },
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+
+    assertThat(publicCache.getConnectionMetadata(TEST_TIMEOUT_MS).getPreferredIpAddresses())
+        .containsExactly("10.1.2.3");
   }
 
   @Test

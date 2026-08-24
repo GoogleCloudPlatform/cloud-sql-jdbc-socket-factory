@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -54,6 +56,9 @@ class Connector {
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
+  private final SqlDataClient sqlDataClient;
+  private final ConcurrentHashMap<String, SqlDataConnState> sqlDataConnState =
+      new ConcurrentHashMap<>();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -71,10 +76,42 @@ class Connector {
       int serverProxyPort,
       DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
+    this(
+        config,
+        connectionInfoRepositoryFactory,
+        instanceCredentialFactory,
+        executor,
+        localKeyPair,
+        minRefreshDelayMs,
+        refreshTimeoutMs,
+        serverProxyPort,
+        null,
+        dnsResolver,
+        mdxProtocolHandler,
+        new SqlDataClient(
+            config, instanceCredentialFactory, InternalConnectorRegistry.getUserAgents()));
+  }
+
+  Connector(
+      ConnectorConfig config,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
+      CredentialFactory instanceCredentialFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> localKeyPair,
+      long minRefreshDelayMs,
+      long refreshTimeoutMs,
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver,
+      DnsResolver dnsResolver,
+      ProtocolHandler mdxProtocolHandler,
+      SqlDataClient sqlDataClient) {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
-    this.instanceNameResolver = new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
+    this.instanceNameResolver =
+        instanceNameResolver != null
+            ? instanceNameResolver
+            : new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
@@ -83,6 +120,7 @@ class Connector {
     this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;
+    this.sqlDataClient = sqlDataClient;
   }
 
   public ConnectorConfig getConfig() {
@@ -126,6 +164,75 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
+    final ConnectionConfig resolvedConfig = resolveConnectionName(config);
+    CloudSqlInstanceName instanceName =
+        new CloudSqlInstanceName(resolvedConfig.getCloudSqlInstance());
+
+    if (!resolvedConfig.getIpTypes().isEmpty()
+        && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
+      SqlDataConnState state =
+          sqlDataConnState.computeIfAbsent(
+              instanceName.getConnectionName(),
+              k ->
+                  new SqlDataConnState(
+                      config.getConnectorConfig() != null
+                          ? config.getConnectorConfig().getResourceExhaustedCooldownPeriod()
+                          : this.config.getResourceExhaustedCooldownPeriod()));
+
+      if (state.isAllowed()) {
+        if (state.isCooldownActive(Instant.now())) {
+          throw new ResourceExhaustedException(
+              String.format(
+                  "[%s] Resource exhausted: cooldown active", instanceName.getConnectionName()),
+              state.getLastErr());
+        }
+
+        logger.debug(
+            String.format(
+                "[%s] Attempting SQL Data Service connection.", instanceName.getConnectionName()));
+
+        Socket sqlDataSocket;
+        try {
+          sqlDataSocket = sqlDataClient.connect(instanceName, timeoutMs);
+        } catch (IOException | RuntimeException t) {
+          if (ResourceExhaustedTrackingSocket.isResourceExhausted(t)) {
+            state.onResourceExhausted(t);
+            throw t;
+          }
+          if (FallbackSocket.isPreconditionFailed(t)) {
+            logger.warn(
+                String.format(
+                    "[%s] SQL Data Service not supported for this instance. "
+                        + "Falling back to direct IP.",
+                    instanceName.getConnectionName()));
+            state.setAllowed(false);
+            return connectDirect(config, timeoutMs);
+          }
+          throw t;
+        }
+
+        Socket fallbackSocket =
+            new FallbackSocket(
+                sqlDataSocket,
+                () -> connectDirect(config, timeoutMs),
+                () -> {
+                  logger.warn(
+                      String.format(
+                          "[%s] SQL Data Service not supported for this instance. "
+                              + "Falling back to direct IP.",
+                          instanceName.getConnectionName()));
+                  state.setAllowed(false);
+                });
+
+        return new ResourceExhaustedTrackingSocket(
+            fallbackSocket, state::onResourceExhausted, state::onSuccess);
+      }
+    }
+
+    return connectDirect(config, timeoutMs);
+  }
+
+  private Socket connectDirect(ConnectionConfig config, long timeoutMs) throws IOException {
     MonitoredCache instance = getConnection(config);
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
@@ -312,5 +419,7 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+    this.sqlDataConnState.clear();
+    this.sqlDataClient.close();
   }
 }

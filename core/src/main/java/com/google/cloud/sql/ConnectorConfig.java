@@ -29,6 +29,7 @@ import java.util.function.Supplier;
  */
 public class ConnectorConfig {
   public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
+  public static final Duration DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD = Duration.ofSeconds(5);
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -50,6 +51,10 @@ public class ConnectorConfig {
    */
   private final Duration failoverPeriod;
 
+  private final String sqlDataEndpoint;
+  private final Duration sqlDataStreamTimeout;
+  private final Duration resourceExhaustedCooldownPeriod;
+
   private ConnectorConfig(
       String targetPrincipal,
       List<String> delegates,
@@ -62,7 +67,10 @@ public class ConnectorConfig {
       String universeDomain,
       RefreshStrategy refreshStrategy,
       Function<String, String> instanceNameResolver,
-      Duration failoverPeriod) {
+      Duration failoverPeriod,
+      String sqlDataEndpoint,
+      Duration sqlDataStreamTimeout,
+      Duration resourceExhaustedCooldownPeriod) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -75,6 +83,9 @@ public class ConnectorConfig {
     this.refreshStrategy = refreshStrategy;
     this.instanceNameResolver = instanceNameResolver;
     this.failoverPeriod = failoverPeriod;
+    this.sqlDataEndpoint = sqlDataEndpoint;
+    this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+    this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
   }
 
   @Override
@@ -97,7 +108,10 @@ public class ConnectorConfig {
         && Objects.equal(universeDomain, that.universeDomain)
         && Objects.equal(refreshStrategy, that.refreshStrategy)
         && Objects.equal(instanceNameResolver, that.instanceNameResolver)
-        && Objects.equal(failoverPeriod, that.failoverPeriod);
+        && Objects.equal(failoverPeriod, that.failoverPeriod)
+        && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
+        && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout)
+        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod);
   }
 
   @Override
@@ -114,7 +128,10 @@ public class ConnectorConfig {
         universeDomain,
         refreshStrategy,
         instanceNameResolver,
-        failoverPeriod);
+        failoverPeriod,
+        sqlDataEndpoint,
+        sqlDataStreamTimeout,
+        resourceExhaustedCooldownPeriod);
   }
 
   public String getTargetPrincipal() {
@@ -165,6 +182,18 @@ public class ConnectorConfig {
     return failoverPeriod;
   }
 
+  public String getSqlDataEndpoint() {
+    return sqlDataEndpoint;
+  }
+
+  public Duration getSqlDataStreamTimeout() {
+    return sqlDataStreamTimeout;
+  }
+
+  public Duration getResourceExhaustedCooldownPeriod() {
+    return resourceExhaustedCooldownPeriod;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -181,6 +210,9 @@ public class ConnectorConfig {
     private Function<String, String> instanceNameResolver;
 
     private Duration failoverPeriod = DEFAULT_FAILOVER_PERIOD;
+    private String sqlDataEndpoint = "sqladmin.googleapis.com";
+    private Duration sqlDataStreamTimeout = Duration.ofHours(2);
+    private Duration resourceExhaustedCooldownPeriod = DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -255,6 +287,30 @@ public class ConnectorConfig {
       return this;
     }
 
+    /** Chained setter for the SqlDataEndpoint field. */
+    public Builder withSqlDataEndpoint(String sqlDataEndpoint) {
+      if (sqlDataEndpoint != null && !sqlDataEndpoint.trim().isEmpty()) {
+        this.sqlDataEndpoint = sqlDataEndpoint.trim();
+      }
+      return this;
+    }
+
+    /** Chained setter for the SqlDataStreamTimeout field. */
+    public Builder withSqlDataStreamTimeout(Duration sqlDataStreamTimeout) {
+      if (sqlDataStreamTimeout != null) {
+        this.sqlDataStreamTimeout = sqlDataStreamTimeout;
+      }
+      return this;
+    }
+
+    /** Chained setter for the ResourceExhaustedCooldownPeriod field. */
+    public Builder withResourceExhaustedCooldownPeriod(Duration resourceExhaustedCooldownPeriod) {
+      if (resourceExhaustedCooldownPeriod != null) {
+        this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
+      }
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -291,7 +347,10 @@ public class ConnectorConfig {
           universeDomain,
           refreshStrategy,
           instanceNameResolver,
-          failoverPeriod);
+          failoverPeriod,
+          sqlDataEndpoint,
+          sqlDataStreamTimeout,
+          resourceExhaustedCooldownPeriod);
     }
   }
 }

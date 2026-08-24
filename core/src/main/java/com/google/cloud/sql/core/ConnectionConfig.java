@@ -21,6 +21,7 @@ import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Splitter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,11 @@ public class ConnectionConfig {
       Arrays.asList(IpType.PUBLIC, IpType.PRIVATE);
   public static final String CLOUD_SQL_GOOGLE_CREDENTIALS_PATH = "cloudSqlGoogleCredentialsPath";
   public static final String MDX_CLIENT_PROTOCOL_TYPE = "mdxClientProtocolType";
+  public static final String CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY = "cloudSqlSqlDataEndpoint";
+  public static final String CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY =
+      "cloudSqlSqlDataStreamTimeout";
+  public static final String CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY =
+      "cloudSqlResourceExhaustedCooldownPeriod";
 
   private final ConnectorConfig connectorConfig;
   private final String cloudSqlInstance;
@@ -121,14 +127,41 @@ public class ConnectionConfig {
     final String mdxClientProtocolType =
         props.getProperty(ConnectionConfig.MDX_CLIENT_PROTOCOL_TYPE);
 
-    return new ConnectionConfig(
-        csqlInstanceName,
-        namedConnection,
-        unixSocketPath,
-        ipTypes,
-        authType,
-        unixSocketPathSuffix,
-        domainName,
+    final String sqlDataEndpoint =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY);
+    final String sqlDataStreamTimeoutStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY);
+    Duration sqlDataStreamTimeout = null;
+    if (sqlDataStreamTimeoutStr != null && !sqlDataStreamTimeoutStr.trim().isEmpty()) {
+      try {
+        sqlDataStreamTimeout = Duration.ofMillis(Long.parseLong(sqlDataStreamTimeoutStr.trim()));
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Invalid value for %s: %s",
+                ConnectionConfig.CLOUD_SQL_SQL_DATA_STREAM_TIMEOUT_PROPERTY,
+                sqlDataStreamTimeoutStr),
+            e);
+      }
+    }
+
+    final String cooldownPeriodStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY);
+    Duration cooldownPeriod = null;
+    if (cooldownPeriodStr != null && !cooldownPeriodStr.trim().isEmpty()) {
+      try {
+        cooldownPeriod = Duration.ofMillis(Long.parseLong(cooldownPeriodStr.trim()));
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Invalid value for %s: %s",
+                ConnectionConfig.CLOUD_SQL_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD_PROPERTY,
+                cooldownPeriodStr),
+            e);
+      }
+    }
+
+    ConnectorConfig.Builder connectorConfigBuilder =
         new ConnectorConfig.Builder()
             .withTargetPrincipal(targetPrincipal)
             .withDelegates(delegates)
@@ -137,8 +170,27 @@ public class ConnectionConfig {
             .withGoogleCredentialsPath(googleCredentialsPath)
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
-            .withRefreshStrategy(refreshStrategy)
-            .build(),
+            .withRefreshStrategy(refreshStrategy);
+
+    if (sqlDataEndpoint != null) {
+      connectorConfigBuilder.withSqlDataEndpoint(sqlDataEndpoint);
+    }
+    if (sqlDataStreamTimeout != null) {
+      connectorConfigBuilder.withSqlDataStreamTimeout(sqlDataStreamTimeout);
+    }
+    if (cooldownPeriod != null) {
+      connectorConfigBuilder.withResourceExhaustedCooldownPeriod(cooldownPeriod);
+    }
+
+    return new ConnectionConfig(
+        csqlInstanceName,
+        namedConnection,
+        unixSocketPath,
+        ipTypes,
+        authType,
+        unixSocketPathSuffix,
+        domainName,
+        connectorConfigBuilder.build(),
         mdxClientProtocolType);
   }
 
@@ -157,6 +209,9 @@ public class ConnectionConfig {
         result.add(IpType.PRIVATE);
       } else if (type.trim().equalsIgnoreCase("PSC")) {
         result.add(IpType.PSC);
+      } else if (type.trim().equalsIgnoreCase("SQL_DATA")
+          || type.trim().equalsIgnoreCase("SQLDATA")) {
+        result.add(IpType.SQL_DATA);
       } else {
         throw new IllegalArgumentException(
             "Unsupported IP type: " + type + " found in ipTypes parameter");
