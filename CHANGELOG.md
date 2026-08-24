@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.30.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.29.0...v1.30.0) (2026-08-24)
+
+
+### Features
+
+* Support Developer Edition connections ([#2287](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2287)) ([46ce4a7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/46ce4a7e99c5732d6f2ebfc47ac772a7be79b416))
+
+
+### Bug Fixes
+
+* Optimize DNS resolution logic ([#2302](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2302)) ([0e2d3b7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0e2d3b7366e363b19785d71910bc231b19c41b22))
+* update deps to the latest ([#2303](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2303)) ([d9dc53d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d9dc53dd32a11e080d72fcdb335030c3f47a0787))
+
 ## [1.29.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.6...v1.29.0) (2026-07-23)
 
 
