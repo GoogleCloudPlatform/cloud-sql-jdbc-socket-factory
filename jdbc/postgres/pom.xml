@@ -129,9 +129,9 @@
                   <!-- double-equals means override the JRE default properties, don't append -->
                   <argLine>-Djava.security.properties==src/test/resources/conscrypt-security.properties</argLine>
                   <classpathDependencyExcludes>
-                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk15on</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk15on</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk18on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk18on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk18on</classpathDependencyExclude>
                   </classpathDependencyExcludes>
                 </configuration>
               </execution>
