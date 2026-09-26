@@ -64,7 +64,12 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
             executor,
             () ->
                 connectionInfoRepository.getConnectionInfo(
-                    instanceName, accessTokenSupplier, config.getAuthType(), executor, keyPair),
+                    instanceName,
+                    accessTokenSupplier,
+                    config.getAuthType(),
+                    executor,
+                    keyPair,
+                    config.getIpTypes()),
             new AsyncRateLimiter(minRefreshDelayMs));
   }
 
