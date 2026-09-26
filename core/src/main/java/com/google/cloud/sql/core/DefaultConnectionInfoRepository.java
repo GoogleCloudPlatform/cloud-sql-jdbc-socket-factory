@@ -297,7 +297,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           for (DnsNameMapping dnm : instanceMetadata.getDnsNames()) {
             if ("PRIVATE_SERVICE_CONNECT".equals(dnm.getConnectionType())
                 && "INSTANCE".equals(dnm.getDnsScope())) {
-              pscDnsNames.add(dnm.getName());
+              String name = dnm.getName();
+              if (name != null) {
+                if (name.endsWith(".")) {
+                  name = name.substring(0, name.length() - 1);
+                }
+                pscDnsNames.add(name);
+              }
             }
           }
         }
@@ -306,22 +312,28 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         if (pscDnsNames.isEmpty()
             && instanceMetadata.getDnsName() != null
             && !instanceMetadata.getDnsName().isEmpty()) {
-          pscDnsNames.add(instanceMetadata.getDnsName());
+          String name = instanceMetadata.getDnsName();
+          if (name.endsWith(".")) {
+            name = name.substring(0, name.length() - 1);
+          }
+          pscDnsNames.add(name);
         }
 
         // If the psc dns name was found, add it to the ipaddrs map.
         if (!pscDnsNames.isEmpty()) {
           pscDnsNames.sort(
               (addr1, addr2) -> {
-                boolean addr1IsPsc = addr1.endsWith(".sql-psc.goog");
-                boolean addr2IsPsc = addr2.endsWith(".sql-psc.goog");
+                String a1 = addr1.endsWith(".") ? addr1.substring(0, addr1.length() - 1) : addr1;
+                String a2 = addr2.endsWith(".") ? addr2.substring(0, addr2.length() - 1) : addr2;
+                boolean addr1IsPsc = a1.toLowerCase().endsWith(".sql-psc.goog");
+                boolean addr2IsPsc = a2.toLowerCase().endsWith(".sql-psc.goog");
                 if (addr1IsPsc && !addr2IsPsc) {
                   return -1; // addr1 comes first
                 }
                 if (!addr1IsPsc && addr2IsPsc) {
                   return 1; // addr2 comes first
                 }
-                return 0;
+                return a1.compareTo(a2);
               });
           ipAddrs.put(IpType.PSC, pscDnsNames);
         }
@@ -340,11 +352,17 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       // name in the list may be used to validate the server TLS certificate.
       // Fall back to legacy dns_name field if necessary.
       String serverName = null;
-      if (instanceMetadata.getDnsNames() != null && !instanceMetadata.getDnsNames().isEmpty()) {
+      if (ipAddrs.get(IpType.PSC) != null && !ipAddrs.get(IpType.PSC).isEmpty()) {
+        serverName = ipAddrs.get(IpType.PSC).get(0);
+      } else if (instanceMetadata.getDnsNames() != null
+          && !instanceMetadata.getDnsNames().isEmpty()) {
         serverName = instanceMetadata.getDnsNames().get(0).getName();
       }
       if (serverName == null) {
         serverName = instanceMetadata.getDnsName();
+      }
+      if (serverName != null && serverName.endsWith(".")) {
+        serverName = serverName.substring(0, serverName.length() - 1);
       }
 
       // Update the Server CA certificate used to create the SSL connection with the instance.
