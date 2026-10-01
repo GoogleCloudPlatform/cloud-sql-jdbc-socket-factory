@@ -344,4 +344,16 @@ public class DefaultConnectionInfoRepositoryTest {
     Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
     assertThat(ipAddrs.get(IpType.PUBLIC)).containsExactly(SAMPLE_PUBLIC_IP);
   }
+
+  @Test
+  public void testPostgresStartupPacketBuildAndParse() {
+    byte[] packet =
+        DefaultConnectionInfoRepository.buildPostgresStartupPacket(
+            "iam-user@project.iam", "postgres");
+    DefaultConnectionInfoRepository.ParsedStartup parsed =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(packet);
+    assertThat(parsed.complete).isTrue();
+    assertThat(parsed.user).isEqualTo("iam-user@project.iam");
+    assertThat(parsed.database).isEqualTo("postgres");
+  }
 }

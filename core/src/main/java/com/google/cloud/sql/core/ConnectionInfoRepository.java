@@ -56,5 +56,8 @@ interface ConnectionInfoRepository {
     return getConnectionInfoSync(instanceName, accessTokenSupplier, authType, keyPair);
   }
 
+  default void recordIamPrincipal(
+      CloudSqlInstanceName instanceName, String user, String database) {}
+
   String resolveConnectionName(String region, String dnsName);
 }

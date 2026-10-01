@@ -31,10 +31,14 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -55,7 +59,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
@@ -76,9 +83,47 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final int DEFAULT_CONNECT_TIMEOUT_MS = 45000;
   private final SQLAdmin apiClient;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
+  private final Map<String, Set<IamPrincipal>> iamPrincipals = new ConcurrentHashMap<>();
+
+  static final class IamPrincipal {
+    final String user;
+    final String database;
+
+    IamPrincipal(String user, String database) {
+      this.user = user;
+      this.database = database != null ? database : "";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof IamPrincipal)) {
+        return false;
+      }
+      IamPrincipal that = (IamPrincipal) o;
+      return Objects.equals(user, that.user) && Objects.equals(database, that.database);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(user, database);
+    }
+  }
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
     this.apiClient = apiClient;
+  }
+
+  @Override
+  public void recordIamPrincipal(CloudSqlInstanceName instanceName, String user, String database) {
+    if (user == null || user.isEmpty()) {
+      return;
+    }
+    iamPrincipals
+        .computeIfAbsent(instanceName.getConnectionName(), k -> ConcurrentHashMap.newKeySet())
+        .add(new IamPrincipal(user, database));
   }
 
   private void checkDatabaseCompatibility(
@@ -236,7 +281,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     return done;
   }
 
-  private static void probeConnection(
+  private void probeConnection(
       CloudSqlInstanceName instanceName, ConnectionInfo info, List<IpType> ipTypes) {
     List<String> targets = new ArrayList<>();
     if (instanceName.getDomainName() != null && !instanceName.getDomainName().isEmpty()) {
@@ -261,37 +306,176 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       return;
     }
 
+    Set<IamPrincipal> principals =
+        iamPrincipals.getOrDefault(instanceName.getConnectionName(), Collections.emptySet());
+
     for (String target : targets) {
-      try (Socket socket = new Socket()) {
-        logger.debug(
-            "[{}] Probing IAM token refresh on {}:{}",
-            instanceName,
-            target,
-            DEFAULT_SERVER_PROXY_PORT);
-        socket.connect(
-            new InetSocketAddress(target, DEFAULT_SERVER_PROXY_PORT), DEFAULT_CONNECT_TIMEOUT_MS);
-        socket.setSoTimeout(DEFAULT_CONNECT_TIMEOUT_MS);
-        SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
-        try (SSLSocket sslSocket =
-            (SSLSocket)
-                socketFactory.createSocket(socket, target, DEFAULT_SERVER_PROXY_PORT, true)) {
-          sslSocket.setUseClientMode(true);
-          sslSocket.startHandshake();
-          logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
+      if (!principals.isEmpty()) {
+        boolean allSucceeded = true;
+        for (IamPrincipal principal : principals) {
+          if (!probeSingleTarget(instanceName, info, target, principal)) {
+            allSucceeded = false;
+            break;
+          }
+        }
+        if (allSucceeded) {
           return;
         }
-      } catch (Exception e) {
-        logger.debug(
-            "[{}] Probing IAM token refresh on {}:{} failed: {}",
-            instanceName,
-            target,
-            DEFAULT_SERVER_PROXY_PORT,
-            e.getMessage());
+      } else {
+        if (probeSingleTarget(instanceName, info, target, null)) {
+          return;
+        }
       }
     }
     logger.debug(
         "[{}] Proactive IAM token refresh probe encountered error across all targets",
         instanceName);
+  }
+
+  private boolean probeSingleTarget(
+      CloudSqlInstanceName instanceName,
+      ConnectionInfo info,
+      String target,
+      IamPrincipal principal) {
+    try (Socket socket = new Socket()) {
+      logger.debug(
+          "[{}] Probing IAM token refresh on {}:{}",
+          instanceName,
+          target,
+          DEFAULT_SERVER_PROXY_PORT);
+      socket.connect(
+          new InetSocketAddress(target, DEFAULT_SERVER_PROXY_PORT), DEFAULT_CONNECT_TIMEOUT_MS);
+      socket.setSoTimeout(DEFAULT_CONNECT_TIMEOUT_MS);
+      SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
+      try (SSLSocket sslSocket =
+          (SSLSocket) socketFactory.createSocket(socket, target, DEFAULT_SERVER_PROXY_PORT, true)) {
+        sslSocket.setUseClientMode(true);
+        sslSocket.startHandshake();
+        if (principal != null && principal.user != null && !principal.user.isEmpty()) {
+          sslSocket.setSoTimeout(5000);
+          OutputStream out = sslSocket.getOutputStream();
+          InputStream in = sslSocket.getInputStream();
+          out.write(buildPostgresStartupPacket(principal.user, principal.database));
+          out.flush();
+          byte[] resp = new byte[1024];
+          int ignored = in.read(resp);
+          out.write(new byte[] {'X', 0, 0, 0, 4});
+          out.flush();
+        }
+        logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
+        return true;
+      }
+    } catch (Exception e) {
+      logger.debug(
+          "[{}] Probing IAM token refresh on {}:{} failed: {}",
+          instanceName,
+          target,
+          DEFAULT_SERVER_PROXY_PORT,
+          e.getMessage());
+      return false;
+    }
+  }
+
+  static final int MAX_PG_STARTUP_PACKET_LEN = 10000;
+
+  static final class ParsedStartup {
+    final String user;
+    final String database;
+    final boolean complete;
+
+    ParsedStartup(String user, String database, boolean complete) {
+      this.user = user;
+      this.database = database;
+      this.complete = complete;
+    }
+  }
+
+  static ParsedStartup parsePostgresStartupPacket(byte[] buf) {
+    if (buf == null || buf.length < 8) {
+      return new ParsedStartup("", "", false);
+    }
+    int offset = 0;
+    int firstLen = ByteBuffer.wrap(buf, 0, 4).getInt();
+    int firstCode = ByteBuffer.wrap(buf, 4, 4).getInt();
+    // Skip GSENCRequest (80877104) or SSLRequest (80877103) if prepended
+    if (firstLen == 8 && (firstCode == 80877103 || firstCode == 80877104)) {
+      offset = 8;
+      if (buf.length < offset + 8) {
+        return new ParsedStartup("", "", false);
+      }
+    }
+    int pktLen = ByteBuffer.wrap(buf, offset, 4).getInt();
+    int protoVer = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
+    if (protoVer != 0x00030000 || pktLen < 8 || pktLen > MAX_PG_STARTUP_PACKET_LEN) {
+      return new ParsedStartup("", "", true);
+    }
+    if (buf.length < offset + pktLen) {
+      return new ParsedStartup("", "", false);
+    }
+    int pos = offset + 8;
+    int end = offset + pktLen;
+    String user = "";
+    String database = "";
+    while (pos < end) {
+      int keyEnd = findNullByte(buf, pos, end);
+      if (keyEnd < 0 || keyEnd == pos) {
+        break;
+      }
+      String key = new String(buf, pos, keyEnd - pos, StandardCharsets.UTF_8);
+      pos = keyEnd + 1;
+      if (pos >= end) {
+        break;
+      }
+      int valEnd = findNullByte(buf, pos, end);
+      if (valEnd < 0) {
+        break;
+      }
+      String val = new String(buf, pos, valEnd - pos, StandardCharsets.UTF_8);
+      pos = valEnd + 1;
+      if ("user".equals(key)) {
+        user = val;
+      } else if ("database".equals(key)) {
+        database = val;
+      }
+    }
+    if (!user.isEmpty() && database.isEmpty()) {
+      database = user;
+    }
+    return new ParsedStartup(user, database, true);
+  }
+
+  private static int findNullByte(byte[] buf, int start, int end) {
+    for (int i = start; i < end; i++) {
+      if (buf[i] == 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  static byte[] buildPostgresStartupPacket(String user, String database) {
+    String dbName = (database == null || database.isEmpty()) ? user : database;
+    ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    try {
+      payload.write("user".getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(user.getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write("database".getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(dbName.getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(0);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    byte[] body = payload.toByteArray();
+    int totalLen = 8 + body.length;
+    ByteBuffer packet = ByteBuffer.allocate(totalLen);
+    packet.putInt(totalLen);
+    packet.putInt(0x00030000);
+    packet.put(body);
+    return packet.array();
   }
 
   private static ConnectionInfo createConnectionInfo(
