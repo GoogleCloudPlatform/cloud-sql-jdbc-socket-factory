@@ -79,25 +79,31 @@ class PostgresStartupSnifferSocket extends SSLSocket {
 
     @Override
     public void write(int b) throws IOException {
-      if (!done) {
-        inspect(new byte[] {(byte) b}, 0, 1);
+      if (done) {
+        delegate.write(b);
+        return;
       }
+      inspect(new byte[] {(byte) b}, 0, 1);
       delegate.write(b);
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-      if (!done) {
-        inspect(b, 0, b.length);
+      if (done) {
+        delegate.write(b);
+        return;
       }
+      inspect(b, 0, b.length);
       delegate.write(b);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-      if (!done) {
-        inspect(b, off, len);
+      if (done) {
+        delegate.write(b, off, len);
+        return;
       }
+      inspect(b, off, len);
       delegate.write(b, off, len);
     }
 

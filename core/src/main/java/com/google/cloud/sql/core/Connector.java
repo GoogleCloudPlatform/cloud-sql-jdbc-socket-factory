@@ -314,11 +314,7 @@ class Connector {
         socket = mdxProtocolHandler.connect(socket, config.getMdxClientProtocolType());
       }
       if (config.getAuthType() == com.google.cloud.sql.AuthType.IAM) {
-        CloudSqlInstanceName instanceName =
-            new CloudSqlInstanceName(instance.getConfig().getCloudSqlInstance());
-        socket =
-            new PostgresStartupSnifferSocket(
-                socket, (user, db) -> adminApi.recordIamPrincipal(instanceName, user, db));
+        socket = new PostgresStartupSnifferSocket(socket, instance::recordIamPrincipal);
       }
 
       logger.debug(String.format("[%s] Connected to instance successfully.", successfulIp));
