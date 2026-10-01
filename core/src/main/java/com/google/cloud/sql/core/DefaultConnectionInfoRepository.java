@@ -82,6 +82,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
   private static final int DEFAULT_CONNECT_TIMEOUT_MS = 45000;
   private final SQLAdmin apiClient;
+  private final int serverProxyPort;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
   private final Map<String, Set<IamPrincipal>> iamPrincipals = new ConcurrentHashMap<>();
 
@@ -113,7 +114,12 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
+    this(apiClient, DEFAULT_SERVER_PROXY_PORT);
+  }
+
+  DefaultConnectionInfoRepository(SQLAdmin apiClient, int serverProxyPort) {
     this.apiClient = apiClient;
+    this.serverProxyPort = serverProxyPort;
   }
 
   @Override
@@ -339,16 +345,12 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       IamPrincipal principal) {
     try (Socket socket = new Socket()) {
       logger.debug(
-          "[{}] Probing IAM token refresh on {}:{}",
-          instanceName,
-          target,
-          DEFAULT_SERVER_PROXY_PORT);
-      socket.connect(
-          new InetSocketAddress(target, DEFAULT_SERVER_PROXY_PORT), DEFAULT_CONNECT_TIMEOUT_MS);
+          "[{}] Probing IAM token refresh on {}:{}", instanceName, target, serverProxyPort);
+      socket.connect(new InetSocketAddress(target, serverProxyPort), DEFAULT_CONNECT_TIMEOUT_MS);
       socket.setSoTimeout(DEFAULT_CONNECT_TIMEOUT_MS);
       SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
       try (SSLSocket sslSocket =
-          (SSLSocket) socketFactory.createSocket(socket, target, DEFAULT_SERVER_PROXY_PORT, true)) {
+          (SSLSocket) socketFactory.createSocket(socket, target, serverProxyPort, true)) {
         sslSocket.setUseClientMode(true);
         sslSocket.startHandshake();
         if (principal != null && principal.user != null && !principal.user.isEmpty()) {
@@ -370,7 +372,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
           "[{}] Probing IAM token refresh on {}:{} failed: {}",
           instanceName,
           target,
-          DEFAULT_SERVER_PROXY_PORT,
+          serverProxyPort,
           e.getMessage());
       return false;
     }
@@ -421,7 +423,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       if (keyEnd < 0 || keyEnd == pos) {
         break;
       }
-      String key = new String(buf, pos, keyEnd - pos, StandardCharsets.UTF_8);
+      final String key = new String(buf, pos, keyEnd - pos, StandardCharsets.UTF_8);
       pos = keyEnd + 1;
       if (pos >= end) {
         break;
@@ -430,7 +432,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       if (valEnd < 0) {
         break;
       }
-      String val = new String(buf, pos, valEnd - pos, StandardCharsets.UTF_8);
+      final String val = new String(buf, pos, valEnd - pos, StandardCharsets.UTF_8);
       pos = valEnd + 1;
       if ("user".equals(key)) {
         user = val;
