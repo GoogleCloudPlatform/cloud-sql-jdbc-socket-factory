@@ -57,7 +57,7 @@ class PostgresStartupSnifferSocket extends SSLSocket {
       this.onStartup = onStartup;
     }
 
-    private synchronized void inspect(byte[] b, int off, int len) {
+    private void inspect(byte[] b, int off, int len) {
       if (done || len <= 0) {
         return;
       }
