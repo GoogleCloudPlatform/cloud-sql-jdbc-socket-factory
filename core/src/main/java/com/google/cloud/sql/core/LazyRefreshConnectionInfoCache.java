@@ -28,6 +28,7 @@ import java.security.KeyPair;
 class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
   private final ConnectionConfig config;
   private final CloudSqlInstanceName instanceName;
+  private final ConnectionInfoRepository connectionInfoRepository;
 
   private final LazyRefreshStrategy refreshStrategy;
 
@@ -50,6 +51,7 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
 
     this.config = config;
     this.instanceName = instanceName;
+    this.connectionInfoRepository = connectionInfoRepository;
 
     AccessTokenSupplier accessTokenSupplier =
         DefaultAccessTokenSupplier.newInstance(config.getAuthType(), tokenSourceFactory);
@@ -59,7 +61,11 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
             config.getCloudSqlInstance(),
             () ->
                 connectionInfoRepository.getConnectionInfoSync(
-                    instanceName, accessTokenSupplier, config.getAuthType(), keyPair),
+                    instanceName,
+                    accessTokenSupplier,
+                    config.getAuthType(),
+                    keyPair,
+                    config.getIpTypes()),
             DEFAULT_REFRESH_BUFFER);
   }
 
@@ -91,5 +97,10 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
   @Override
   public ConnectionConfig getConfig() {
     return config;
+  }
+
+  @Override
+  public void recordIamPrincipal(String user, String database) {
+    connectionInfoRepository.recordIamPrincipal(instanceName, user, database);
   }
 }

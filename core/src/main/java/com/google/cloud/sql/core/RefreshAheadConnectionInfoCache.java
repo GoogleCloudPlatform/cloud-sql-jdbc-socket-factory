@@ -29,6 +29,7 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
 
   private final ConnectionConfig config;
   private final CloudSqlInstanceName instanceName;
+  private final ConnectionInfoRepository connectionInfoRepository;
   private final RefreshAheadStrategy refreshStrategy;
 
   /**
@@ -54,6 +55,7 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
 
     this.config = config;
     this.instanceName = instanceName;
+    this.connectionInfoRepository = connectionInfoRepository;
 
     AccessTokenSupplier accessTokenSupplier =
         DefaultAccessTokenSupplier.newInstance(config.getAuthType(), tokenSourceFactory);
@@ -64,7 +66,12 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
             executor,
             () ->
                 connectionInfoRepository.getConnectionInfo(
-                    instanceName, accessTokenSupplier, config.getAuthType(), executor, keyPair),
+                    instanceName,
+                    accessTokenSupplier,
+                    config.getAuthType(),
+                    executor,
+                    keyPair,
+                    config.getIpTypes()),
             new AsyncRateLimiter(minRefreshDelayMs));
   }
 
@@ -104,5 +111,10 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
   @Override
   public ConnectionConfig getConfig() {
     return config;
+  }
+
+  @Override
+  public void recordIamPrincipal(String user, String database) {
+    connectionInfoRepository.recordIamPrincipal(instanceName, user, database);
   }
 }
