@@ -37,4 +37,6 @@ interface ConnectionInfoCache {
   boolean isClosed();
 
   ConnectionConfig getConfig();
+
+  void recordIamPrincipal(String user, String database);
 }

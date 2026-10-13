@@ -197,6 +197,11 @@ class MonitoredCache implements ConnectionInfoCache {
     return cache.isClosed();
   }
 
+  @Override
+  public void recordIamPrincipal(String user, String database) {
+    cache.recordIamPrincipal(user, database);
+  }
+
   synchronized void addSocket(SSLSocket socket) {
     // Only add the socket if this was configured using a domain name,
     // and therefore the background socket cleanup task is running.
