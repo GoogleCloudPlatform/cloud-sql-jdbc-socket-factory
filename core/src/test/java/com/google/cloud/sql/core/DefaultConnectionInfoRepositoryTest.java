@@ -319,4 +319,44 @@ public class DefaultConnectionInfoRepositoryTest {
         .inOrder();
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
+
+  @Test
+  public void testPscDns_withTrailingDots() throws Exception {
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    List<DnsNameMapping> dnsNames =
+        Arrays.asList(
+            new DnsNameMapping()
+                .setDnsScope("INSTANCE")
+                .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                .setName("dns1.sql.goog."),
+            new DnsNameMapping()
+                .setDnsScope("INSTANCE")
+                .setConnectionType("PRIVATE_SERVICE_CONNECT")
+                .setName("dns2.sql-psc.goog."));
+
+    mockAdminApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME, null, null, DATABASE_VERSION, dnsNames, DEFAULT_BASE_URL);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ofHours(1), DEFAULT_BASE_URL);
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.PASSWORD,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
+
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PSC))
+        .containsExactly("dns2.sql-psc.goog", "dns1.sql.goog")
+        .inOrder();
+    assertThat(ipAddrs.size()).isEqualTo(1);
+  }
 }

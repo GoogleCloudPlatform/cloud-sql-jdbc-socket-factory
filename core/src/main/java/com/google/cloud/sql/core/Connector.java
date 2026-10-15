@@ -294,7 +294,11 @@ class Connector {
           break;
         } catch (IOException e) {
           logger.debug(String.format("[%s] Connection failed: %s", targetIp, e.getMessage()));
-          lastEx = e;
+          if (lastEx == null) {
+            lastEx = e;
+          } else {
+            lastEx.addSuppressed(e);
+          }
           if (socket != null) {
             try {
               socket.close();
