@@ -319,4 +319,29 @@ public class DefaultConnectionInfoRepositoryTest {
         .inOrder();
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
+
+  @Test
+  public void testFetchInstanceData_withIamAuth_completesSuccessfully()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+    MockAdminApi mockAdminApi =
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL, false);
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.IAM,
+                newTestExecutor(),
+                Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+            .get();
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
+
+    Map<IpType, List<String>> ipAddrs = connectionInfo.getIpAddrs();
+    assertThat(ipAddrs.get(IpType.PUBLIC)).containsExactly(SAMPLE_PUBLIC_IP);
+  }
 }
