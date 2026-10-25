@@ -319,4 +319,476 @@ public class DefaultConnectionInfoRepositoryTest {
         .inOrder();
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
+
+  @Test
+  public void testFetchInstanceData_withIamAuth_completesSuccessfully()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException, IOException {
+    String iamInstanceName = "myProject:myRegion:myInstance";
+    FakeSslServer sslServer = new FakeSslServer();
+    int port = sslServer.start("127.0.0.1");
+    try {
+      MockAdminApi mockAdminApi = new MockAdminApi();
+      mockAdminApi.addConnectSettingsResponse(
+          iamInstanceName,
+          "127.0.0.1",
+          "127.0.0.1",
+          DATABASE_VERSION,
+          SAMPLE_PCS_DNS_NAME,
+          DEFAULT_BASE_URL,
+          false);
+      mockAdminApi.addGenerateEphemeralCertResponse(
+          iamInstanceName, Duration.ZERO, DEFAULT_BASE_URL);
+      mockAdminApi.addConnectSettingsResponse(
+          iamInstanceName,
+          "127.0.0.1",
+          "127.0.0.1",
+          DATABASE_VERSION,
+          SAMPLE_PCS_DNS_NAME,
+          DEFAULT_BASE_URL,
+          false);
+      mockAdminApi.addGenerateEphemeralCertResponse(
+          iamInstanceName, Duration.ZERO, DEFAULT_BASE_URL);
+
+      ConnectorConfig config = new ConnectorConfig.Builder().build();
+      ConnectionInfoRepository repo =
+          new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport(), port)
+              .create(new StubCredentialFactory().create(), config);
+
+      CloudSqlInstanceName instanceName = new CloudSqlInstanceName(iamInstanceName);
+      // 1. Probe without recorded IAM principal (TLS handshake only)
+      ConnectionInfo connectionInfo =
+          repo.getConnectionInfo(
+                  instanceName,
+                  () -> Optional.empty(),
+                  AuthType.IAM,
+                  newTestExecutor(),
+                  Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+              .get();
+      assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
+      assertThat(connectionInfo.getIpAddrs().get(IpType.PUBLIC)).containsExactly("127.0.0.1");
+
+      // 2. Probe with recorded IAM principal (TLS handshake + PostgreSQL StartupMessage +
+      // Terminate)
+      repo.recordIamPrincipal(instanceName, "", "");
+      repo.recordIamPrincipal(instanceName, null, null);
+      repo.recordIamPrincipal(instanceName, "iam-user@project.iam", "postgres");
+      ConnectionInfo syncInfo =
+          repo.getConnectionInfoSync(
+              instanceName, () -> Optional.empty(), AuthType.IAM, mockAdminApi.getClientKeyPair());
+      assertThat(syncInfo.getSslContext()).isInstanceOf(SSLContext.class);
+    } finally {
+      sslServer.stop();
+    }
+  }
+
+  @Test
+  public void testFetchInstanceData_withIamAuth_handlesUnreachableAndDomainTargets()
+      throws GeneralSecurityException, OperatorCreationException {
+    String iamInstanceName = "myProject:myRegion:myInstance";
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    mockAdminApi.addConnectSettingsResponse(
+        iamInstanceName,
+        "127.0.0.1",
+        null,
+        DATABASE_VERSION,
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL,
+        false);
+    mockAdminApi.addGenerateEphemeralCertResponse(iamInstanceName, Duration.ZERO, DEFAULT_BASE_URL);
+    mockAdminApi.addConnectSettingsResponse(
+        iamInstanceName, null, "127.0.0.1", DATABASE_VERSION, null, DEFAULT_BASE_URL, false);
+    mockAdminApi.addGenerateEphemeralCertResponse(iamInstanceName, Duration.ZERO, DEFAULT_BASE_URL);
+
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+    // Port 1 on 127.0.0.1 fails immediately with connection refused
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport(), 1)
+            .create(new StubCredentialFactory().create(), config);
+
+    CloudSqlInstanceName domainInstance =
+        new CloudSqlInstanceName(iamInstanceName, "localhost.localdomain");
+    repo.recordIamPrincipal(domainInstance, "iam-user@project.iam", "postgres");
+    ConnectionInfo info1 =
+        repo.getConnectionInfoSync(
+            domainInstance, () -> Optional.empty(), AuthType.IAM, mockAdminApi.getClientKeyPair());
+    assertThat(info1.getSslContext()).isInstanceOf(SSLContext.class);
+
+    // Target with no matching IP type (only PRIVATE available, requesting PUBLIC only)
+    ConnectionInfo info2 =
+        repo.getConnectionInfoSync(
+            new CloudSqlInstanceName(iamInstanceName),
+            () -> Optional.empty(),
+            AuthType.IAM,
+            mockAdminApi.getClientKeyPair(),
+            Arrays.asList(IpType.PUBLIC));
+    assertThat(info2.getSslContext()).isInstanceOf(SSLContext.class);
+  }
+
+  @Test
+  public void testPostgresStartupPacketBuildAndParse() {
+    byte[] packet =
+        DefaultConnectionInfoRepository.buildPostgresStartupPacket(
+            "iam-user@project.iam", "postgres");
+    DefaultConnectionInfoRepository.ParsedStartup parsed =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(packet);
+    assertThat(parsed.complete).isTrue();
+    assertThat(parsed.user).isEqualTo("iam-user@project.iam");
+    assertThat(parsed.database).isEqualTo("postgres");
+
+    // Empty database defaults to user in both build and parse
+    byte[] defaultDbPacket =
+        DefaultConnectionInfoRepository.buildPostgresStartupPacket("iam-user", "");
+    DefaultConnectionInfoRepository.ParsedStartup parsedDefaultDb =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(defaultDbPacket);
+    assertThat(parsedDefaultDb.complete).isTrue();
+    assertThat(parsedDefaultDb.user).isEqualTo("iam-user");
+    assertThat(parsedDefaultDb.database).isEqualTo("iam-user");
+
+    // Null / short buffer
+    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(null).complete).isFalse();
+    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(new byte[4]).complete)
+        .isFalse();
+
+    // SSLRequest (80877103) prefix alone (incomplete) and prepended to valid StartupMessage
+    java.nio.ByteBuffer sslReq = java.nio.ByteBuffer.allocate(8);
+    sslReq.putInt(8).putInt(80877103);
+    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(sslReq.array()).complete)
+        .isFalse();
+
+    java.nio.ByteBuffer combined = java.nio.ByteBuffer.allocate(8 + packet.length);
+    combined.put(sslReq.array()).put(packet);
+    DefaultConnectionInfoRepository.ParsedStartup parsedWithSsl =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(combined.array());
+    assertThat(parsedWithSsl.complete).isTrue();
+    assertThat(parsedWithSsl.user).isEqualTo("iam-user@project.iam");
+    assertThat(parsedWithSsl.database).isEqualTo("postgres");
+
+    // Incomplete startup body
+    byte[] truncated = Arrays.copyOf(packet, packet.length - 3);
+    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(truncated).complete)
+        .isFalse();
+
+    // Non-v3 protocol version
+    java.nio.ByteBuffer badProto = java.nio.ByteBuffer.allocate(12);
+    badProto.putInt(12).putInt(0x00020000).putInt(0);
+    DefaultConnectionInfoRepository.ParsedStartup parsedBadProto =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(badProto.array());
+    assertThat(parsedBadProto.complete).isTrue();
+    assertThat(parsedBadProto.user).isEmpty();
+
+    // Startup packet with only user key-value (no database key)
+    byte[] userOnlyBody = "user\0alice\0\0".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    java.nio.ByteBuffer userOnlyBuf = java.nio.ByteBuffer.allocate(8 + userOnlyBody.length);
+    userOnlyBuf.putInt(8 + userOnlyBody.length).putInt(0x00030000).put(userOnlyBody);
+    DefaultConnectionInfoRepository.ParsedStartup parsedUserOnly =
+        DefaultConnectionInfoRepository.parsePostgresStartupPacket(userOnlyBuf.array());
+    assertThat(parsedUserOnly.complete).isTrue();
+    assertThat(parsedUserOnly.user).isEqualTo("alice");
+    assertThat(parsedUserOnly.database).isEqualTo("alice");
+
+    // IamPrincipal equals & hashCode
+    DefaultConnectionInfoRepository.IamPrincipal p1 =
+        new DefaultConnectionInfoRepository.IamPrincipal("u1", "db1");
+    DefaultConnectionInfoRepository.IamPrincipal p2 =
+        new DefaultConnectionInfoRepository.IamPrincipal("u1", "db1");
+    DefaultConnectionInfoRepository.IamPrincipal p3 =
+        new DefaultConnectionInfoRepository.IamPrincipal("u1", null);
+    assertThat(p1).isEqualTo(p1);
+    assertThat(p1).isEqualTo(p2);
+    assertThat(p1.hashCode()).isEqualTo(p2.hashCode());
+    assertThat(p1).isNotEqualTo(p3);
+    assertThat(p1).isNotEqualTo("not-a-principal");
+  }
+
+  @Test
+  public void testPostgresStartupSnifferSocket() throws IOException {
+    byte[] packet =
+        DefaultConnectionInfoRepository.buildPostgresStartupPacket(
+            "sniffer-user@project.iam", "sniffer-db");
+    String[] captured = new String[2];
+    StubSslSocket delegate = new StubSslSocket();
+    PostgresStartupSnifferSocket sniffer =
+        new PostgresStartupSnifferSocket(
+            delegate,
+            (u, d) -> {
+              captured[0] = u;
+              captured[1] = d;
+            });
+
+    // Write byte-by-byte first 4 bytes, then rest of packet, then extra bytes after done
+    java.io.OutputStream out = sniffer.getOutputStream();
+    for (int i = 0; i < 4; i++) {
+      out.write(packet[i]);
+    }
+    out.write(packet, 4, packet.length - 4);
+    assertThat(captured[0]).isEqualTo("sniffer-user@project.iam");
+    assertThat(captured[1]).isEqualTo("sniffer-db");
+
+    // Subsequent writes pass through directly after done == true
+    out.write(0x58);
+    out.write(new byte[] {0, 0, 0, 4});
+    out.write(new byte[] {1, 2, 3}, 0, 2);
+    out.flush();
+    out.close();
+
+    // Test write(byte[]) in one shot
+    String[] captured2 = new String[2];
+    PostgresStartupSnifferSocket sniffer2 =
+        new PostgresStartupSnifferSocket(
+            new StubSslSocket(),
+            (u, d) -> {
+              captured2[0] = u;
+              captured2[1] = d;
+            });
+    sniffer2.getOutputStream().write(packet);
+    assertThat(captured2[0]).isEqualTo("sniffer-user@project.iam");
+    assertThat(captured2[1]).isEqualTo("sniffer-db");
+
+    // Exercise SSLSocket delegation methods
+    assertThat(sniffer.getInputStream()).isNotNull();
+    sniffer.connect(null);
+    sniffer.connect(null, 100);
+    sniffer.bind(null);
+    assertThat(sniffer.getInetAddress()).isNull();
+    assertThat(sniffer.getLocalAddress()).isNotNull();
+    assertThat(sniffer.getPort()).isEqualTo(0);
+    assertThat(sniffer.getLocalPort()).isEqualTo(-1);
+    assertThat(sniffer.getRemoteSocketAddress()).isNull();
+    assertThat(sniffer.getLocalSocketAddress()).isNull();
+    assertThat(sniffer.getChannel()).isNull();
+    sniffer.setTcpNoDelay(true);
+    assertThat(sniffer.getTcpNoDelay()).isFalse();
+    sniffer.setSoLinger(true, 1);
+    assertThat(sniffer.getSoLinger()).isEqualTo(-1);
+    sniffer.sendUrgentData(0);
+    sniffer.setOOBInline(true);
+    assertThat(sniffer.getOOBInline()).isFalse();
+    sniffer.setSoTimeout(100);
+    assertThat(sniffer.getSoTimeout()).isEqualTo(0);
+    sniffer.setSendBufferSize(1024);
+    assertThat(sniffer.getSendBufferSize()).isEqualTo(0);
+    sniffer.setReceiveBufferSize(1024);
+    assertThat(sniffer.getReceiveBufferSize()).isEqualTo(0);
+    sniffer.setKeepAlive(true);
+    assertThat(sniffer.getKeepAlive()).isFalse();
+    sniffer.setTrafficClass(0);
+    assertThat(sniffer.getTrafficClass()).isEqualTo(0);
+    sniffer.setReuseAddress(true);
+    assertThat(sniffer.getReuseAddress()).isFalse();
+    sniffer.shutdownInput();
+    sniffer.shutdownOutput();
+    assertThat(sniffer.toString()).isNotEmpty();
+    assertThat(sniffer.isConnected()).isFalse();
+    assertThat(sniffer.isBound()).isFalse();
+    assertThat(sniffer.isClosed()).isFalse();
+    assertThat(sniffer.isInputShutdown()).isFalse();
+    assertThat(sniffer.isOutputShutdown()).isFalse();
+    sniffer.setPerformancePreferences(0, 0, 0);
+    assertThat(sniffer.getSupportedCipherSuites()).isEmpty();
+    assertThat(sniffer.getEnabledCipherSuites()).isEmpty();
+    sniffer.setEnabledCipherSuites(new String[0]);
+    assertThat(sniffer.getSupportedProtocols()).isEmpty();
+    assertThat(sniffer.getEnabledProtocols()).isEmpty();
+    sniffer.setEnabledProtocols(new String[0]);
+    assertThat(sniffer.getSession()).isNull();
+    assertThat(sniffer.getHandshakeSession()).isNull();
+    sniffer.addHandshakeCompletedListener(null);
+    sniffer.removeHandshakeCompletedListener(null);
+    sniffer.startHandshake();
+    sniffer.setUseClientMode(true);
+    assertThat(sniffer.getUseClientMode()).isFalse();
+    sniffer.setNeedClientAuth(false);
+    assertThat(sniffer.getNeedClientAuth()).isFalse();
+    sniffer.setWantClientAuth(false);
+    assertThat(sniffer.getWantClientAuth()).isFalse();
+    sniffer.setEnableSessionCreation(true);
+    assertThat(sniffer.getEnableSessionCreation()).isFalse();
+    assertThat(sniffer.getSSLParameters()).isNotNull();
+    sniffer.setSSLParameters(sniffer.getSSLParameters());
+    sniffer.close();
+  }
+
+  private static class StubSslSocket extends javax.net.ssl.SSLSocket {
+    private final java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+    private final java.io.ByteArrayInputStream in = new java.io.ByteArrayInputStream(new byte[0]);
+
+    @Override
+    public java.io.InputStream getInputStream() {
+      return in;
+    }
+
+    @Override
+    public java.io.OutputStream getOutputStream() {
+      return out;
+    }
+
+    @Override
+    public void connect(java.net.SocketAddress endpoint) {}
+
+    @Override
+    public void connect(java.net.SocketAddress endpoint, int timeout) {}
+
+    @Override
+    public void bind(java.net.SocketAddress bindpoint) {}
+
+    @Override
+    public void setTcpNoDelay(boolean on) {}
+
+    @Override
+    public boolean getTcpNoDelay() {
+      return false;
+    }
+
+    @Override
+    public void setSoLinger(boolean on, int linger) {}
+
+    @Override
+    public int getSoLinger() {
+      return -1;
+    }
+
+    @Override
+    public void sendUrgentData(int data) {}
+
+    @Override
+    public void setOOBInline(boolean on) {}
+
+    @Override
+    public boolean getOOBInline() {
+      return false;
+    }
+
+    @Override
+    public void setSoTimeout(int timeout) {}
+
+    @Override
+    public int getSoTimeout() {
+      return 0;
+    }
+
+    @Override
+    public void setSendBufferSize(int size) {}
+
+    @Override
+    public int getSendBufferSize() {
+      return 0;
+    }
+
+    @Override
+    public void setReceiveBufferSize(int size) {}
+
+    @Override
+    public int getReceiveBufferSize() {
+      return 0;
+    }
+
+    @Override
+    public void setKeepAlive(boolean on) {}
+
+    @Override
+    public boolean getKeepAlive() {
+      return false;
+    }
+
+    @Override
+    public void setTrafficClass(int tc) {}
+
+    @Override
+    public int getTrafficClass() {
+      return 0;
+    }
+
+    @Override
+    public void setReuseAddress(boolean on) {}
+
+    @Override
+    public boolean getReuseAddress() {
+      return false;
+    }
+
+    @Override
+    public void shutdownInput() {}
+
+    @Override
+    public void shutdownOutput() {}
+
+    @Override
+    public String[] getSupportedCipherSuites() {
+      return new String[0];
+    }
+
+    @Override
+    public String[] getEnabledCipherSuites() {
+      return new String[0];
+    }
+
+    @Override
+    public void setEnabledCipherSuites(String[] suites) {}
+
+    @Override
+    public String[] getSupportedProtocols() {
+      return new String[0];
+    }
+
+    @Override
+    public String[] getEnabledProtocols() {
+      return new String[0];
+    }
+
+    @Override
+    public void setEnabledProtocols(String[] protocols) {}
+
+    @Override
+    public javax.net.ssl.SSLSession getSession() {
+      return null;
+    }
+
+    @Override
+    public javax.net.ssl.SSLSession getHandshakeSession() {
+      return null;
+    }
+
+    @Override
+    public void addHandshakeCompletedListener(javax.net.ssl.HandshakeCompletedListener listener) {}
+
+    @Override
+    public void removeHandshakeCompletedListener(
+        javax.net.ssl.HandshakeCompletedListener listener) {}
+
+    @Override
+    public void startHandshake() {}
+
+    @Override
+    public void setUseClientMode(boolean mode) {}
+
+    @Override
+    public boolean getUseClientMode() {
+      return false;
+    }
+
+    @Override
+    public void setNeedClientAuth(boolean need) {}
+
+    @Override
+    public boolean getNeedClientAuth() {
+      return false;
+    }
+
+    @Override
+    public void setWantClientAuth(boolean want) {}
+
+    @Override
+    public boolean getWantClientAuth() {
+      return false;
+    }
+
+    @Override
+    public void setEnableSessionCreation(boolean flag) {}
+
+    @Override
+    public boolean getEnableSessionCreation() {
+      return false;
+    }
+  }
 }
