@@ -32,11 +32,20 @@ import javax.net.ssl.X509ExtendedTrustManager;
 class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
   private final TrustManagerFactory delegate;
   private final InstanceMetadata instanceMetadata;
+  private final boolean conscryptWorkaround;
 
   InstanceCheckingTrustManagerFactorySpi(
       InstanceMetadata instanceMetadata, TrustManagerFactory delegate) {
+    this(instanceMetadata, delegate, false);
+  }
+
+  InstanceCheckingTrustManagerFactorySpi(
+      InstanceMetadata instanceMetadata,
+      TrustManagerFactory delegate,
+      boolean conscryptWorkaround) {
     this.instanceMetadata = instanceMetadata;
     this.delegate = delegate;
+    this.conscryptWorkaround = conscryptWorkaround;
   }
 
   @Override
@@ -61,7 +70,7 @@ class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
         // Note: This is a workaround for Conscrypt bug #1033
         // Conscrypt is the JCE provider on some Google Cloud runtimes like DataProc.
         // https://github.com/google/conscrypt/issues/1033
-        if (ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded()) {
+        if (conscryptWorkaround) {
           tm = new ConscryptWorkaroundDelegatingTrustManger(tm);
         }
 

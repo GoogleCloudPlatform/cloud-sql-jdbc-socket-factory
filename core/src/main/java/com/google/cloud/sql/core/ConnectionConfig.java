@@ -20,6 +20,7 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
+import com.google.cloud.sql.TlsProvider;
 import com.google.common.base.Splitter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class ConnectionConfig {
   public static final String IP_TYPES_PROPERTY = "ipTypes";
   public static final String CLOUD_SQL_ADMIN_QUOTA_PROJECT_PROPERTY = "cloudSqlAdminQuotaProject";
   public static final String CLOUD_SQL_UNIVERSE_DOMAIN = "cloudSqlUniverseDomain";
+  public static final String CLOUD_SQL_TLS_PROVIDER_PROPERTY = "cloudSqlTlsProvider";
   public static final AuthType DEFAULT_AUTH_TYPE = AuthType.PASSWORD;
   public static final String DEFAULT_IP_TYPES = "PUBLIC,PRIVATE";
   public static final List<IpType> DEFAULT_IP_TYPE_LIST =
@@ -127,6 +129,21 @@ public class ConnectionConfig {
     final String mdxClientProtocolType =
         props.getProperty(ConnectionConfig.MDX_CLIENT_PROTOCOL_TYPE);
 
+    final String tlsProviderStr =
+        props.getProperty(ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY);
+    TlsProvider tlsProvider = ConnectorConfig.DEFAULT_TLS_PROVIDER;
+    if (tlsProviderStr != null && !tlsProviderStr.trim().isEmpty()) {
+      try {
+        tlsProvider = TlsProvider.fromString(tlsProviderStr);
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Invalid value for %s: %s. Valid values are JDK, AUTO and CONSCRYPT.",
+                ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY, tlsProviderStr),
+            e);
+      }
+    }
+
     final String sqlDataEndpoint =
         props.getProperty(ConnectionConfig.CLOUD_SQL_SQL_DATA_ENDPOINT_PROPERTY);
     final String sqlDataStreamTimeoutStr =
@@ -170,7 +187,8 @@ public class ConnectionConfig {
             .withGoogleCredentialsPath(googleCredentialsPath)
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
-            .withRefreshStrategy(refreshStrategy);
+            .withRefreshStrategy(refreshStrategy)
+            .withTlsProvider(tlsProvider);
 
     if (sqlDataEndpoint != null) {
       connectorConfigBuilder.withSqlDataEndpoint(sqlDataEndpoint);

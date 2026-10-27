@@ -25,7 +25,9 @@ import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
 import com.google.api.services.sqladmin.model.IpMapping;
 import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.sql.AuthType;
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.TlsProvider;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -40,6 +42,7 @@ import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -69,10 +72,16 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
+  private final TlsProvider tlsProvider;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
+    this(apiClient, ConnectorConfig.DEFAULT_TLS_PROVIDER);
+  }
+
+  DefaultConnectionInfoRepository(SQLAdmin apiClient, TlsProvider tlsProvider) {
     this.apiClient = apiClient;
+    this.tlsProvider = tlsProvider == null ? ConnectorConfig.DEFAULT_TLS_PROVIDER : tlsProvider;
   }
 
   private void checkDatabaseCompatibility(
@@ -467,24 +476,32 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       CloudSqlInstanceName instanceName,
       AuthType authType) {
     try {
+      // Select the JSSE provider for this connector. A null provider means the JRE default. A
+      // Conscrypt provider is a connector-scoped instance; the JVM-global provider list is never
+      // modified.
+      Provider provider = TlsProviders.resolve(tlsProvider);
+
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
       KeyStore.PrivateKeyEntry privateKey =
           new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
       authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
+      // With a connector-scoped Conscrypt provider, take the KeyManagerFactory from Conscrypt too.
+      // The JRE's key manager checks the client certificate chain against algorithm constraints
+      // derived from the handshake session. With a Conscrypt socket that check can wrongly reject
+      // the ephemeral certificate (e.g. a SHA256withRSA chain against a TLS 1.3 server that lists
+      // rsa_pkcs1_sha256 only in signature_algorithms_cert), and the client would then send no
+      // certificate.
       KeyManagerFactory kmf =
-          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+          provider == null
+              ? KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
+              : KeyManagerFactory.getInstance("PKIX", provider);
       kmf.init(authKeyStore, new char[0]);
-
-      // The InstanceCheckingTrustManagerFactory implements the custom certificate validation
-      // logic. After using the standard TLS CA chain of trust, it will implement a custom
-      // hostname verification to gracefully handle the hostnames in Cloud SQL server certificates.
-      TrustManagerFactory tmf = InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata);
 
       SSLContext sslContext;
 
       try {
-        sslContext = SSLContext.getInstance("TLSv1.3");
+        sslContext = newSslContext("TLSv1.3", provider);
       } catch (NoSuchAlgorithmException ex) {
         if (authType == AuthType.IAM) {
           throw new RuntimeException(
@@ -496,13 +513,29 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               ex);
         } else {
           logger.debug("TLSv1.3 is not supported for your Java version, fallback to TLSv1.2");
-          sslContext = SSLContext.getInstance("TLSv1.2");
+          sslContext = newSslContext("TLSv1.2", provider);
         }
       }
+
+      // The InstanceCheckingTrustManagerFactory implements the custom certificate validation
+      // logic. After using the standard TLS CA chain of trust, it will implement a custom
+      // hostname verification to gracefully handle the hostnames in Cloud SQL server certificates.
+      // When the SSLContext is served by Conscrypt, the trust managers are wrapped to work around
+      // Conscrypt's "GENERIC" auth type.
+      TrustManagerFactory tmf =
+          InstanceCheckingTrustManagerFactory.newInstance(
+              instanceMetadata,
+              ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(provider));
+
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
       logger.debug(
-          String.format("[%s %d] SSL CONTEXT", instanceName, Thread.currentThread().getId()));
+          String.format(
+              "[%s %d] SSL CONTEXT protocol=%s provider=%s",
+              instanceName,
+              Thread.currentThread().getId(),
+              sslContext.getProtocol(),
+              sslContext.getProvider().getName()));
 
       return new SslData(sslContext, kmf, tmf);
     } catch (GeneralSecurityException | IOException ex) {
@@ -512,6 +545,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               instanceName.getConnectionName()),
           ex);
     }
+  }
+
+  private static SSLContext newSslContext(String protocol, Provider provider)
+      throws NoSuchAlgorithmException {
+    return provider == null
+        ? SSLContext.getInstance(protocol)
+        : SSLContext.getInstance(protocol, provider);
   }
 
   /**
