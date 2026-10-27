@@ -37,28 +37,45 @@ import javax.net.ssl.X509ExtendedTrustManager;
  * <p>See https://github.com/google/conscrypt/issues/1033#issuecomment-982701272
  */
 class ConscryptWorkaroundDelegatingTrustManger extends X509ExtendedTrustManager {
-  private static final boolean CONSCRYPT_TLS;
+  /**
+   * Detects Conscrypt installed as the JVM's default TLS provider, as on some Google Cloud runtimes
+   * like DataProc. Resolved once, on first use, exactly as in earlier releases.
+   */
+  private static final class GlobalConscryptCheck {
+    static final boolean CONSCRYPT_TLS = isGlobalConscryptTls();
 
-  static {
-    // Provider name is "Conscrypt", hardcoded string in the library source:
-    // https://github.com/google/conscrypt/blob/655ad5069e1cb4d1989b8117eaf090371885af99/openjdk/src/main/java/org/conscrypt/Platform.java#L149
-    Provider p = Security.getProvider("Conscrypt");
-    if (p != null) {
+    private GlobalConscryptCheck() {}
+
+    private static boolean isGlobalConscryptTls() {
+      // Provider name is "Conscrypt", hardcoded string in the library source:
+      // https://github.com/google/conscrypt/blob/655ad5069e1cb4d1989b8117eaf090371885af99/openjdk/src/main/java/org/conscrypt/Platform.java#L149
+      Provider p = Security.getProvider("Conscrypt");
+      if (p == null) {
+        return false;
+      }
       try {
         SSLContext ctx = SSLContext.getInstance("TLS");
         Provider prov = ctx.getProvider();
-        CONSCRYPT_TLS = "Conscrypt".equals(prov.getName());
+        return "Conscrypt".equals(prov.getName());
       } catch (NoSuchAlgorithmException e) {
         throw new RuntimeException("Unable to load algorithm TLS", e);
       }
-    } else {
-      CONSCRYPT_TLS = false;
     }
   }
 
-  /** Returns true if the Conscrypt Java Crypto Extension is installed. */
-  static boolean isWorkaroundNeeded() {
-    return CONSCRYPT_TLS;
+  /**
+   * Returns true if the trust managers will be used by a Conscrypt SSLContext.
+   *
+   * @param connectorProvider the connector-scoped JSSE provider selected with {@code
+   *     cloudSqlTlsProvider}, or null when the connector uses the JVM's default provider. When it
+   *     is set, that provider instance is checked. When it is null, the check is unchanged from
+   *     earlier releases: is Conscrypt installed as the JVM's default TLS provider?
+   */
+  static boolean isWorkaroundNeeded(Provider connectorProvider) {
+    if (connectorProvider != null) {
+      return TlsProviders.isConscrypt(connectorProvider);
+    }
+    return GlobalConscryptCheck.CONSCRYPT_TLS;
   }
 
   private final X509ExtendedTrustManager tm;

@@ -46,6 +46,19 @@ class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
 
   static InstanceCheckingTrustManagerFactory newInstance(InstanceMetadata instanceMetadata)
       throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
+    return newInstance(instanceMetadata, false);
+  }
+
+  /**
+   * Creates a new InstanceCheckingTrustManagerFactory.
+   *
+   * @param instanceMetadata the instance metadata holding the CA certificates
+   * @param conscryptWorkaround true when the trust managers will be used by a Conscrypt SSLContext,
+   *     see {@link ConscryptWorkaroundDelegatingTrustManger}.
+   */
+  static InstanceCheckingTrustManagerFactory newInstance(
+      InstanceMetadata instanceMetadata, boolean conscryptWorkaround)
+      throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
 
     TrustManagerFactory delegate = TrustManagerFactory.getInstance("X.509");
     KeyStore trustedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -60,16 +73,18 @@ class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
     // The delegate TrustManagerFactory will check the certificate chain, but will not do
     // hostname checking.
     InstanceCheckingTrustManagerFactory tmf =
-        new InstanceCheckingTrustManagerFactory(instanceMetadata, delegate);
+        new InstanceCheckingTrustManagerFactory(instanceMetadata, delegate, conscryptWorkaround);
     tmf.init(trustedKeyStore);
 
     return tmf;
   }
 
   private InstanceCheckingTrustManagerFactory(
-      InstanceMetadata instanceMetadata, TrustManagerFactory delegate) {
+      InstanceMetadata instanceMetadata,
+      TrustManagerFactory delegate,
+      boolean conscryptWorkaround) {
     super(
-        new InstanceCheckingTrustManagerFactorySpi(instanceMetadata, delegate),
+        new InstanceCheckingTrustManagerFactorySpi(instanceMetadata, delegate, conscryptWorkaround),
         delegate.getProvider(),
         delegate.getAlgorithm());
   }

@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 public class ConnectorConfig {
   public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
   public static final Duration DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD = Duration.ofSeconds(5);
+  public static final TlsProvider DEFAULT_TLS_PROVIDER = TlsProvider.JDK;
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -54,6 +55,7 @@ public class ConnectorConfig {
   private final String sqlDataEndpoint;
   private final Duration sqlDataStreamTimeout;
   private final Duration resourceExhaustedCooldownPeriod;
+  private final TlsProvider tlsProvider;
 
   private ConnectorConfig(
       String targetPrincipal,
@@ -70,7 +72,8 @@ public class ConnectorConfig {
       Duration failoverPeriod,
       String sqlDataEndpoint,
       Duration sqlDataStreamTimeout,
-      Duration resourceExhaustedCooldownPeriod) {
+      Duration resourceExhaustedCooldownPeriod,
+      TlsProvider tlsProvider) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -86,6 +89,7 @@ public class ConnectorConfig {
     this.sqlDataEndpoint = sqlDataEndpoint;
     this.sqlDataStreamTimeout = sqlDataStreamTimeout;
     this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
+    this.tlsProvider = tlsProvider;
   }
 
   @Override
@@ -111,7 +115,8 @@ public class ConnectorConfig {
         && Objects.equal(failoverPeriod, that.failoverPeriod)
         && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
         && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout)
-        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod);
+        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod)
+        && Objects.equal(tlsProvider, that.tlsProvider);
   }
 
   @Override
@@ -131,7 +136,8 @@ public class ConnectorConfig {
         failoverPeriod,
         sqlDataEndpoint,
         sqlDataStreamTimeout,
-        resourceExhaustedCooldownPeriod);
+        resourceExhaustedCooldownPeriod,
+        tlsProvider);
   }
 
   public String getTargetPrincipal() {
@@ -194,6 +200,14 @@ public class ConnectorConfig {
     return resourceExhaustedCooldownPeriod;
   }
 
+  /**
+   * Returns the JSSE provider selection the connector uses for TLS connections to Cloud SQL
+   * instances. Defaults to {@link TlsProvider#JDK}.
+   */
+  public TlsProvider getTlsProvider() {
+    return tlsProvider;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -213,6 +227,7 @@ public class ConnectorConfig {
     private String sqlDataEndpoint = "sqladmin.googleapis.com";
     private Duration sqlDataStreamTimeout = Duration.ofHours(2);
     private Duration resourceExhaustedCooldownPeriod = DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
+    private TlsProvider tlsProvider = DEFAULT_TLS_PROVIDER;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -311,6 +326,15 @@ public class ConnectorConfig {
       return this;
     }
 
+    /**
+     * Sets the JSSE provider used for TLS connections to Cloud SQL instances. A null value resets
+     * it to the default, {@link TlsProvider#JDK}.
+     */
+    public Builder withTlsProvider(TlsProvider tlsProvider) {
+      this.tlsProvider = tlsProvider == null ? DEFAULT_TLS_PROVIDER : tlsProvider;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -350,7 +374,8 @@ public class ConnectorConfig {
           failoverPeriod,
           sqlDataEndpoint,
           sqlDataStreamTimeout,
-          resourceExhaustedCooldownPeriod);
+          resourceExhaustedCooldownPeriod,
+          tlsProvider);
     }
   }
 }
