@@ -459,6 +459,51 @@ ConnectionPool connectionPool = new ConnectionPool(configuration);
 
 
 
+### Post-Quantum Cryptography (PQC)
+
+The Java Connector supports the hybrid post-quantum key exchange group
+`X25519MLKEM768` for its TLS 1.3 connections. It is opt-in for R2DBC on every
+Java version: without the `TLS_PROVIDER` option, R2DBC connections keep their
+TLS 1.2-only configuration, which has no post-quantum key exchange. Set
+`TLS_PROVIDER` to `AUTO` or `CONSCRYPT` to use TLS 1.3 (with a TLS 1.2
+fallback) and post-quantum key exchange. On JDK 27+ `AUTO` uses the JRE's own
+support ([JEP 527](https://openjdk.org/jeps/527)); from Java 8 through JDK 26
+it uses Conscrypt, a JSSE provider that is already a connector dependency.
+There is nothing to add to your build and no provider to register.
+
+```java
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(TLS_PROVIDER, "CONSCRYPT")
+    // ...more connection options
+    .build();
+```
+
+Or in the R2DBC URL:
+
+```
+r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>?TLS_PROVIDER=CONSCRYPT
+```
+
+The option accepts:
+
+| Value | Behavior |
+| --- | --- |
+| `JDK` (default) | Unchanged R2DBC TLS configuration: TLS 1.2 only, Netty's default provider. No post-quantum key exchange. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JRE itself on JDK 27+, else Conscrypt where it loads, else silently fall back to the JRE's provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require Conscrypt, failing the connection rather than falling back. |
+
+The setting is connector-scoped: it is part of the connector configuration, so
+connections that use different values get separate connectors (and refresh
+caches). [Named connectors](configuration.md#named-connectors) set it with
+`ConnectorConfig.Builder.withTlsProvider()` instead of the `TLS_PROVIDER` property.
+
+Conscrypt is a native library: it supports Linux with glibc only (not Alpine
+or other musl-based images), macOS and Windows, on x86-64 and ARM64 (Windows:
+x86-64 only). Under GraalVM native-image, `AUTO` falls back to the JDK provider
+(classical key exchange). For the full platform list, caveats, and how to
+confirm that a post-quantum group was actually negotiated, see the
+[Post-Quantum Cryptography Guide](pqc.md).
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)
