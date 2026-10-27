@@ -17,11 +17,13 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
+import com.google.cloud.sql.TlsProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -86,6 +88,41 @@ public class ConnectionConfigTest {
     assertThat(c.getUnixSocketPathSuffix()).isEqualTo(wantUnixSuffix);
     assertThat(c.getConnectorConfig().getRefreshStrategy()).isEqualTo(wantRefreshStrategy);
     assertThat(c.getDomainName()).isEqualTo(wantDomainName);
+  }
+
+  @Test
+  public void testTlsProviderFromProps() {
+    Properties props = new Properties();
+    props.setProperty(ConnectionConfig.CLOUD_SQL_INSTANCE_PROPERTY, "proj:region:inst");
+    assertThat(
+            ConnectionConfig.fromConnectionProperties(props).getConnectorConfig().getTlsProvider())
+        .isEqualTo(TlsProvider.JDK);
+
+    props.setProperty(ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY, "");
+    assertThat(
+            ConnectionConfig.fromConnectionProperties(props).getConnectorConfig().getTlsProvider())
+        .isEqualTo(TlsProvider.JDK);
+
+    props.setProperty("cloudSqlTlsProvider", "auto");
+    assertThat(
+            ConnectionConfig.fromConnectionProperties(props).getConnectorConfig().getTlsProvider())
+        .isEqualTo(TlsProvider.AUTO);
+
+    props.setProperty("cloudSqlTlsProvider", "Conscrypt");
+    assertThat(
+            ConnectionConfig.fromConnectionProperties(props).getConnectorConfig().getTlsProvider())
+        .isEqualTo(TlsProvider.CONSCRYPT);
+
+    props.setProperty("cloudSqlTlsProvider", "JDK");
+    assertThat(
+            ConnectionConfig.fromConnectionProperties(props).getConnectorConfig().getTlsProvider())
+        .isEqualTo(TlsProvider.JDK);
+
+    props.setProperty("cloudSqlTlsProvider", "boringssl");
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> ConnectionConfig.fromConnectionProperties(props));
+    assertThat(ex).hasMessageThat().contains("Invalid value for cloudSqlTlsProvider: boringssl");
   }
 
   @Test

@@ -25,6 +25,7 @@ import java.security.KeyStore;
 import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.CountDownLatch;
@@ -42,9 +43,31 @@ public class FakeSslServer {
   private final X509Certificate[] cert;
   private SSLServerSocket sslServerSocket;
 
+  // The TLS protocol and JSSE provider of the server's SSLContext. A null provider means the JRE
+  // default.
+  private String protocol = "TLSv1.2";
+  private Provider provider;
+  // Restricts the key exchange groups the server accepts. Only supported with a Conscrypt provider.
+  private String[] namedGroups;
+  // When true, the server only enables `protocol`. The JRE enables every supported protocol on a
+  // server socket regardless of the SSLContext protocol, e.g. TLSv1.3 for a "TLSv1.2" context.
+  private boolean restrictProtocol;
+
   FakeSslServer() {
     privateKey = TestKeys.getServerKeyPair().getPrivate();
     cert = new X509Certificate[] {TestKeys.getServerCert()};
+  }
+
+  /**
+   * Creates a server using the given protocol and provider. When namedGroups is non-null, the
+   * server only accepts those key exchange groups, which requires a Conscrypt provider.
+   */
+  FakeSslServer(String protocol, Provider provider, String[] namedGroups) {
+    this();
+    this.protocol = protocol;
+    this.provider = provider;
+    this.namedGroups = namedGroups;
+    this.restrictProtocol = true;
   }
 
   public FakeSslServer(PrivateKey privateKey, X509Certificate[] cert) {
@@ -89,7 +112,10 @@ public class FakeSslServer {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
                 tmf.init(trustKeyStore);
 
-                SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+                SSLContext sslContext =
+                    provider == null
+                        ? SSLContext.getInstance(protocol)
+                        : SSLContext.getInstance(protocol, provider);
                 sslContext.init(
                     keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
                 SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
@@ -98,6 +124,9 @@ public class FakeSslServer {
                         sslServerSocketFactory.createServerSocket(
                             port, 5, InetAddress.getByName(ip));
                 sslServerSocket.setNeedClientAuth(true);
+                if (restrictProtocol) {
+                  sslServerSocket.setEnabledProtocols(new String[] {protocol});
+                }
 
                 pickedPort.set(sslServerSocket.getLocalPort());
                 countDownLatch.countDown();
@@ -109,11 +138,20 @@ public class FakeSslServer {
                   } catch (SocketException e) {
                     break; // the server socket was closed, exit accept loop.
                   }
-                  socket.startHandshake();
-                  socket
-                      .getOutputStream()
-                      .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
-                  socket.close();
+                  try {
+                    if (namedGroups != null) {
+                      org.conscrypt.Conscrypt.setNamedGroups(socket, namedGroups);
+                    }
+                    socket.startHandshake();
+                    socket
+                        .getOutputStream()
+                        .write(CloudSqlCoreTestingBase.SERVER_MESSAGE.getBytes(UTF_8));
+                  } catch (IOException e) {
+                    // A failed handshake (e.g. a client that rejects the server certificate)
+                    // must not stop the server from accepting further connections.
+                  } finally {
+                    socket.close();
+                  }
                 }
               } catch (Exception e) {
                 countDownLatch.countDown();

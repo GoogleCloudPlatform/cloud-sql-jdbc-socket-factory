@@ -58,6 +58,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Serves the connector-scoped SSLContext for post-quantum key exchange
+         (X25519MLKEM768) before JDK 27 when cloudSqlTlsProvider is AUTO or CONSCRYPT. -->
+    <dependency>
+      <groupId>org.conscrypt</groupId>
+      <artifactId>conscrypt-openjdk-uber</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-enxio</artifactId>
@@ -290,7 +297,7 @@
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>2.5.2</version>
+          <version>${conscrypt.version}</version>
         </dependency>
         <dependency>
           <groupId>org.bouncycastle</groupId>

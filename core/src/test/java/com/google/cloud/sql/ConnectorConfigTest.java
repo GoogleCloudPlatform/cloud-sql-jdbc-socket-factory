@@ -489,6 +489,28 @@ public class ConnectorConfigTest {
                 ConnectorConfig.DEFAULT_FAILOVER_PERIOD,
                 "sqladmin.googleapis.com",
                 Duration.ofHours(2),
-                ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD));
+                ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD,
+                ConnectorConfig.DEFAULT_TLS_PROVIDER));
+  }
+
+  @Test
+  public void testTlsProvider() {
+    ConnectorConfig defaults = new ConnectorConfig.Builder().build();
+    assertThat(defaults.getTlsProvider()).isEqualTo(TlsProvider.JDK);
+    assertThat(ConnectorConfig.DEFAULT_TLS_PROVIDER).isEqualTo(TlsProvider.JDK);
+
+    ConnectorConfig conscrypt =
+        new ConnectorConfig.Builder().withTlsProvider(TlsProvider.CONSCRYPT).build();
+    assertThat(conscrypt.getTlsProvider()).isEqualTo(TlsProvider.CONSCRYPT);
+
+    ConnectorConfig resetToDefault = new ConnectorConfig.Builder().withTlsProvider(null).build();
+    assertThat(resetToDefault.getTlsProvider()).isEqualTo(TlsProvider.JDK);
+
+    // The TLS provider is connector-scoped: connectors that differ only by provider are distinct.
+    assertThat(conscrypt).isNotEqualTo(defaults);
+    assertThat(resetToDefault).isEqualTo(defaults);
+    assertThat(resetToDefault.hashCode()).isEqualTo(defaults.hashCode());
+    assertThat(new ConnectorConfig.Builder().withTlsProvider(TlsProvider.CONSCRYPT).build())
+        .isEqualTo(conscrypt);
   }
 }
