@@ -691,6 +691,40 @@ address based on the provided `socketFactoryConstructorArg` arg.
 
 
 
+### Post-Quantum Cryptography (PQC)
+
+The Java Connector supports the hybrid post-quantum key exchange group
+`X25519MLKEM768` for its TLS 1.3 connections. Negotiation is automatic on
+JDK 27+ (via [JEP 527](https://openjdk.org/jeps/527)). From Java 8 through
+JDK 26 it takes one step: point the connector at Conscrypt, a JSSE provider
+that is already a connector dependency, with the `cloudSqlTlsProvider`
+connection property. There is nothing to add to your build and no provider to
+register.
+
+```java
+config.addDataSourceProperty("cloudSqlTlsProvider", "CONSCRYPT");
+```
+
+The property accepts:
+
+| Value | Behavior |
+| --- | --- |
+| `JDK` (default) | Always use the JRE's default JSSE provider. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JRE itself on JDK 27+, else Conscrypt where it loads, else silently fall back to the JRE's provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require Conscrypt, failing the connection rather than falling back. |
+
+The setting is connector-scoped: it is part of the connector configuration, so
+connections that use different values get separate connectors (and refresh
+caches). [Named connectors](configuration.md#named-connectors) set it with
+`ConnectorConfig.Builder.withTlsProvider()` instead of the `cloudSqlTlsProvider` property.
+
+Conscrypt is a native library: it supports Linux with glibc only (not Alpine
+or other musl-based images), macOS and Windows, on x86-64 and ARM64 (Windows:
+x86-64 only). Under GraalVM native-image, `AUTO` falls back to the JDK provider
+(classical key exchange). For the full platform list, caveats, and how to
+confirm that a post-quantum group was actually negotiated, see the
+[Post-Quantum Cryptography Guide](pqc.md).
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)
