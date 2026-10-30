@@ -502,14 +502,14 @@ public class DefaultConnectionInfoRepositoryTest {
   }
 
   @Test
-  public void testPostgresStartupSnifferSocket() throws IOException {
+  public void testPostgresSocket() throws IOException {
     byte[] packet =
         DefaultConnectionInfoRepository.buildPostgresStartupPacket(
             "sniffer-user@project.iam", "sniffer-db");
     String[] captured = new String[2];
     StubSslSocket delegate = new StubSslSocket();
-    PostgresStartupSnifferSocket sniffer =
-        new PostgresStartupSnifferSocket(
+    PostgresSocket sniffer =
+        new PostgresSocket(
             delegate,
             (u, d) -> {
               captured[0] = u;
@@ -534,8 +534,8 @@ public class DefaultConnectionInfoRepositoryTest {
 
     // Test write(byte[]) in one shot
     String[] captured2 = new String[2];
-    PostgresStartupSnifferSocket sniffer2 =
-        new PostgresStartupSnifferSocket(
+    PostgresSocket sniffer2 =
+        new PostgresSocket(
             new StubSslSocket(),
             (u, d) -> {
               captured2[0] = u;
@@ -609,9 +609,111 @@ public class DefaultConnectionInfoRepositoryTest {
     sniffer.close();
   }
 
+  @Test
+  public void testPostgresSocket_splitWriteCalls() throws IOException {
+    byte[] packet = PostgresSocket.buildPostgresStartupPacket("split-user@project.iam", "split-db");
+    String[] captured = new String[2];
+    StubSslSocket delegate = new StubSslSocket();
+    PostgresSocket socket =
+        new PostgresSocket(
+            delegate,
+            (u, d) -> {
+              captured[0] = u;
+              captured[1] = d;
+            });
+    java.io.OutputStream out = socket.getOutputStream();
+
+    // 1. Write the first byte only (split write)
+    out.write(packet, 0, 1);
+    // Verify that the callback has not fired yet because packet is incomplete
+    assertThat(captured[0]).isNull();
+    assertThat(captured[1]).isNull();
+
+    // 2. Write the remainder of the packet
+    out.write(packet, 1, packet.length - 1);
+    // Verify that the callback has now captured the credentials
+    assertThat(captured[0]).isEqualTo("split-user@project.iam");
+    assertThat(captured[1]).isEqualTo("split-db");
+
+    // 3. Subsequent writes go straight to delegate with zero overhead
+    out.write(new byte[] {'Q', 0, 0, 0, 5, 0});
+    out.flush();
+    out.close();
+  }
+
+  @Test
+  public void testPostgresSocket_splitWriteSingleByteInt() throws IOException {
+    byte[] packet = PostgresSocket.buildPostgresStartupPacket("int-user@project.iam", "int-db");
+    String[] captured = new String[2];
+    StubSslSocket delegate = new StubSslSocket();
+    PostgresSocket socket =
+        new PostgresSocket(
+            delegate,
+            (u, d) -> {
+              captured[0] = u;
+              captured[1] = d;
+            });
+    java.io.OutputStream out = socket.getOutputStream();
+
+    // Write first byte via write(int)
+    out.write(packet[0]);
+    assertThat(captured[0]).isNull();
+
+    // Write remainder
+    out.write(packet, 1, packet.length - 1);
+    assertThat(captured[0]).isEqualTo("int-user@project.iam");
+    assertThat(captured[1]).isEqualTo("int-db");
+    out.close();
+  }
+
+  @Test
+  public void testPostgresProbe_immediateConnectionTermination_success() throws IOException {
+    // Server sends PostgreSQL AuthenticationOk (R + len 8 + code 0)
+    byte[] serverAuthOk = new byte[] {'R', 0, 0, 0, 8, 0, 0, 0, 0};
+    StubSslSocket stubSocket = new StubSslSocket(serverAuthOk);
+
+    PostgresSocket.sendStartupProbe(stubSocket, "iam-user@project.iam", "postgres");
+
+    byte[] written = stubSocket.getWrittenBytes();
+    byte[] expectedStartup =
+        PostgresSocket.buildPostgresStartupPacket("iam-user@project.iam", "postgres");
+    byte[] expectedTerminate = PostgresSocket.buildTerminatePacket();
+
+    assertThat(written.length).isEqualTo(expectedStartup.length + expectedTerminate.length);
+    assertThat(Arrays.copyOfRange(written, 0, expectedStartup.length)).isEqualTo(expectedStartup);
+    assertThat(Arrays.copyOfRange(written, expectedStartup.length, written.length))
+        .isEqualTo(expectedTerminate);
+  }
+
+  @Test
+  public void testPostgresProbe_immediateConnectionTermination_serverEof() throws IOException {
+    // Server immediately closes connection (EOF / 0 bytes returned)
+    StubSslSocket stubSocket = new StubSslSocket(new byte[0]);
+
+    // Must complete immediately without exception or hang
+    PostgresSocket.sendStartupProbe(stubSocket, "iam-user@project.iam", "postgres");
+
+    byte[] written = stubSocket.getWrittenBytes();
+    byte[] expectedStartup =
+        PostgresSocket.buildPostgresStartupPacket("iam-user@project.iam", "postgres");
+    assertThat(written).isEqualTo(expectedStartup);
+  }
+
   private static class StubSslSocket extends javax.net.ssl.SSLSocket {
     private final java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-    private final java.io.ByteArrayInputStream in = new java.io.ByteArrayInputStream(new byte[0]);
+    private final java.io.InputStream in;
+
+    StubSslSocket() {
+      this(new byte[0]);
+    }
+
+    StubSslSocket(byte[] inputBytes) {
+      this.in = new java.io.ByteArrayInputStream(inputBytes);
+    }
+
+    byte[] getWrittenBytes() {
+      return out.toByteArray();
+    }
 
     @Override
     public java.io.InputStream getInputStream() {

@@ -31,14 +31,10 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -354,15 +350,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         sslSocket.setUseClientMode(true);
         sslSocket.startHandshake();
         if (principal != null && principal.user != null && !principal.user.isEmpty()) {
-          sslSocket.setSoTimeout(5000);
-          OutputStream out = sslSocket.getOutputStream();
-          InputStream in = sslSocket.getInputStream();
-          out.write(buildPostgresStartupPacket(principal.user, principal.database));
-          out.flush();
-          byte[] resp = new byte[1024];
-          int ignored = in.read(resp);
-          out.write(new byte[] {'X', 0, 0, 0, 4});
-          out.flush();
+          PostgresSocket.sendStartupProbe(sslSocket, principal.user, principal.database);
         }
         logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
         return true;
@@ -378,7 +366,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     }
   }
 
-  static final int MAX_PG_STARTUP_PACKET_LEN = 10000;
+  static final int MAX_PG_STARTUP_PACKET_LEN = PostgresSocket.MAX_PG_STARTUP_PACKET_LEN;
 
   static final class ParsedStartup {
     final String user;
@@ -393,91 +381,12 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   static ParsedStartup parsePostgresStartupPacket(byte[] buf) {
-    if (buf == null || buf.length < 8) {
-      return new ParsedStartup("", "", false);
-    }
-    int offset = 0;
-    int firstLen = ByteBuffer.wrap(buf, 0, 4).getInt();
-    int firstCode = ByteBuffer.wrap(buf, 4, 4).getInt();
-    // Skip GSENCRequest (80877104) or SSLRequest (80877103) if prepended
-    if (firstLen == 8 && (firstCode == 80877103 || firstCode == 80877104)) {
-      offset = 8;
-      if (buf.length < offset + 8) {
-        return new ParsedStartup("", "", false);
-      }
-    }
-    int pktLen = ByteBuffer.wrap(buf, offset, 4).getInt();
-    int protoVer = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
-    if (protoVer != 0x00030000 || pktLen < 8 || pktLen > MAX_PG_STARTUP_PACKET_LEN) {
-      return new ParsedStartup("", "", true);
-    }
-    if (buf.length < offset + pktLen) {
-      return new ParsedStartup("", "", false);
-    }
-    int pos = offset + 8;
-    int end = offset + pktLen;
-    String user = "";
-    String database = "";
-    while (pos < end) {
-      int keyEnd = findNullByte(buf, pos, end);
-      if (keyEnd < 0 || keyEnd == pos) {
-        break;
-      }
-      final String key = new String(buf, pos, keyEnd - pos, StandardCharsets.UTF_8);
-      pos = keyEnd + 1;
-      if (pos >= end) {
-        break;
-      }
-      int valEnd = findNullByte(buf, pos, end);
-      if (valEnd < 0) {
-        break;
-      }
-      final String val = new String(buf, pos, valEnd - pos, StandardCharsets.UTF_8);
-      pos = valEnd + 1;
-      if ("user".equals(key)) {
-        user = val;
-      } else if ("database".equals(key)) {
-        database = val;
-      }
-    }
-    if (!user.isEmpty() && database.isEmpty()) {
-      database = user;
-    }
-    return new ParsedStartup(user, database, true);
-  }
-
-  private static int findNullByte(byte[] buf, int start, int end) {
-    for (int i = start; i < end; i++) {
-      if (buf[i] == 0) {
-        return i;
-      }
-    }
-    return -1;
+    PostgresSocket.ParsedStartup parsed = PostgresSocket.parsePostgresStartupPacket(buf);
+    return new ParsedStartup(parsed.user, parsed.database, parsed.complete);
   }
 
   static byte[] buildPostgresStartupPacket(String user, String database) {
-    String dbName = (database == null || database.isEmpty()) ? user : database;
-    ByteArrayOutputStream payload = new ByteArrayOutputStream();
-    try {
-      payload.write("user".getBytes(StandardCharsets.UTF_8));
-      payload.write(0);
-      payload.write(user.getBytes(StandardCharsets.UTF_8));
-      payload.write(0);
-      payload.write("database".getBytes(StandardCharsets.UTF_8));
-      payload.write(0);
-      payload.write(dbName.getBytes(StandardCharsets.UTF_8));
-      payload.write(0);
-      payload.write(0);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    byte[] body = payload.toByteArray();
-    int totalLen = 8 + body.length;
-    ByteBuffer packet = ByteBuffer.allocate(totalLen);
-    packet.putInt(totalLen);
-    packet.putInt(0x00030000);
-    packet.put(body);
-    return packet.array();
+    return PostgresSocket.buildPostgresStartupPacket(user, database);
   }
 
   private static ConnectionInfo createConnectionInfo(

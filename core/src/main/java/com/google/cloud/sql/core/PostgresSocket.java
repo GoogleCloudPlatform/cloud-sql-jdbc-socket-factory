@@ -23,7 +23,9 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLParameters;
@@ -31,65 +33,216 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 /**
- * Wraps an {@link SSLSocket} and inspects the initial bytes written to {@link #getOutputStream()}
- * to extract the PostgreSQL v3 StartupMessage {@code (user, database)} pair for Auto-IAM refresh
- * probes. Once the startup header is parsed (or determined not to be a PostgreSQL v3 startup
- * packet), all subsequent writes pass directly to the underlying stream.
+ * Wraps an {@link SSLSocket} and handles client-side PostgreSQL database protocol operations.
+ * Inspects initial bytes written to {@link #getOutputStream()} to extract the PostgreSQL v3
+ * StartupMessage {@code (user, database)} pair for Auto-IAM refresh probes. Once the startup
+ * message is processed (or determined not to be a PostgreSQL v3 startup packet), all subsequent
+ * writes pass directly through to the underlying stream with zero locking or synchronization
+ * overhead.
  */
-class PostgresStartupSnifferSocket extends SSLSocket {
+class PostgresSocket extends SSLSocket {
+  static final int MAX_PG_STARTUP_PACKET_LEN = 10000;
+  private static final int PG_PROTOCOL_VERSION_30 = 0x00030000;
+  private static final int PG_SSL_REQUEST_CODE = 80877103;
+  private static final int PG_GSS_ENC_REQUEST_CODE = 80877104;
+
   private final SSLSocket delegate;
   private final OutputStream out;
 
-  PostgresStartupSnifferSocket(SSLSocket delegate, BiConsumer<String, String> onStartup)
-      throws IOException {
+  PostgresSocket(SSLSocket delegate, BiConsumer<String, String> onStartup) throws IOException {
     this.delegate = delegate;
-    this.out = new SnifferOutputStream(delegate.getOutputStream(), onStartup);
+    this.out = new PostgresOutputStream(delegate.getOutputStream(), onStartup);
   }
 
-  static class SnifferOutputStream extends OutputStream {
+  static final class ParsedStartup {
+    final String user;
+    final String database;
+    final boolean complete;
+
+    ParsedStartup(String user, String database, boolean complete) {
+      this.user = user;
+      this.database = database;
+      this.complete = complete;
+    }
+  }
+
+  static ParsedStartup parsePostgresStartupPacket(byte[] buf) {
+    if (buf == null || buf.length < 8) {
+      return new ParsedStartup("", "", false);
+    }
+    int offset = 0;
+    int firstLen = ByteBuffer.wrap(buf, 0, 4).getInt();
+    int firstCode = ByteBuffer.wrap(buf, 4, 4).getInt();
+    // Skip GSENCRequest (80877104) or SSLRequest (80877103) if prepended
+    if (firstLen == 8
+        && (firstCode == PG_SSL_REQUEST_CODE || firstCode == PG_GSS_ENC_REQUEST_CODE)) {
+      offset = 8;
+      if (buf.length < offset + 8) {
+        return new ParsedStartup("", "", false);
+      }
+    }
+    int pktLen = ByteBuffer.wrap(buf, offset, 4).getInt();
+    int protoVer = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
+    if (protoVer != PG_PROTOCOL_VERSION_30 || pktLen < 8 || pktLen > MAX_PG_STARTUP_PACKET_LEN) {
+      return new ParsedStartup("", "", true);
+    }
+    if (buf.length < offset + pktLen) {
+      return new ParsedStartup("", "", false);
+    }
+    int pos = offset + 8;
+    int end = offset + pktLen;
+    String user = "";
+    String database = "";
+    while (pos < end) {
+      int keyEnd = findNullByte(buf, pos, end);
+      if (keyEnd < 0 || keyEnd == pos) {
+        break;
+      }
+      final String key = new String(buf, pos, keyEnd - pos, StandardCharsets.UTF_8);
+      pos = keyEnd + 1;
+      if (pos >= end) {
+        break;
+      }
+      int valEnd = findNullByte(buf, pos, end);
+      if (valEnd < 0) {
+        break;
+      }
+      final String val = new String(buf, pos, valEnd - pos, StandardCharsets.UTF_8);
+      pos = valEnd + 1;
+      if ("user".equals(key)) {
+        user = val;
+      } else if ("database".equals(key)) {
+        database = val;
+      }
+    }
+    if (!user.isEmpty() && database.isEmpty()) {
+      database = user;
+    }
+    return new ParsedStartup(user, database, true);
+  }
+
+  private static int findNullByte(byte[] buf, int start, int end) {
+    for (int i = start; i < end; i++) {
+      if (buf[i] == 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  static byte[] buildPostgresStartupPacket(String user, String database) {
+    String dbName = (database == null || database.isEmpty()) ? user : database;
+    ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    try {
+      payload.write("user".getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(user.getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write("database".getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(dbName.getBytes(StandardCharsets.UTF_8));
+      payload.write(0);
+      payload.write(0);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    byte[] body = payload.toByteArray();
+    int totalLen = 8 + body.length;
+    ByteBuffer packet = ByteBuffer.allocate(totalLen);
+    packet.putInt(totalLen);
+    packet.putInt(PG_PROTOCOL_VERSION_30);
+    packet.put(body);
+    return packet.array();
+  }
+
+  static byte[] buildTerminatePacket() {
+    return new byte[] {'X', 0, 0, 0, 4};
+  }
+
+  static void sendStartupProbe(SSLSocket sslSocket, String user, String database)
+      throws IOException {
+    if (user == null || user.isEmpty()) {
+      return;
+    }
+    sslSocket.setSoTimeout(5000);
+    OutputStream out = sslSocket.getOutputStream();
+    InputStream in = sslSocket.getInputStream();
+    out.write(buildPostgresStartupPacket(user, database));
+    out.flush();
+    byte[] resp = new byte[1024];
+    int bytesRead = in.read(resp);
+    if (bytesRead != -1) {
+      try {
+        out.write(buildTerminatePacket());
+        out.flush();
+      } catch (IOException e) {
+        // Peer may have already terminated the connection; ignore
+      }
+    }
+  }
+
+  static class PostgresOutputStream extends OutputStream {
     private final OutputStream delegate;
     private final BiConsumer<String, String> onStartup;
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(128);
-    private boolean done = false;
+    private volatile boolean startupMessageSent = false;
 
-    SnifferOutputStream(OutputStream delegate, BiConsumer<String, String> onStartup) {
+    PostgresOutputStream(OutputStream delegate, BiConsumer<String, String> onStartup) {
       this.delegate = delegate;
       this.onStartup = onStartup;
     }
 
     private void inspect(byte[] b, int off, int len) {
-      if (done || len <= 0) {
+      if (startupMessageSent || len <= 0) {
         return;
       }
       buf.write(b, off, len);
       byte[] bytes = buf.toByteArray();
-      DefaultConnectionInfoRepository.ParsedStartup parsed =
-          DefaultConnectionInfoRepository.parsePostgresStartupPacket(bytes);
+      ParsedStartup parsed = parsePostgresStartupPacket(bytes);
       if (parsed.complete) {
-        done = true;
+        startupMessageSent = true;
         buf = null;
         if (parsed.user != null && !parsed.user.isEmpty()) {
           onStartup.accept(parsed.user, parsed.database);
         }
-      } else if (bytes.length > DefaultConnectionInfoRepository.MAX_PG_STARTUP_PACKET_LEN + 8) {
-        done = true;
+      } else if (bytes.length > MAX_PG_STARTUP_PACKET_LEN + 8) {
+        startupMessageSent = true;
+        buf = null;
+      }
+    }
+
+    private void inspect(int b) {
+      if (startupMessageSent) {
+        return;
+      }
+      buf.write(b);
+      byte[] bytes = buf.toByteArray();
+      ParsedStartup parsed = parsePostgresStartupPacket(bytes);
+      if (parsed.complete) {
+        startupMessageSent = true;
+        buf = null;
+        if (parsed.user != null && !parsed.user.isEmpty()) {
+          onStartup.accept(parsed.user, parsed.database);
+        }
+      } else if (bytes.length > MAX_PG_STARTUP_PACKET_LEN + 8) {
+        startupMessageSent = true;
         buf = null;
       }
     }
 
     @Override
     public void write(int b) throws IOException {
-      if (done) {
+      if (startupMessageSent) {
         delegate.write(b);
         return;
       }
-      inspect(new byte[] {(byte) b}, 0, 1);
+      inspect(b);
       delegate.write(b);
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-      if (done) {
+      if (startupMessageSent) {
         delegate.write(b);
         return;
       }
@@ -99,7 +252,7 @@ class PostgresStartupSnifferSocket extends SSLSocket {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-      if (done) {
+      if (startupMessageSent) {
         delegate.write(b, off, len);
         return;
       }
