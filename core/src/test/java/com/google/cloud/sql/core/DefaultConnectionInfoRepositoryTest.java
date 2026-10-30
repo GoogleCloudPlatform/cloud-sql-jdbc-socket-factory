@@ -427,53 +427,57 @@ public class DefaultConnectionInfoRepositoryTest {
 
   @Test
   public void testPostgresStartupPacketBuildAndParse() {
-    byte[] packet =
-        DefaultConnectionInfoRepository.buildPostgresStartupPacket(
-            "iam-user@project.iam", "postgres");
-    DefaultConnectionInfoRepository.ParsedStartup parsed =
-        DefaultConnectionInfoRepository.parsePostgresStartupPacket(packet);
+    byte[] packet = PostgresSocket.buildPostgresStartupPacket("iam-user@project.iam", "postgres");
+    PostgresSocket.ParsedStartup parsed = PostgresSocket.parsePostgresStartupPacket(packet);
     assertThat(parsed.complete).isTrue();
     assertThat(parsed.user).isEqualTo("iam-user@project.iam");
     assertThat(parsed.database).isEqualTo("postgres");
 
     // Empty database defaults to user in both build and parse
-    byte[] defaultDbPacket =
-        DefaultConnectionInfoRepository.buildPostgresStartupPacket("iam-user", "");
-    DefaultConnectionInfoRepository.ParsedStartup parsedDefaultDb =
-        DefaultConnectionInfoRepository.parsePostgresStartupPacket(defaultDbPacket);
+    byte[] defaultDbPacket = PostgresSocket.buildPostgresStartupPacket("iam-user", "");
+    PostgresSocket.ParsedStartup parsedDefaultDb =
+        PostgresSocket.parsePostgresStartupPacket(defaultDbPacket);
     assertThat(parsedDefaultDb.complete).isTrue();
     assertThat(parsedDefaultDb.user).isEqualTo("iam-user");
     assertThat(parsedDefaultDb.database).isEqualTo("iam-user");
 
     // Null / short buffer
-    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(null).complete).isFalse();
-    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(new byte[4]).complete)
-        .isFalse();
+    assertThat(PostgresSocket.parsePostgresStartupPacket(null).complete).isFalse();
+    assertThat(PostgresSocket.parsePostgresStartupPacket(new byte[4]).complete).isFalse();
 
     // SSLRequest (80877103) prefix alone (incomplete) and prepended to valid StartupMessage
     java.nio.ByteBuffer sslReq = java.nio.ByteBuffer.allocate(8);
     sslReq.putInt(8).putInt(80877103);
-    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(sslReq.array()).complete)
-        .isFalse();
+    assertThat(PostgresSocket.parsePostgresStartupPacket(sslReq.array()).complete).isFalse();
 
     java.nio.ByteBuffer combined = java.nio.ByteBuffer.allocate(8 + packet.length);
     combined.put(sslReq.array()).put(packet);
-    DefaultConnectionInfoRepository.ParsedStartup parsedWithSsl =
-        DefaultConnectionInfoRepository.parsePostgresStartupPacket(combined.array());
+    PostgresSocket.ParsedStartup parsedWithSsl =
+        PostgresSocket.parsePostgresStartupPacket(combined.array());
     assertThat(parsedWithSsl.complete).isTrue();
     assertThat(parsedWithSsl.user).isEqualTo("iam-user@project.iam");
     assertThat(parsedWithSsl.database).isEqualTo("postgres");
 
+    // Double negotiation: GSSENCRequest followed by SSLRequest prepended to StartupMessage
+    java.nio.ByteBuffer gssReq = java.nio.ByteBuffer.allocate(8);
+    gssReq.putInt(8).putInt(80877104);
+    java.nio.ByteBuffer doubleNegotiation = java.nio.ByteBuffer.allocate(16 + packet.length);
+    doubleNegotiation.put(gssReq.array()).put(sslReq.array()).put(packet);
+    PostgresSocket.ParsedStartup parsedDoubleNeg =
+        PostgresSocket.parsePostgresStartupPacket(doubleNegotiation.array());
+    assertThat(parsedDoubleNeg.complete).isTrue();
+    assertThat(parsedDoubleNeg.user).isEqualTo("iam-user@project.iam");
+    assertThat(parsedDoubleNeg.database).isEqualTo("postgres");
+
     // Incomplete startup body
     byte[] truncated = Arrays.copyOf(packet, packet.length - 3);
-    assertThat(DefaultConnectionInfoRepository.parsePostgresStartupPacket(truncated).complete)
-        .isFalse();
+    assertThat(PostgresSocket.parsePostgresStartupPacket(truncated).complete).isFalse();
 
     // Non-v3 protocol version
     java.nio.ByteBuffer badProto = java.nio.ByteBuffer.allocate(12);
     badProto.putInt(12).putInt(0x00020000).putInt(0);
-    DefaultConnectionInfoRepository.ParsedStartup parsedBadProto =
-        DefaultConnectionInfoRepository.parsePostgresStartupPacket(badProto.array());
+    PostgresSocket.ParsedStartup parsedBadProto =
+        PostgresSocket.parsePostgresStartupPacket(badProto.array());
     assertThat(parsedBadProto.complete).isTrue();
     assertThat(parsedBadProto.user).isEmpty();
 
@@ -481,8 +485,8 @@ public class DefaultConnectionInfoRepositoryTest {
     byte[] userOnlyBody = "user\0alice\0\0".getBytes(java.nio.charset.StandardCharsets.UTF_8);
     java.nio.ByteBuffer userOnlyBuf = java.nio.ByteBuffer.allocate(8 + userOnlyBody.length);
     userOnlyBuf.putInt(8 + userOnlyBody.length).putInt(0x00030000).put(userOnlyBody);
-    DefaultConnectionInfoRepository.ParsedStartup parsedUserOnly =
-        DefaultConnectionInfoRepository.parsePostgresStartupPacket(userOnlyBuf.array());
+    PostgresSocket.ParsedStartup parsedUserOnly =
+        PostgresSocket.parsePostgresStartupPacket(userOnlyBuf.array());
     assertThat(parsedUserOnly.complete).isTrue();
     assertThat(parsedUserOnly.user).isEqualTo("alice");
     assertThat(parsedUserOnly.database).isEqualTo("alice");
@@ -504,8 +508,7 @@ public class DefaultConnectionInfoRepositoryTest {
   @Test
   public void testPostgresSocket() throws IOException {
     byte[] packet =
-        DefaultConnectionInfoRepository.buildPostgresStartupPacket(
-            "sniffer-user@project.iam", "sniffer-db");
+        PostgresSocket.buildPostgresStartupPacket("sniffer-user@project.iam", "sniffer-db");
     String[] captured = new String[2];
     StubSslSocket delegate = new StubSslSocket();
     PostgresSocket sniffer =

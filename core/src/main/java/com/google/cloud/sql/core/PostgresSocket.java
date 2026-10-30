@@ -71,15 +71,19 @@ class PostgresSocket extends SSLSocket {
       return new ParsedStartup("", "", false);
     }
     int offset = 0;
-    int firstLen = ByteBuffer.wrap(buf, 0, 4).getInt();
-    int firstCode = ByteBuffer.wrap(buf, 4, 4).getInt();
-    // Skip GSENCRequest (80877104) or SSLRequest (80877103) if prepended
-    if (firstLen == 8
-        && (firstCode == PG_SSL_REQUEST_CODE || firstCode == PG_GSS_ENC_REQUEST_CODE)) {
-      offset = 8;
-      if (buf.length < offset + 8) {
-        return new ParsedStartup("", "", false);
+    // Skip GSSENCRequest (80877104) or SSLRequest (80877103) packets if prepended.
+    // Clients like libpq / pgx may send GSSENCRequest followed by SSLRequest before StartupMessage.
+    while (buf.length >= offset + 8) {
+      int len = ByteBuffer.wrap(buf, offset, 4).getInt();
+      int code = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
+      if (len == 8 && (code == PG_SSL_REQUEST_CODE || code == PG_GSS_ENC_REQUEST_CODE)) {
+        offset += 8;
+        continue;
       }
+      break;
+    }
+    if (buf.length < offset + 8) {
+      return new ParsedStartup("", "", false);
     }
     int pktLen = ByteBuffer.wrap(buf, offset, 4).getInt();
     int protoVer = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
@@ -144,7 +148,7 @@ class PostgresSocket extends SSLSocket {
       payload.write(0);
       payload.write(0);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new AssertionError("ByteArrayOutputStream cannot throw IOException", e);
     }
     byte[] body = payload.toByteArray();
     int totalLen = 8 + body.length;
@@ -192,7 +196,7 @@ class PostgresSocket extends SSLSocket {
       this.onStartup = onStartup;
     }
 
-    private void inspect(byte[] b, int off, int len) {
+    private synchronized void inspect(byte[] b, int off, int len) {
       if (startupMessageSent || len <= 0) {
         return;
       }
@@ -212,22 +216,7 @@ class PostgresSocket extends SSLSocket {
     }
 
     private void inspect(int b) {
-      if (startupMessageSent) {
-        return;
-      }
-      buf.write(b);
-      byte[] bytes = buf.toByteArray();
-      ParsedStartup parsed = parsePostgresStartupPacket(bytes);
-      if (parsed.complete) {
-        startupMessageSent = true;
-        buf = null;
-        if (parsed.user != null && !parsed.user.isEmpty()) {
-          onStartup.accept(parsed.user, parsed.database);
-        }
-      } else if (bytes.length > MAX_PG_STARTUP_PACKET_LEN + 8) {
-        startupMessageSent = true;
-        buf = null;
-      }
+      inspect(new byte[] {(byte) b}, 0, 1);
     }
 
     @Override

@@ -366,29 +366,6 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     }
   }
 
-  static final int MAX_PG_STARTUP_PACKET_LEN = PostgresSocket.MAX_PG_STARTUP_PACKET_LEN;
-
-  static final class ParsedStartup {
-    final String user;
-    final String database;
-    final boolean complete;
-
-    ParsedStartup(String user, String database, boolean complete) {
-      this.user = user;
-      this.database = database;
-      this.complete = complete;
-    }
-  }
-
-  static ParsedStartup parsePostgresStartupPacket(byte[] buf) {
-    PostgresSocket.ParsedStartup parsed = PostgresSocket.parsePostgresStartupPacket(buf);
-    return new ParsedStartup(parsed.user, parsed.database, parsed.complete);
-  }
-
-  static byte[] buildPostgresStartupPacket(String user, String database) {
-    return PostgresSocket.buildPostgresStartupPacket(user, database);
-  }
-
   private static ConnectionInfo createConnectionInfo(
       CloudSqlInstanceName instanceName,
       AuthType authType,
