@@ -28,8 +28,15 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -318,5 +325,84 @@ public class DefaultConnectionInfoRepositoryTest {
         .containsExactly("dns2.sql-psc.goog", "dns1.sql.goog", "dns3.sql.goog")
         .inOrder();
     assertThat(ipAddrs.size()).isEqualTo(1);
+  }
+
+  @Test
+  public void testGenerateEphemeralCert_sendsAlgorithmAgnosticPkixPublicKeyPem_forRsaKey()
+      throws Exception {
+    MockAdminApi mockAdminApi =
+        buildMockAdminApi(INSTANCE_CONNECTION_NAME, DATABASE_VERSION, DEFAULT_BASE_URL, false);
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    repo.getConnectionInfo(
+            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+            () -> Optional.empty(),
+            AuthType.PASSWORD,
+            newTestExecutor(),
+            Futures.immediateFuture(mockAdminApi.getClientKeyPair()))
+        .get();
+
+    assertThat(mockAdminApi.getCapturedPublicKeys()).hasSize(1);
+    String pem = mockAdminApi.getCapturedPublicKeys().get(0);
+    assertValidPkixPublicKeyPem(pem, "RSA", mockAdminApi.getClientKeyPair().getPublic());
+  }
+
+  @Test
+  public void testGenerateEphemeralCert_sendsAlgorithmAgnosticPkixPublicKeyPem_forEcKey()
+      throws Exception {
+    KeyPairGenerator ecGenerator = KeyPairGenerator.getInstance("EC");
+    ecGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+    KeyPair ecKeyPair = ecGenerator.generateKeyPair();
+
+    MockAdminApi mockAdminApi = new MockAdminApi();
+    mockAdminApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME,
+        SAMPLE_PUBLIC_IP,
+        SAMPLE_PRIVATE_IP,
+        DATABASE_VERSION,
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL,
+        false);
+    mockAdminApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, ecKeyPair.getPublic(), Duration.ofHours(1), DEFAULT_BASE_URL);
+
+    ConnectorConfig config = new ConnectorConfig.Builder().build();
+    ConnectionInfoRepository repo =
+        new StubConnectionInfoRepositoryFactory(mockAdminApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), config);
+
+    ConnectionInfo connectionInfo =
+        repo.getConnectionInfoSync(
+            new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+            () -> Optional.empty(),
+            AuthType.PASSWORD,
+            ecKeyPair);
+    assertThat(connectionInfo.getSslContext()).isInstanceOf(SSLContext.class);
+
+    assertThat(mockAdminApi.getCapturedPublicKeys()).hasSize(1);
+    String pem = mockAdminApi.getCapturedPublicKeys().get(0);
+    assertValidPkixPublicKeyPem(pem, "EC", ecKeyPair.getPublic());
+  }
+
+  private static void assertValidPkixPublicKeyPem(
+      String pem, String algorithm, PublicKey expectedKey) throws GeneralSecurityException {
+    String header = "-----BEGIN PUBLIC KEY-----\n";
+    String footer = "\n-----END PUBLIC KEY-----\n";
+    assertThat(pem).startsWith(header);
+    assertThat(pem).endsWith(footer);
+    assertThat(pem).doesNotContain("RSA PUBLIC KEY");
+
+    String body = pem.substring(header.length(), pem.length() - footer.length());
+    for (String line : body.split("\n", -1)) {
+      assertThat(line.length()).isAtMost(64);
+    }
+
+    byte[] derBytes = Base64.getMimeDecoder().decode(body);
+    PublicKey decoded =
+        KeyFactory.getInstance(algorithm).generatePublic(new X509EncodedKeySpec(derBytes));
+    assertThat(decoded).isEqualTo(expectedKey);
   }
 }
