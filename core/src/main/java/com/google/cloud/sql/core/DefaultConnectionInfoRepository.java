@@ -99,10 +99,10 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
 
   private String generatePublicKeyCert(KeyPair keyPair) {
     // Format the public key into a PEM encoded Certificate.
-    return "-----BEGIN RSA PUBLIC KEY-----\n"
+    return "-----BEGIN PUBLIC KEY-----\n"
         + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
         + "\n"
-        + "-----END RSA PUBLIC KEY-----\n";
+        + "-----END PUBLIC KEY-----\n";
   }
 
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
