@@ -71,7 +71,7 @@ public class InstanceCheckingTrustManagerFactoryTest {
             null);
 
     InstanceCheckingTrustManagerFactory f =
-        InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata);
+        InstanceCheckingTrustManagerFactory.newInstance(instanceMetadata, false);
     InstanceCheckingTrustManger tm = (InstanceCheckingTrustManger) f.getTrustManagers()[0];
 
     if (tc.valid) {

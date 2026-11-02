@@ -16,7 +16,7 @@
 
 package com.google.cloud.sql.core;
 
-import com.google.cloud.sql.TlsProvider;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import com.google.common.annotations.VisibleForTesting;
 import java.security.Provider;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,16 +26,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Resolves a {@link TlsProvider} setting to the JSSE {@link Provider} instance that serves the
- * connector's {@link javax.net.ssl.SSLContext}.
+ * Resolves a {@link SecurityProviderLibrary} setting to the JSSE {@link Provider} instance that
+ * serves the connector's {@link javax.net.ssl.SSLContext}.
  *
  * <p>Conscrypt is used as a connector-owned {@link Provider} instance passed directly to {@code
  * SSLContext.getInstance(protocol, provider)}. The JVM-global {@link java.security.Security}
  * provider list is never consulted or modified.
  */
-final class TlsProviders {
+final class SecurityProviderFactory {
 
-  private static final Logger logger = LoggerFactory.getLogger(TlsProviders.class);
+  private static final Logger logger = LoggerFactory.getLogger(SecurityProviderFactory.class);
 
   static final String TLS_1_3 = "TLSv1.3";
 
@@ -48,18 +48,19 @@ final class TlsProviders {
   private static final AtomicBoolean JRE_PQC_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean CONSCRYPT_ANNOUNCED = new AtomicBoolean();
 
-  private TlsProviders() {}
+  private SecurityProviderFactory() {}
 
   /**
    * Returns the JSSE provider to use for the given setting, or {@code null} for the JRE's default
    * provider.
    *
-   * @throws TerminalException when {@code tlsProvider} is {@link TlsProvider#CONSCRYPT} and
-   *     Conscrypt cannot be loaded on this platform. This fails identically on every attempt, so it
-   *     is not retried.
+   * @throws TerminalException when {@code securityProviderLibrary} is {@link
+   *     SecurityProviderLibrary#CONSCRYPT} and Conscrypt cannot be loaded on this platform. This
+   *     fails identically on every attempt, so it is not retried.
    */
-  static Provider resolve(TlsProvider tlsProvider) {
-    return resolve(tlsProvider, TlsProviders::conscryptProvider, JRE_VERSION);
+  static Provider resolve(SecurityProviderLibrary securityProviderLibrary) {
+    return resolve(
+        securityProviderLibrary, SecurityProviderFactory::conscryptProvider, JRE_VERSION);
   }
 
   /**
@@ -68,22 +69,25 @@ final class TlsProviders {
    */
   @VisibleForTesting
   static Provider resolve(
-      TlsProvider tlsProvider, Supplier<Provider> conscryptSupplier, int jreVersion) {
-    if (tlsProvider == null || tlsProvider == TlsProvider.JDK) {
+      SecurityProviderLibrary securityProviderLibrary,
+      Supplier<Provider> conscryptSupplier,
+      int jreVersion) {
+    if (securityProviderLibrary == null || securityProviderLibrary == SecurityProviderLibrary.JDK) {
       return null;
     }
 
-    if (tlsProvider == TlsProvider.AUTO && jreVersion >= FIRST_PQC_JRE) {
+    if (securityProviderLibrary == SecurityProviderLibrary.AUTO && jreVersion >= FIRST_PQC_JRE) {
       if (JRE_PQC_ANNOUNCED.compareAndSet(false, true)) {
         logger.info(
             "{} is set to {} and this JRE reports Java {}, which negotiates post-quantum key"
                 + " exchange natively (JEP 527). Using the default JSSE provider; Conscrypt is"
-                + " not loaded. Set {} to {} if this runtime does not negotiate ML-KEM.",
+                + " not loaded. Set the {} property to {} if this runtime does not negotiate"
+                + " ML-KEM.",
             ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-            TlsProvider.AUTO,
+            SecurityProviderLibrary.AUTO,
             jreVersion,
             ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-            TlsProvider.CONSCRYPT);
+            SecurityProviderLibrary.CONSCRYPT);
       }
       return null;
     }
@@ -92,26 +96,27 @@ final class TlsProviders {
     if (conscrypt == null
         || conscrypt.getService("SSLContext", TLS_1_3) == null
         || conscrypt.getService("KeyManagerFactory", "PKIX") == null) {
-      if (tlsProvider == TlsProvider.CONSCRYPT) {
+      if (securityProviderLibrary == SecurityProviderLibrary.CONSCRYPT) {
         throw new TerminalException(
             String.format(
-                "%s is set to %s, but Conscrypt is unavailable on this platform. Conscrypt"
-                    + " publishes native libraries for glibc Linux and macOS on x86-64 and"
-                    + " ARM64, and for 64-bit Windows. Set %s to %s or %s to use the JRE"
-                    + " default provider.",
+                "%s is set to %s, but Conscrypt is unavailable on this platform or the"
+                    + " org.conscrypt:conscrypt-openjdk-uber dependency is not on the classpath"
+                    + " (it is optional on JDK 27+; add it explicitly). Conscrypt publishes"
+                    + " native libraries for glibc Linux and macOS on x86-64 and ARM64, and for"
+                    + " 64-bit Windows. Set %s to %s or %s to use the JRE default provider.",
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-                TlsProvider.CONSCRYPT,
+                SecurityProviderLibrary.CONSCRYPT,
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-                TlsProvider.AUTO,
-                TlsProvider.JDK));
+                SecurityProviderLibrary.AUTO,
+                SecurityProviderLibrary.JDK));
       }
       if (AUTO_FALLBACK_ANNOUNCED.compareAndSet(false, true)) {
         logger.info(
-            "{} is set to {}, but Conscrypt is unavailable on this platform. Using the default"
-                + " JSSE provider, so Cloud SQL connections will not use post-quantum key"
-                + " exchange.",
+            "{} is set to {}, but Conscrypt is unavailable on this platform or not on the"
+                + " classpath. Using the default JSSE provider, so Cloud SQL connections will"
+                + " not use post-quantum key exchange.",
             ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-            TlsProvider.AUTO);
+            SecurityProviderLibrary.AUTO);
       }
       return null;
     }
@@ -172,8 +177,11 @@ final class TlsProviders {
         return null;
       }
       return Conscrypt.newProvider();
-    } catch (LinkageError | RuntimeException e) {
-      // Reachable when an application excluded the Conscrypt dependency.
+    } catch (LinkageError e) {
+      // Conscrypt is referenced directly rather than via Class.forName, so when the optional/
+      // excluded Conscrypt jar is absent from the classpath (e.g. on JDK 27+) the JVM throws
+      // NoClassDefFoundError (a LinkageError, not checked ClassNotFoundException). LinkageError
+      // also covers UnsatisfiedLinkError, while Conscrypt.isAvailable() catches Throwable itself.
       logger.debug("Conscrypt could not be loaded: {}", e.toString());
       return null;
     }

@@ -30,7 +30,8 @@ import java.util.function.Supplier;
 public class ConnectorConfig {
   public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
   public static final Duration DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD = Duration.ofSeconds(5);
-  public static final TlsProvider DEFAULT_TLS_PROVIDER = TlsProvider.JDK;
+  public static final SecurityProviderLibrary DEFAULT_SECURITY_PROVIDER_LIBRARY =
+      SecurityProviderLibrary.JDK;
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -55,7 +56,7 @@ public class ConnectorConfig {
   private final String sqlDataEndpoint;
   private final Duration sqlDataStreamTimeout;
   private final Duration resourceExhaustedCooldownPeriod;
-  private final TlsProvider tlsProvider;
+  private final SecurityProviderLibrary securityProviderLibrary;
 
   private ConnectorConfig(
       String targetPrincipal,
@@ -73,7 +74,7 @@ public class ConnectorConfig {
       String sqlDataEndpoint,
       Duration sqlDataStreamTimeout,
       Duration resourceExhaustedCooldownPeriod,
-      TlsProvider tlsProvider) {
+      SecurityProviderLibrary securityProviderLibrary) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -89,7 +90,7 @@ public class ConnectorConfig {
     this.sqlDataEndpoint = sqlDataEndpoint;
     this.sqlDataStreamTimeout = sqlDataStreamTimeout;
     this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
-    this.tlsProvider = tlsProvider;
+    this.securityProviderLibrary = securityProviderLibrary;
   }
 
   @Override
@@ -116,7 +117,7 @@ public class ConnectorConfig {
         && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
         && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout)
         && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod)
-        && Objects.equal(tlsProvider, that.tlsProvider);
+        && Objects.equal(securityProviderLibrary, that.securityProviderLibrary);
   }
 
   @Override
@@ -137,7 +138,7 @@ public class ConnectorConfig {
         sqlDataEndpoint,
         sqlDataStreamTimeout,
         resourceExhaustedCooldownPeriod,
-        tlsProvider);
+        securityProviderLibrary);
   }
 
   public String getTargetPrincipal() {
@@ -201,11 +202,11 @@ public class ConnectorConfig {
   }
 
   /**
-   * Returns the JSSE provider selection the connector uses for TLS connections to Cloud SQL
-   * instances. Defaults to {@link TlsProvider#JDK}.
+   * Returns the JSSE provider library selection the connector uses for TLS connections to Cloud SQL
+   * instances. Defaults to {@link SecurityProviderLibrary#JDK}.
    */
-  public TlsProvider getTlsProvider() {
-    return tlsProvider;
+  public SecurityProviderLibrary getSecurityProviderLibrary() {
+    return securityProviderLibrary;
   }
 
   /** The builder for the ConnectionConfig. */
@@ -227,7 +228,7 @@ public class ConnectorConfig {
     private String sqlDataEndpoint = "sqladmin.googleapis.com";
     private Duration sqlDataStreamTimeout = Duration.ofHours(2);
     private Duration resourceExhaustedCooldownPeriod = DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
-    private TlsProvider tlsProvider = DEFAULT_TLS_PROVIDER;
+    private SecurityProviderLibrary securityProviderLibrary = DEFAULT_SECURITY_PROVIDER_LIBRARY;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -327,11 +328,14 @@ public class ConnectorConfig {
     }
 
     /**
-     * Sets the JSSE provider used for TLS connections to Cloud SQL instances. A null value resets
-     * it to the default, {@link TlsProvider#JDK}.
+     * Sets the JSSE provider library used for TLS connections to Cloud SQL instances. A null value
+     * resets it to the default, {@link SecurityProviderLibrary#JDK}.
      */
-    public Builder withTlsProvider(TlsProvider tlsProvider) {
-      this.tlsProvider = tlsProvider == null ? DEFAULT_TLS_PROVIDER : tlsProvider;
+    public Builder withSecurityProviderLibrary(SecurityProviderLibrary securityProviderLibrary) {
+      this.securityProviderLibrary =
+          securityProviderLibrary == null
+              ? DEFAULT_SECURITY_PROVIDER_LIBRARY
+              : securityProviderLibrary;
       return this;
     }
 
@@ -375,7 +379,7 @@ public class ConnectorConfig {
           sqlDataEndpoint,
           sqlDataStreamTimeout,
           resourceExhaustedCooldownPeriod,
-          tlsProvider);
+          securityProviderLibrary);
     }
   }
 }

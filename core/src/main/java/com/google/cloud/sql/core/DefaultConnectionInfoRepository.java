@@ -27,7 +27,7 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
-import com.google.cloud.sql.TlsProvider;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -72,16 +72,20 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
   private final SQLAdmin apiClient;
-  private final TlsProvider tlsProvider;
+  private final SecurityProviderLibrary securityProviderLibrary;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
-    this(apiClient, ConnectorConfig.DEFAULT_TLS_PROVIDER);
+    this(apiClient, ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY);
   }
 
-  DefaultConnectionInfoRepository(SQLAdmin apiClient, TlsProvider tlsProvider) {
+  DefaultConnectionInfoRepository(
+      SQLAdmin apiClient, SecurityProviderLibrary securityProviderLibrary) {
     this.apiClient = apiClient;
-    this.tlsProvider = tlsProvider == null ? ConnectorConfig.DEFAULT_TLS_PROVIDER : tlsProvider;
+    this.securityProviderLibrary =
+        securityProviderLibrary == null
+            ? ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY
+            : securityProviderLibrary;
   }
 
   private void checkDatabaseCompatibility(
@@ -480,7 +484,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       // Select the JSSE provider for this connector. A null provider means the JRE default. A
       // Conscrypt provider is a connector-scoped instance; the JVM-global provider list is never
       // modified.
-      Provider provider = TlsProviders.resolve(tlsProvider);
+      Provider provider = SecurityProviderFactory.resolve(securityProviderLibrary);
 
       KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       authKeyStore.load(null, null);
