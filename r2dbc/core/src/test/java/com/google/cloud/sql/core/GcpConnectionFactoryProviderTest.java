@@ -16,10 +16,12 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
@@ -72,6 +74,7 @@ public class GcpConnectionFactoryProviderTest {
     options.option(GcpConnectionFactoryProvider.GOOGLE_CREDENTIALS_PATH, "/credentials/path");
     options.option(GcpConnectionFactoryProvider.UNIVERSE_DOMAIN, "domain.google.com");
     options.option(GcpConnectionFactoryProvider.REFRESH_STRATEGY, "lazy");
+    options.option(GcpConnectionFactoryProvider.TLS_PROVIDER, "conscrypt");
 
     StubConnectionFactory factory = configureConnection(options.build());
     ConnectionConfig config = factory.config;
@@ -88,6 +91,52 @@ public class GcpConnectionFactoryProviderTest {
         .isEqualTo("/credentials/path");
     assertThat(config.getConnectorConfig().getUniverseDomain()).isEqualTo("domain.google.com");
     assertThat(config.getConnectorConfig().getRefreshStrategy()).isEqualTo(RefreshStrategy.LAZY);
+    assertThat(config.getConnectorConfig().getSecurityProviderLibrary())
+        .isEqualTo(SecurityProviderLibrary.CONSCRYPT);
+  }
+
+  @Test
+  public void testTlsProviderDefaultsToJdk() {
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+
+    StubConnectionFactory factory = configureConnection(options.build());
+
+    assertThat(factory.config.getConnectorConfig().getSecurityProviderLibrary())
+        .isEqualTo(SecurityProviderLibrary.JDK);
+  }
+
+  @Test
+  public void testTlsProviderAcceptsEnumAndStrings() {
+    for (Object value : new Object[] {SecurityProviderLibrary.AUTO, "AUTO", "auto", " Auto "}) {
+      ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+      options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+      options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+      options.option(GcpConnectionFactoryProvider.TLS_PROVIDER, value);
+
+      StubConnectionFactory factory = configureConnection(options.build());
+
+      assertThat(factory.config.getConnectorConfig().getSecurityProviderLibrary())
+          .isEqualTo(SecurityProviderLibrary.AUTO);
+    }
+    assertThat(GcpConnectionFactoryProvider.parseSecurityProviderLibrary("jdk"))
+        .isEqualTo(SecurityProviderLibrary.JDK);
+    assertThat(GcpConnectionFactoryProvider.parseSecurityProviderLibrary("")).isNull();
+    assertThat(GcpConnectionFactoryProvider.parseSecurityProviderLibrary(null)).isNull();
+  }
+
+  @Test
+  public void testTlsProviderRejectsInvalidValues() {
+    ConnectionFactoryOptions.Builder options = ConnectionFactoryOptions.builder();
+    options.option(ConnectionFactoryOptions.PROTOCOL, "cloudsql");
+    options.option(ConnectionFactoryOptions.HOST, "project:region:instance");
+    options.option(GcpConnectionFactoryProvider.TLS_PROVIDER, "bogus");
+
+    assertThrows(IllegalArgumentException.class, () -> configureConnection(options.build()));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> GcpConnectionFactoryProvider.parseSecurityProviderLibrary(42));
   }
 
   @Test
