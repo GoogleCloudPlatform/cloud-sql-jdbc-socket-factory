@@ -73,7 +73,7 @@ class ConscryptWorkaroundDelegatingTrustManger extends X509ExtendedTrustManager 
    */
   static boolean isWorkaroundNeeded(Provider connectorProvider) {
     if (connectorProvider != null) {
-      return TlsProviders.isConscrypt(connectorProvider);
+      return SecurityProviderFactory.isConscrypt(connectorProvider);
     }
     return GlobalConscryptCheck.CONSCRYPT_TLS;
   }

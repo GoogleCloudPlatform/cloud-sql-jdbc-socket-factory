@@ -35,11 +35,6 @@ class InstanceCheckingTrustManagerFactorySpi extends TrustManagerFactorySpi {
   private final boolean conscryptWorkaround;
 
   InstanceCheckingTrustManagerFactorySpi(
-      InstanceMetadata instanceMetadata, TrustManagerFactory delegate) {
-    this(instanceMetadata, delegate, false);
-  }
-
-  InstanceCheckingTrustManagerFactorySpi(
       InstanceMetadata instanceMetadata,
       TrustManagerFactory delegate,
       boolean conscryptWorkaround) {

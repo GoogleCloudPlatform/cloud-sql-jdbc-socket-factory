@@ -20,7 +20,7 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
-import com.google.cloud.sql.TlsProvider;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import com.google.common.base.Splitter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -131,10 +131,11 @@ public class ConnectionConfig {
 
     final String tlsProviderStr =
         props.getProperty(ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY);
-    TlsProvider tlsProvider = ConnectorConfig.DEFAULT_TLS_PROVIDER;
+    SecurityProviderLibrary securityProviderLibrary =
+        ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY;
     if (tlsProviderStr != null && !tlsProviderStr.trim().isEmpty()) {
       try {
-        tlsProvider = TlsProvider.fromString(tlsProviderStr);
+        securityProviderLibrary = SecurityProviderLibrary.fromString(tlsProviderStr);
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException(
             String.format(
@@ -188,7 +189,7 @@ public class ConnectionConfig {
             .withAdminQuotaProject(adminQuotaProject)
             .withUniverseDomain(universeDomain)
             .withRefreshStrategy(refreshStrategy)
-            .withTlsProvider(tlsProvider);
+            .withSecurityProviderLibrary(securityProviderLibrary);
 
     if (sqlDataEndpoint != null) {
       connectorConfigBuilder.withSqlDataEndpoint(sqlDataEndpoint);

@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import com.google.cloud.sql.ConnectorConfig;
-import com.google.cloud.sql.TlsProvider;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -84,7 +84,8 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     int port = sslServer.start(PUBLIC_IP);
 
     ConnectionConfig config = connectionConfig(null);
-    assertThat(config.getConnectorConfig().getTlsProvider()).isEqualTo(TlsProvider.JDK);
+    assertThat(config.getConnectorConfig().getSecurityProviderLibrary())
+        .isEqualTo(SecurityProviderLibrary.JDK);
 
     SSLSocket socket = connect(config, port);
 
@@ -98,7 +99,7 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     sslServer = new FakeSslServer("TLSv1.3", null, null);
     int port = sslServer.start(PUBLIC_IP);
 
-    SSLSocket socket = connect(connectionConfig(TlsProvider.CONSCRYPT), port);
+    SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.CONSCRYPT), port);
 
     assertThat(Conscrypt.isConscrypt(socket)).isTrue();
     assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.3");
@@ -111,7 +112,7 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     sslServer = new FakeSslServer("TLSv1.2", null, null);
     int port = sslServer.start(PUBLIC_IP);
 
-    SSLSocket socket = connect(connectionConfig(TlsProvider.CONSCRYPT), port);
+    SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.CONSCRYPT), port);
 
     assertThat(Conscrypt.isConscrypt(socket)).isTrue();
     assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.2");
@@ -123,11 +124,12 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     assumeConscryptAvailable();
     assumeTrue(
         "JDK 27+ negotiates ML-KEM natively, so AUTO uses the JRE provider",
-        TlsProviders.parseJreVersion(System.getProperty("java.specification.version")) < 27);
+        SecurityProviderFactory.parseJreVersion(System.getProperty("java.specification.version"))
+            < 27);
     sslServer = new FakeSslServer("TLSv1.3", null, null);
     int port = sslServer.start(PUBLIC_IP);
 
-    SSLSocket socket = connect(connectionConfig(TlsProvider.AUTO), port);
+    SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.AUTO), port);
 
     assertThat(Conscrypt.isConscrypt(socket)).isTrue();
     assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.3");
@@ -145,7 +147,7 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     sslServer = mlkemOnlyServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    SSLSocket socket = connect(connectionConfig(TlsProvider.CONSCRYPT), port);
+    SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.CONSCRYPT), port);
 
     assertThat(Conscrypt.isConscrypt(socket)).isTrue();
     assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.3");
@@ -160,11 +162,13 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
   @Test
   public void jdk_cannotNegotiateWithMlkemOnlyServerBeforeJdk27() throws Exception {
     assumeConscryptAvailable();
-    assumeTrue(TlsProviders.parseJreVersion(System.getProperty("java.specification.version")) < 27);
+    assumeTrue(
+        SecurityProviderFactory.parseJreVersion(System.getProperty("java.specification.version"))
+            < 27);
     sslServer = mlkemOnlyServer();
     int port = sslServer.start(PUBLIC_IP);
 
-    ConnectionConfig config = connectionConfig(TlsProvider.JDK);
+    ConnectionConfig config = connectionConfig(SecurityProviderLibrary.JDK);
     Connector connector = newConnector(config.getConnectorConfig(), port);
     assertThrows(SSLException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
   }
@@ -181,7 +185,9 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
             .withCloudSqlInstance("myProject:myRegion:wrongwrongwrong")
             .withIpTypes("PRIMARY")
             .withConnectorConfig(
-                new ConnectorConfig.Builder().withTlsProvider(TlsProvider.CONSCRYPT).build())
+                new ConnectorConfig.Builder()
+                    .withSecurityProviderLibrary(SecurityProviderLibrary.CONSCRYPT)
+                    .build())
             .build();
     Connector connector = newConnector(config.getConnectorConfig(), port);
 
@@ -193,7 +199,7 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
   @Test
   public void conscrypt_connectionMetadataExposesSslContextProvider() throws Exception {
     assumeConscryptAvailable();
-    ConnectionConfig config = connectionConfig(TlsProvider.CONSCRYPT);
+    ConnectionConfig config = connectionConfig(SecurityProviderLibrary.CONSCRYPT);
     Connector connector = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
 
     ConnectionMetadata metadata = connector.getConnection(config).getConnectionMetadata(10_000L);
@@ -205,7 +211,7 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
 
   @Test
   public void jdk_connectionMetadataExposesJreSslContextProvider() throws Exception {
-    ConnectionConfig config = connectionConfig(TlsProvider.JDK);
+    ConnectionConfig config = connectionConfig(SecurityProviderLibrary.JDK);
     Connector connector = newConnector(config.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
 
     ConnectionMetadata metadata = connector.getConnection(config).getConnectionMetadata(10_000L);
@@ -221,10 +227,11 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     assumeTrue("Conscrypt is not available on this platform", Conscrypt.isAvailable());
   }
 
-  private static ConnectionConfig connectionConfig(TlsProvider tlsProvider) {
+  private static ConnectionConfig connectionConfig(
+      SecurityProviderLibrary securityProviderLibrary) {
     ConnectorConfig.Builder connectorConfig = new ConnectorConfig.Builder();
-    if (tlsProvider != null) {
-      connectorConfig.withTlsProvider(tlsProvider);
+    if (securityProviderLibrary != null) {
+      connectorConfig.withSecurityProviderLibrary(securityProviderLibrary);
     }
     return new ConnectionConfig.Builder()
         .withCloudSqlInstance(INSTANCE)

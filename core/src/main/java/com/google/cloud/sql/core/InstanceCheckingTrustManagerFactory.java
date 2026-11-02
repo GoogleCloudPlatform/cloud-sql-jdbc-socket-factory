@@ -44,11 +44,6 @@ import javax.net.ssl.TrustManagerFactory;
  */
 class InstanceCheckingTrustManagerFactory extends TrustManagerFactory {
 
-  static InstanceCheckingTrustManagerFactory newInstance(InstanceMetadata instanceMetadata)
-      throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException {
-    return newInstance(instanceMetadata, false);
-  }
-
   /**
    * Creates a new InstanceCheckingTrustManagerFactory.
    *

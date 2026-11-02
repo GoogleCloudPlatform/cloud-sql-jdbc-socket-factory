@@ -19,12 +19,12 @@ package com.google.cloud.sql;
 import java.util.Locale;
 
 /**
- * Selects the JSSE provider that the connector uses for the mTLS connection to a Cloud SQL
+ * Selects the JSSE provider library that the connector uses for the mTLS connection to a Cloud SQL
  * instance.
  *
  * <p>JDBC and R2DBC applications choose a value with the {@code cloudSqlTlsProvider} connection
  * property. Applications that configure a connector programmatically use {@link
- * ConnectorConfig.Builder#withTlsProvider(TlsProvider)}.
+ * ConnectorConfig.Builder#withSecurityProviderLibrary(SecurityProviderLibrary)}.
  *
  * <p>The connector never modifies the JVM-wide {@link java.security.Security} provider list. When
  * Conscrypt is selected, the connector uses its own Conscrypt {@link java.security.Provider}
@@ -34,7 +34,7 @@ import java.util.Locale;
  * X25519MLKEM768} by default over TLS 1.3. The JDK's own JSSE provider negotiates it from JDK 27
  * (JEP 527).
  */
-public enum TlsProvider {
+public enum SecurityProviderLibrary {
   /**
    * Always use the JRE's default JSSE provider. This is the default. On JDK 27 and later it
    * negotiates post-quantum key exchange natively; before that it does not.
@@ -61,19 +61,20 @@ public enum TlsProvider {
    * Parses a {@code cloudSqlTlsProvider} property value, case-insensitively.
    *
    * @param value the property value
-   * @return the matching TlsProvider
-   * @throws IllegalArgumentException if the value does not name a TlsProvider
+   * @return the matching SecurityProviderLibrary
+   * @throws IllegalArgumentException if the value does not name a SecurityProviderLibrary
    */
-  public static TlsProvider fromString(String value) {
+  public static SecurityProviderLibrary fromString(String value) {
     if (value == null) {
-      throw new IllegalArgumentException("TLS provider must not be null");
+      throw new IllegalArgumentException("Security provider library must not be null");
     }
     try {
-      return TlsProvider.valueOf(value.trim().toUpperCase(Locale.ROOT));
+      return SecurityProviderLibrary.valueOf(value.trim().toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(
           String.format(
-              "Invalid TLS provider \"%s\". Valid values are JDK, AUTO and CONSCRYPT.", value),
+              "Invalid security provider library \"%s\". Valid values are JDK, AUTO and CONSCRYPT.",
+              value),
           e);
     }
   }

@@ -44,7 +44,8 @@ public class DefaultConnectionInfoRepositoryFactory implements ConnectionInfoRep
   public DefaultConnectionInfoRepository create(
       HttpRequestInitializer requestInitializer, ConnectorConfig config) {
     SQLAdmin adminApiBuilder = getApiBuilder(requestInitializer, config);
-    return new DefaultConnectionInfoRepository(adminApiBuilder, config.getTlsProvider());
+    return new DefaultConnectionInfoRepository(
+        adminApiBuilder, config.getSecurityProviderLibrary());
   }
 
   @Override
