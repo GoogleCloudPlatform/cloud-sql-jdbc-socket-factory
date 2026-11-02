@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,6 +66,7 @@ public class MockAdminApi {
   private final AtomicInteger allConnectSettingsByDnsNameRequestsIndex;
   private final List<GenerateEphemeralCertRequest> generateEphemeralCertRequests;
   private final AtomicInteger generateEphemeralCertRequestsIndex;
+  private final List<String> capturedPublicKeys = Collections.synchronizedList(new ArrayList<>());
 
   public MockAdminApi() throws NoSuchAlgorithmException, InvalidKeySpecException {
     connectSettingsRequests = new ArrayList<>();
@@ -215,10 +217,23 @@ public class MockAdminApi {
   public void addGenerateEphemeralCertResponse(
       String instanceConnectionName, Duration ephemeralCertExpiration, String baseUrl)
       throws GeneralSecurityException, OperatorCreationException {
+    addGenerateEphemeralCertResponse(
+        instanceConnectionName, clientKeyPair.getPublic(), ephemeralCertExpiration, baseUrl);
+  }
+
+  public void addGenerateEphemeralCertResponse(
+      String instanceConnectionName,
+      PublicKey clientPublicKey,
+      Duration ephemeralCertExpiration,
+      String baseUrl)
+      throws GeneralSecurityException, OperatorCreationException {
     CloudSqlInstanceName cloudSqlInstanceName = new CloudSqlInstanceName(instanceConnectionName);
 
     SslCert ephemeralCert =
-        new SslCert().setCert(TestKeys.createEphemeralCert(ephemeralCertExpiration));
+        new SslCert()
+            .setCert(
+                TestKeys.createEphemeralCert(
+                    "temporary-cert", clientPublicKey, ephemeralCertExpiration));
 
     GenerateEphemeralCertResponse generateEphemeralCertResponse =
         new GenerateEphemeralCertResponse().setEphemeralCert(ephemeralCert);
@@ -227,6 +242,10 @@ public class MockAdminApi {
     generateEphemeralCertRequests.add(
         new GenerateEphemeralCertRequest(
             cloudSqlInstanceName, generateEphemeralCertResponse, baseUrl));
+  }
+
+  public List<String> getCapturedPublicKeys() {
+    return Collections.unmodifiableList(new ArrayList<>(capturedPublicKeys));
   }
 
   public HttpTransport getHttpTransport() {
@@ -282,6 +301,13 @@ public class MockAdminApi {
                   generateEphemeralCertRequest.getBaseUrl())) {
                 throw new RuntimeException("Unrecognized request: GET " + url);
               }
+              com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest requestBody =
+                  GsonFactory.getDefaultInstance()
+                      .fromString(
+                          getContentAsString(),
+                          com.google.api.services.sqladmin.model.GenerateEphemeralCertRequest
+                              .class);
+              capturedPublicKeys.add(requestBody.getPublicKey());
               return new MockLowLevelHttpResponse()
                   .setContent(
                       generateEphemeralCertRequest
