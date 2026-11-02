@@ -13,6 +13,10 @@ For usage information specific to your database engine and driver, see the pages
 * [Connecting to Cloud SQL using JDBC](docs/jdbc.md)
 * [Connecting to Cloud SQL using R2DBC](docs/r2dbc.md)
 
+Post-quantum key exchange (`X25519MLKEM768`) is opt-in: it is automatic for
+JDBC on JDK 27 and later, and otherwise enabled with a single connection
+property; see the [Post-Quantum Cryptography Guide](docs/pqc.md).
+
 For examples of this library being used in the context of an application, check out the sample applications located 
 [here](https://github.com/GoogleCloudPlatform/java-docs-samples/tree/master/cloud-sql).
 
