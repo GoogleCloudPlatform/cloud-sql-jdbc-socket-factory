@@ -32,6 +32,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -53,11 +55,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,11 +75,57 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   private static final String USER_PROJECT_HEADER_NAME = "X-Goog-User-Project";
   private static final Logger logger =
       LoggerFactory.getLogger(DefaultConnectionInfoRepository.class);
+  private static final int DEFAULT_SERVER_PROXY_PORT = 3307;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MS = 45000;
   private final SQLAdmin apiClient;
+  private final int serverProxyPort;
   private static final List<Integer> TERMINAL_STATUS_CODES = Arrays.asList(400, 401, 403, 404);
+  private final Map<String, Set<IamPrincipal>> iamPrincipals = new ConcurrentHashMap<>();
+
+  static final class IamPrincipal {
+    final String user;
+    final String database;
+
+    IamPrincipal(String user, String database) {
+      this.user = user;
+      this.database = database != null ? database : "";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof IamPrincipal)) {
+        return false;
+      }
+      IamPrincipal that = (IamPrincipal) o;
+      return Objects.equals(user, that.user) && Objects.equals(database, that.database);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(user, database);
+    }
+  }
 
   DefaultConnectionInfoRepository(SQLAdmin apiClient) {
+    this(apiClient, DEFAULT_SERVER_PROXY_PORT);
+  }
+
+  DefaultConnectionInfoRepository(SQLAdmin apiClient, int serverProxyPort) {
     this.apiClient = apiClient;
+    this.serverProxyPort = serverProxyPort;
+  }
+
+  @Override
+  public void recordIamPrincipal(CloudSqlInstanceName instanceName, String user, String database) {
+    if (user == null || user.isEmpty()) {
+      return;
+    }
+    iamPrincipals
+        .computeIfAbsent(instanceName.getConnectionName(), k -> ConcurrentHashMap.newKeySet())
+        .add(new IamPrincipal(user, database));
   }
 
   private void checkDatabaseCompatibility(
@@ -112,6 +165,22 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       KeyPair keyPair) {
+    return getConnectionInfoSync(
+        instanceName,
+        accessTokenSupplier,
+        authType,
+        keyPair,
+        ConnectionConfig.DEFAULT_IP_TYPE_LIST);
+  }
+
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
+  @Override
+  public ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair,
+      List<IpType> ipTypes) {
     Optional<AccessToken> token = null;
     try {
       token = accessTokenSupplier.get();
@@ -125,8 +194,13 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     SslData sslContext =
         createSslData(keyPair, metadata, ephemeralCertificate, instanceName, authType);
 
-    return createConnectionInfo(
-        instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
+    ConnectionInfo info =
+        createConnectionInfo(
+            instanceName, authType, token, metadata, ephemeralCertificate, sslContext);
+    if (authType == AuthType.IAM) {
+      probeConnection(instanceName, info, ipTypes);
+    }
+    return info;
   }
 
   /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
@@ -137,6 +211,24 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       AuthType authType,
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair) {
+    return getConnectionInfo(
+        instanceName,
+        accessTokenSupplier,
+        authType,
+        executor,
+        keyPair,
+        ConnectionConfig.DEFAULT_IP_TYPE_LIST);
+  }
+
+  /** Internal Use Only: Gets the instance data for the CloudSqlInstance from the API. */
+  @Override
+  public ListenableFuture<ConnectionInfo> getConnectionInfo(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> keyPair,
+      List<IpType> ipTypes) {
 
     ListenableFuture<Optional<AccessToken>> token = executor.submit(accessTokenSupplier::get);
 
@@ -170,19 +262,101 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     ListenableFuture<ConnectionInfo> done =
         Futures.whenAllComplete(metadataFuture, ephemeralCertificateFuture, sslContextFuture)
             .call(
-                () ->
-                    createConnectionInfo(
-                        instanceName,
-                        authType,
-                        Futures.getDone(token),
-                        Futures.getDone(metadataFuture),
-                        Futures.getDone(ephemeralCertificateFuture),
-                        Futures.getDone(sslContextFuture)),
+                () -> {
+                  ConnectionInfo info =
+                      createConnectionInfo(
+                          instanceName,
+                          authType,
+                          Futures.getDone(token),
+                          Futures.getDone(metadataFuture),
+                          Futures.getDone(ephemeralCertificateFuture),
+                          Futures.getDone(sslContextFuture));
+                  if (authType == AuthType.IAM) {
+                    probeConnection(instanceName, info, ipTypes);
+                  }
+                  return info;
+                },
                 executor);
 
     done.addListener(
         () -> logger.debug(String.format("[%s] ALL FUTURES DONE", instanceName)), executor);
     return done;
+  }
+
+  private void probeConnection(
+      CloudSqlInstanceName instanceName, ConnectionInfo info, List<IpType> ipTypes) {
+    List<String> targets = new ArrayList<>();
+    if (instanceName.getDomainName() != null && !instanceName.getDomainName().isEmpty()) {
+      targets.add(instanceName.getDomainName());
+    } else {
+      List<IpType> preferredTypes =
+          (ipTypes != null && !ipTypes.isEmpty()) ? ipTypes : ConnectionConfig.DEFAULT_IP_TYPE_LIST;
+      targets.addAll(info.getPreferredIps(preferredTypes));
+    }
+
+    if (targets.isEmpty()) {
+      logger.debug(
+          "[{}] Proactive IAM token refresh probe skipped: no matching target IP addresses",
+          instanceName);
+      return;
+    }
+
+    Set<IamPrincipal> principals =
+        iamPrincipals.getOrDefault(instanceName.getConnectionName(), Collections.emptySet());
+
+    for (String target : targets) {
+      if (!principals.isEmpty()) {
+        boolean allSucceeded = true;
+        for (IamPrincipal principal : principals) {
+          if (!probeSingleTarget(instanceName, info, target, principal)) {
+            allSucceeded = false;
+            break;
+          }
+        }
+        if (allSucceeded) {
+          return;
+        }
+      } else {
+        if (probeSingleTarget(instanceName, info, target, null)) {
+          return;
+        }
+      }
+    }
+    logger.debug(
+        "[{}] Proactive IAM token refresh probe encountered error across all targets",
+        instanceName);
+  }
+
+  private boolean probeSingleTarget(
+      CloudSqlInstanceName instanceName,
+      ConnectionInfo info,
+      String target,
+      IamPrincipal principal) {
+    try (Socket socket = new Socket()) {
+      logger.debug(
+          "[{}] Probing IAM token refresh on {}:{}", instanceName, target, serverProxyPort);
+      socket.connect(new InetSocketAddress(target, serverProxyPort), DEFAULT_CONNECT_TIMEOUT_MS);
+      socket.setSoTimeout(DEFAULT_CONNECT_TIMEOUT_MS);
+      SSLSocketFactory socketFactory = info.getSslContext().getSocketFactory();
+      try (SSLSocket sslSocket =
+          (SSLSocket) socketFactory.createSocket(socket, target, serverProxyPort, true)) {
+        sslSocket.setUseClientMode(true);
+        sslSocket.startHandshake();
+        if (principal != null && principal.user != null && !principal.user.isEmpty()) {
+          PostgresSocket.sendStartupProbe(sslSocket, principal.user, principal.database);
+        }
+        logger.debug("[{}] Proactive IAM token refresh probe successful", instanceName);
+        return true;
+      }
+    } catch (Exception e) {
+      logger.debug(
+          "[{}] Probing IAM token refresh on {}:{} failed: {}",
+          instanceName,
+          target,
+          serverProxyPort,
+          e.getMessage());
+      return false;
+    }
   }
 
   private static ConnectionInfo createConnectionInfo(

@@ -440,5 +440,8 @@ public class MonitoredCacheTest {
     public ConnectionConfig getConfig() {
       return config;
     }
+
+    @Override
+    public void recordIamPrincipal(String user, String database) {}
   }
 }

@@ -31,11 +31,33 @@ interface ConnectionInfoRepository {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair);
 
+  default ListenableFuture<ConnectionInfo> getConnectionInfo(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> keyPair,
+      java.util.List<com.google.cloud.sql.IpType> ipTypes) {
+    return getConnectionInfo(instanceName, accessTokenSupplier, authType, executor, keyPair);
+  }
+
   ConnectionInfo getConnectionInfoSync(
       CloudSqlInstanceName instanceName,
       AccessTokenSupplier accessTokenSupplier,
       AuthType authType,
       KeyPair keyPair);
+
+  default ConnectionInfo getConnectionInfoSync(
+      CloudSqlInstanceName instanceName,
+      AccessTokenSupplier accessTokenSupplier,
+      AuthType authType,
+      KeyPair keyPair,
+      java.util.List<com.google.cloud.sql.IpType> ipTypes) {
+    return getConnectionInfoSync(instanceName, accessTokenSupplier, authType, keyPair);
+  }
+
+  default void recordIamPrincipal(
+      CloudSqlInstanceName instanceName, String user, String database) {}
 
   String resolveConnectionName(String region, String dnsName);
 }
