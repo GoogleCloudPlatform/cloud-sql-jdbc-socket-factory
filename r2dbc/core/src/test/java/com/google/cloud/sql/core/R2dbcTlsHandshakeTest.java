@@ -128,7 +128,7 @@ public class R2dbcTlsHandshakeTest {
   }
 
   @Test
-  public void optedInJreProvider_keepsNettyDefaultProviderAndNegotiatesTls13() throws Exception {
+  public void optedInJreProvider_negotiatesTls13() throws Exception {
     assumeConscryptAvailable();
     server = new TlsServer(null);
     server.start();
@@ -136,8 +136,8 @@ public class R2dbcTlsHandshakeTest {
     SSLContext clientContext = SSLContext.getInstance("TLSv1.3");
     SslContext sslContext = buildClientContext(clientContext);
 
-    // AUTO resolved to the JRE provider (JDK 27+, or Conscrypt unavailable): the provider is left
-    // to Netty's default selection.
+    // AUTO resolved to the JVM default provider (either because it already advertises
+    // X25519MLKEM768 or because Conscrypt is unavailable): bundled Conscrypt is not used.
     if (sslContext instanceof JdkSslContext) {
       assertThat(((JdkSslContext) sslContext).context().getProvider())
           .isNotInstanceOf(Conscrypt.newProvider().getClass());
@@ -149,9 +149,12 @@ public class R2dbcTlsHandshakeTest {
   }
 
   @Test
-  public void optedInJreProvider_cannotNegotiatePostQuantumGroupBeforeJdk27() throws Exception {
+  public void optedInJreProvider_cannotNegotiatePostQuantumGroupWhenDefaultLacksPqc()
+      throws Exception {
     assumeConscryptAvailable();
-    assumeTrue("JDK 27+ negotiates X25519MLKEM768 natively", javaFeatureVersion() < 27);
+    assumeTrue(
+        "Default TLSv1.3 provider already negotiates X25519MLKEM768",
+        !SecurityProviderFactory.defaultTls13SupportsX25519MlKem768());
     server = new TlsServer(HYBRID_GROUP);
     server.start();
 
@@ -273,9 +276,10 @@ public class R2dbcTlsHandshakeTest {
   @Test
   public void autoMode_fallsBackToJreProviderWhenConscryptIsUnavailable() throws Exception {
     assumeConscryptAvailable();
-    // Simulates musl, an unsupported architecture or a GraalVM native image.
+    // Simulates musl, an unsupported architecture or a GraalVM native image on a runtime whose
+    // default TLSv1.3 provider does not advertise X25519MLKEM768.
     Provider resolved =
-        SecurityProviderFactory.resolve(SecurityProviderLibrary.AUTO, () -> null, 21);
+        SecurityProviderFactory.resolve(SecurityProviderLibrary.AUTO, () -> null, () -> false);
     assertThat(resolved).isNull();
     server = new TlsServer(null);
     server.start();
@@ -327,14 +331,6 @@ public class R2dbcTlsHandshakeTest {
 
   private static void assumeConscryptAvailable() {
     assumeTrue("Conscrypt native library is unavailable", Conscrypt.isAvailable());
-  }
-
-  private static int javaFeatureVersion() {
-    String version = System.getProperty("java.specification.version");
-    if (version.startsWith("1.")) {
-      return Integer.parseInt(version.substring(2));
-    }
-    return Integer.parseInt(version);
   }
 
   /**

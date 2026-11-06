@@ -694,26 +694,28 @@ address based on the provided `socketFactoryConstructorArg` arg.
 ### Post-Quantum Cryptography (PQC)
 
 The Java Connector supports the hybrid post-quantum key exchange group
-`X25519MLKEM768` for its TLS 1.3 connections. Negotiation is automatic on
-JDK 27+ (via [JEP 527](https://openjdk.org/jeps/527)). From Java 8 through
-JDK 26 it takes one step: point the connector at Conscrypt with the
-`cloudSqlTlsProvider` connection property. Maven builds on Java 8 through
-JDK 26 include Conscrypt automatically (it is optional on JDK 27+; Gradle users
-should add `org.conscrypt:conscrypt-openjdk-uber:2.6.2` — see the
+`X25519MLKEM768` for its TLS 1.3 connections. Negotiation is automatic whenever
+the JVM's default TLS 1.3 provider advertises `X25519MLKEM768` (including JDK
+27+ via [JEP 527](https://openjdk.org/jeps/527), JDK 25.0.5+ and other LTS
+backports, or a user-registered `BCJSSE >= 1.81` provider). On other Java 8–26
+runtimes, set the `cloudSqlTlsProvider` connection property to `AUTO` or
+`CONSCRYPT` to use bundled Conscrypt. Maven builds on Java 8 through JDK 26
+include Conscrypt automatically (it is optional on JDK 27+; Gradle users should
+add `org.conscrypt:conscrypt-openjdk-uber:2.6.2` — see the
 [Post-Quantum Cryptography Guide](pqc.md)), and no provider registration is
 needed.
 
 ```java
-config.addDataSourceProperty("cloudSqlTlsProvider", "CONSCRYPT");
+config.addDataSourceProperty("cloudSqlTlsProvider", "AUTO");
 ```
 
 The property accepts:
 
 | Value | Behavior |
 | --- | --- |
-| `JDK` (default) | Always use the JRE's default JSSE provider. |
-| `AUTO` | Use post-quantum key exchange wherever available: the JRE itself on JDK 27+, else Conscrypt where it loads, else silently fall back to the JRE's provider (classical key exchange, logged once at INFO). |
-| `CONSCRYPT` | Require Conscrypt, failing the connection rather than falling back. |
+| `JDK` (default) | Use the JVM's configured `Security.getProviders()` priority chain as-is without loading bundled Conscrypt. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JVM's default TLS 1.3 provider if its `ClientHello` already advertises `X25519MLKEM768`, else connector-scoped Conscrypt where it loads, else silently fall back to the JVM's default provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require connector-scoped Conscrypt, failing the connection rather than falling back. |
 
 The setting is connector-scoped: it is part of the connector configuration, so
 connections that use different values get separate connectors (and refresh

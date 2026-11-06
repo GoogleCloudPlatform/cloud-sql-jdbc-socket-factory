@@ -466,16 +466,19 @@ The Java Connector supports the hybrid post-quantum key exchange group
 Java version: without the `TLS_PROVIDER` option, R2DBC connections keep their
 TLS 1.2-only configuration, which has no post-quantum key exchange. Set
 `TLS_PROVIDER` to `AUTO` or `CONSCRYPT` to use TLS 1.3 (with a TLS 1.2
-fallback) and post-quantum key exchange. On JDK 27+ `AUTO` uses the JRE's own
-support ([JEP 527](https://openjdk.org/jeps/527)); from Java 8 through JDK 26
-it uses Conscrypt (included automatically by Maven on Java 8 through JDK 26 and
+fallback) and post-quantum key exchange. When the JVM's default TLS 1.3
+provider already advertises `X25519MLKEM768` (such as JDK 27+ via
+[JEP 527](https://openjdk.org/jeps/527), JDK 25.0.5+ and other LTS backports,
+or a user-registered `BCJSSE >= 1.81` provider), `AUTO` uses that provider
+directly without loading Conscrypt; otherwise it uses connector-scoped
+Conscrypt (included automatically by Maven on Java 8 through JDK 26 and
 optional on JDK 27+; Gradle users should add
 `org.conscrypt:conscrypt-openjdk-uber:2.6.2` — see the
 [Post-Quantum Cryptography Guide](pqc.md)). No provider registration is needed.
 
 ```java
 ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
-    .option(TLS_PROVIDER, "CONSCRYPT")
+    .option(TLS_PROVIDER, "AUTO")
     // ...more connection options
     .build();
 ```
@@ -483,7 +486,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
 Or in the R2DBC URL:
 
 ```
-r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>?TLS_PROVIDER=CONSCRYPT
+r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>?TLS_PROVIDER=AUTO
 ```
 
 The option accepts:
@@ -491,8 +494,8 @@ The option accepts:
 | Value | Behavior |
 | --- | --- |
 | `JDK` (default) | Unchanged R2DBC TLS configuration: TLS 1.2 only, Netty's default provider. No post-quantum key exchange. |
-| `AUTO` | Use post-quantum key exchange wherever available: the JRE itself on JDK 27+, else Conscrypt where it loads, else silently fall back to the JRE's provider (classical key exchange, logged once at INFO). |
-| `CONSCRYPT` | Require Conscrypt, failing the connection rather than falling back. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JVM's default TLS 1.3 provider if its `ClientHello` already advertises `X25519MLKEM768`, else connector-scoped Conscrypt where it loads, else silently fall back to the JVM's default provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require connector-scoped Conscrypt, failing the connection rather than falling back. |
 
 The setting is connector-scoped: it is part of the connector configuration, so
 connections that use different values get separate connectors (and refresh
