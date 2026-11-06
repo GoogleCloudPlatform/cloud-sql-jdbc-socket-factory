@@ -145,9 +145,8 @@ public class R2dbcConnectorTlsHandshakeTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
-  public void jdk_cannotNegotiatePostQuantumGroupBeforeJdk27() throws Exception {
+  public void jdk_staysTls12AndCannotNegotiatePostQuantumGroup() throws Exception {
     assumeConscryptAvailable();
-    assumeTrue("JDK 27+ negotiates X25519MLKEM768 natively", javaFeatureVersion() < 27);
     sslServer = mlkemOnlyServer();
     int port = sslServer.start(PUBLIC_IP);
 
@@ -259,11 +258,6 @@ public class R2dbcConnectorTlsHandshakeTest extends CloudSqlCoreTestingBase {
 
   private static void assumeConscryptAvailable() {
     assumeTrue("Conscrypt is not available on this platform", Conscrypt.isAvailable());
-  }
-
-  private static int javaFeatureVersion() {
-    String version = System.getProperty("java.specification.version");
-    return Integer.parseInt(version.startsWith("1.") ? version.substring(2) : version);
   }
 
   private static List<String> securityProviderNames() {

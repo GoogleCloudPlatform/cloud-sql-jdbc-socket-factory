@@ -205,9 +205,10 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
    * <p>With {@link SecurityProviderLibrary#AUTO} or {@link SecurityProviderLibrary#CONSCRYPT}, the
    * connector creates the instance's {@link SSLContext} in {@code DefaultConnectionInfoRepository}
    * according to that setting, and this method mirrors it for Netty: TLS 1.3 (with TLS 1.2
-   * fallback), and the same connector-scoped JSSE provider (e.g. Conscrypt, which negotiates the
-   * hybrid post-quantum group X25519MLKEM768) as JDBC connections. The JVM-wide provider list is
-   * never modified.
+   * fallback), and Netty's {@link SslProvider#JDK} bound to the connector's JSSE provider whenever
+   * the connector selected a connector-scoped provider (such as Conscrypt) or the default {@code
+   * TLSv1.3} {@link SSLContext} already advertises {@code X25519MLKEM768}. The JVM-wide provider
+   * list is never modified.
    */
   static SslContextBuilder configureSslContextBuilder(
       SslContextBuilder sslContextBuilder,
@@ -238,13 +239,21 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     sslContextBuilder.protocols(tlsProtocols(sslContext));
 
     Provider provider = connectionMetadata.getSslContextProvider();
-    if (isConnectorScopedProvider(provider)) {
-      // The connector chose a provider instance that is not installed in the JVM (e.g. a
-      // Conscrypt provider selected by cloudSqlTlsProvider=AUTO|CONSCRYPT). Netty can only use a
-      // specific java.security.Provider through its JDK SslProvider, so select it explicitly;
-      // some drivers (e.g. r2dbc-mysql) otherwise default to netty-tcnative when available.
+    if (isConnectorScopedProvider(provider)
+        || SecurityProviderFactory.supportsX25519MlKem768(sslContext)) {
+      // Select Netty's JDK SslProvider with the connector's JSSE provider when:
+      // 1. The connector chose a connector-scoped provider instance (e.g. Conscrypt selected by
+      //    TLS_PROVIDER=AUTO|CONSCRYPT), which is not in Security.getProviders(); or
+      // 2. The connector's default TLSv1.3 SSLContext already advertises X25519MLKEM768 (e.g.
+      //    JDK 27+, JDK 25.0.5+ and other LTS backports, or a user-registered BCJSSE/Conscrypt
+      //    provider), preventing drivers such as r2dbc-mysql that pre-select SslProvider.OPENSSL
+      //    (netty-tcnative) from bypassing the PQC-capable JSSE provider.
       sslContextBuilder.sslProvider(SslProvider.JDK);
-      sslContextBuilder.sslContextProvider(provider);
+      Provider effectiveProvider =
+          provider != null ? provider : (sslContext != null ? sslContext.getProvider() : null);
+      if (effectiveProvider != null) {
+        sslContextBuilder.sslContextProvider(effectiveProvider);
+      }
     }
   }
 
