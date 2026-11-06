@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.IpType;
+import java.security.Provider;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -123,6 +124,21 @@ public class ConnectionMetadata {
 
   public SSLContext getSslContext() {
     return sslContext;
+  }
+
+  /**
+   * Returns the JSSE provider of the SSLContext the connector built for this instance, as selected
+   * by the {@code cloudSqlTlsProvider} setting. Drivers that build their own SSLContext from {@link
+   * #getKeyManagerFactory()} and {@link #getTrustManagerFactory()} should use this provider so that
+   * their connections negotiate the same TLS key exchange groups as the connector's.
+   *
+   * <p>Never null for metadata produced by the connector, which always builds an SSLContext. It is
+   * null only for a ConnectionMetadata constructed directly with a null SSLContext.
+   *
+   * @return the SSLContext provider
+   */
+  public Provider getSslContextProvider() {
+    return sslContext == null ? null : sslContext.getProvider();
   }
 
   public List<String> getMdxProtocolSupport() {

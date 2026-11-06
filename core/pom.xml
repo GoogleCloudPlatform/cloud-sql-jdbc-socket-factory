@@ -118,6 +118,14 @@
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-sql</artifactId>
+      <exclusions>
+        <!-- Managed via the jdk-pre-27 and jdk-27-plus profiles below so that
+             conscrypt-openjdk-uber is not pulled in transitively on JDK 27+. -->
+        <exclusion>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
@@ -284,13 +292,46 @@
     </plugins>
   </build>
   <profiles>
+    <!-- Before JDK 27, SunJSSE does not negotiate hybrid post-quantum key exchange
+         (X25519MLKEM768) out of the box unless backported (e.g. JDK 25.0.5+), so Conscrypt is
+         included as a dependency for applications opting into cloudSqlTlsProvider=AUTO|CONSCRYPT.
+         At runtime, AUTO probes the default TLSv1.3 ClientHello first and skips loading Conscrypt
+         whenever the JVM's default provider already advertises X25519MLKEM768. -->
+    <profile>
+      <id>jdk-pre-27</id>
+      <activation>
+        <jdk>[1.8,27)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+    <!-- On JDK 27+ (JEP 527), the JRE negotiates X25519MLKEM768 natively. Marking Conscrypt
+         optional keeps core compiling and unit-tested while omitting it for downstream Maven
+         consumers unless they declare it explicitly (for cloudSqlTlsProvider=CONSCRYPT). -->
+    <profile>
+      <id>jdk-27-plus</id>
+      <activation>
+        <jdk>[27,)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
     <profile>
       <id>google-conscript</id>
       <dependencies>
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>2.5.2</version>
+          <version>${conscrypt.version}</version>
         </dependency>
         <dependency>
           <groupId>org.bouncycastle</groupId>
