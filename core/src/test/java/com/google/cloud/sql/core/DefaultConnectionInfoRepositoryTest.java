@@ -33,9 +33,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.Test;
@@ -667,6 +672,52 @@ public class DefaultConnectionInfoRepositoryTest {
     assertThat(captured[0]).isEqualTo("int-user@project.iam");
     assertThat(captured[1]).isEqualTo("int-db");
     out.close();
+  }
+
+  @Test
+  public void testPostgresSocket_concurrentWrites() throws Exception {
+    byte[] packet =
+        PostgresSocket.buildPostgresStartupPacket("concurrent-user@project.iam", "concurrent-db");
+    AtomicReference<String> capturedUser = new AtomicReference<>();
+    AtomicReference<String> capturedDb = new AtomicReference<>();
+    StubSslSocket delegate = new StubSslSocket();
+    PostgresSocket socket =
+        new PostgresSocket(
+            delegate,
+            (u, d) -> {
+              capturedUser.set(u);
+              capturedDb.set(d);
+            });
+    java.io.OutputStream out = socket.getOutputStream();
+
+    int threadCount = 10;
+    ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch doneLatch = new CountDownLatch(threadCount);
+    AtomicInteger errorCount = new AtomicInteger();
+
+    for (int i = 0; i < threadCount; i++) {
+      pool.submit(
+          () -> {
+            try {
+              startLatch.await();
+              // Each thread writes the startup packet or subsequent bytes
+              out.write(packet);
+              out.write(new byte[] {'Q', 0, 0, 0, 5, 0});
+            } catch (Exception e) {
+              errorCount.incrementAndGet();
+            } finally {
+              doneLatch.countDown();
+            }
+          });
+    }
+
+    startLatch.countDown();
+    assertThat(doneLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    pool.shutdown();
+    assertThat(errorCount.get()).isEqualTo(0);
+    assertThat(capturedUser.get()).isEqualTo("concurrent-user@project.iam");
+    assertThat(capturedDb.get()).isEqualTo("concurrent-db");
   }
 
   @Test

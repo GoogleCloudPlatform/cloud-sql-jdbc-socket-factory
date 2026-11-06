@@ -183,6 +183,8 @@ class PostgresSocket extends SSLSocket {
       try {
         out.write(buildTerminatePacket());
         out.flush();
+        // Wait for server to close the connection (EOF) or timeout to ensure clean teardown
+        int ignored = in.read(resp);
       } catch (IOException e) {
         // Peer may have already terminated the connection; ignore
       }
@@ -193,14 +195,14 @@ class PostgresSocket extends SSLSocket {
     private final OutputStream delegate;
     private final BiConsumer<String, String> onStartup;
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(128);
-    private boolean startupMessageSent = false;
+    private volatile boolean startupMessageSent = false;
 
     PostgresOutputStream(OutputStream delegate, BiConsumer<String, String> onStartup) {
       this.delegate = delegate;
       this.onStartup = onStartup;
     }
 
-    private void inspect(byte[] b, int off, int len) {
+    private synchronized void inspect(byte[] b, int off, int len) {
       if (startupMessageSent || len <= 0) {
         return;
       }
