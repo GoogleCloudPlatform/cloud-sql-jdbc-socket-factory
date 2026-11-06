@@ -20,6 +20,8 @@ import static com.google.cloud.sql.core.RefreshCalculator.DEFAULT_REFRESH_BUFFER
 
 import com.google.cloud.sql.CredentialFactory;
 import java.security.KeyPair;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implements the lazy refresh cache strategy, which loads the new certificate as needed during a
@@ -28,7 +30,7 @@ import java.security.KeyPair;
 class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
   private final ConnectionConfig config;
   private final CloudSqlInstanceName instanceName;
-  private final ConnectionInfoRepository connectionInfoRepository;
+  private final Set<PostgresSocket.IamPrincipal> iamPrincipals = ConcurrentHashMap.newKeySet();
 
   private final LazyRefreshStrategy refreshStrategy;
 
@@ -45,13 +47,21 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
       ConnectionInfoRepository connectionInfoRepository,
       CredentialFactory tokenSourceFactory,
       KeyPair keyPair) {
+    this(config, connectionInfoRepository, tokenSourceFactory, keyPair, null);
+  }
+
+  LazyRefreshConnectionInfoCache(
+      ConnectionConfig config,
+      ConnectionInfoRepository connectionInfoRepository,
+      CredentialFactory tokenSourceFactory,
+      KeyPair keyPair,
+      PostgresSocket.ProbeDialer probeDialer) {
 
     CloudSqlInstanceName instanceName =
         new CloudSqlInstanceName(config.getCloudSqlInstance(), config.getDomainName());
 
     this.config = config;
     this.instanceName = instanceName;
-    this.connectionInfoRepository = connectionInfoRepository;
 
     AccessTokenSupplier accessTokenSupplier =
         DefaultAccessTokenSupplier.newInstance(config.getAuthType(), tokenSourceFactory);
@@ -59,13 +69,14 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
     this.refreshStrategy =
         new LazyRefreshStrategy(
             config.getCloudSqlInstance(),
-            () ->
-                connectionInfoRepository.getConnectionInfoSync(
-                    instanceName,
-                    accessTokenSupplier,
-                    config.getAuthType(),
-                    keyPair,
-                    config.getIpTypes()),
+            () -> {
+              ConnectionInfo info =
+                  connectionInfoRepository.getConnectionInfoSync(
+                      instanceName, accessTokenSupplier, config.getAuthType(), keyPair);
+              PostgresSocket.probeConnection(
+                  config, instanceName, info, probeDialer, iamPrincipals);
+              return info;
+            },
             DEFAULT_REFRESH_BUFFER);
   }
 
@@ -101,6 +112,9 @@ class LazyRefreshConnectionInfoCache implements ConnectionInfoCache {
 
   @Override
   public void recordIamPrincipal(String user, String database) {
-    connectionInfoRepository.recordIamPrincipal(instanceName, user, database);
+    if (user == null || user.isEmpty()) {
+      return;
+    }
+    iamPrincipals.add(new PostgresSocket.IamPrincipal(user, database));
   }
 }

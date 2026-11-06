@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.AuthType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,25 +27,69 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Wraps an {@link SSLSocket} and handles client-side PostgreSQL database protocol operations.
  * Inspects initial bytes written to {@link #getOutputStream()} to extract the PostgreSQL v3
- * StartupMessage {@code (user, database)} pair for Auto-IAM refresh probes. Once the startup
- * message is processed (or determined not to be a PostgreSQL v3 startup packet), all subsequent
- * writes pass directly through to the underlying stream with zero locking or synchronization
- * overhead.
+ * StartupMessage {@code (user, database)} pair for Auto-IAM refresh probes. Consistent with the
+ * {@link OutputStream} contract, callers are responsible for synchronizing any concurrent writes to
+ * {@link #getOutputStream()}. Once the startup message is processed (or determined not to be a
+ * PostgreSQL v3 startup packet), all subsequent writes pass directly through to the underlying
+ * stream with zero locking or synchronization overhead.
  */
 class PostgresSocket extends SSLSocket {
   static final int MAX_PG_STARTUP_PACKET_LEN = 10000;
   private static final int PG_PROTOCOL_VERSION_30 = 0x00030000;
   private static final int PG_SSL_REQUEST_CODE = 80877103;
   private static final int PG_GSS_ENC_REQUEST_CODE = 80877104;
+  private static final int PROBE_READ_TIMEOUT_MS = 5000;
+  private static final int PROBE_EOF_DRAIN_TIMEOUT_MS = 500;
+  private static final int PROBE_EOF_MAX_DRAIN_READS = 16;
+  private static final Logger logger = LoggerFactory.getLogger(PostgresSocket.class);
+
+  @FunctionalInterface
+  interface ProbeDialer {
+    SSLSocket dial(ConnectionMetadata metadata, int timeoutMs) throws IOException;
+  }
+
+  static final class IamPrincipal {
+    final String user;
+    final String database;
+
+    IamPrincipal(String user, String database) {
+      this.user = user != null ? user : "";
+      this.database = (database == null || database.isEmpty()) ? this.user : database;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof IamPrincipal)) {
+        return false;
+      }
+      IamPrincipal that = (IamPrincipal) o;
+      return Objects.equals(user, that.user) && Objects.equals(database, that.database);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(user, database);
+    }
+  }
 
   private final SSLSocket delegate;
   private final OutputStream out;
@@ -167,12 +212,90 @@ class PostgresSocket extends SSLSocket {
     return new byte[] {'X', 0, 0, 0, 4};
   }
 
-  static void sendStartupProbe(SSLSocket sslSocket, String user, String database)
-      throws IOException {
-    if (user == null || user.isEmpty()) {
+  static void probeConnection(
+      ConnectionConfig config,
+      CloudSqlInstanceName instanceName,
+      ConnectionInfo info,
+      ProbeDialer probeDialer,
+      Set<IamPrincipal> principals) {
+    probeConnection(
+        config,
+        instanceName,
+        info,
+        probeDialer,
+        principals,
+        Math.toIntExact(InternalConnectorRegistry.DEFAULT_CONNECT_TIMEOUT_MS));
+  }
+
+  static void probeConnection(
+      ConnectionConfig config,
+      CloudSqlInstanceName instanceName,
+      ConnectionInfo info,
+      ProbeDialer probeDialer,
+      Set<IamPrincipal> principals,
+      int probeTimeoutMs) {
+    if (probeDialer == null
+        || info == null
+        || config.getAuthType() != AuthType.IAM
+        || !info.isPostgres()
+        || principals == null
+        || principals.isEmpty()
+        || probeTimeoutMs <= 0) {
       return;
     }
-    sslSocket.setSoTimeout(5000);
+    try {
+      final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(probeTimeoutMs);
+      ConnectionMetadata metadata = info.toConnectionMetadata(config, instanceName);
+      List<IamPrincipal> snapshot = new ArrayList<>(principals);
+      for (IamPrincipal principal : snapshot) {
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0) {
+          break;
+        }
+        int dialTimeoutMs =
+            (int)
+                Math.min(
+                    Integer.MAX_VALUE, Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+        try (SSLSocket sslSocket = probeDialer.dial(metadata, dialTimeoutMs)) {
+          long postDialRemainingNanos = deadlineNanos - System.nanoTime();
+          if (postDialRemainingNanos <= 0) {
+            break;
+          }
+          int readBudgetMs =
+              (int)
+                  Math.min(
+                      Integer.MAX_VALUE,
+                      Math.max(1L, TimeUnit.NANOSECONDS.toMillis(postDialRemainingNanos)));
+          sendStartupProbe(sslSocket, principal.user, principal.database, readBudgetMs);
+        } catch (IOException e) {
+          logger.debug(
+              String.format(
+                  "[%s] Failed to send proactive IAM startup probe for user [%s]",
+                  instanceName.getConnectionName(), principal.user),
+              e);
+        }
+      }
+    } catch (RuntimeException e) {
+      logger.debug(
+          String.format(
+              "[%s] Failed to prepare proactive IAM refresh probe",
+              instanceName.getConnectionName()),
+          e);
+    }
+  }
+
+  static void sendStartupProbe(SSLSocket sslSocket, String user, String database)
+      throws IOException {
+    sendStartupProbe(sslSocket, user, database, PROBE_READ_TIMEOUT_MS);
+  }
+
+  static void sendStartupProbe(SSLSocket sslSocket, String user, String database, int maxTimeoutMs)
+      throws IOException {
+    if (user == null || user.isEmpty() || maxTimeoutMs <= 0) {
+      return;
+    }
+    final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(maxTimeoutMs);
+    sslSocket.setSoTimeout(Math.min(PROBE_READ_TIMEOUT_MS, maxTimeoutMs));
     OutputStream out = sslSocket.getOutputStream();
     InputStream in = sslSocket.getInputStream();
     out.write(buildPostgresStartupPacket(user, database));
@@ -183,8 +306,34 @@ class PostgresSocket extends SSLSocket {
       try {
         out.write(buildTerminatePacket());
         out.flush();
+        // Drain server response until EOF or a brief wall-clock timeout to ensure clean teardown
+        long remainingAfterReadNanos = deadlineNanos - System.nanoTime();
+        if (remainingAfterReadNanos <= 0) {
+          return;
+        }
+        long drainBudgetNanos =
+            Math.min(
+                TimeUnit.MILLISECONDS.toNanos(PROBE_EOF_DRAIN_TIMEOUT_MS), remainingAfterReadNanos);
+        long drainDeadlineNanos = System.nanoTime() + drainBudgetNanos;
+        int drainReads = 0;
+        while (drainReads < PROBE_EOF_MAX_DRAIN_READS) {
+          long remDrainNanos = drainDeadlineNanos - System.nanoTime();
+          if (remDrainNanos <= 0) {
+            break;
+          }
+          int remDrainMs =
+              (int)
+                  Math.min(
+                      Integer.MAX_VALUE,
+                      Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remDrainNanos)));
+          sslSocket.setSoTimeout(remDrainMs);
+          if (in.read(resp) == -1) {
+            break;
+          }
+          drainReads++;
+        }
       } catch (IOException e) {
-        // Peer may have already terminated the connection; ignore
+        // Peer may have already terminated the connection or drain timed out; ignore
       }
     }
   }
@@ -213,7 +362,7 @@ class PostgresSocket extends SSLSocket {
         if (parsed.user != null && !parsed.user.isEmpty()) {
           onStartup.accept(parsed.user, parsed.database);
         }
-      } else if (bytes.length > MAX_PG_STARTUP_PACKET_LEN + 8) {
+      } else if (bytes.length > MAX_PG_STARTUP_PACKET_LEN + 16) {
         startupMessageSent = true;
         buf = null;
       }
@@ -229,8 +378,8 @@ class PostgresSocket extends SSLSocket {
         delegate.write(b);
         return;
       }
-      inspect(b);
       delegate.write(b);
+      inspect(b);
     }
 
     @Override
@@ -239,8 +388,8 @@ class PostgresSocket extends SSLSocket {
         delegate.write(b);
         return;
       }
-      inspect(b, 0, b.length);
       delegate.write(b);
+      inspect(b, 0, b.length);
     }
 
     @Override
@@ -249,8 +398,8 @@ class PostgresSocket extends SSLSocket {
         delegate.write(b, off, len);
         return;
       }
-      inspect(b, off, len);
       delegate.write(b, off, len);
+      inspect(b, off, len);
     }
 
     @Override
@@ -260,7 +409,12 @@ class PostgresSocket extends SSLSocket {
 
     @Override
     public void close() throws IOException {
-      delegate.close();
+      try {
+        delegate.close();
+      } finally {
+        startupMessageSent = true;
+        buf = null;
+      }
     }
   }
 

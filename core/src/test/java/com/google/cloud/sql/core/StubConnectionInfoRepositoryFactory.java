@@ -29,15 +29,9 @@ public class StubConnectionInfoRepositoryFactory implements ConnectionInfoReposi
 
   HttpTransport httpTransport;
   ConnectionInfoRepository connectionInfoRepository;
-  int serverProxyPort = 3307;
 
   StubConnectionInfoRepositoryFactory(HttpTransport transport) {
     this.httpTransport = transport;
-  }
-
-  StubConnectionInfoRepositoryFactory(HttpTransport transport, int serverProxyPort) {
-    this.httpTransport = transport;
-    this.serverProxyPort = serverProxyPort;
   }
 
   StubConnectionInfoRepositoryFactory(ConnectionInfoRepository connectionInfoRepository) {
@@ -71,7 +65,7 @@ public class StubConnectionInfoRepositoryFactory implements ConnectionInfoReposi
               .build();
       adminApiBuilder.setGoogleClientRequestInitializer(clientRequestInitializer);
     }
-    return new DefaultConnectionInfoRepository(adminApiBuilder.build(), serverProxyPort);
+    return new DefaultConnectionInfoRepository(adminApiBuilder.build());
   }
 
   @Override

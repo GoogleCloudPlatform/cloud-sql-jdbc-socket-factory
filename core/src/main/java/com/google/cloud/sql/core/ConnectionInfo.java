@@ -51,6 +51,15 @@ class ConnectionInfo {
     return instanceMetadata.getIpAddrs();
   }
 
+  String getDatabaseVersion() {
+    return instanceMetadata.getDatabaseVersion();
+  }
+
+  boolean isPostgres() {
+    String dbVersion = getDatabaseVersion();
+    return dbVersion != null && dbVersion.startsWith("POSTGRES");
+  }
+
   SslData getSslData() {
     return sslData;
   }
@@ -96,6 +105,7 @@ class ConnectionInfo {
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),
-        instanceMetadata.getMdxProtocolSupport());
+        instanceMetadata.getMdxProtocolSupport(),
+        instanceMetadata.getDatabaseVersion());
   }
 }

@@ -31,6 +31,7 @@ class InstanceMetadata {
   private final String dnsName;
   private final boolean pscEnabled;
   private final List<String> mdxProtocolSupport;
+  private final String databaseVersion;
 
   InstanceMetadata(
       CloudSqlInstanceName instanceName,
@@ -40,6 +41,26 @@ class InstanceMetadata {
       String dnsName,
       boolean pscEnabled,
       List<String> mdxProtocolSupport) {
+    this(
+        instanceName,
+        ipAddrs,
+        instanceCaCertificates,
+        casManagedCertificate,
+        dnsName,
+        pscEnabled,
+        mdxProtocolSupport,
+        "");
+  }
+
+  InstanceMetadata(
+      CloudSqlInstanceName instanceName,
+      Map<IpType, List<String>> ipAddrs,
+      List<Certificate> instanceCaCertificates,
+      boolean casManagedCertificate,
+      String dnsName,
+      boolean pscEnabled,
+      List<String> mdxProtocolSupport,
+      String databaseVersion) {
     this.instanceName = instanceName;
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificates = instanceCaCertificates;
@@ -47,6 +68,7 @@ class InstanceMetadata {
     this.dnsName = dnsName;
     this.pscEnabled = pscEnabled;
     this.mdxProtocolSupport = mdxProtocolSupport;
+    this.databaseVersion = databaseVersion;
   }
 
   Map<IpType, List<String>> getIpAddrs() {
@@ -75,5 +97,9 @@ class InstanceMetadata {
 
   public List<String> getMdxProtocolSupport() {
     return mdxProtocolSupport;
+  }
+
+  public String getDatabaseVersion() {
+    return databaseVersion;
   }
 }
