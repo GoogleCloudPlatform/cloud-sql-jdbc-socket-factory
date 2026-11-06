@@ -292,9 +292,11 @@
     </plugins>
   </build>
   <profiles>
-    <!-- Before JDK 27, the JRE's SunJSSE provider does not negotiate hybrid post-quantum key
-         exchange (X25519MLKEM768), so Conscrypt is included as a required dependency for
-         applications opting into cloudSqlTlsProvider=AUTO|CONSCRYPT. -->
+    <!-- Before JDK 27, SunJSSE does not negotiate hybrid post-quantum key exchange
+         (X25519MLKEM768) out of the box unless backported (e.g. JDK 25.0.5+), so Conscrypt is
+         included as a dependency for applications opting into cloudSqlTlsProvider=AUTO|CONSCRYPT.
+         At runtime, AUTO probes the default TLSv1.3 ClientHello first and skips loading Conscrypt
+         whenever the JVM's default provider already advertises X25519MLKEM768. -->
     <profile>
       <id>jdk-pre-27</id>
       <activation>

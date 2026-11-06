@@ -22,38 +22,55 @@ import java.util.Locale;
  * Selects the JSSE provider library that the connector uses for the mTLS connection to a Cloud SQL
  * instance.
  *
- * <p>JDBC and R2DBC applications choose a value with the {@code cloudSqlTlsProvider} connection
- * property. Applications that configure a connector programmatically use {@link
+ * <p>JDBC applications choose a value with the {@code cloudSqlTlsProvider} connection property, and
+ * R2DBC applications use the {@code TLS_PROVIDER} option. Applications that configure a connector
+ * programmatically use {@link
  * ConnectorConfig.Builder#withSecurityProviderLibrary(SecurityProviderLibrary)}.
  *
  * <p>The connector never modifies the JVM-wide {@link java.security.Security} provider list. When
- * Conscrypt is selected, the connector uses its own Conscrypt {@link java.security.Provider}
- * instance for its {@link javax.net.ssl.SSLContext} only.
+ * bundled Conscrypt is selected, the connector uses its own connector-scoped Conscrypt {@link
+ * java.security.Provider} instance for its {@link javax.net.ssl.SSLContext} only.
  *
- * <p>Conscrypt 2.6.0 and later negotiate the hybrid post-quantum key exchange group {@code
- * X25519MLKEM768} by default over TLS 1.3. The JDK's own JSSE provider negotiates it from JDK 27
- * (JEP 527).
+ * <p>Hybrid post-quantum TLS 1.3 key exchange ({@code X25519MLKEM768}) is negotiated by default by
+ * Conscrypt 2.6.0+, by the JDK's built-in {@code SunJSSE} provider on JDK 27+ (JEP 527) as well as
+ * JDK LTS releases that backport JEP 527 (such as JDK 25.0.5+), and by user-registered JSSE
+ * providers such as BouncyCastle {@code BCJSSE} 1.81+.
  */
 public enum SecurityProviderLibrary {
   /**
-   * Always use the JRE's default JSSE provider. This is the default. On JDK 27 and later it
-   * negotiates post-quantum key exchange natively; before that it does not.
+   * Use the JVM's configured {@link java.security.Security#getProviders()} priority chain as-is
+   * ({@code SSLContext.getInstance("TLSv1.3")}) without loading bundled Conscrypt. This is the
+   * default.
+   *
+   * <p>Despite the {@code JDK} name, this mode does not force {@code SunJSSE}: it honors any higher
+   * priority JSSE provider registered by the application (such as BouncyCastle {@code BCJSSE} or a
+   * FIPS provider). For JDBC connections, it negotiates {@code X25519MLKEM768} natively whenever
+   * the JVM's default TLS 1.3 provider supports it (for example JDK 27+, JDK 25.0.5+, or LTS
+   * backports).
    */
   JDK,
 
   /**
-   * Get post-quantum key exchange wherever it is available.
+   * Negotiate post-quantum key exchange ({@code X25519MLKEM768}) wherever it is available.
    *
-   * <p>On JDK 27 and later this is the JRE's own provider. On earlier JREs it is Conscrypt, where
-   * its native library loads. Where Conscrypt cannot load (for example musl libc, an unsupported
-   * CPU architecture, or a GraalVM native image) the connector silently falls back to the JRE's
-   * default provider with a classical handshake, and logs that once.
+   * <p>The connector first inspects an in-memory TLS 1.3 {@code ClientHello} from the JVM's default
+   * {@code TLSv1.3} {@link javax.net.ssl.SSLContext} for {@code X25519MLKEM768} ({@code 0x11ec}) in
+   * the {@code supported_groups} extension ({@code 0x000a}). When the default provider already
+   * advertises {@code X25519MLKEM768} (covering JDK 27+, JDK 25.0.5+ and other LTS backports,
+   * user-registered {@code BCJSSE >= 1.81}, and globally installed Conscrypt), the connector uses
+   * the JVM's default provider directly without loading bundled Conscrypt.
+   *
+   * <p>Otherwise, the connector uses a connector-scoped Conscrypt provider where its native library
+   * loads. Where Conscrypt cannot load (for example musl libc, an unsupported CPU architecture, a
+   * GraalVM native image, or an omitted optional dependency), the connector silently falls back to
+   * the JVM's default provider with a classical handshake and logs that once at {@code INFO}.
    */
   AUTO,
 
   /**
-   * Require Conscrypt on every JRE. Connections fail rather than falling back to the JRE default
-   * when Conscrypt's native library cannot be loaded on this platform.
+   * Require connector-scoped Conscrypt on every runtime. Connections fail with a non-retryable
+   * error rather than falling back to the JVM default when Conscrypt's native library cannot be
+   * loaded on this platform.
    */
   CONSCRYPT;
 
