@@ -81,8 +81,9 @@
     <errorprone.version>2.50.0</errorprone.version>
     <!-- Conscrypt negotiates the hybrid post-quantum TLS 1.3 key exchange group
          X25519MLKEM768 by default from 2.6.0; 2.6.2+ keeps the glibc floor at GLIBC_2.14.
-         Used for cloudSqlTlsProvider (see SecurityProviderLibrary): required before JDK 27
-         and optional on JDK 27+ (where the JRE negotiates ML-KEM natively via JEP 527). -->
+         Used for cloudSqlTlsProvider (see SecurityProviderLibrary): included via Maven profile
+         before JDK 27 and optional on JDK 27+ (where SunJSSE negotiates ML-KEM natively via
+         JEP 527; AUTO also detects LTS backports and user-registered PQC providers at runtime). -->
     <conscrypt.version>2.6.2</conscrypt.version>
   </properties>
 

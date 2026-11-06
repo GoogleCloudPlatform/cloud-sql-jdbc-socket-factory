@@ -120,18 +120,17 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
   }
 
   @Test
-  public void auto_usesConscryptBeforeJdk27() throws Exception {
+  public void auto_negotiatesX25519Mlkem768AndSelectsExpectedProvider() throws Exception {
     assumeConscryptAvailable();
-    assumeTrue(
-        "JDK 27+ negotiates ML-KEM natively, so AUTO uses the JRE provider",
-        SecurityProviderFactory.parseJreVersion(System.getProperty("java.specification.version"))
-            < 27);
-    sslServer = new FakeSslServer("TLSv1.3", null, null);
+    boolean defaultSupportsPqc = SecurityProviderFactory.defaultTls13SupportsX25519MlKem768();
+    sslServer = mlkemOnlyServer();
     int port = sslServer.start(PUBLIC_IP);
 
     SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.AUTO), port);
 
-    assertThat(Conscrypt.isConscrypt(socket)).isTrue();
+    // When the JVM's default TLSv1.3 provider already advertises X25519MLKEM768 (e.g. JDK 27+,
+    // JDK 25.0.5+), AUTO uses it directly; otherwise AUTO uses connector-scoped Conscrypt.
+    assertThat(Conscrypt.isConscrypt(socket)).isEqualTo(!defaultSupportsPqc);
     assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.3");
     assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
@@ -155,22 +154,38 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
   }
 
   /**
-   * Control for {@link #conscrypt_negotiatesX25519Mlkem768()}: a JRE without ML-KEM support cannot
-   * complete a handshake with the X25519MLKEM768-only server, which shows that the server's group
-   * restriction is effective.
+   * Control for {@link #conscrypt_negotiatesX25519Mlkem768()}: a JRE whose default TLS 1.3 provider
+   * lacks ML-KEM support cannot complete a handshake with the X25519MLKEM768-only server, which
+   * shows that the server's group restriction is effective.
    */
   @Test
-  public void jdk_cannotNegotiateWithMlkemOnlyServerBeforeJdk27() throws Exception {
+  public void jdk_cannotNegotiateWithMlkemOnlyServerWhenDefaultLacksPqc() throws Exception {
     assumeConscryptAvailable();
     assumeTrue(
-        SecurityProviderFactory.parseJreVersion(System.getProperty("java.specification.version"))
-            < 27);
+        "Default TLSv1.3 provider already supports X25519MLKEM768 on this runtime",
+        !SecurityProviderFactory.defaultTls13SupportsX25519MlKem768());
     sslServer = mlkemOnlyServer();
     int port = sslServer.start(PUBLIC_IP);
 
     ConnectionConfig config = connectionConfig(SecurityProviderLibrary.JDK);
     Connector connector = newConnector(config.getConnectorConfig(), port);
     assertThrows(SSLException.class, () -> connector.connect(config, TEST_MAX_REFRESH_MS));
+  }
+
+  @Test
+  public void jdk_negotiatesX25519Mlkem768WhenDefaultSupportsPqc() throws Exception {
+    assumeConscryptAvailable();
+    assumeTrue(
+        "Default TLSv1.3 provider does not support X25519MLKEM768 on this runtime",
+        SecurityProviderFactory.defaultTls13SupportsX25519MlKem768());
+    sslServer = mlkemOnlyServer();
+    int port = sslServer.start(PUBLIC_IP);
+
+    SSLSocket socket = connect(connectionConfig(SecurityProviderLibrary.JDK), port);
+
+    assertThat(Conscrypt.isConscrypt(socket)).isFalse();
+    assertThat(socket.getSession().getProtocol()).isEqualTo("TLSv1.3");
+    assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
   }
 
   /** Instance name verification still applies when Conscrypt serves the connection. */
