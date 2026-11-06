@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.30.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.1...v1.30.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* update deps to the latest ([#2318](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2318)) ([c86e415](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c86e4157f9d2a9befe0b1ea32dad07858f7a84c1))
+
+## [1.30.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.0...v1.30.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* update deps to the latest ([#2314](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2314)) ([e7ad580](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e7ad5804fdb0713704602a9cbf335ff0a1d1616b))
+
+
+### Dependencies
+
+* update Bouncy Castle and Kokoro python dependencies ([#2308](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2308)) ([ff71503](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ff7150327f38589381a508302629d746164ceef5))
+
 ## [1.30.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.29.0...v1.30.0) (2026-08-24)
 
 
