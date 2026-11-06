@@ -289,16 +289,9 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
     if (instanceName.getDomainName() != null && !instanceName.getDomainName().isEmpty()) {
       targets.add(instanceName.getDomainName());
     } else {
-      Map<IpType, List<String>> ipAddrs = info.getIpAddrs();
       List<IpType> preferredTypes =
           (ipTypes != null && !ipTypes.isEmpty()) ? ipTypes : ConnectionConfig.DEFAULT_IP_TYPE_LIST;
-      for (IpType ipType : preferredTypes) {
-        List<String> ips = ipAddrs.get(ipType);
-        if (ips != null && !ips.isEmpty()) {
-          targets.addAll(ips);
-          break;
-        }
-      }
+      targets.addAll(info.getPreferredIps(preferredTypes));
     }
 
     if (targets.isEmpty()) {

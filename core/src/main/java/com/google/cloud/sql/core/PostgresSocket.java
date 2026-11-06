@@ -67,11 +67,12 @@ class PostgresSocket extends SSLSocket {
   }
 
   static ParsedStartup parsePostgresStartupPacket(byte[] buf) {
+    // Step 1: Wait for at least 8 bytes (4-byte packet length + 4-byte protocol/request code).
     if (buf == null || buf.length < 8) {
       return new ParsedStartup("", "", false);
     }
     int offset = 0;
-    // Skip GSSENCRequest (80877104) or SSLRequest (80877103) packets if prepended.
+    // Step 2: Skip GSSENCRequest (80877104) or SSLRequest (80877103) packets if prepended.
     // Clients like libpq / pgx may send GSSENCRequest followed by SSLRequest before StartupMessage.
     while (buf.length >= offset + 8) {
       int len = ByteBuffer.wrap(buf, offset, 4).getInt();
@@ -87,12 +88,15 @@ class PostgresSocket extends SSLSocket {
     }
     int pktLen = ByteBuffer.wrap(buf, offset, 4).getInt();
     int protoVer = ByteBuffer.wrap(buf, offset + 4, 4).getInt();
+    // Step 3: Validate protocol version (v3.0) and packet length bounds.
     if (protoVer != PG_PROTOCOL_VERSION_30 || pktLen < 8 || pktLen > MAX_PG_STARTUP_PACKET_LEN) {
       return new ParsedStartup("", "", true);
     }
+    // Step 4: Wait until the complete packet body has arrived.
     if (buf.length < offset + pktLen) {
       return new ParsedStartup("", "", false);
     }
+    // Step 5: Decode null-terminated key-value pairs (user, database) from the StartupMessage.
     int pos = offset + 8;
     int end = offset + pktLen;
     String user = "";
@@ -189,14 +193,14 @@ class PostgresSocket extends SSLSocket {
     private final OutputStream delegate;
     private final BiConsumer<String, String> onStartup;
     private ByteArrayOutputStream buf = new ByteArrayOutputStream(128);
-    private volatile boolean startupMessageSent = false;
+    private boolean startupMessageSent = false;
 
     PostgresOutputStream(OutputStream delegate, BiConsumer<String, String> onStartup) {
       this.delegate = delegate;
       this.onStartup = onStartup;
     }
 
-    private synchronized void inspect(byte[] b, int off, int len) {
+    private void inspect(byte[] b, int off, int len) {
       if (startupMessageSent || len <= 0) {
         return;
       }
