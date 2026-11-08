@@ -25,6 +25,7 @@ import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.cloud.sql.SecurityProviderLibrary;
+import com.google.common.annotations.VisibleForTesting;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.r2dbc.spi.ConnectionFactory;
@@ -181,17 +182,23 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
         sslContextBuilder -> {
           // Execute in a default scheduler to prevent it from blocking event loop
           ConnectionMetadata connectionMetadata =
-              Mono.fromSupplier(
-                      () -> InternalConnectorRegistry.getInstance().getConnectionMetadata(config))
+              Mono.fromSupplier(() -> getConnectorRegistry().getConnectionMetadata(config))
                   .subscribeOn(Schedulers.boundedElastic())
                   .share()
                   .block();
+          SecurityProviderLibrary effectiveSecurityProviderLibrary =
+              connectionMetadata.getSecurityProviderLibrary() != null
+                  ? connectionMetadata.getSecurityProviderLibrary()
+                  : config.getConnectorConfig().getSecurityProviderLibrary();
           return configureSslContextBuilder(
-              sslContextBuilder,
-              connectionMetadata,
-              config.getConnectorConfig().getSecurityProviderLibrary());
+              sslContextBuilder, connectionMetadata, effectiveSecurityProviderLibrary);
         };
     return tcpSocketConnectionFactory(config, optionBuilder, sslFunction);
+  }
+
+  @VisibleForTesting
+  InternalConnectorRegistry getConnectorRegistry() {
+    return InternalConnectorRegistry.getInstance();
   }
 
   /**
@@ -239,8 +246,7 @@ public abstract class GcpConnectionFactoryProvider implements ConnectionFactoryP
     sslContextBuilder.protocols(tlsProtocols(sslContext));
 
     Provider provider = connectionMetadata.getSslContextProvider();
-    if (isConnectorScopedProvider(provider)
-        || SecurityProviderFactory.supportsX25519MlKem768(sslContext)) {
+    if (isConnectorScopedProvider(provider) || connectionMetadata.isSslContextSupportsPqc()) {
       // Select Netty's JDK SslProvider with the connector's JSSE provider when:
       // 1. The connector chose a connector-scoped provider instance (e.g. Conscrypt selected by
       //    TLS_PROVIDER=AUTO|CONSCRYPT), which is not in Security.getProviders(); or

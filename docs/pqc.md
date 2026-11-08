@@ -51,7 +51,8 @@ bundled Conscrypt.
 > TLS 1.3 and post-quantum key exchange. When the JVM's default TLS 1.3 provider
 > already advertises `X25519MLKEM768`, `AUTO` uses that provider via Netty's
 > `SslProvider.JDK` (preventing drivers such as `r2dbc-mysql` from diverting
-> onto a non-PQC `netty-tcnative` provider) without loading bundled Conscrypt.
+> onto `netty-tcnative` (bypassing the connector's JSSE provider)) without
+> loading bundled Conscrypt.
 
 On JDK 27 and later, Maven marks `org.conscrypt:conscrypt-openjdk-uber` as an
 optional dependency (`jdk-27-plus` profile, `[27,)`), so Conscrypt is **not**
@@ -125,7 +126,7 @@ ConnectorConfig config = new ConnectorConfig.Builder()
 | Value | Behavior |
 | --- | --- |
 | `JDK` (default) | Use the JVM's configured `Security.getProviders()` priority chain as-is (`SSLContext.getInstance("TLSv1.3")` for JDBC; historical TLS 1.2 + Netty default provider for R2DBC) without loading bundled Conscrypt. Honors user-registered providers such as `BCJSSE` or FIPS providers, and negotiates `X25519MLKEM768` for JDBC whenever the JVM's default TLS 1.3 provider supports it. |
-| `AUTO` | Inspect an in-memory TLS 1.3 `ClientHello` from the JVM's default `SSLContext` for `X25519MLKEM768` (`0x11ec`) in `supported_groups` (`0x000a`). If advertised (JDK 27+, JDK 25.0.5+ and LTS backports, user-registered `BCJSSE >= 1.81`, or global Conscrypt), use the JVM's default provider without loading bundled Conscrypt; else use connector-scoped Conscrypt where its native library loads; else **silently** fall back to the JVM's default provider with a classical handshake (logged once at `INFO`). |
+| `AUTO` | Inspect an in-memory TLS 1.3 `ClientHello` from the JVM's default `SSLContext` for `X25519MLKEM768` (`0x11ec`) in `supported_groups` (`0x000a`). If advertised (JDK 27+, JDK 25.0.5+ and LTS backports, user-registered `BCJSSE >= 1.81`, or global Conscrypt), use the JVM's default provider without loading bundled Conscrypt; else if `jdk.tls.namedGroups` excludes `X25519MLKEM768`, keep the JVM's default provider without loading Conscrypt; else use connector-scoped Conscrypt (`2.6.0+`) where its native library loads and advertises `X25519MLKEM768`; else **silently** fall back to the JVM's default provider with a classical handshake (logged once at `INFO`). |
 | `CONSCRYPT` | Require connector-scoped Conscrypt on every Java version. Fail the connection with a non-retryable error instead of falling back if Conscrypt cannot load. |
 
 `CONSCRYPT` is the strictest option when a deployment specifically requires
@@ -209,9 +210,11 @@ from loading:
 Loading Conscrypt's native library takes a fraction of a second and a few MB of
 resident memory, paid once per JVM on the first connection that uses it.
 Connections using `JDK`, or `AUTO` on a runtime whose default TLS 1.3 provider
-already advertises `X25519MLKEM768`, never load Conscrypt. The capability probe
-in `AUTO` generates a single in-memory `ClientHello` via `SSLEngine.wrap()`
-with zero network or disk I/O and caches the result per default `Provider`.
+already advertises `X25519MLKEM768` (or where `jdk.tls.namedGroups` excludes
+`X25519MLKEM768`), never load Conscrypt. The capability probe generates an
+in-memory `ClientHello` via `SSLEngine.wrap()` with zero network or disk I/O,
+cached once per default `Provider` in `AUTO` and precomputed once per
+certificate refresh (~1/hour) on `ConnectionMetadata` for R2DBC connections.
 
 ### FIPS
 
@@ -251,13 +254,16 @@ When creating the `SSLContext` for an instance, the connector evaluates
 2. `AUTO` probes 1-arg `SSLContext.getInstance("TLSv1.3")` once per default
    `Provider` by generating an in-memory TLS 1.3 `ClientHello` via
    `SSLEngine.wrap()` and inspecting extension `0x000a` (`supported_groups`) for
-   `0x11ec` (`X25519MLKEM768`). If advertised, `AUTO` returns `null` (using the
-   JVM's default provider without loading Conscrypt). Otherwise it loads a
-   connector-scoped Conscrypt `Provider`, or falls back to `null` (logging once
-   at `INFO`) if Conscrypt is unavailable.
+   `0x11ec` (`X25519MLKEM768`). If advertised (or if `jdk.tls.namedGroups`
+   explicitly excludes `X25519MLKEM768`), `AUTO` returns `null` without loading
+   Conscrypt. Otherwise it loads a connector-scoped Conscrypt `Provider` and
+   verifies once that it advertises `0x11ec` (requiring Conscrypt `2.6.0+`), or
+   falls back to `null` (logging once at `INFO`) if Conscrypt is unavailable or
+   older than `2.6.0`.
 3. `CONSCRYPT` builds a connector-scoped Conscrypt `Provider` and requests
    `SSLContext.getInstance("TLSv1.3", provider)` from it, so BoringSSL
-   establishes the database mTLS connection (or fails fast with a non-retryable
+   establishes the database mTLS connection (logging once at `WARN` if
+   `X25519MLKEM768` is not advertised, or failing fast with a non-retryable
    error if Conscrypt cannot load).
 
 JDBC sockets are created directly from that `SSLContext`. R2DBC drivers build

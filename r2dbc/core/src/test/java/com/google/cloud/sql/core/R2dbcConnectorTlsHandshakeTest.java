@@ -166,6 +166,60 @@ public class R2dbcConnectorTlsHandshakeTest extends CloudSqlCoreTestingBase {
     assertThat(handshake(sslContext, port).getProtocol()).isEqualTo("TLSv1.2");
   }
 
+  @Test
+  public void namedConnector_negotiatesPostQuantumGroupWithoutUrlTlsProvider() throws Exception {
+    assumeConscryptAvailable();
+    sslServer = mlkemOnlyServer();
+    int port = sslServer.start(PUBLIC_IP);
+
+    ConnectionInfoRepositoryFactory repoFactory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    InternalConnectorRegistry registry =
+        new InternalConnectorRegistry(
+            clientKeyPair,
+            repoFactory,
+            stubCredentialFactoryProvider,
+            port,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
+    try {
+      registry.register(
+          "pqc-auto",
+          new ConnectorConfig.Builder()
+              .withSecurityProviderLibrary(SecurityProviderLibrary.AUTO)
+              .build());
+      registry.register(
+          "pqc-conscrypt",
+          new ConnectorConfig.Builder()
+              .withSecurityProviderLibrary(SecurityProviderLibrary.CONSCRYPT)
+              .build());
+
+      for (String connectorName : new String[] {"pqc-auto", "pqc-conscrypt"}) {
+        // Simulates r2dbc:gcp:postgres://.../?NAMED_CONNECTOR=<name> with NO TLS_PROVIDER option:
+        // caller's ConnectionConfig has default SecurityProviderLibrary.JDK, while the registered
+        // named connector owns AUTO/CONSCRYPT.
+        ConnectionConfig callerConfig =
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance(INSTANCE)
+                .withIpTypes("PRIMARY")
+                .withNamedConnector(connectorName)
+                .build();
+        assertThat(callerConfig.getConnectorConfig().getSecurityProviderLibrary())
+            .isEqualTo(SecurityProviderLibrary.JDK);
+
+        ConnectionMetadata metadata = registry.getConnectionMetadata(callerConfig);
+        SslContext sslContext =
+            GcpConnectionFactoryProvider.configureSslContextBuilder(
+                    SslContextBuilder.forClient(), metadata, metadata.getSecurityProviderLibrary())
+                .build();
+
+        assertThat(handshake(sslContext, port).getProtocol()).isEqualTo("TLSv1.3");
+      }
+    } finally {
+      registry.shutdown();
+    }
+  }
+
   /** Builds the Netty SslContext an R2DBC driver gets from the connector's customizer. */
   private SslContext r2dbcSslContext(SecurityProviderLibrary securityProviderLibrary, int port)
       throws Exception {
@@ -190,9 +244,7 @@ public class R2dbcConnectorTlsHandshakeTest extends CloudSqlCoreTestingBase {
       assertThat(Conscrypt.isConscrypt(provider)).isFalse();
     }
     return GcpConnectionFactoryProvider.configureSslContextBuilder(
-            SslContextBuilder.forClient(),
-            metadata,
-            config.getConnectorConfig().getSecurityProviderLibrary())
+            SslContextBuilder.forClient(), metadata, metadata.getSecurityProviderLibrary())
         .build();
   }
 

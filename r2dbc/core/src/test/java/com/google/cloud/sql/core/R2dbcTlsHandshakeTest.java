@@ -355,7 +355,8 @@ public class R2dbcTlsHandshakeTest {
   /** Builds ConnectionMetadata the way the connector does for the given cloudSqlTlsProvider. */
   private static ConnectionMetadata connectorContext(
       SecurityProviderLibrary securityProviderLibrary) throws Exception {
-    return connectorContext(SecurityProviderFactory.resolve(securityProviderLibrary));
+    return connectorContext(
+        SecurityProviderFactory.resolve(securityProviderLibrary), securityProviderLibrary);
   }
 
   /**
@@ -364,21 +365,35 @@ public class R2dbcTlsHandshakeTest {
    * SSLContext and the KeyManagerFactory.
    */
   private static ConnectionMetadata connectorContext(Provider provider) throws Exception {
+    return connectorContext(provider, SecurityProviderLibrary.JDK);
+  }
+
+  private static ConnectionMetadata connectorContext(
+      Provider provider, SecurityProviderLibrary securityProviderLibrary) throws Exception {
     if (provider == null) {
-      return metadata(SSLContext.getInstance("TLSv1.3"));
+      return metadata(
+          SSLContext.getInstance("TLSv1.3"),
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()),
+          securityProviderLibrary);
     }
     return metadata(
         SSLContext.getInstance("TLSv1.3", provider),
-        KeyManagerFactory.getInstance("PKIX", provider));
+        KeyManagerFactory.getInstance("PKIX", provider),
+        securityProviderLibrary);
   }
 
   /** Builds the ConnectionMetadata the connector would hand to the R2DBC customizer. */
   private static ConnectionMetadata metadata(SSLContext connectorContext) throws Exception {
     return metadata(
-        connectorContext, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()));
+        connectorContext,
+        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()),
+        SecurityProviderLibrary.AUTO);
   }
 
-  private static ConnectionMetadata metadata(SSLContext connectorContext, KeyManagerFactory kmf)
+  private static ConnectionMetadata metadata(
+      SSLContext connectorContext,
+      KeyManagerFactory kmf,
+      SecurityProviderLibrary securityProviderLibrary)
       throws Exception {
     KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     clientKeyStore.load(null, null);
@@ -408,7 +423,9 @@ public class R2dbcTlsHandshakeTest {
         kmf,
         tmf,
         connectorContext,
-        Collections.emptyList());
+        Collections.emptyList(),
+        securityProviderLibrary,
+        SecurityProviderFactory.supportsX25519MlKem768(connectorContext));
   }
 
   private SSLSession handshake(SslContext sslContext) throws Exception {
