@@ -16,6 +16,7 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.SecurityProviderLibrary;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -26,14 +27,27 @@ class SslData {
   private final SSLContext sslContext;
   private final KeyManagerFactory keyManagerFactory;
   private final TrustManagerFactory trustManagerFactory;
+  private final SecurityProviderLibrary securityProviderLibrary;
+  private final boolean sslContextSupportsPqc;
 
   SslData(
       SSLContext sslContext,
       KeyManagerFactory keyManagerFactory,
       TrustManagerFactory trustManagerFactory) {
+    this(sslContext, keyManagerFactory, trustManagerFactory, null, false);
+  }
+
+  SslData(
+      SSLContext sslContext,
+      KeyManagerFactory keyManagerFactory,
+      TrustManagerFactory trustManagerFactory,
+      SecurityProviderLibrary securityProviderLibrary,
+      boolean sslContextSupportsPqc) {
     this.sslContext = sslContext;
     this.keyManagerFactory = keyManagerFactory;
     this.trustManagerFactory = trustManagerFactory;
+    this.securityProviderLibrary = securityProviderLibrary;
+    this.sslContextSupportsPqc = sslContextSupportsPqc;
   }
 
   SSLContext getSslContext() {
@@ -46,5 +60,13 @@ class SslData {
 
   TrustManagerFactory getTrustManagerFactory() {
     return trustManagerFactory;
+  }
+
+  SecurityProviderLibrary getSecurityProviderLibrary() {
+    return securityProviderLibrary;
+  }
+
+  boolean isSslContextSupportsPqc() {
+    return sslContextSupportsPqc;
   }
 }

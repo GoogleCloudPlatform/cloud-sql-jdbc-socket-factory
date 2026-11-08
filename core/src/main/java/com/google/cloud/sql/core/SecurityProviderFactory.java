@@ -28,6 +28,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -61,6 +62,8 @@ final class SecurityProviderFactory {
   private static final Logger logger = LoggerFactory.getLogger(SecurityProviderFactory.class);
 
   static final String TLS_1_3 = "TLSv1.3";
+  static final String NAMED_GROUPS_SYSTEM_PROPERTY = "jdk.tls.namedGroups";
+  private static final String X25519_MLKEM768_GROUP = "X25519MLKEM768";
 
   // TLS record & ClientHello constants (RFC 8446 Sections 4.1.2, 4.2.7, and 5.1).
   private static final int TLS_HANDSHAKE_CONTENT_TYPE = 22;
@@ -101,8 +104,11 @@ final class SecurityProviderFactory {
       };
 
   private static final AtomicBoolean AUTO_FALLBACK_ANNOUNCED = new AtomicBoolean();
+  private static final AtomicBoolean AUTO_NAMED_GROUPS_EXCLUDED_ANNOUNCED = new AtomicBoolean();
+  private static final AtomicBoolean AUTO_CONSCRYPT_NO_PQC_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean DEFAULT_PQC_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean CONSCRYPT_ANNOUNCED = new AtomicBoolean();
+  private static final AtomicBoolean CONSCRYPT_NO_PQC_WARN_ANNOUNCED = new AtomicBoolean();
 
   private static volatile CachedProbeResult cachedDefaultProbe;
 
@@ -120,7 +126,10 @@ final class SecurityProviderFactory {
     return resolve(
         securityProviderLibrary,
         SecurityProviderFactory::conscryptProvider,
-        SecurityProviderFactory::defaultTls13SupportsX25519MlKem768);
+        SecurityProviderFactory::conscryptSupportsX25519MlKem768,
+        SecurityProviderFactory::defaultTls13SupportsX25519MlKem768,
+        System.getProperty(NAMED_GROUPS_SYSTEM_PROPERTY),
+        logger);
   }
 
   /**
@@ -143,23 +152,49 @@ final class SecurityProviderFactory {
       Supplier<Provider> conscryptSupplier,
       BooleanSupplier defaultSupportsPqc,
       Logger log) {
+    return resolve(
+        securityProviderLibrary, conscryptSupplier, () -> true, defaultSupportsPqc, null, log);
+  }
+
+  @VisibleForTesting
+  static Provider resolve(
+      SecurityProviderLibrary securityProviderLibrary,
+      Supplier<Provider> conscryptSupplier,
+      BooleanSupplier conscryptSupportsPqc,
+      BooleanSupplier defaultSupportsPqc,
+      String namedGroupsProperty,
+      Logger log) {
     if (securityProviderLibrary == null || securityProviderLibrary == SecurityProviderLibrary.JDK) {
       return null;
     }
 
-    if (securityProviderLibrary == SecurityProviderLibrary.AUTO
-        && defaultSupportsPqc.getAsBoolean()) {
-      if (DEFAULT_PQC_ANNOUNCED.compareAndSet(false, true)) {
-        log.info(
-            "{} is set to {} and the default TLSv1.3 JSSE provider already advertises"
-                + " X25519MLKEM768. Using the default JSSE provider; Conscrypt is"
-                + " not loaded. Set the {} property to {} to force bundled Conscrypt.",
-            ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-            SecurityProviderLibrary.AUTO,
-            ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
-            SecurityProviderLibrary.CONSCRYPT);
+    if (securityProviderLibrary == SecurityProviderLibrary.AUTO) {
+      if (defaultSupportsPqc.getAsBoolean()) {
+        if (DEFAULT_PQC_ANNOUNCED.compareAndSet(false, true)) {
+          log.info(
+              "{} is set to {} and the default TLSv1.3 JSSE provider already advertises"
+                  + " X25519MLKEM768. Using the default JSSE provider; Conscrypt is"
+                  + " not loaded. Set the {} property to {} to force bundled Conscrypt.",
+              ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+              SecurityProviderLibrary.AUTO,
+              ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+              SecurityProviderLibrary.CONSCRYPT);
+        }
+        return null;
       }
-      return null;
+
+      if (namedGroupsExcludesX25519MlKem768(namedGroupsProperty)) {
+        if (AUTO_NAMED_GROUPS_EXCLUDED_ANNOUNCED.compareAndSet(false, true)) {
+          log.info(
+              "{} is set to {}, but system property {} excludes X25519MLKEM768. Using the default"
+                  + " JSSE provider without loading Conscrypt, so Cloud SQL connections will not"
+                  + " use post-quantum key exchange.",
+              ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+              SecurityProviderLibrary.AUTO,
+              NAMED_GROUPS_SYSTEM_PROPERTY);
+        }
+        return null;
+      }
     }
 
     Provider conscrypt = conscryptSupplier.get();
@@ -171,9 +206,11 @@ final class SecurityProviderFactory {
             String.format(
                 "%s is set to %s, but Conscrypt is unavailable on this platform or the"
                     + " org.conscrypt:conscrypt-openjdk-uber dependency is not on the classpath"
-                    + " (it is optional on JDK 27+; add it explicitly). Conscrypt publishes"
-                    + " native libraries for glibc Linux and macOS on x86-64 and ARM64, and for"
-                    + " 64-bit Windows. Set %s to %s or %s to use the default JSSE provider.",
+                    + " (it is optional on JDK 27+ and omitted by Gradle / non-Maven build tools"
+                    + " and cross-JDK --release builds conducted with JDK 27+; add it explicitly)."
+                    + " Conscrypt publishes native libraries for glibc Linux and macOS on x86-64"
+                    + " and ARM64, and for 64-bit Windows. Set %s to %s or %s to use the default"
+                    + " JSSE provider.",
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
                 SecurityProviderLibrary.CONSCRYPT,
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
@@ -183,13 +220,41 @@ final class SecurityProviderFactory {
       if (AUTO_FALLBACK_ANNOUNCED.compareAndSet(false, true)) {
         log.info(
             "{} is set to {}, but the default TLSv1.3 provider does not advertise"
-                + " X25519MLKEM768 and Conscrypt is unavailable on this platform or not on the"
-                + " classpath. Using the default JSSE provider, so Cloud SQL connections will"
-                + " not use post-quantum key exchange.",
+                + " X25519MLKEM768 and Conscrypt is unavailable on this platform or"
+                + " org.conscrypt:conscrypt-openjdk-uber is not on the classpath (add it"
+                + " explicitly in Gradle / non-Maven builds, JDK 27+ builds, or cross-JDK"
+                + " --release builds conducted with JDK 27+). Using the default JSSE provider,"
+                + " so Cloud SQL connections will not use post-quantum key exchange.",
             ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
             SecurityProviderLibrary.AUTO);
       }
       return null;
+    }
+
+    if (!conscryptSupportsPqc.getAsBoolean()) {
+      if (securityProviderLibrary == SecurityProviderLibrary.AUTO) {
+        if (AUTO_CONSCRYPT_NO_PQC_ANNOUNCED.compareAndSet(false, true)) {
+          log.info(
+              "{} is set to {}, but neither the default TLSv1.3 provider nor the Conscrypt"
+                  + " provider on the classpath advertises X25519MLKEM768 (requires Conscrypt"
+                  + " 2.6.0+ and X25519MLKEM768 not excluded by {}). Using the default JSSE"
+                  + " provider, so Cloud SQL connections will not use post-quantum key exchange.",
+              ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+              SecurityProviderLibrary.AUTO,
+              NAMED_GROUPS_SYSTEM_PROPERTY);
+        }
+        return null;
+      }
+      if (CONSCRYPT_NO_PQC_WARN_ANNOUNCED.compareAndSet(false, true)) {
+        log.warn(
+            "Conscrypt will serve the Cloud SQL connections that request it with {}, but the"
+                + " loaded Conscrypt provider does not advertise X25519MLKEM768 (requires"
+                + " Conscrypt 2.6.0+ and X25519MLKEM768 not excluded by {}). Connections will use"
+                + " classical key exchange.",
+            ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+            NAMED_GROUPS_SYSTEM_PROPERTY);
+      }
+      return conscrypt;
     }
 
     if (CONSCRYPT_ANNOUNCED.compareAndSet(false, true)) {
@@ -201,13 +266,31 @@ final class SecurityProviderFactory {
   }
 
   /**
+   * Returns {@code true} if {@code namedGroupsProperty} is non-blank and explicitly excludes {@code
+   * X25519MLKEM768} (case-insensitive).
+   */
+  @VisibleForTesting
+  static boolean namedGroupsExcludesX25519MlKem768(String namedGroupsProperty) {
+    if (namedGroupsProperty == null || namedGroupsProperty.trim().isEmpty()) {
+      return false;
+    }
+    for (String group : namedGroupsProperty.split(",")) {
+      if (X25519_MLKEM768_GROUP.equalsIgnoreCase(group.trim())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Returns {@code true} if the JVM's default {@code TLSv1.3} {@link SSLContext} advertises {@code
    * X25519MLKEM768} ({@code 0x11ec}) in its {@code ClientHello} {@code supported_groups} extension.
    *
    * <p>The result is cached keyed on the default {@code TLSv1.3} {@link Provider} instance so
    * repeated checks avoid regenerating a {@code ClientHello} while automatically re-evaluating if
    * {@link java.security.Security#insertProviderAt(Provider, int)} changes the top TLS 1.3
-   * provider.
+   * provider. Assumes {@code jdk.tls.namedGroups} is static after JVM startup (matching {@code
+   * SunJSSE}).
    */
   static boolean defaultTls13SupportsX25519MlKem768() {
     try {
@@ -244,13 +327,20 @@ final class SecurityProviderFactory {
     }
     try {
       SSLEngine engine = createClientEngine(sslContext);
-      SSLParameters params = engine.getSSLParameters();
-      params.setProtocols(new String[] {TLS_1_3});
-      engine.setSSLParameters(params);
-      ByteBuffer packetBuffer = ByteBuffer.allocate(engine.getSession().getPacketBufferSize());
-      engine.wrap(ByteBuffer.allocate(0), packetBuffer);
-      packetBuffer.flip();
-      return clientHelloAdvertisesX25519MlKem768(packetBuffer);
+      try {
+        SSLParameters params = engine.getSSLParameters();
+        params.setProtocols(new String[] {TLS_1_3});
+        engine.setSSLParameters(params);
+        ByteBuffer packetBuffer = ByteBuffer.allocate(engine.getSession().getPacketBufferSize());
+        SSLEngineResult result = engine.wrap(ByteBuffer.allocate(0), packetBuffer);
+        if (result.getStatus() != SSLEngineResult.Status.OK || result.bytesProduced() <= 0) {
+          return false;
+        }
+        packetBuffer.flip();
+        return clientHelloAdvertisesX25519MlKem768(packetBuffer);
+      } finally {
+        engine.closeOutbound();
+      }
     } catch (Exception | LinkageError e) {
       logger.debug("TLSv1.3 ClientHello X25519MLKEM768 probe returned false: {}", e.toString());
       return false;
@@ -366,6 +456,32 @@ final class SecurityProviderFactory {
     return ConscryptHolder.PROVIDER;
   }
 
+  /**
+   * Returns {@code true} if the loaded Conscrypt provider advertises {@code X25519MLKEM768} ({@code
+   * 0x11ec}) in its {@code TLSv1.3} {@code ClientHello}. Evaluated once per JVM alongside {@link
+   * ConscryptHolder#PROVIDER}; assumes {@code jdk.tls.namedGroups} is static after JVM startup.
+   */
+  @VisibleForTesting
+  static boolean conscryptSupportsX25519MlKem768() {
+    return ConscryptHolder.SUPPORTS_X25519_MLKEM768;
+  }
+
+  @VisibleForTesting
+  static boolean probeProviderSupportsX25519MlKem768(Provider provider) {
+    if (provider == null || provider.getService("SSLContext", TLS_1_3) == null) {
+      return false;
+    }
+    try {
+      SSLContext context = SSLContext.getInstance(TLS_1_3, provider);
+      context.init(null, PROBE_TRUST_MANAGERS, null);
+      return supportsX25519MlKem768(context);
+    } catch (Exception | LinkageError e) {
+      logger.debug(
+          "Could not probe provider {} for X25519MLKEM768: {}", provider.getName(), e.toString());
+      return false;
+    }
+  }
+
   private static final class CachedProbeResult {
     final Provider provider;
     final boolean supportsPqc;
@@ -377,11 +493,13 @@ final class SecurityProviderFactory {
   }
 
   /**
-   * Holds the connector's Conscrypt provider, resolved once per JVM on first use. Class
-   * initialization gives exactly-once resolution and safe publication without locking.
+   * Holds the connector's Conscrypt provider and its {@code X25519MLKEM768} capability result,
+   * resolved once per JVM on first use. Class initialization gives exactly-once resolution and safe
+   * publication without locking.
    */
   private static final class ConscryptHolder {
     static final Provider PROVIDER = newConscryptProvider();
+    static final boolean SUPPORTS_X25519_MLKEM768 = probeProviderSupportsX25519MlKem768(PROVIDER);
 
     private ConscryptHolder() {}
   }

@@ -533,6 +533,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(provider));
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+      boolean sslContextSupportsPqc = SecurityProviderFactory.supportsX25519MlKem768(sslContext);
 
       logger.debug(
           String.format(
@@ -542,7 +543,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
               sslContext.getProtocol(),
               sslContext.getProvider().getName()));
 
-      return new SslData(sslContext, kmf, tmf);
+      return new SslData(sslContext, kmf, tmf, securityProviderLibrary, sslContextSupportsPqc);
     } catch (GeneralSecurityException | IOException ex) {
       throw new RuntimeException(
           String.format(

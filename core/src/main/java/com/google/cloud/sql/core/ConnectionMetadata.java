@@ -16,7 +16,9 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import java.security.Provider;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +41,8 @@ public class ConnectionMetadata {
   private final SSLContext sslContext;
   private final List<String> mdxProtocolSupport;
   private final String databaseVersion;
+  private final SecurityProviderLibrary securityProviderLibrary;
+  private final boolean sslContextSupportsPqc;
 
   /** Construct an immutable ConnectionMetadata. */
   public ConnectionMetadata(
@@ -55,7 +59,9 @@ public class ConnectionMetadata {
         trustManagerFactory,
         sslContext,
         mdxProtocolSupport,
-        "");
+        "",
+        ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY,
+        false);
   }
 
   ConnectionMetadata(
@@ -66,14 +72,63 @@ public class ConnectionMetadata {
       SSLContext sslContext,
       List<String> mdxProtocolSupport,
       String databaseVersion) {
+    this(
+        preferredIpAddresses,
+        ipAddrs,
+        keyManagerFactory,
+        trustManagerFactory,
+        sslContext,
+        mdxProtocolSupport,
+        databaseVersion,
+        ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY,
+        false);
+  }
 
+  /** Construct an immutable ConnectionMetadata including connector TLS provider metadata. */
+  public ConnectionMetadata(
+      List<String> preferredIpAddresses,
+      Map<IpType, List<String>> ipAddrs,
+      KeyManagerFactory keyManagerFactory,
+      TrustManagerFactory trustManagerFactory,
+      SSLContext sslContext,
+      List<String> mdxProtocolSupport,
+      SecurityProviderLibrary securityProviderLibrary,
+      boolean sslContextSupportsPqc) {
+    this(
+        preferredIpAddresses,
+        ipAddrs,
+        keyManagerFactory,
+        trustManagerFactory,
+        sslContext,
+        mdxProtocolSupport,
+        "",
+        securityProviderLibrary,
+        sslContextSupportsPqc);
+  }
+
+  /** Construct an immutable ConnectionMetadata including database version and TLS metadata. */
+  ConnectionMetadata(
+      List<String> preferredIpAddresses,
+      Map<IpType, List<String>> ipAddrs,
+      KeyManagerFactory keyManagerFactory,
+      TrustManagerFactory trustManagerFactory,
+      SSLContext sslContext,
+      List<String> mdxProtocolSupport,
+      String databaseVersion,
+      SecurityProviderLibrary securityProviderLibrary,
+      boolean sslContextSupportsPqc) {
     this.preferredIpAddresses = preferredIpAddresses;
     this.ipAddrs = ipAddrs;
     this.keyManagerFactory = keyManagerFactory;
     this.trustManagerFactory = trustManagerFactory;
     this.sslContext = sslContext;
     this.mdxProtocolSupport = mdxProtocolSupport;
-    this.databaseVersion = databaseVersion;
+    this.databaseVersion = databaseVersion == null ? "" : databaseVersion;
+    this.securityProviderLibrary =
+        securityProviderLibrary == null
+            ? ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY
+            : securityProviderLibrary;
+    this.sslContextSupportsPqc = sslContextSupportsPqc;
   }
 
   /** Construct an immutable ConnectionMetadata (Deprecated). */
@@ -159,6 +214,29 @@ public class ConnectionMetadata {
    */
   public Provider getSslContextProvider() {
     return sslContext == null ? null : sslContext.getProvider();
+  }
+
+  /**
+   * Returns the {@link SecurityProviderLibrary} configured on the connector that produced this
+   * metadata (for example via {@link
+   * ConnectorConfig.Builder#withSecurityProviderLibrary(SecurityProviderLibrary)} on a named
+   * connector or via {@code cloudSqlTlsProvider} / {@code TLS_PROVIDER} on an unnamed connector).
+   *
+   * @return the connector's configured SecurityProviderLibrary
+   */
+  public SecurityProviderLibrary getSecurityProviderLibrary() {
+    return securityProviderLibrary;
+  }
+
+  /**
+   * Returns {@code true} if {@link #getSslContext()} was probed when refreshed and advertises
+   * {@code X25519MLKEM768} ({@code 0x11ec}) in its TLS 1.3 {@code ClientHello} {@code
+   * supported_groups} extension.
+   *
+   * @return whether the connector's SSLContext advertises X25519MLKEM768
+   */
+  public boolean isSslContextSupportsPqc() {
+    return sslContextSupportsPqc;
   }
 
   public List<String> getMdxProtocolSupport() {

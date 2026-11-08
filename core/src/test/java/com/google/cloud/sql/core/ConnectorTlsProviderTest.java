@@ -222,6 +222,8 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     Provider provider = metadata.getSslContextProvider();
     assertThat(Conscrypt.isConscrypt(provider)).isTrue();
     assertThat(metadata.getSslContext().getProtocol()).isEqualTo("TLSv1.3");
+    assertThat(metadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.CONSCRYPT);
+    assertThat(metadata.isSslContextSupportsPqc()).isTrue();
   }
 
   @Test
@@ -232,6 +234,68 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     ConnectionMetadata metadata = connector.getConnection(config).getConnectionMetadata(10_000L);
 
     assertThat(metadata.getSslContextProvider().getName()).isNotEqualTo("Conscrypt");
+    assertThat(metadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
+    assertThat(metadata.isSslContextSupportsPqc())
+        .isEqualTo(SecurityProviderFactory.defaultTls13SupportsX25519MlKem768());
+  }
+
+  @Test
+  public void namedConnector_connectionMetadataCarriesRegisteredConnectorTlsSettings()
+      throws Exception {
+    assumeConscryptAvailable();
+    ConnectionInfoRepositoryFactory repoFactory =
+        new StubConnectionInfoRepositoryFactory(fakeSuccessHttpTransport(Duration.ofSeconds(0)));
+    InternalConnectorRegistry registry =
+        new InternalConnectorRegistry(
+            clientKeyPair,
+            repoFactory,
+            stubCredentialFactoryProvider,
+            DEFAULT_SERVER_PROXY_PORT,
+            TEST_MAX_REFRESH_MS,
+            defaultExecutor);
+    try {
+      registry.register(
+          "pqc-auto",
+          new ConnectorConfig.Builder()
+              .withSecurityProviderLibrary(SecurityProviderLibrary.AUTO)
+              .build());
+      registry.register(
+          "legacy-jdk",
+          new ConnectorConfig.Builder()
+              .withSecurityProviderLibrary(SecurityProviderLibrary.JDK)
+              .build());
+
+      // Caller passes a ConnectionConfig with default JDK on its ConnectorConfig (simulating R2DBC
+      // NAMED_CONNECTOR without TLS_PROVIDER on the URL): metadata carries AUTO + PQC support.
+      ConnectionConfig autoCallerConfig =
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance(INSTANCE)
+              .withIpTypes("PRIMARY")
+              .withNamedConnector("pqc-auto")
+              .build();
+      assertThat(autoCallerConfig.getConnectorConfig().getSecurityProviderLibrary())
+          .isEqualTo(SecurityProviderLibrary.JDK);
+      ConnectionMetadata autoMetadata = registry.getConnectionMetadata(autoCallerConfig);
+      assertThat(autoMetadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.AUTO);
+      assertThat(autoMetadata.isSslContextSupportsPqc()).isTrue();
+
+      // Reverse case: caller's ConnectionConfig has AUTO, but named connector was registered with
+      // JDK -> metadata carries the registered named connector's JDK setting.
+      ConnectionConfig jdkCallerConfig =
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance(INSTANCE)
+              .withIpTypes("PRIMARY")
+              .withNamedConnector("legacy-jdk")
+              .withConnectorConfig(
+                  new ConnectorConfig.Builder()
+                      .withSecurityProviderLibrary(SecurityProviderLibrary.AUTO)
+                      .build())
+              .build();
+      ConnectionMetadata jdkMetadata = registry.getConnectionMetadata(jdkCallerConfig);
+      assertThat(jdkMetadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
+    } finally {
+      registry.shutdown();
+    }
   }
 
   private static FakeSslServer mlkemOnlyServer() {
