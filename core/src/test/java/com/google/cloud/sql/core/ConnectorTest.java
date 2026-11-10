@@ -22,13 +22,28 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpStatusCodes;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.LowLevelHttpRequest;
+import com.google.api.client.http.LowLevelHttpResponse;
+import com.google.api.client.json.Json;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.testing.http.MockHttpTransport;
+import com.google.api.client.testing.http.MockLowLevelHttpRequest;
+import com.google.api.client.testing.http.MockLowLevelHttpResponse;
+import com.google.api.services.sqladmin.model.ConnectSettings;
 import com.google.api.services.sqladmin.model.DnsNameMapping;
+import com.google.api.services.sqladmin.model.GenerateEphemeralCertResponse;
+import com.google.api.services.sqladmin.model.IpMapping;
+import com.google.api.services.sqladmin.model.SslCert;
 import com.google.cloud.sql.AuthType;
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
 import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.v1beta4.StreamSqlDataRequest;
 import com.google.cloud.sql.v1beta4.StreamSqlDataResponse;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -37,25 +52,47 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.naming.NameNotFoundException;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLContextSpi;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1413,5 +1450,571 @@ public class ConnectorTest extends CloudSqlCoreTestingBase {
         dnsResolver,
         new ProtocolHandler("test"),
         sqlDataClient);
+  }
+
+  @Test
+  public void testIamPostgresWrapsPostgresSocketAndProbesViaDnsResolver() throws Exception {
+    KeyStore authKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    authKeyStore.load(null, null);
+    authKeyStore.setEntry(
+        "serverCert",
+        new KeyStore.PrivateKeyEntry(
+            TestKeys.getServerKeyPair().getPrivate(),
+            new X509Certificate[] {TestKeys.getServerCert()}),
+        new KeyStore.PasswordProtection(new char[0]));
+    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+    kmf.init(authKeyStore, new char[0]);
+
+    KeyStore trustKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    trustKeyStore.load(null, null);
+    trustKeyStore.setCertificateEntry("instance", TestKeys.getSigningCaCert());
+    TrustManagerFactory tmf = TrustManagerFactory.getInstance("X.509");
+    tmf.init(trustKeyStore);
+
+    SSLContext serverSslContext = SSLContext.getInstance("TLSv1.2");
+    serverSslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+    SSLServerSocket serverSocket =
+        (SSLServerSocket)
+            serverSslContext
+                .getServerSocketFactory()
+                .createServerSocket(0, 5, InetAddress.getByName(PUBLIC_IP));
+    serverSocket.setNeedClientAuth(true);
+
+    final byte[] startup =
+        PostgresSocket.buildPostgresStartupPacket("iam-user@example.com", "mydb");
+    final byte[] expectedTerminate = PostgresSocket.buildTerminatePacket();
+    AtomicInteger connectionIndex = new AtomicInteger();
+    CountDownLatch clientAckReadLatch = new CountDownLatch(1);
+    CountDownLatch probeReceivedLatch = new CountDownLatch(1);
+    List<byte[]> capturedProbeBytes = new CopyOnWriteArrayList<>();
+
+    Thread serverThread =
+        new Thread(
+            () -> {
+              while (!serverSocket.isClosed()) {
+                try {
+                  SSLSocket accepted = (SSLSocket) serverSocket.accept();
+                  int idx = connectionIndex.getAndIncrement();
+                  accepted.startHandshake();
+                  if (idx == 0) {
+                    // Connection 0: client application socket; consume full split StartupMessage
+                    // before responding and keep socket open until client reads ack (Windows-safe).
+                    InputStream in = accepted.getInputStream();
+                    byte[] buf = new byte[512];
+                    int totalRead = 0;
+                    while (totalRead < startup.length) {
+                      int r = in.read(buf, totalRead, buf.length - totalRead);
+                      if (r <= 0) {
+                        break;
+                      }
+                      totalRead += r;
+                    }
+                    if (totalRead > 0) {
+                      accepted.getOutputStream().write(new byte[] {'R', 0, 0, 0, 8, 0, 0, 0, 0});
+                      accepted.getOutputStream().flush();
+                    }
+                    try {
+                      clientAckReadLatch.await(TEST_MAX_REFRESH_MS, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                    }
+                    accepted.close();
+                  } else {
+                    // Connection 1+: proactive IAM startup probe after refresh
+                    InputStream in = accepted.getInputStream();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[512];
+                    while (baos.size() < startup.length) {
+                      int n = in.read(buf);
+                      if (n <= 0) {
+                        break;
+                      }
+                      baos.write(buf, 0, n);
+                    }
+                    if (baos.size() >= startup.length) {
+                      accepted.getOutputStream().write(new byte[] {'R', 0, 0, 0, 8, 0, 0, 0, 0});
+                      accepted.getOutputStream().flush();
+                      // Read Terminate packet ('X', 0, 0, 0, 4) completely before closing.
+                      while (baos.size() < startup.length + expectedTerminate.length) {
+                        int n = in.read(buf);
+                        if (n <= 0) {
+                          break;
+                        }
+                        baos.write(buf, 0, n);
+                      }
+                    }
+                    capturedProbeBytes.add(baos.toByteArray());
+                    probeReceivedLatch.countDown();
+                    accepted.close();
+                  }
+                } catch (SocketException e) {
+                  break;
+                } catch (IOException e) {
+                  // ignore test teardown
+                }
+              }
+            });
+    serverThread.setDaemon(true);
+    serverThread.start();
+
+    try {
+      CredentialFactoryProvider credentialFactoryProvider =
+          new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+      ConnectionInfoRepositoryFactory factory =
+          new StubConnectionInfoRepositoryFactory(fakeHttpTransportForDbVersion("POSTGRES_15"));
+
+      ConnectionConfig config =
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:myInstance")
+              .withDomainName("custom.iam.example.com")
+              .withIpTypes("PRIMARY")
+              .withAuthType(AuthType.IAM)
+              .build();
+      DnsResolver dnsResolver =
+          new MockDnsResolver() {
+            @Override
+            public List<InetAddress> resolveHost(String hostName) {
+              if ("custom.iam.example.com".equals(hostName)) {
+                return Collections.singletonList(InetAddress.getLoopbackAddress());
+              }
+              return Collections.emptyList();
+            }
+          };
+
+      Connector c =
+          new Connector(
+              config.getConnectorConfig(),
+              factory,
+              credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+              defaultExecutor,
+              clientKeyPair,
+              0,
+              TEST_MAX_REFRESH_MS,
+              serverSocket.getLocalPort(),
+              dnsResolver,
+              new ProtocolHandler("test"));
+
+      Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
+      assertThat(socket).isInstanceOf(PostgresSocket.class);
+
+      // Simulate Postgres driver sending split StartupMessage
+      socket.getOutputStream().write(startup, 0, 1);
+      socket.getOutputStream().write(startup, 1, startup.length - 1);
+      socket.getOutputStream().flush();
+
+      // Wait until the server ack is readable so conn #0 completes before refresh
+      byte[] ack = new byte[16];
+      assertThat(socket.getInputStream().read(ack)).isGreaterThan(0);
+      clientAckReadLatch.countDown();
+
+      // Force refresh -> dials via ProbeDialer + MockDnsResolver and sends StartupMessage +
+      // Terminate
+      c.getConnection(config).forceRefresh();
+      assertThat(probeReceivedLatch.await(TEST_MAX_REFRESH_MS, TimeUnit.MILLISECONDS)).isTrue();
+      assertThat(capturedProbeBytes).hasSize(1);
+      byte[] expectedProbe = capturedProbeBytes.get(0);
+      assertThat(expectedProbe.length).isEqualTo(startup.length + expectedTerminate.length);
+      assertThat(java.util.Arrays.copyOfRange(expectedProbe, 0, startup.length)).isEqualTo(startup);
+      assertThat(java.util.Arrays.copyOfRange(expectedProbe, startup.length, expectedProbe.length))
+          .isEqualTo(expectedTerminate);
+
+      c.close();
+    } finally {
+      clientAckReadLatch.countDown();
+      serverSocket.close();
+    }
+  }
+
+  @Test
+  public void testIamMysqlDoesNotWrapPostgresSocket() throws Exception {
+    FakeSslServer sslServer = new FakeSslServer();
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeHttpTransportForDbVersion("MYSQL_8_0"));
+
+    int port = sslServer.start(PUBLIC_IP);
+    try {
+      ConnectionConfig config =
+          new ConnectionConfig.Builder()
+              .withCloudSqlInstance("myProject:myRegion:myInstance")
+              .withIpTypes("PRIMARY")
+              .withAuthType(AuthType.IAM)
+              .build();
+      Connector c =
+          new Connector(
+              config.getConnectorConfig(),
+              factory,
+              credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+              defaultExecutor,
+              clientKeyPair,
+              10,
+              TEST_MAX_REFRESH_MS,
+              port,
+              new MockDnsResolver(),
+              new ProtocolHandler("test"));
+
+      Socket socket = c.connect(config, TEST_MAX_REFRESH_MS);
+      assertThat(socket).isNotInstanceOf(PostgresSocket.class);
+      assertThat(readLine(socket)).isEqualTo(SERVER_MESSAGE);
+      c.close();
+    } finally {
+      sslServer.stop();
+    }
+  }
+
+  @Test
+  public void testDialDirectSocket_emptyPreferredIpsAndDnsFailureThrowsIoException() {
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeHttpTransportForDbVersion("POSTGRES_15"));
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withDomainName("missing.example.com")
+            .build();
+    ConnectionMetadata emptyIpsMetadata =
+        new ConnectionMetadata(
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            null,
+            null,
+            null,
+            Collections.emptyList());
+
+    // 1. Custom DNS returns empty list -> throws IOException rather than IndexOutOfBoundsException
+    DnsResolver emptyResolver =
+        new MockDnsResolver() {
+          @Override
+          public List<InetAddress> resolveHost(String hostName) {
+            return Collections.emptyList();
+          }
+        };
+    Connector emptyDnsConnector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT,
+            emptyResolver,
+            new ProtocolHandler("test"));
+    try {
+      IOException ex =
+          assertThrows(
+              IOException.class,
+              () -> emptyDnsConnector.dialDirectSocket(config, emptyIpsMetadata, 1000));
+      assertThat(ex).hasMessageThat().contains("No target IP addresses available");
+    } finally {
+      emptyDnsConnector.close();
+    }
+
+    // 2. Custom DNS throws UnknownHostException -> throws IOException rather than IOOBE
+    DnsResolver failingResolver =
+        new DnsResolver() {
+          @Override
+          public Collection<String> resolveTxt(String domainName) throws NameNotFoundException {
+            throw new NameNotFoundException(domainName);
+          }
+
+          @Override
+          public List<InetAddress> resolveHost(String hostName) throws UnknownHostException {
+            throw new UnknownHostException("nxdomain");
+          }
+
+          @Override
+          public String resolveCname(String domainName) throws NameNotFoundException {
+            throw new NameNotFoundException(domainName);
+          }
+        };
+    Connector failingDnsConnector =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT,
+            failingResolver,
+            new ProtocolHandler("test"));
+    try {
+      IOException ex =
+          assertThrows(
+              IOException.class,
+              () -> failingDnsConnector.dialDirectSocket(config, emptyIpsMetadata, 1000));
+      assertThat(ex).hasMessageThat().contains("No target IP addresses available");
+    } finally {
+      failingDnsConnector.close();
+    }
+  }
+
+  @Test
+  public void testDialDirectSocket_sharedTimeoutBudgetAcrossMultipleTargets() {
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeHttpTransportForDbVersion("POSTGRES_15"));
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .build();
+
+    List<Integer> observedConnectTimeouts = new ArrayList<>();
+    SSLContext fakeSslContext =
+        newSslContextForFactory(
+            new StubSocketFactory() {
+              @Override
+              public Socket createSocket() {
+                return new PostgresSocketTest.StubSslSocket() {
+                  @Override
+                  public void connect(SocketAddress endpoint, int timeout) throws IOException {
+                    observedConnectTimeouts.add(timeout);
+                    try {
+                      Thread.sleep(60);
+                    } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                    }
+                    throw new IOException("simulated dial failure");
+                  }
+                };
+              }
+            });
+
+    ConnectionMetadata multiTargetMetadata =
+        new ConnectionMetadata(
+            Arrays.asList("10.0.0.1", "10.0.0.2", "10.0.0.3"),
+            Collections.emptyMap(),
+            null,
+            null,
+            fakeSslContext,
+            Collections.emptyList());
+
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT,
+            new MockDnsResolver(),
+            new ProtocolHandler("test"));
+    try {
+      assertThrows(IOException.class, () -> c.dialDirectSocket(config, multiTargetMetadata, 90));
+      // Budget is 90ms and each connect attempt sleeps 60ms, so the 3rd target is aborted before
+      // dialing and remaining attempt timeouts strictly decrease.
+      assertThat(observedConnectTimeouts.size()).isAtMost(2);
+      assertThat(observedConnectTimeouts).isNotEmpty();
+      assertThat(observedConnectTimeouts.get(0)).isAtMost(90);
+      if (observedConnectTimeouts.size() == 2) {
+        assertThat(observedConnectTimeouts.get(1)).isLessThan(observedConnectTimeouts.get(0));
+      }
+    } finally {
+      c.close();
+    }
+  }
+
+  @Test
+  public void testDialDirectSocket_mdxFailureClosesSocket() {
+    CredentialFactoryProvider credentialFactoryProvider =
+        new CredentialFactoryProvider(new StubCredentialFactory("foo", null));
+    ConnectionInfoRepositoryFactory factory =
+        new StubConnectionInfoRepositoryFactory(fakeHttpTransportForDbVersion("POSTGRES_15"));
+    ConnectionConfig config =
+        new ConnectionConfig.Builder()
+            .withCloudSqlInstance("myProject:myRegion:myInstance")
+            .withMdxClientProtocolType("tcp")
+            .build();
+
+    List<SSLSocket> createdSockets = new ArrayList<>();
+    AtomicBoolean closed = new AtomicBoolean(false);
+    SSLContext fakeSslContext =
+        newSslContextForFactory(
+            new StubSocketFactory() {
+              @Override
+              public Socket createSocket() {
+                PostgresSocketTest.StubSslSocket sock =
+                    new PostgresSocketTest.StubSslSocket() {
+                      @Override
+                      public synchronized void close() throws IOException {
+                        closed.set(true);
+                        super.close();
+                      }
+                    };
+                createdSockets.add(sock);
+                return sock;
+              }
+            });
+
+    ConnectionMetadata mdxMetadata =
+        new ConnectionMetadata(
+            Collections.singletonList("127.0.0.1"),
+            Collections.emptyMap(),
+            null,
+            null,
+            fakeSslContext,
+            Collections.singletonList("CLIENT_PROTOCOL_TYPE"));
+
+    ProtocolHandler failingMdxHandler =
+        new ProtocolHandler("test") {
+          @Override
+          MdxSocket connect(SSLSocket socket, String clientProtocolType) throws IOException {
+            throw new IOException("simulated mdx failure");
+          }
+        };
+
+    Connector c =
+        new Connector(
+            config.getConnectorConfig(),
+            factory,
+            credentialFactoryProvider.getInstanceCredentialFactory(config.getConnectorConfig()),
+            defaultExecutor,
+            clientKeyPair,
+            10,
+            TEST_MAX_REFRESH_MS,
+            DEFAULT_SERVER_PROXY_PORT,
+            new MockDnsResolver(),
+            failingMdxHandler);
+    try {
+      IOException ex =
+          assertThrows(IOException.class, () -> c.dialDirectSocket(config, mdxMetadata, 5000));
+      assertThat(ex).hasMessageThat().contains("simulated mdx failure");
+      assertThat(createdSockets).hasSize(1);
+      assertThat(closed.get()).isTrue();
+      assertThat(createdSockets.get(0).isClosed()).isTrue();
+    } finally {
+      c.close();
+    }
+  }
+
+  private static SSLContext newSslContextForFactory(SSLSocketFactory factory) {
+    return new SSLContext(
+        new SSLContextSpi() {
+          @Override
+          protected void engineInit(KeyManager[] km, TrustManager[] tm, SecureRandom sr) {}
+
+          @Override
+          protected SSLSocketFactory engineGetSocketFactory() {
+            return factory;
+          }
+
+          @Override
+          protected javax.net.ssl.SSLServerSocketFactory engineGetServerSocketFactory() {
+            return null;
+          }
+
+          @Override
+          protected javax.net.ssl.SSLEngine engineCreateSSLEngine() {
+            return null;
+          }
+
+          @Override
+          protected javax.net.ssl.SSLEngine engineCreateSSLEngine(String host, int port) {
+            return null;
+          }
+
+          @Override
+          protected javax.net.ssl.SSLSessionContext engineGetServerSessionContext() {
+            return null;
+          }
+
+          @Override
+          protected javax.net.ssl.SSLSessionContext engineGetClientSessionContext() {
+            return null;
+          }
+        },
+        null,
+        "TLS") {};
+  }
+
+  private abstract static class StubSocketFactory extends SSLSocketFactory {
+    @Override
+    public String[] getDefaultCipherSuites() {
+      return new String[0];
+    }
+
+    @Override
+    public String[] getSupportedCipherSuites() {
+      return new String[0];
+    }
+
+    @Override
+    public Socket createSocket(Socket s, String host, int port, boolean autoClose) {
+      return null;
+    }
+
+    @Override
+    public Socket createSocket(String host, int port) {
+      return null;
+    }
+
+    @Override
+    public Socket createSocket(String host, int port, InetAddress localHost, int localPort) {
+      return null;
+    }
+
+    @Override
+    public Socket createSocket(InetAddress host, int port) {
+      return null;
+    }
+
+    @Override
+    public Socket createSocket(
+        InetAddress address, int port, InetAddress localAddress, int localPort) {
+      return null;
+    }
+  }
+
+  private static HttpTransport fakeHttpTransportForDbVersion(String databaseVersion) {
+    final JsonFactory jsonFactory = new GsonFactory();
+    return new MockHttpTransport() {
+      @Override
+      public LowLevelHttpRequest buildRequest(String method, String url) {
+        return new MockLowLevelHttpRequest() {
+          @Override
+          public LowLevelHttpResponse execute() throws IOException {
+            MockLowLevelHttpResponse response = new MockLowLevelHttpResponse();
+            if (method.equals("GET") && url.contains("connectSettings")) {
+              ConnectSettings settings =
+                  new ConnectSettings()
+                      .setBackendType("SECOND_GEN")
+                      .setIpAddresses(
+                          ImmutableList.of(
+                              new IpMapping().setIpAddress(PUBLIC_IP).setType("PRIMARY"),
+                              new IpMapping().setIpAddress(PRIVATE_IP).setType("PRIVATE")))
+                      .setServerCaCert(new SslCert().setCert(TestKeys.getServerCertPem()))
+                      .setDatabaseVersion(databaseVersion)
+                      .setRegion("myRegion")
+                      .setServerCaMode("GOOGLE_MANAGED_INTERNAL_CA");
+              settings.setFactory(jsonFactory);
+              response
+                  .setContent(settings.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
+                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+            } else if (method.equals("POST") && url.contains("generateEphemeralCert")) {
+              GenerateEphemeralCertResponse certResponse = new GenerateEphemeralCertResponse();
+              certResponse.setEphemeralCert(
+                  new SslCert()
+                      .setCert(
+                          TestKeys.createEphemeralCert("myProject:myInstance", Duration.ZERO)));
+              certResponse.setFactory(jsonFactory);
+              response
+                  .setContent(certResponse.toPrettyString())
+                  .setContentType(Json.MEDIA_TYPE)
+                  .setStatusCode(HttpStatusCodes.STATUS_CODE_OK);
+            }
+            return response;
+          }
+        };
+      }
+    };
   }
 }

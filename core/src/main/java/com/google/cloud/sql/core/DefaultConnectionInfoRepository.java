@@ -361,7 +361,8 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
             isCasManagedCertificate(instanceMetadata.getServerCaMode()),
             serverName,
             pscEnabled,
-            instanceMetadata.getMdxProtocolSupport());
+            instanceMetadata.getMdxProtocolSupport(),
+            instanceMetadata.getDatabaseVersion());
       } catch (CertificateException ex) {
         throw new RuntimeException(
             String.format(

@@ -319,4 +319,61 @@ public class DefaultConnectionInfoRepositoryTest {
         .inOrder();
     assertThat(ipAddrs.size()).isEqualTo(1);
   }
+
+  @Test
+  public void testFetchInstanceData_populatesDatabaseVersionAndIsPostgres()
+      throws ExecutionException, InterruptedException, GeneralSecurityException,
+          OperatorCreationException {
+    MockAdminApi pgApi = new MockAdminApi();
+    pgApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME,
+        SAMPLE_PUBLIC_IP,
+        SAMPLE_PRIVATE_IP,
+        "POSTGRES_15",
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL,
+        false);
+    pgApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ZERO, DEFAULT_BASE_URL);
+    ConnectionInfoRepository pgRepo =
+        new StubConnectionInfoRepositoryFactory(pgApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), new ConnectorConfig.Builder().build());
+    ConnectionInfo pgInfo =
+        pgRepo
+            .getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.IAM,
+                newTestExecutor(),
+                Futures.immediateFuture(pgApi.getClientKeyPair()))
+            .get();
+    assertThat(pgInfo.getDatabaseVersion()).isEqualTo("POSTGRES_15");
+    assertThat(pgInfo.isPostgres()).isTrue();
+
+    MockAdminApi mysqlApi = new MockAdminApi();
+    mysqlApi.addConnectSettingsResponse(
+        INSTANCE_CONNECTION_NAME,
+        SAMPLE_PUBLIC_IP,
+        SAMPLE_PRIVATE_IP,
+        "MYSQL_8_0",
+        SAMPLE_PCS_DNS_NAME,
+        DEFAULT_BASE_URL,
+        false);
+    mysqlApi.addGenerateEphemeralCertResponse(
+        INSTANCE_CONNECTION_NAME, Duration.ZERO, DEFAULT_BASE_URL);
+    ConnectionInfoRepository mysqlRepo =
+        new StubConnectionInfoRepositoryFactory(mysqlApi.getHttpTransport())
+            .create(new StubCredentialFactory().create(), new ConnectorConfig.Builder().build());
+    ConnectionInfo mysqlInfo =
+        mysqlRepo
+            .getConnectionInfo(
+                new CloudSqlInstanceName(INSTANCE_CONNECTION_NAME),
+                () -> Optional.empty(),
+                AuthType.IAM,
+                newTestExecutor(),
+                Futures.immediateFuture(mysqlApi.getClientKeyPair()))
+            .get();
+    assertThat(mysqlInfo.getDatabaseVersion()).isEqualTo("MYSQL_8_0");
+    assertThat(mysqlInfo.isPostgres()).isFalse();
+  }
 }

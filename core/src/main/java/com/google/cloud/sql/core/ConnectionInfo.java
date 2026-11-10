@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.IpType;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,15 +51,25 @@ class ConnectionInfo {
     return instanceMetadata.getIpAddrs();
   }
 
+  String getDatabaseVersion() {
+    return instanceMetadata.getDatabaseVersion();
+  }
+
+  boolean isPostgres() {
+    String dbVersion = getDatabaseVersion();
+    return dbVersion != null && dbVersion.startsWith("POSTGRES");
+  }
+
   SslData getSslData() {
     return sslData;
   }
 
-  ConnectionMetadata toConnectionMetadata(
-      ConnectionConfig config, CloudSqlInstanceName instanceName) {
-    List<String> preferredIps = null;
-
-    for (IpType ipType : config.getIpTypes()) {
+  List<String> getPreferredIps(List<IpType> ipTypes) {
+    if (ipTypes == null || ipTypes.isEmpty()) {
+      return Collections.emptyList();
+    }
+    for (IpType ipType : ipTypes) {
+      List<String> preferredIps;
       if (ipType == IpType.SQL_DATA) {
         preferredIps = getIpAddrs().get(IpType.PRIVATE);
         if (preferredIps == null || preferredIps.isEmpty()) {
@@ -71,10 +82,16 @@ class ConnectionInfo {
         preferredIps = getIpAddrs().get(ipType);
       }
       if (preferredIps != null && !preferredIps.isEmpty()) {
-        break;
+        return preferredIps;
       }
     }
-    if (preferredIps == null || preferredIps.isEmpty()) {
+    return Collections.emptyList();
+  }
+
+  ConnectionMetadata toConnectionMetadata(
+      ConnectionConfig config, CloudSqlInstanceName instanceName) {
+    List<String> preferredIps = getPreferredIps(config.getIpTypes());
+    if (preferredIps.isEmpty()) {
       throw new IllegalArgumentException(
           String.format(
               "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
@@ -88,6 +105,7 @@ class ConnectionInfo {
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),
-        instanceMetadata.getMdxProtocolSupport());
+        instanceMetadata.getMdxProtocolSupport(),
+        instanceMetadata.getDatabaseVersion());
   }
 }

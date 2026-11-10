@@ -37,6 +37,7 @@ public class ConnectionMetadata {
   private final TrustManagerFactory trustManagerFactory;
   private final SSLContext sslContext;
   private final List<String> mdxProtocolSupport;
+  private final String databaseVersion;
 
   /** Construct an immutable ConnectionMetadata. */
   public ConnectionMetadata(
@@ -46,6 +47,24 @@ public class ConnectionMetadata {
       TrustManagerFactory trustManagerFactory,
       SSLContext sslContext,
       List<String> mdxProtocolSupport) {
+    this(
+        preferredIpAddresses,
+        ipAddrs,
+        keyManagerFactory,
+        trustManagerFactory,
+        sslContext,
+        mdxProtocolSupport,
+        "");
+  }
+
+  ConnectionMetadata(
+      List<String> preferredIpAddresses,
+      Map<IpType, List<String>> ipAddrs,
+      KeyManagerFactory keyManagerFactory,
+      TrustManagerFactory trustManagerFactory,
+      SSLContext sslContext,
+      List<String> mdxProtocolSupport,
+      String databaseVersion) {
 
     this.preferredIpAddresses = preferredIpAddresses;
     this.ipAddrs = ipAddrs;
@@ -53,6 +72,7 @@ public class ConnectionMetadata {
     this.trustManagerFactory = trustManagerFactory;
     this.sslContext = sslContext;
     this.mdxProtocolSupport = mdxProtocolSupport;
+    this.databaseVersion = databaseVersion;
   }
 
   /** Construct an immutable ConnectionMetadata (Deprecated). */
@@ -127,6 +147,14 @@ public class ConnectionMetadata {
 
   public List<String> getMdxProtocolSupport() {
     return mdxProtocolSupport;
+  }
+
+  String getDatabaseVersion() {
+    return databaseVersion;
+  }
+
+  boolean isPostgres() {
+    return databaseVersion != null && databaseVersion.startsWith("POSTGRES");
   }
 
   public boolean isMdxClientProtocolTypeSupport() {
