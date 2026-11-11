@@ -25,21 +25,42 @@ import java.util.Map;
 class InstanceMetadata {
 
   private final CloudSqlInstanceName instanceName;
-  private final Map<IpType, String> ipAddrs;
+  private final Map<IpType, List<String>> ipAddrs;
   private final List<Certificate> instanceCaCertificates;
   private final boolean casManagedCertificate;
   private final String dnsName;
   private final boolean pscEnabled;
   private final List<String> mdxProtocolSupport;
+  private final String databaseVersion;
 
   InstanceMetadata(
       CloudSqlInstanceName instanceName,
-      Map<IpType, String> ipAddrs,
+      Map<IpType, List<String>> ipAddrs,
       List<Certificate> instanceCaCertificates,
       boolean casManagedCertificate,
       String dnsName,
       boolean pscEnabled,
       List<String> mdxProtocolSupport) {
+    this(
+        instanceName,
+        ipAddrs,
+        instanceCaCertificates,
+        casManagedCertificate,
+        dnsName,
+        pscEnabled,
+        mdxProtocolSupport,
+        "");
+  }
+
+  InstanceMetadata(
+      CloudSqlInstanceName instanceName,
+      Map<IpType, List<String>> ipAddrs,
+      List<Certificate> instanceCaCertificates,
+      boolean casManagedCertificate,
+      String dnsName,
+      boolean pscEnabled,
+      List<String> mdxProtocolSupport,
+      String databaseVersion) {
     this.instanceName = instanceName;
     this.ipAddrs = ipAddrs;
     this.instanceCaCertificates = instanceCaCertificates;
@@ -47,9 +68,10 @@ class InstanceMetadata {
     this.dnsName = dnsName;
     this.pscEnabled = pscEnabled;
     this.mdxProtocolSupport = mdxProtocolSupport;
+    this.databaseVersion = databaseVersion;
   }
 
-  Map<IpType, String> getIpAddrs() {
+  Map<IpType, List<String>> getIpAddrs() {
     return ipAddrs;
   }
 
@@ -75,5 +97,9 @@ class InstanceMetadata {
 
   public List<String> getMdxProtocolSupport() {
     return mdxProtocolSupport;
+  }
+
+  public String getDatabaseVersion() {
+    return databaseVersion;
   }
 }

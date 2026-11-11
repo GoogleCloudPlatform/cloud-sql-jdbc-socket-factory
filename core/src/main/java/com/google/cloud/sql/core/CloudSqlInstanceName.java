@@ -54,6 +54,13 @@ public class CloudSqlInstanceName {
       Pattern.compile(
           "^(?:[_a-z0-9](?:[_a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?)?$");
 
+  static final Pattern INSTANCE_DNS_NAME_PATTERN =
+      Pattern.compile(
+          "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\."
+              + "([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\."
+              + "([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])\\."
+              + "(sql|sql-psa|sql-psc)\\.goog\\.?$");
+
   private final String projectId;
   private final String regionId;
   private final String instanceId;
@@ -69,6 +76,24 @@ public class CloudSqlInstanceName {
   public static boolean isValidDomain(String domain) {
     Matcher matcher = DOMAIN_NAME.matcher(domain);
     return matcher.matches();
+  }
+
+  /**
+   * Validates that a string is a well-formed instance DNS name.
+   *
+   * @param domain the domain name to check
+   * @return true if domain is a well-formed instance DNS name.
+   */
+  public static boolean isInstanceDnsName(String domain) {
+    if (domain == null) {
+      return false;
+    }
+    Matcher matcher = INSTANCE_DNS_NAME_PATTERN.matcher(domain);
+    if (!matcher.matches()) {
+      return false;
+    }
+    String region = matcher.group(3);
+    return !region.equalsIgnoreCase("global");
   }
 
   /**

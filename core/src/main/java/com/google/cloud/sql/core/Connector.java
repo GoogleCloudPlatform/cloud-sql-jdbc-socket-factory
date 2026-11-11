@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.CredentialFactory;
+import com.google.cloud.sql.IpType;
 import com.google.cloud.sql.RefreshStrategy;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,12 +28,16 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.net.ssl.SSLSocket;
 import jnr.unixsocket.UnixSocketAddress;
@@ -53,6 +58,9 @@ class Connector {
       new ConcurrentHashMap<>();
   private final int serverProxyPort;
   private final ConnectorConfig config;
+  private final SqlDataClient sqlDataClient;
+  private final ConcurrentHashMap<String, SqlDataConnState> sqlDataConnState =
+      new ConcurrentHashMap<>();
 
   private final InstanceConnectionNameResolver instanceNameResolver;
   private final DnsResolver dnsResolver;
@@ -68,21 +76,53 @@ class Connector {
       long minRefreshDelayMs,
       long refreshTimeoutMs,
       int serverProxyPort,
-      InstanceConnectionNameResolver instanceNameResolver,
       DnsResolver dnsResolver,
       ProtocolHandler mdxProtocolHandler) {
+    this(
+        config,
+        connectionInfoRepositoryFactory,
+        instanceCredentialFactory,
+        executor,
+        localKeyPair,
+        minRefreshDelayMs,
+        refreshTimeoutMs,
+        serverProxyPort,
+        null,
+        dnsResolver,
+        mdxProtocolHandler,
+        new SqlDataClient(
+            config, instanceCredentialFactory, InternalConnectorRegistry.getUserAgents()));
+  }
+
+  Connector(
+      ConnectorConfig config,
+      ConnectionInfoRepositoryFactory connectionInfoRepositoryFactory,
+      CredentialFactory instanceCredentialFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> localKeyPair,
+      long minRefreshDelayMs,
+      long refreshTimeoutMs,
+      int serverProxyPort,
+      InstanceConnectionNameResolver instanceNameResolver,
+      DnsResolver dnsResolver,
+      ProtocolHandler mdxProtocolHandler,
+      SqlDataClient sqlDataClient) {
     this.config = config;
     this.adminApi =
         connectionInfoRepositoryFactory.create(instanceCredentialFactory.create(), config);
+    this.instanceNameResolver =
+        instanceNameResolver != null
+            ? instanceNameResolver
+            : new DnsInstanceConnectionNameResolver(dnsResolver, this.adminApi);
     this.instanceCredentialFactory = instanceCredentialFactory;
     this.executor = executor;
     this.localKeyPair = localKeyPair;
     this.minRefreshDelayMs = minRefreshDelayMs;
     this.serverProxyPort = serverProxyPort;
-    this.instanceNameResolver = instanceNameResolver;
     this.dnsResolver = dnsResolver;
     this.instanceNameResolverTimer = new Timer("InstanceNameResolverTimer", true);
     this.mdxProtocolHandler = mdxProtocolHandler;
+    this.sqlDataClient = sqlDataClient;
   }
 
   public ConnectorConfig getConfig() {
@@ -126,65 +166,88 @@ class Connector {
       return UnixSocketChannel.open(socketAddress).socket();
     }
 
+    final ConnectionConfig resolvedConfig = resolveConnectionName(config);
+    CloudSqlInstanceName instanceName =
+        new CloudSqlInstanceName(resolvedConfig.getCloudSqlInstance());
+
+    if (!resolvedConfig.getIpTypes().isEmpty()
+        && resolvedConfig.getIpTypes().get(0) == IpType.SQL_DATA) {
+      SqlDataConnState state =
+          sqlDataConnState.computeIfAbsent(
+              instanceName.getConnectionName(),
+              k ->
+                  new SqlDataConnState(
+                      config.getConnectorConfig() != null
+                          ? config.getConnectorConfig().getResourceExhaustedCooldownPeriod()
+                          : this.config.getResourceExhaustedCooldownPeriod()));
+
+      if (state.isAllowed()) {
+        if (state.isCooldownActive(Instant.now())) {
+          throw new ResourceExhaustedException(
+              String.format(
+                  "[%s] Resource exhausted: cooldown active", instanceName.getConnectionName()),
+              state.getLastErr());
+        }
+
+        logger.debug(
+            String.format(
+                "[%s] Attempting SQL Data Service connection.", instanceName.getConnectionName()));
+
+        Socket sqlDataSocket;
+        try {
+          sqlDataSocket = sqlDataClient.connect(instanceName, timeoutMs);
+        } catch (IOException | RuntimeException t) {
+          if (ResourceExhaustedTrackingSocket.isResourceExhausted(t)) {
+            state.onResourceExhausted(t);
+            throw t;
+          }
+          if (FallbackSocket.isPreconditionFailed(t)) {
+            logger.warn(
+                String.format(
+                    "[%s] SQL Data Service not supported for this instance. "
+                        + "Falling back to direct IP.",
+                    instanceName.getConnectionName()));
+            state.setAllowed(false);
+            return connectDirect(config, timeoutMs);
+          }
+          throw t;
+        }
+
+        Socket fallbackSocket =
+            new FallbackSocket(
+                sqlDataSocket,
+                () -> connectDirect(config, timeoutMs),
+                () -> {
+                  logger.warn(
+                      String.format(
+                          "[%s] SQL Data Service not supported for this instance. "
+                              + "Falling back to direct IP.",
+                          instanceName.getConnectionName()));
+                  state.setAllowed(false);
+                });
+
+        return new ResourceExhaustedTrackingSocket(
+            fallbackSocket, state::onResourceExhausted, state::onSuccess);
+      }
+    }
+
+    return connectDirect(config, timeoutMs);
+  }
+
+  private Socket connectDirect(ConnectionConfig config, long timeoutMs) throws IOException {
     MonitoredCache instance = getConnection(config);
     try {
       ConnectionMetadata metadata = instance.getConnectionMetadata(timeoutMs);
-      String instanceIp = metadata.getPreferredIpAddress();
-
-      // If a domain name was used to connect, resolve it to an IP address
-      if (!Strings.isNullOrEmpty(instance.getConfig().getDomainName())) {
-        try {
-          List<InetAddress> addrs = dnsResolver.resolveHost(instance.getConfig().getDomainName());
-          if (addrs != null && !addrs.isEmpty()) {
-            logger.debug(
-                String.format(
-                    "[%s] custom DNS name %s resolved to %s, using it to connect",
-                    instance.getConfig().getCloudSqlInstance(),
-                    instance.getConfig().getDomainName(),
-                    addrs.get(0).getHostAddress()));
-            instanceIp = addrs.get(0).getHostAddress();
-          } else {
-            logger.debug(
-                String.format(
-                    "[%s] custom DNS name %s resolved but returned no entries, using %s from"
-                        + " instance metadata",
-                    instance.getConfig().getCloudSqlInstance(),
-                    instance.getConfig().getDomainName(),
-                    instanceIp));
-          }
-        } catch (UnknownHostException e) {
-          logger.debug(
-              String.format(
-                  "[%s] custom DNS name %s did not resolve to an IP address: %s, using %s from"
-                      + " instance metadata",
-                  instance.getConfig().getCloudSqlInstance(),
-                  instance.getConfig().getDomainName(),
-                  e.getMessage(),
-                  instanceIp));
-        }
+      SSLSocket socket = dialDirectSocket(instance.getConfig(), metadata, 0);
+      if (config.getAuthType() == com.google.cloud.sql.AuthType.IAM && metadata.isPostgres()) {
+        socket = new PostgresSocket(socket, instance::recordIamPrincipal);
       }
 
-      logger.debug(String.format("[%s] Connecting to instance.", instanceIp));
-
-      SSLSocket socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
-      socket.setKeepAlive(true);
-      socket.setTcpNoDelay(true);
-
-      socket.connect(new InetSocketAddress(instanceIp, serverProxyPort));
-
-      try {
-        socket.startHandshake();
-      } catch (IOException e) {
-        logger.debug("TLS handshake failed!");
-        throw e;
-      }
-
-      if (metadata.isMdxClientProtocolTypeSupport()
-          && !Strings.isNullOrEmpty(config.getMdxClientProtocolType())) {
-        socket = mdxProtocolHandler.connect(socket, config.getMdxClientProtocolType());
-      }
-
-      logger.debug(String.format("[%s] Connected to instance successfully.", instanceIp));
+      String connectedIp =
+          socket.getInetAddress() != null
+              ? socket.getInetAddress().getHostAddress()
+              : instance.getConfig().getCloudSqlInstance();
+      logger.debug(String.format("[%s] Connected to instance successfully.", connectedIp));
       instance.addSocket(socket);
 
       return socket;
@@ -195,6 +258,125 @@ class Connector {
       instance.forceRefresh();
       throw e;
     }
+  }
+
+  SSLSocket dialDirectSocket(ConnectionConfig config, ConnectionMetadata metadata, int timeoutMs)
+      throws IOException {
+    List<String> preferredIps = metadata.getPreferredIpAddresses();
+    List<String> targets = new ArrayList<>();
+
+    // If a domain name was used to connect, resolve it to an IP address
+    if (!Strings.isNullOrEmpty(config.getDomainName())) {
+      try {
+        List<InetAddress> addrs = dnsResolver.resolveHost(config.getDomainName());
+        if (addrs != null && !addrs.isEmpty()) {
+          logger.debug(
+              String.format(
+                  "[%s] custom DNS name %s resolved to %s, using it to connect",
+                  config.getCloudSqlInstance(),
+                  config.getDomainName(),
+                  addrs.get(0).getHostAddress()));
+          for (InetAddress addr : addrs) {
+            targets.add(addr.getHostAddress());
+          }
+        } else {
+          logger.debug(
+              String.format(
+                  "[%s] custom DNS name %s resolved but returned no entries, using %s from"
+                      + " instance metadata",
+                  config.getCloudSqlInstance(),
+                  config.getDomainName(),
+                  preferredIps.isEmpty() ? "<none>" : preferredIps.get(0)));
+          targets.addAll(preferredIps);
+        }
+      } catch (UnknownHostException e) {
+        logger.debug(
+            String.format(
+                "[%s] custom DNS name %s did not resolve to an IP address: %s, using %s from"
+                    + " instance metadata",
+                config.getCloudSqlInstance(),
+                config.getDomainName(),
+                e.getMessage(),
+                preferredIps.isEmpty() ? "<none>" : preferredIps.get(0)));
+        targets.addAll(preferredIps);
+      }
+    } else {
+      targets.addAll(preferredIps);
+    }
+
+    if (targets.isEmpty()) {
+      throw new IOException(
+          String.format(
+              "[%s] No target IP addresses available for connection.",
+              config.getCloudSqlInstance()));
+    }
+
+    long deadlineNanos =
+        timeoutMs > 0 ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs) : 0L;
+    IOException lastEx = null;
+    SSLSocket socket = null;
+    for (String targetIp : targets) {
+      int attemptTimeoutMs = timeoutMs;
+      if (timeoutMs > 0) {
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0) {
+          if (lastEx == null) {
+            lastEx =
+                new SocketTimeoutException(
+                    String.format(
+                        "[%s] Timed out waiting to connect to instance.",
+                        config.getCloudSqlInstance()));
+          }
+          break;
+        }
+        attemptTimeoutMs =
+            (int)
+                Math.min(
+                    Integer.MAX_VALUE, Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+      }
+      logger.debug(String.format("[%s] Connecting to instance.", targetIp));
+      try {
+        socket = (SSLSocket) metadata.getSslContext().getSocketFactory().createSocket();
+        socket.setKeepAlive(true);
+        socket.setTcpNoDelay(true);
+        if (attemptTimeoutMs > 0) {
+          socket.setSoTimeout(attemptTimeoutMs);
+        }
+        socket.connect(new InetSocketAddress(targetIp, serverProxyPort), attemptTimeoutMs);
+        socket.startHandshake();
+        lastEx = null; // success
+        break;
+      } catch (IOException e) {
+        logger.debug(String.format("[%s] Connection failed: %s", targetIp, e.getMessage()));
+        lastEx = e;
+        if (socket != null) {
+          try {
+            socket.close();
+          } catch (IOException ce) {
+            // ignore
+          }
+        }
+      }
+    }
+
+    if (lastEx != null) {
+      throw lastEx;
+    }
+
+    if (metadata.isMdxClientProtocolTypeSupport()
+        && !Strings.isNullOrEmpty(config.getMdxClientProtocolType())) {
+      try {
+        socket = mdxProtocolHandler.connect(socket, config.getMdxClientProtocolType());
+      } catch (IOException | RuntimeException e) {
+        try {
+          socket.close();
+        } catch (IOException suppressed) {
+          e.addSuppressed(suppressed);
+        }
+        throw e;
+      }
+    }
+    return socket;
   }
 
   MonitoredCache getConnection(final ConnectionConfig config) {
@@ -267,6 +449,8 @@ class Connector {
   private ConnectionInfoCache createConnectionInfo(ConnectionConfig config) {
     logger.debug(
         String.format("[%s] Connection info added to cache.", config.getCloudSqlInstance()));
+    PostgresSocket.ProbeDialer probeDialer =
+        (metadata, timeoutMs) -> dialDirectSocket(config, metadata, timeoutMs);
     if (config.getConnectorConfig().getRefreshStrategy() == RefreshStrategy.LAZY) {
       // Resolve the key operation immediately.
       KeyPair keyPair = null;
@@ -276,11 +460,17 @@ class Connector {
         throw new RuntimeException(e);
       }
       return new LazyRefreshConnectionInfoCache(
-          config, adminApi, instanceCredentialFactory, keyPair);
+          config, adminApi, instanceCredentialFactory, keyPair, probeDialer);
 
     } else {
       return new RefreshAheadConnectionInfoCache(
-          config, adminApi, instanceCredentialFactory, executor, localKeyPair, minRefreshDelayMs);
+          config,
+          adminApi,
+          instanceCredentialFactory,
+          executor,
+          localKeyPair,
+          minRefreshDelayMs,
+          probeDialer);
     }
   }
 
@@ -289,5 +479,7 @@ class Connector {
     this.instanceNameResolverTimer.cancel();
     this.instances.forEach((key, c) -> c.close());
     this.instances.clear();
+    this.sqlDataConnState.clear();
+    this.sqlDataClient.close();
   }
 }

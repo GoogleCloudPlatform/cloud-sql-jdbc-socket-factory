@@ -17,9 +17,13 @@
 package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.CredentialFactory;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.security.KeyPair;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implements the refresh ahead cache strategy, which will load the new ConnectionInfo using a
@@ -30,11 +34,11 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
   private final ConnectionConfig config;
   private final CloudSqlInstanceName instanceName;
   private final RefreshAheadStrategy refreshStrategy;
+  private final Set<PostgresSocket.IamPrincipal> iamPrincipals = ConcurrentHashMap.newKeySet();
 
   /**
-   * Initializes a new Cloud SQL instance based on the given connection name. + * Initializes a new
-   * Cloud SQL instance based on the given connection name using the background + * refresh
-   * strategy.
+   * Initializes a new Cloud SQL instance based on the given connection name using the background
+   * refresh strategy.
    *
    * @param config instance connection name in the format "PROJECT_ID:REGION_ID:INSTANCE_ID"
    * @param connectionInfoRepository Service class for interacting with the Cloud SQL Admin API
@@ -48,6 +52,24 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
       ListeningScheduledExecutorService executor,
       ListenableFuture<KeyPair> keyPair,
       long minRefreshDelayMs) {
+    this(
+        config,
+        connectionInfoRepository,
+        tokenSourceFactory,
+        executor,
+        keyPair,
+        minRefreshDelayMs,
+        null);
+  }
+
+  RefreshAheadConnectionInfoCache(
+      ConnectionConfig config,
+      ConnectionInfoRepository connectionInfoRepository,
+      CredentialFactory tokenSourceFactory,
+      ListeningScheduledExecutorService executor,
+      ListenableFuture<KeyPair> keyPair,
+      long minRefreshDelayMs,
+      PostgresSocket.ProbeDialer probeDialer) {
 
     CloudSqlInstanceName instanceName =
         new CloudSqlInstanceName(config.getCloudSqlInstance(), config.getDomainName());
@@ -63,8 +85,15 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
             config.getCloudSqlInstance(),
             executor,
             () ->
-                connectionInfoRepository.getConnectionInfo(
-                    instanceName, accessTokenSupplier, config.getAuthType(), executor, keyPair),
+                Futures.transform(
+                    connectionInfoRepository.getConnectionInfo(
+                        instanceName, accessTokenSupplier, config.getAuthType(), executor, keyPair),
+                    info -> {
+                      PostgresSocket.probeConnection(
+                          config, instanceName, info, probeDialer, iamPrincipals);
+                      return info;
+                    },
+                    MoreExecutors.directExecutor()),
             new AsyncRateLimiter(minRefreshDelayMs));
   }
 
@@ -104,5 +133,13 @@ class RefreshAheadConnectionInfoCache implements ConnectionInfoCache {
   @Override
   public ConnectionConfig getConfig() {
     return config;
+  }
+
+  @Override
+  public void recordIamPrincipal(String user, String database) {
+    if (user == null || user.isEmpty()) {
+      return;
+    }
+    iamPrincipals.add(new PostgresSocket.IamPrincipal(user, database));
   }
 }

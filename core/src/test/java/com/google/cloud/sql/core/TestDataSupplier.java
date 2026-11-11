@@ -25,6 +25,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
@@ -40,9 +41,9 @@ class TestDataSupplier implements ConnectionInfoRepository {
           new InstanceMetadata(
               new CloudSqlInstanceName("project:region:instance"),
               ImmutableMap.of(
-                  IpType.PUBLIC, "10.1.2.3",
-                  IpType.PRIVATE, "10.10.10.10",
-                  IpType.PSC, "abcde.12345.us-central1.sql.goog"),
+                  IpType.PUBLIC, Collections.singletonList("10.1.2.3"),
+                  IpType.PRIVATE, Collections.singletonList("10.10.10.10"),
+                  IpType.PSC, Collections.singletonList("abcde.12345.us-central1.sql.goog")),
               null,
               false,
               "",
@@ -104,5 +105,10 @@ class TestDataSupplier implements ConnectionInfoRepository {
     }
     successCounter.incrementAndGet();
     return response;
+  }
+
+  @Override
+  public String resolveConnectionName(String region, String dnsName) {
+    throw new UnsupportedOperationException();
   }
 }

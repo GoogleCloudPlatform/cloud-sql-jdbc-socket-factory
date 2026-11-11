@@ -70,4 +70,40 @@ public class CloudSqlInstanceNameTest {
     assertThat(CloudSqlInstanceName.isValidDomain("127.0.0.1")).isFalse();
     assertThat(CloudSqlInstanceName.isValidDomain("0:0:0:0:0:0:0:1")).isFalse();
   }
+
+  @Test
+  public void testIsInstanceDnsName() {
+    // Valid DNS names
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-central1.sql.goog"))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-central1.sql.goog."))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-central1.sql-psc.goog"))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-central1.sql-psa.goog"))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("g123456789ab.proj.us-central1.sql.goog"))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("a.b.c.sql.goog")).isTrue();
+    assertThat(
+            CloudSqlInstanceName.isInstanceDnsName("label-with-hyphen.proj.us-central1.sql.goog"))
+        .isTrue();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.uscentral.sql.goog"))
+        .isTrue();
+
+    // Invalid DNS names
+    assertThat(CloudSqlInstanceName.isInstanceDnsName(null)).isFalse();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("")).isFalse();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("invalid-format")).isFalse();
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.global.sql.goog"))
+        .isFalse();
+    assertThat(
+            CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-central1.global.sql.goog"))
+        .isFalse();
+
+    // Test with region having multiple hyphens (e.g. us-gov-west1)
+    // This might fail with the current regex in CloudSqlInstanceName
+    assertThat(CloudSqlInstanceName.isInstanceDnsName("abc123abc123.proj.us-gov-west1.sql.goog"))
+        .isTrue();
+  }
 }

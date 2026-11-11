@@ -33,7 +33,7 @@ function clean() {
 
 ## build - Builds the project without running tests.
 function build() {
-   $mvn_cmd install -DskipTests=true
+   $mvn_cmd install -DskipTests=true "$@"
 }
 
 ## test - Runs local unit tests.
@@ -48,7 +48,7 @@ function test() {
       sudo ifconfig lo0 alias 127.0.0.3 up
     fi
   fi
-  $mvn_cmd -P coverage test
+  $mvn_cmd -P coverage test "$@"
 }
 
 ## e2e - Runs end-to-end integration tests.
@@ -57,7 +57,7 @@ function e2e() {
     write_e2e_env .envrc
   fi
   source .envrc
-  JOB_TYPE=integration .github/scripts/run_tests.sh
+  JOB_TYPE=integration .github/scripts/run_tests.sh "$@"
 }
 
 
@@ -115,6 +115,14 @@ function write_e2e_env(){
     POSTGRES_CUSTOMER_CAS_PASS_INVALID_DOMAIN_NAME=POSTGRES_CUSTOMER_CAS_INVALID_DOMAIN_NAME
     POSTGRES_MCP_CONNECTION_NAME=POSTGRES_MCP_CONNECTION_NAME
     POSTGRES_MCP_PASS=POSTGRES_MCP_PASS
+    POSTGRES_AIDE_CONNECTION_NAME=POSTGRES_AIDE_CONNECTION_NAME
+    POSTGRES_AIDE_USER=POSTGRES_AIDE_USER
+    POSTGRES_AIDE_PASS=POSTGRES_AIDE_PASS
+    POSTGRES_AIDE_DB=POSTGRES_AIDE_DB
+    POSTGRES_FALLBACK_CONNECTION_NAME=POSTGRES_FALLBACK_CONNECTION_NAME
+    POSTGRES_FALLBACK_USER=POSTGRES_FALLBACK_USER
+    POSTGRES_FALLBACK_PASS=POSTGRES_FALLBACK_PASS
+    POSTGRES_FALLBACK_DB=POSTGRES_FALLBACK_DB
     SQLSERVER_CONNECTION_NAME=SQLSERVER_CONNECTION_NAME
     SQLSERVER_USER=SQLSERVER_USER
     SQLSERVER_PASS=SQLSERVER_PASS

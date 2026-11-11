@@ -25,6 +25,11 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -34,10 +39,15 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -259,7 +269,8 @@ public class RefreshAheadConnectionInfoCacheTest {
   }
 
   private static ConnectionInfo newConnectionInfo(long amount, ChronoUnit unit) {
-    Map<IpType, String> ips = Collections.singletonMap(IpType.PUBLIC, "10.1.1.1");
+    Map<IpType, List<String>> ips =
+        Collections.singletonMap(IpType.PUBLIC, Collections.singletonList("10.1.1.1"));
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
@@ -585,9 +596,9 @@ public class RefreshAheadConnectionInfoCacheTest {
             new InstanceMetadata(
                 new CloudSqlInstanceName("project:region:instance"),
                 ImmutableMap.of(
-                    IpType.PUBLIC, "10.1.2.3",
-                    IpType.PRIVATE, "10.10.10.10",
-                    IpType.PSC, "abcde.12345.us-central1.sql.goog"),
+                    IpType.PUBLIC, Collections.singletonList("10.1.2.3"),
+                    IpType.PRIVATE, Collections.singletonList("10.10.10.10"),
+                    IpType.PSC, Collections.singletonList("abcde.12345.us-central1.sql.goog")),
                 null,
                 false,
                 "",
@@ -617,6 +628,7 @@ public class RefreshAheadConnectionInfoCacheTest {
     values.put(Arrays.asList(IpType.PRIVATE, IpType.PUBLIC), "10.10.10.10");
     values.put(Collections.singletonList(IpType.PRIVATE), "10.10.10.10");
     values.put(Collections.singletonList(IpType.PSC), "abcde.12345.us-central1.sql.goog");
+    values.put(Collections.singletonList(IpType.SQL_DATA), "10.10.10.10");
 
     values.forEach(
         (ipTypes, wantsIp) -> {
@@ -636,9 +648,94 @@ public class RefreshAheadConnectionInfoCacheTest {
           assertThat(
                   connectionInfoCache
                       .getConnectionMetadata(TEST_TIMEOUT_MS)
-                      .getPreferredIpAddress())
-              .isEqualTo(wantsIp);
+                      .getPreferredIpAddresses())
+              .containsExactly(wantsIp);
         });
+  }
+
+  @Test
+  public void testGetPreferredIpTypes_SqlDataPreferenceOrder() {
+    SslData sslData = new SslData(null, null, null);
+
+    // 1. When PSC and PUBLIC are available (no PRIVATE), prefers PSC
+    ConnectionInfo pscAndPublicInfo =
+        new ConnectionInfo(
+            new InstanceMetadata(
+                new CloudSqlInstanceName("project:region:instance"),
+                ImmutableMap.of(
+                    IpType.PUBLIC, Collections.singletonList("10.1.2.3"),
+                    IpType.PSC, Collections.singletonList("abcde.12345.us-central1.sql.goog")),
+                null,
+                false,
+                "",
+                false,
+                null),
+            sslData,
+            Instant.now().plus(1, ChronoUnit.HOURS));
+
+    RefreshAheadConnectionInfoCache pscCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withIpTypes(Collections.singletonList(IpType.SQL_DATA))
+                .build(),
+            new StubConnectionInfoRepository() {
+              @Override
+              public ListenableFuture<ConnectionInfo> getConnectionInfo(
+                  CloudSqlInstanceName instanceName,
+                  AccessTokenSupplier accessTokenSupplier,
+                  AuthType authType,
+                  ListeningScheduledExecutorService executor,
+                  ListenableFuture<KeyPair> keyPair) {
+                return Futures.immediateFuture(pscAndPublicInfo);
+              }
+            },
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+
+    assertThat(pscCache.getConnectionMetadata(TEST_TIMEOUT_MS).getPreferredIpAddresses())
+        .containsExactly("abcde.12345.us-central1.sql.goog");
+
+    // 2. When only PUBLIC is available (no PRIVATE or PSC), prefers PUBLIC
+    ConnectionInfo publicOnlyInfo =
+        new ConnectionInfo(
+            new InstanceMetadata(
+                new CloudSqlInstanceName("project:region:instance"),
+                ImmutableMap.of(IpType.PUBLIC, Collections.singletonList("10.1.2.3")),
+                null,
+                false,
+                "",
+                false,
+                null),
+            sslData,
+            Instant.now().plus(1, ChronoUnit.HOURS));
+
+    RefreshAheadConnectionInfoCache publicCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withIpTypes(Collections.singletonList(IpType.SQL_DATA))
+                .build(),
+            new StubConnectionInfoRepository() {
+              @Override
+              public ListenableFuture<ConnectionInfo> getConnectionInfo(
+                  CloudSqlInstanceName instanceName,
+                  AccessTokenSupplier accessTokenSupplier,
+                  AuthType authType,
+                  ListeningScheduledExecutorService executor,
+                  ListenableFuture<KeyPair> keyPair) {
+                return Futures.immediateFuture(publicOnlyInfo);
+              }
+            },
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            MIN_REFERSH_DELAY_MS);
+
+    assertThat(publicCache.getConnectionMetadata(TEST_TIMEOUT_MS).getPreferredIpAddresses())
+        .containsExactly("10.1.2.3");
   }
 
   @Test
@@ -648,7 +745,7 @@ public class RefreshAheadConnectionInfoCacheTest {
         new ConnectionInfo(
             new InstanceMetadata(
                 new CloudSqlInstanceName("project:region:instance"),
-                ImmutableMap.of(IpType.PUBLIC, "10.1.2.3"),
+                ImmutableMap.of(IpType.PUBLIC, Collections.singletonList("10.1.2.3")),
                 null,
                 false,
                 "",
@@ -768,5 +865,249 @@ public class RefreshAheadConnectionInfoCacheTest {
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     return MoreExecutors.listeningDecorator(
         MoreExecutors.getExitingScheduledExecutorService(executor));
+  }
+
+  @Test
+  public void testRefreshAhead_probesPostgresIamAndSkipsNonPostgres() throws Exception {
+    ConnectionInfo pgInfo = newConnectionInfoWithVersion("POSTGRES_15");
+    ConnectionInfo mysqlInfo = newConnectionInfoWithVersion("MYSQL_8_0");
+
+    AtomicInteger dialCount = new AtomicInteger();
+    CountDownLatch probeLatch = new CountDownLatch(1);
+    ByteArrayOutputStream probedBytes = new ByteArrayOutputStream();
+    PostgresSocket.ProbeDialer recordingDialer =
+        (metadata, timeoutMs) -> {
+          dialCount.incrementAndGet();
+          return new SSLSocket() {
+            private final InputStream in =
+                new ByteArrayInputStream(new byte[] {'R', 0, 0, 0, 8, 0, 0, 0, 0});
+
+            @Override
+            public InputStream getInputStream() {
+              return in;
+            }
+
+            @Override
+            public OutputStream getOutputStream() {
+              return probedBytes;
+            }
+
+            @Override
+            public void close() {
+              probeLatch.countDown();
+            }
+
+            @Override
+            public String[] getSupportedCipherSuites() {
+              return new String[0];
+            }
+
+            @Override
+            public String[] getEnabledCipherSuites() {
+              return new String[0];
+            }
+
+            @Override
+            public void setEnabledCipherSuites(String[] suites) {}
+
+            @Override
+            public String[] getSupportedProtocols() {
+              return new String[0];
+            }
+
+            @Override
+            public String[] getEnabledProtocols() {
+              return new String[0];
+            }
+
+            @Override
+            public void setEnabledProtocols(String[] protocols) {}
+
+            @Override
+            public SSLSession getSession() {
+              return null;
+            }
+
+            @Override
+            public void addHandshakeCompletedListener(
+                javax.net.ssl.HandshakeCompletedListener listener) {}
+
+            @Override
+            public void removeHandshakeCompletedListener(
+                javax.net.ssl.HandshakeCompletedListener listener) {}
+
+            @Override
+            public void startHandshake() {}
+
+            @Override
+            public void setUseClientMode(boolean mode) {}
+
+            @Override
+            public boolean getUseClientMode() {
+              return false;
+            }
+
+            @Override
+            public void setNeedClientAuth(boolean need) {}
+
+            @Override
+            public boolean getNeedClientAuth() {
+              return false;
+            }
+
+            @Override
+            public void setWantClientAuth(boolean want) {}
+
+            @Override
+            public boolean getWantClientAuth() {
+              return false;
+            }
+
+            @Override
+            public void setEnableSessionCreation(boolean flag) {}
+
+            @Override
+            public boolean getEnableSessionCreation() {
+              return false;
+            }
+
+            @Override
+            public SSLParameters getSSLParameters() {
+              return new SSLParameters();
+            }
+
+            @Override
+            public void setSSLParameters(SSLParameters params) {}
+          };
+        };
+
+    ConnectionInfoRepository pgRepo =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            return Futures.immediateFuture(pgInfo);
+          }
+        };
+
+    RefreshAheadConnectionInfoCache pgCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withAuthType(AuthType.IAM)
+                .build(),
+            pgRepo,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            0,
+            recordingDialer);
+
+    // 1. Initial refresh without principals skips probe dial
+    ConnectionMetadata pgMetadata = pgCache.getConnectionMetadata(TEST_TIMEOUT_MS);
+    assertThat(pgMetadata.isPostgres()).isTrue();
+    assertThat(dialCount.get()).isEqualTo(0);
+    assertThat(probedBytes.toByteArray()).isEmpty();
+
+    // 2. Record principal and force refresh -> sends StartupMessage + Terminate
+    pgCache.recordIamPrincipal("refresh-user@iam", "pgdb");
+    pgCache.forceRefresh();
+    assertThat(probeLatch.await(TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+    pgCache.getConnectionMetadata(TEST_TIMEOUT_MS);
+    assertThat(dialCount.get()).isEqualTo(1);
+    byte[] expected = PostgresSocket.buildPostgresStartupPacket("refresh-user@iam", "pgdb");
+    assertThat(probedBytes.toByteArray().length)
+        .isEqualTo(expected.length + PostgresSocket.buildTerminatePacket().length);
+
+    pgCache.close();
+
+    // 3. Refresh where probeDialer throws IOException still succeeds and returns metadata
+    AtomicInteger failedDialAttempts = new AtomicInteger();
+    CountDownLatch failedProbeLatch = new CountDownLatch(1);
+    PostgresSocket.ProbeDialer failingDialer =
+        (metadata, timeoutMs) -> {
+          failedDialAttempts.incrementAndGet();
+          failedProbeLatch.countDown();
+          throw new IOException("simulated transient probe failure");
+        };
+    RefreshAheadConnectionInfoCache failingProbeCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withAuthType(AuthType.IAM)
+                .build(),
+            pgRepo,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            0,
+            failingDialer);
+    // Wait for initial constructor refresh to settle so subsequent forceRefresh() is not dropped.
+    assertThat(failingProbeCache.getConnectionMetadata(TEST_TIMEOUT_MS)).isNotNull();
+    failingProbeCache.recordIamPrincipal("fail-user@iam", "pgdb");
+    failingProbeCache.forceRefresh();
+    assertThat(failedProbeLatch.await(TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+    assertThat(failingProbeCache.getConnectionMetadata(TEST_TIMEOUT_MS)).isNotNull();
+    assertThat(failedDialAttempts.get()).isEqualTo(1);
+    failingProbeCache.close();
+
+    // 4. MySQL + AuthType.IAM must NOT invoke probeDialer even when a principal is recorded
+    int dialsBeforeMysql = dialCount.get();
+    ConnectionInfoRepository mysqlRepo =
+        new StubConnectionInfoRepository() {
+          @Override
+          public ListenableFuture<ConnectionInfo> getConnectionInfo(
+              CloudSqlInstanceName instanceName,
+              AccessTokenSupplier accessTokenSupplier,
+              AuthType authType,
+              ListeningScheduledExecutorService executor,
+              ListenableFuture<KeyPair> keyPair) {
+            return Futures.immediateFuture(mysqlInfo);
+          }
+        };
+    RefreshAheadConnectionInfoCache mysqlCache =
+        new RefreshAheadConnectionInfoCache(
+            new ConnectionConfig.Builder()
+                .withCloudSqlInstance("project:region:instance")
+                .withAuthType(AuthType.IAM)
+                .build(),
+            mysqlRepo,
+            stubCredentialFactory,
+            executorService,
+            keyPairFuture,
+            0,
+            recordingDialer);
+    assertThat(mysqlCache.getConnectionMetadata(TEST_TIMEOUT_MS).isPostgres()).isFalse();
+    mysqlCache.recordIamPrincipal("mysql-user@iam", "mysqldb");
+    mysqlCache.forceRefresh();
+    assertThat(mysqlCache.getConnectionMetadata(TEST_TIMEOUT_MS).isPostgres()).isFalse();
+    assertThat(dialCount.get()).isEqualTo(dialsBeforeMysql);
+    mysqlCache.close();
+  }
+
+  private static ConnectionInfo newConnectionInfoWithVersion(String databaseVersion) {
+    Map<IpType, List<String>> ips =
+        Collections.singletonMap(IpType.PUBLIC, Collections.singletonList("10.1.1.1"));
+    try {
+      return new ConnectionInfo(
+          new InstanceMetadata(
+              new CloudSqlInstanceName("project:region:instance"),
+              ips,
+              null,
+              false,
+              "",
+              false,
+              null,
+              databaseVersion),
+          new SslData(
+              null, KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()), null),
+          Instant.now().plus(1, ChronoUnit.HOURS));
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

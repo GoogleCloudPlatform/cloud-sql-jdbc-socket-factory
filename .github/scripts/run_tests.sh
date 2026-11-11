@@ -52,11 +52,11 @@ set +e
 
 case ${JOB_TYPE} in
 test)
-    $mvn_cmd -e -B clean -ntp test -P coverage -Dcheckstyle.skip
+    $mvn_cmd -e -B clean -ntp test -P coverage -Dcheckstyle.skip "$@"
     RETURN_CODE=$?
     ;;
 integration)
-    $mvn_cmd -e -B clean -ntp verify -P e2e -P coverage -Dcheckstyle.skip
+    $mvn_cmd -e -B clean -ntp verify -P e2e -P coverage -Dcheckstyle.skip "$@"
     RETURN_CODE=$?
     ;;
 esac
