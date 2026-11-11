@@ -452,12 +452,19 @@ public class DefaultConnectionInfoRepositoryTest {
     assertThat(pem).endsWith(footer);
     assertThat(pem).doesNotContain("RSA PUBLIC KEY");
 
-    String body = pem.substring(header.length(), pem.length() - footer.length());
-    for (String line : body.split("\n", -1)) {
-      assertThat(line.length()).isAtMost(64);
-    }
+    // The Cloud SQL control plane decodes the body with a strict Base64 decoder, so a stray CR or
+    // any other non-alphabet character is rejected there. Decode just as strictly here.
+    assertThat(pem).doesNotContain("\r");
 
-    byte[] derBytes = Base64.getMimeDecoder().decode(body);
+    String body = pem.substring(header.length(), pem.length() - footer.length());
+    String[] lines = body.split("\n", -1);
+    for (int i = 0; i < lines.length - 1; i++) {
+      assertThat(lines[i].length()).isEqualTo(64);
+    }
+    assertThat(lines[lines.length - 1]).isNotEmpty();
+    assertThat(lines[lines.length - 1].length()).isAtMost(64);
+
+    byte[] derBytes = Base64.getDecoder().decode(String.join("", lines));
     PublicKey decoded =
         KeyFactory.getInstance(algorithm).generatePublic(new X509EncodedKeySpec(derBytes));
     assertThat(decoded).isEqualTo(expectedKey);

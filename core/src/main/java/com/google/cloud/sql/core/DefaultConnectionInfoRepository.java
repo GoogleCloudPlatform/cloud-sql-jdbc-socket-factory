@@ -98,7 +98,7 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   private String generatePublicKeyCert(KeyPair keyPair) {
-    // Format the public key into a PEM encoded Certificate.
+    // Format the public key as a PEM-encoded X.509 SubjectPublicKeyInfo (RFC 7468 "PUBLIC KEY").
     return "-----BEGIN PUBLIC KEY-----\n"
         + BaseEncoding.base64().withSeparator("\n", 64).encode(keyPair.getPublic().getEncoded())
         + "\n"
