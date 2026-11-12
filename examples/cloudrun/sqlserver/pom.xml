@@ -34,7 +34,7 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>libraries-bom</artifactId>
-        <version>26.83.0</version>
+        <version>26.86.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -44,7 +44,7 @@
     <dependency>
         <groupId>com.google.cloud.sql</groupId>
         <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
-        <version>1.28.3</version>
+        <version>1.29.0</version>
     </dependency>
     <dependency>
         <groupId>com.microsoft.sqlserver</groupId>
@@ -54,7 +54,7 @@
     <dependency>
         <groupId>com.zaxxer</groupId>
         <artifactId>HikariCP</artifactId>
-        <version>7.0.2</version>
+        <version>7.1.0</version>
     </dependency>
     <dependency>
         <groupId>org.slf4j</groupId>

@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.sql</groupId>
   <artifactId>jdbc-socket-factory-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.28.4</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
+  <version>1.30.2</version><!-- {x-version-update:jdbc-socket-factory-parent:current} -->
 
   <parent>
     <groupId>com.google.cloud</groupId>
@@ -78,7 +78,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javac.version>9+181-r4173-1</javac.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
-    <errorprone.version>2.49.0</errorprone.version>
+    <errorprone.version>2.50.0</errorprone.version>
   </properties>
 
   <dependencyManagement>
@@ -86,22 +86,22 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.10.1</version>
+        <version>9.11.1</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-tree</artifactId>
-        <version>9.10.1</version>
+        <version>9.11.1</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-analysis</artifactId>
-        <version>9.10.1</version>
+        <version>9.11.1</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-util</artifactId>
-        <version>9.10.1</version>
+        <version>9.11.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.auto.value</groupId>
@@ -111,7 +111,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.6.0-jre</version>
+        <version>33.8.0-jre</version>
       </dependency>
       <dependency>
         <groupId>com.google.j2objc</groupId>
@@ -131,7 +131,7 @@
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
-        <version>4.1.0</version>
+        <version>4.3.1</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -139,44 +139,49 @@
         <version>2.5.6</version>
       </dependency>
       <dependency>
+        <groupId>org.jspecify</groupId>
+        <artifactId>jspecify</artifactId>
+        <version>1.0.1</version>
+      </dependency>
+      <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.14.0</version>
+        <version>2.15.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api-client</groupId>
         <artifactId>google-api-client</artifactId>
-        <version>2.9.0</version>
+        <version>2.9.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.apis</groupId>
         <artifactId>google-api-services-sqladmin</artifactId>
-        <version>v1beta4-rev20260510-2.0.0</version>
+        <version>v1beta4-rev20261018-2.9.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-gson</artifactId>
-        <version>2.1.0</version>
+        <version>2.2.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client</artifactId>
-        <version>2.1.0</version>
+        <version>2.2.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.http-client</groupId>
         <artifactId>google-http-client-jackson2</artifactId>
-        <version>2.1.0</version>
+        <version>2.2.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-credentials</artifactId>
-        <version>1.47.0</version>
+        <version>1.57.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.auth</groupId>
         <artifactId>google-auth-library-oauth2-http</artifactId>
-        <version>1.47.0</version>
+        <version>1.57.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.oauth-client</groupId>
@@ -186,49 +191,91 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>${errorprone.version}</version>
+        <version>2.52.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
-        <version>4.35.0</version>
+        <version>4.36.2</version>
         <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-google-common-protos</artifactId>
+        <version>2.81.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.38.25</version>
+        <version>0.39.6</version>
       </dependency>
       <dependency>
         <groupId>dnsjava</groupId>
         <artifactId>dnsjava</artifactId>
-        <version>3.6.5</version>
+        <version>3.7.0</version>
       </dependency>
       <dependency>
         <groupId>org.graalvm.sdk</groupId>
         <artifactId>nativeimage</artifactId>
-        <version>25.0.3</version>
+        <version>25.4.4.1.1</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.22.0</version>
+        <version>1.23.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.api</groupId>
         <artifactId>gax</artifactId>
-        <version>2.80.0</version>
+        <version>2.90.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.api</groupId>
+        <artifactId>gax-grpc</artifactId>
+        <version>2.90.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-sql</artifactId>
+        <version>0.8.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>grpc-google-cloud-sql-v1beta4</artifactId>
+        <version>0.8.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-google-cloud-sql-v1beta4</artifactId>
+        <version>0.8.0</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-api</artifactId>
-        <version>1.81.0</version>
+        <version>1.85.1</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-context</artifactId>
-        <version>1.81.0</version>
+        <version>1.85.1</version>
       </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-testing</artifactId>
+        <version>1.85.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-inprocess</artifactId>
+        <version>1.85.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-stub</artifactId>
+        <version>1.85.1</version>
+        <scope>test</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams</artifactId>
@@ -242,53 +289,53 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.8.5</version>
+        <version>3.8.8</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty</artifactId>
-        <version>1.3.5</version>
+        <version>1.3.8</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-common</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-unix-common</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-buffer</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-codec</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-resolver</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.19.Final</version>
       </dependency>
       <!-- Logging -->
       <dependency> 
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>2.0.18</version>
+        <version>2.0.20</version>
       </dependency>
       <!-- Tests -->
       <dependency>
@@ -323,14 +370,14 @@
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.70</version>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>1.86</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.70</version>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>1.86</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -342,7 +389,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>6.1.0</version>
+        <version>6.1.3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -676,10 +723,10 @@
                 com.google.guava:guava
 
                 Global test dependencies unused in r2dbc core:
-                junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk15on
+                junit:junit,com.google.truth:truth,org.bouncycastle:bcpkix-jdk18on
                 com.google.cloud.sql:jdbc-socket-factory-core:test-jar
                 -->
-                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,com.github.jnr:jnr-enxio,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk15on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials
+                org.ow2.asm:asm-util,com.github.jnr:jnr-unixsocket,com.github.jnr:jnr-enxio,org.postgresql:postgresql,junit:junit,com.google.truth:truth,com.microsoft.sqlserver:mssql-jdbc,com.google.guava:guava,org.bouncycastle:bcpkix-jdk18on,com.google.cloud.sql:jdbc-socket-factory-core:test-jar,com.google.auth:google-auth-library-credentials,com.google.protobuf:protobuf-java
               </ignoredDependencies>
             </configuration>
             <executions>
@@ -823,7 +870,7 @@
                   <artifactId>maven-compiler-plugin</artifactId>
                   <configuration>
                       <compilerArgs combine.children="append">
-                          <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg>
+                          <!-- <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:AssertThrowsMinimizer:OFF -Xep:AssertThrowsBlockToExpression:OFF</arg> -->
                           <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                           <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
@@ -1084,9 +1131,9 @@
                 </goals>
                 <configuration>
                   <classpathDependencyExcludes>
-                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk15on</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk15on</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk15on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk18on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcprov-jdk18on</classpathDependencyExclude>
+                    <classpathDependencyExclude>org.bouncycastle:bcutil-jdk18on</classpathDependencyExclude>
                   </classpathDependencyExcludes>
                 </configuration>
               </execution>

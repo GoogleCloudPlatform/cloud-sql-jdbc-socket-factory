@@ -1,5 +1,63 @@
 # Changelog
 
+## [1.30.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.1...v1.30.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* update deps to the latest ([#2318](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2318)) ([c86e415](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/c86e4157f9d2a9befe0b1ea32dad07858f7a84c1))
+
+## [1.30.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.0...v1.30.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* update deps to the latest ([#2314](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2314)) ([e7ad580](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/e7ad5804fdb0713704602a9cbf335ff0a1d1616b))
+
+
+### Dependencies
+
+* update Bouncy Castle and Kokoro python dependencies ([#2308](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2308)) ([ff71503](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ff7150327f38589381a508302629d746164ceef5))
+
+## [1.30.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.29.0...v1.30.0) (2026-08-24)
+
+
+### Features
+
+* Support Developer Edition connections ([#2287](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2287)) ([46ce4a7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/46ce4a7e99c5732d6f2ebfc47ac772a7be79b416))
+
+
+### Bug Fixes
+
+* Optimize DNS resolution logic ([#2302](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2302)) ([0e2d3b7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0e2d3b7366e363b19785d71910bc231b19c41b22))
+* update deps to the latest ([#2303](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2303)) ([d9dc53d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/d9dc53dd32a11e080d72fcdb335030c3f47a0787))
+
+## [1.29.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.6...v1.29.0) (2026-07-23)
+
+
+### Features
+
+* Add PSC DNS and Global Write Endpoint support to Java Connector ([#2286](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2286)) ([3bb0597](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/3bb05973bd247b5ba4fe371e058818774bb18e64))
+
+
+### Bug Fixes
+
+* update java dependencies ([#2298](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2298)) ([386bd2d](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/386bd2df965de4887de70d9b2556f17df18456cb))
+
+## [1.28.6](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.5...v1.28.6) (2026-06-28)
+
+
+### Bug Fixes
+
+* Update dependency maven to v3.9.16 ([#2281](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2281)) ([7e003ad](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/7e003ad5501b695ba1ff14136808495709a38b5d))
+
+## [1.28.5](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.4...v1.28.5) (2026-06-26)
+
+
+### Bug Fixes
+
+* Enforce size limit on the MDX response ([61585ef](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/61585ef75772d6904feee979261911ba74d56ac7))
+
 ## [1.28.4](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.28.3...v1.28.4) (2026-05-26)
 
 

@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.cloud.sql.core.mdx.MetadataExchange;
 import java.io.ByteArrayInputStream;
@@ -98,6 +99,41 @@ public class ProtocolHandlerTest {
     int l = in.read(gotInBytes);
     assertThat(l).isEqualTo(wantInBytes.length);
     assertThat(gotInBytes).isEqualTo(wantInBytes);
+  }
+
+  @Test
+  public void testReadMdx_rejectsOversizedResponseSize_BUG_511891149() throws IOException {
+    // Regression test for b/511891149: a malicious or compromised peer (post-mTLS)
+    // could send 0x7FFFFFFF as the MDX response length, forcing the JVM to attempt
+    // a ~2 GiB byte[] allocation and crash with an uncatchable OutOfMemoryError.
+    // ProtocolHandler.readMdxResponse() must reject sizes outside (0, 16 KiB].
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    out.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
+    // Big-endian Integer.MAX_VALUE (0x7FFFFFFF) — the attack from the bug report.
+    out.write(0x7F);
+    out.write(0xFF);
+    out.write(0xFF);
+    out.write(0xFF);
+    ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+
+    IOException thrown =
+        assertThrows(IOException.class, () -> new ProtocolHandler("ua").readMdxResponse(in));
+    assertThat(thrown).hasMessageThat().contains("Invalid MDX response size");
+  }
+
+  @Test
+  public void testReadMdx_cutoffResponseSize() throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    out.write("CSQLMDEX".getBytes(StandardCharsets.UTF_8));
+    // Big-endian Integer.MAX_VALUE (0x7FFFFFFF) — the attack from the bug report.
+    out.write(0x7F);
+    out.write(0xFF);
+    out.write(0xFF);
+    out.close();
+    ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+    IOException thrown =
+        assertThrows(IOException.class, () -> new ProtocolHandler("ua").readMdxResponse(in));
+    assertThat(thrown).hasMessageThat().contains("Failed to read MDX response size: stream ended.");
   }
 
   @Test

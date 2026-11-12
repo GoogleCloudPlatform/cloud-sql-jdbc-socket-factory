@@ -18,6 +18,8 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.IpType;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
@@ -45,25 +47,51 @@ class ConnectionInfo {
     return sslContext;
   }
 
-  Map<IpType, String> getIpAddrs() {
+  Map<IpType, List<String>> getIpAddrs() {
     return instanceMetadata.getIpAddrs();
+  }
+
+  String getDatabaseVersion() {
+    return instanceMetadata.getDatabaseVersion();
+  }
+
+  boolean isPostgres() {
+    String dbVersion = getDatabaseVersion();
+    return dbVersion != null && dbVersion.startsWith("POSTGRES");
   }
 
   SslData getSslData() {
     return sslData;
   }
 
-  ConnectionMetadata toConnectionMetadata(
-      ConnectionConfig config, CloudSqlInstanceName instanceName) {
-    String preferredIp = null;
-
-    for (IpType ipType : config.getIpTypes()) {
-      preferredIp = getIpAddrs().get(ipType);
-      if (preferredIp != null) {
-        break;
+  List<String> getPreferredIps(List<IpType> ipTypes) {
+    if (ipTypes == null || ipTypes.isEmpty()) {
+      return Collections.emptyList();
+    }
+    for (IpType ipType : ipTypes) {
+      List<String> preferredIps;
+      if (ipType == IpType.SQL_DATA) {
+        preferredIps = getIpAddrs().get(IpType.PRIVATE);
+        if (preferredIps == null || preferredIps.isEmpty()) {
+          preferredIps = getIpAddrs().get(IpType.PSC);
+        }
+        if (preferredIps == null || preferredIps.isEmpty()) {
+          preferredIps = getIpAddrs().get(IpType.PUBLIC);
+        }
+      } else {
+        preferredIps = getIpAddrs().get(ipType);
+      }
+      if (preferredIps != null && !preferredIps.isEmpty()) {
+        return preferredIps;
       }
     }
-    if (preferredIp == null) {
+    return Collections.emptyList();
+  }
+
+  ConnectionMetadata toConnectionMetadata(
+      ConnectionConfig config, CloudSqlInstanceName instanceName) {
+    List<String> preferredIps = getPreferredIps(config.getIpTypes());
+    if (preferredIps.isEmpty()) {
       throw new IllegalArgumentException(
           String.format(
               "[%s] Cloud SQL instance  does not have any IP addresses matching preferences (%s)",
@@ -72,10 +100,12 @@ class ConnectionInfo {
     }
 
     return new ConnectionMetadata(
-        preferredIp,
+        preferredIps,
+        instanceMetadata.getIpAddrs(),
         sslData.getKeyManagerFactory(),
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),
-        instanceMetadata.getMdxProtocolSupport());
+        instanceMetadata.getMdxProtocolSupport(),
+        instanceMetadata.getDatabaseVersion());
   }
 }

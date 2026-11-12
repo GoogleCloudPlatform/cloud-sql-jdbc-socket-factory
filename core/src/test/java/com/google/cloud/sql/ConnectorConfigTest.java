@@ -423,6 +423,36 @@ public class ConnectorConfigTest {
   }
 
   @Test
+  public void testNotEqual_withResourceExhaustedCooldownPeriod() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder()
+            .withResourceExhaustedCooldownPeriod(Duration.ofSeconds(10))
+            .build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder()
+            .withResourceExhaustedCooldownPeriod(Duration.ofSeconds(20))
+            .build();
+
+    assertThat(k1).isNotEqualTo(k2);
+    assertThat(k1.hashCode()).isNotEqualTo(k2.hashCode());
+  }
+
+  @Test
+  public void testEqual_withResourceExhaustedCooldownPeriod() {
+    ConnectorConfig k1 =
+        new ConnectorConfig.Builder()
+            .withResourceExhaustedCooldownPeriod(Duration.ofSeconds(10))
+            .build();
+    ConnectorConfig k2 =
+        new ConnectorConfig.Builder()
+            .withResourceExhaustedCooldownPeriod(Duration.ofSeconds(10))
+            .build();
+
+    assertThat(k1).isEqualTo(k2);
+    assertThat(k1.hashCode()).isEqualTo(k2.hashCode());
+  }
+
+  @Test
   public void testHashCode() {
     final String wantTargetPrincipal = "test@example.com";
     final List<String> wantDelegates = Arrays.asList("test1@example.com", "test2@example.com");
@@ -456,6 +486,9 @@ public class ConnectorConfigTest {
                 null, // universeDomain
                 wantRefreshStrategy, // refreshStrategy
                 null, // instanceNameResolver
-                ConnectorConfig.DEFAULT_FAILOVER_PERIOD));
+                ConnectorConfig.DEFAULT_FAILOVER_PERIOD,
+                "sqladmin.googleapis.com",
+                Duration.ofHours(2),
+                ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD));
   }
 }

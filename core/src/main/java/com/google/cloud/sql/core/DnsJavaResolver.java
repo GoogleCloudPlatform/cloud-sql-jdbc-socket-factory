@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.naming.NameNotFoundException;
 import org.xbill.DNS.ARecord;
+import org.xbill.DNS.CNAMERecord;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.SimpleResolver;
@@ -147,6 +148,40 @@ public class DnsJavaResolver implements DnsResolver {
 
     } catch (TextParseException e) {
       throw new UnknownHostException("Invalid domain name format: " + hostName);
+    }
+  }
+
+  @Override
+  public String resolveCname(String domainName) throws NameNotFoundException {
+    try {
+      Lookup lookup = new Lookup(domainName, Type.CNAME);
+      if (this.resolver != null) {
+        lookup.setResolver(this.resolver);
+      }
+      lookup.run();
+
+      int resultCode = lookup.getResult();
+      if (resultCode == Lookup.HOST_NOT_FOUND) {
+        throw new NameNotFoundException("DNS record not found for " + domainName);
+      }
+      if (resultCode == Lookup.TYPE_NOT_FOUND) {
+        throw new NameNotFoundException("DNS record type CNAME not found for " + domainName);
+      }
+      if (resultCode != Lookup.SUCCESSFUL) {
+        throw new RuntimeException(
+            "DNS lookup failed for " + domainName + ": " + lookup.getErrorString());
+      }
+
+      Record[] records = lookup.getAnswers();
+      if (records == null || records.length == 0) {
+        throw new NameNotFoundException("DNS record type CNAME not found for " + domainName);
+      }
+
+      CNAMERecord cnameRecord = (CNAMERecord) records[0];
+      return cnameRecord.getTarget().toString();
+
+    } catch (TextParseException e) {
+      throw new RuntimeException("Invalid domain name format: " + domainName, e);
     }
   }
 }

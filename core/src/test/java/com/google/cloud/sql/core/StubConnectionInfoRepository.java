@@ -26,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManagerFactory;
@@ -38,7 +39,8 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
   }
 
   private ConnectionInfo newConnectionInfo() {
-    Map<IpType, String> ips = Collections.singletonMap(IpType.PUBLIC, "10.1.1.1");
+    Map<IpType, List<String>> ips =
+        Collections.singletonMap(IpType.PUBLIC, Collections.singletonList("10.1.1.1"));
     try {
       return new ConnectionInfo(
           new InstanceMetadata(
@@ -77,5 +79,10 @@ class StubConnectionInfoRepository implements ConnectionInfoRepository {
       KeyPair keyPair) {
     refreshCount.incrementAndGet();
     return newConnectionInfo();
+  }
+
+  @Override
+  public String resolveConnectionName(String region, String dnsName) {
+    throw new UnsupportedOperationException();
   }
 }
