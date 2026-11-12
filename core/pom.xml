@@ -61,13 +61,13 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-enxio</artifactId>
-      <version>0.33.3</version>
+      <version>0.33.4</version>
     </dependency>
 
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.39.5</version>
+      <version>0.39.6</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
@@ -295,7 +295,7 @@
         <dependency>
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcpkix-jdk18on</artifactId>
-          <version>1.70</version>
+          <version>1.86</version>
           <scope>provided</scope>
         </dependency>
       </dependencies>

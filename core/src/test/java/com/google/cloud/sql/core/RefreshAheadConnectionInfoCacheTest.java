@@ -1046,6 +1046,8 @@ public class RefreshAheadConnectionInfoCacheTest {
             keyPairFuture,
             0,
             failingDialer);
+    // Wait for initial constructor refresh to settle so subsequent forceRefresh() is not dropped.
+    assertThat(failingProbeCache.getConnectionMetadata(TEST_TIMEOUT_MS)).isNotNull();
     failingProbeCache.recordIamPrincipal("fail-user@iam", "pgdb");
     failingProbeCache.forceRefresh();
     assertThat(failedProbeLatch.await(TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
@@ -1079,6 +1081,7 @@ public class RefreshAheadConnectionInfoCacheTest {
             keyPairFuture,
             0,
             recordingDialer);
+    assertThat(mysqlCache.getConnectionMetadata(TEST_TIMEOUT_MS).isPostgres()).isFalse();
     mysqlCache.recordIamPrincipal("mysql-user@iam", "mysqldb");
     mysqlCache.forceRefresh();
     assertThat(mysqlCache.getConnectionMetadata(TEST_TIMEOUT_MS).isPostgres()).isFalse();
