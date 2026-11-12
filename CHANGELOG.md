@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.31.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.2...v1.31.0) (2026-11-12)
+
+
+### Features
+
+* add opt-in cloudSqlTlsProvider for post-quantum TLS via Conscrypt ([#2321](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2321)) ([238fde7](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/238fde728c43f7105a88aebafe31dc4a731cfd91))
+* **r2dbc:** opt-in post-quantum TLS via TLS_PROVIDER, and PQC docs ([#2322](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2322)) ([95fd903](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/95fd9037a869a87cd2b073c80467b7da0740c631))
+
+
+### Bug Fixes
+
+* send PostgreSQL v3 StartupMessage in proactive IAM refresh probe for MCP ([#2313](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2313)) ([a0a2aa2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/a0a2aa256b04a62dfc8aed029191058eb468d3c0))
+* **test:** wait for initial refresh before forceRefresh in probe test ([#2330](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2330)) ([596d987](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/596d987ff6703fdd28c6a1ff74f7ccdebf37e87f))
+* update dependencies to latest ([#2326](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2326)) ([2231ac3](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/2231ac38f3cadfc867e22cb4ace7e17ceea8a41c))
+* use algorithm-agnostic PKIX headers for client public keys ([#2324](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2324)) ([0de8715](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/0de871522120bbdf62e082922a3c21ce78cf4371))
+
 ## [1.30.2](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.1...v1.30.2) (2026-10-23)
 
 
