@@ -65,7 +65,8 @@ public class StubConnectionInfoRepositoryFactory implements ConnectionInfoReposi
               .build();
       adminApiBuilder.setGoogleClientRequestInitializer(clientRequestInitializer);
     }
-    return new DefaultConnectionInfoRepository(adminApiBuilder.build());
+    return new DefaultConnectionInfoRepository(
+        adminApiBuilder.build(), config.getSecurityProviderLibrary());
   }
 
   @Override

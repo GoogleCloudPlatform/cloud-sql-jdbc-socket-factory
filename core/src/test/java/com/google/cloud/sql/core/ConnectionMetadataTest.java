@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +52,35 @@ public class ConnectionMetadataTest {
     assertThat(metadata.getSslContext()).isNull();
     assertThat(metadata.getMdxProtocolSupport()).isEqualTo(mdxSupport);
     assertThat(metadata.isMdxClientProtocolTypeSupport()).isTrue();
+    assertThat(metadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
+    assertThat(metadata.isSslContextSupportsPqc()).isFalse();
+  }
+
+  @Test
+  public void testConnectionMetadataWithTlsProviderFields() {
+    List<String> preferred = Collections.singletonList("10.0.0.1");
+    Map<IpType, List<String>> ipMap =
+        Collections.singletonMap(IpType.PUBLIC, Collections.singletonList("10.0.0.1"));
+
+    ConnectionMetadata autoMetadata =
+        new ConnectionMetadata(
+            preferred,
+            ipMap,
+            null,
+            null,
+            null,
+            Collections.emptyList(),
+            SecurityProviderLibrary.AUTO,
+            true);
+    assertThat(autoMetadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.AUTO);
+    assertThat(autoMetadata.isSslContextSupportsPqc()).isTrue();
+
+    ConnectionMetadata nullLibraryMetadata =
+        new ConnectionMetadata(
+            preferred, ipMap, null, null, null, Collections.emptyList(), null, false);
+    assertThat(nullLibraryMetadata.getSecurityProviderLibrary())
+        .isEqualTo(SecurityProviderLibrary.JDK);
+    assertThat(nullLibraryMetadata.isSslContextSupportsPqc()).isFalse();
   }
 
   @Test

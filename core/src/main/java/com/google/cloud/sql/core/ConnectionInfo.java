@@ -16,7 +16,9 @@
 
 package com.google.cloud.sql.core;
 
+import com.google.cloud.sql.ConnectorConfig;
 import com.google.cloud.sql.IpType;
+import com.google.cloud.sql.SecurityProviderLibrary;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -99,6 +101,13 @@ class ConnectionInfo {
               config.getIpTypes().stream().map(IpType::toString).collect(Collectors.joining(","))));
     }
 
+    SecurityProviderLibrary securityProviderLibrary =
+        sslData.getSecurityProviderLibrary() != null
+            ? sslData.getSecurityProviderLibrary()
+            : (config.getConnectorConfig() != null
+                ? config.getConnectorConfig().getSecurityProviderLibrary()
+                : ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY);
+
     return new ConnectionMetadata(
         preferredIps,
         instanceMetadata.getIpAddrs(),
@@ -106,6 +115,8 @@ class ConnectionInfo {
         sslData.getTrustManagerFactory(),
         sslData.getSslContext(),
         instanceMetadata.getMdxProtocolSupport(),
-        instanceMetadata.getDatabaseVersion());
+        instanceMetadata.getDatabaseVersion(),
+        securityProviderLibrary,
+        sslData.isSslContextSupportsPqc());
   }
 }

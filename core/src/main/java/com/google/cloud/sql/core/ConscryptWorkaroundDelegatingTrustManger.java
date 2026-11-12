@@ -17,12 +17,9 @@
 package com.google.cloud.sql.core;
 
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
-import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
@@ -37,28 +34,17 @@ import javax.net.ssl.X509ExtendedTrustManager;
  * <p>See https://github.com/google/conscrypt/issues/1033#issuecomment-982701272
  */
 class ConscryptWorkaroundDelegatingTrustManger extends X509ExtendedTrustManager {
-  private static final boolean CONSCRYPT_TLS;
-
-  static {
-    // Provider name is "Conscrypt", hardcoded string in the library source:
-    // https://github.com/google/conscrypt/blob/655ad5069e1cb4d1989b8117eaf090371885af99/openjdk/src/main/java/org/conscrypt/Platform.java#L149
-    Provider p = Security.getProvider("Conscrypt");
-    if (p != null) {
-      try {
-        SSLContext ctx = SSLContext.getInstance("TLS");
-        Provider prov = ctx.getProvider();
-        CONSCRYPT_TLS = "Conscrypt".equals(prov.getName());
-      } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException("Unable to load algorithm TLS", e);
-      }
-    } else {
-      CONSCRYPT_TLS = false;
-    }
-  }
-
-  /** Returns true if the Conscrypt Java Crypto Extension is installed. */
-  static boolean isWorkaroundNeeded() {
-    return CONSCRYPT_TLS;
+  /**
+   * Returns true if the trust managers will be used by a Conscrypt SSLContext.
+   *
+   * @param sslContextProvider the provider that serves the SSLContext the trust managers are
+   *     created for. It is checked on every call, so it is correct both for a connector-scoped
+   *     Conscrypt provider selected with {@code cloudSqlTlsProvider} and for Conscrypt installed as
+   *     the JVM's default TLS provider, whether that happened before or after the connector was
+   *     first used.
+   */
+  static boolean isWorkaroundNeeded(Provider sslContextProvider) {
+    return SecurityProviderFactory.isConscrypt(sslContextProvider);
   }
 
   private final X509ExtendedTrustManager tm;
