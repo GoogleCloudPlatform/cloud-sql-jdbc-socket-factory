@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.net.Socket;
 import java.security.Provider;
 import java.security.Security;
@@ -37,6 +38,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import org.conscrypt.Conscrypt;
 import org.junit.After;
 import org.junit.Before;
@@ -237,6 +240,69 @@ public class ConnectorTlsProviderTest extends CloudSqlCoreTestingBase {
     assertThat(metadata.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
     assertThat(metadata.isSslContextSupportsPqc())
         .isEqualTo(SecurityProviderFactory.defaultTls13SupportsX25519MlKem768());
+  }
+
+  @Test
+  public void
+      jdkAndAuto_wrapTrustManagerAndUseConscryptKeyManagerWhenConscryptInsertedGloballyAfterFirstUse()
+          throws Exception {
+    assumeConscryptAvailable();
+
+    // 1. Exercise default (JDK) and AUTO mode before Conscrypt is installed globally.
+    ConnectionConfig jdkConfig = connectionConfig(SecurityProviderLibrary.JDK);
+    Connector initialJdkConnector =
+        newConnector(jdkConfig.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+    ConnectionMetadata initialMetadata =
+        initialJdkConnector.getConnection(jdkConfig).getConnectionMetadata(10_000L);
+    assertThat(initialMetadata.getSslContextProvider().getName()).isNotEqualTo("Conscrypt");
+    assertThat(initialMetadata.getKeyManagerFactory().getProvider().getName())
+        .isNotEqualTo("Conscrypt");
+    assertThat(hasConscryptWorkaroundTrustManager(initialMetadata)).isFalse();
+
+    // 2. Insert Conscrypt globally at position 1 after the connector's first use.
+    Provider globalConscrypt = Conscrypt.newProvider();
+    assertThat(Security.getProvider(globalConscrypt.getName())).isNull();
+    Security.insertProviderAt(globalConscrypt, 1);
+    try {
+      // JDK mode now gets its SSLContext from globalConscrypt, wraps the trust manager with
+      // ConscryptWorkaroundDelegatingTrustManger, and uses Conscrypt's PKIX KeyManagerFactory.
+      Connector jdkAfterInsert =
+          newConnector(jdkConfig.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+      ConnectionMetadata jdkMetadataAfter =
+          jdkAfterInsert.getConnection(jdkConfig).getConnectionMetadata(10_000L);
+      assertThat(jdkMetadataAfter.getSslContextProvider()).isSameInstanceAs(globalConscrypt);
+      assertThat(jdkMetadataAfter.getKeyManagerFactory().getProvider())
+          .isSameInstanceAs(globalConscrypt);
+      assertThat(jdkMetadataAfter.getKeyManagerFactory().getAlgorithm()).isEqualTo("PKIX");
+      assertThat(jdkMetadataAfter.isSslContextSupportsPqc()).isTrue();
+      assertThat(hasConscryptWorkaroundTrustManager(jdkMetadataAfter)).isTrue();
+
+      // AUTO mode also resolves to the global top provider and applies both workarounds.
+      ConnectionConfig autoConfig = connectionConfig(SecurityProviderLibrary.AUTO);
+      Connector autoAfterInsert =
+          newConnector(autoConfig.getConnectorConfig(), DEFAULT_SERVER_PROXY_PORT);
+      ConnectionMetadata autoMetadataAfter =
+          autoAfterInsert.getConnection(autoConfig).getConnectionMetadata(10_000L);
+      assertThat(autoMetadataAfter.getSslContextProvider()).isSameInstanceAs(globalConscrypt);
+      assertThat(autoMetadataAfter.getKeyManagerFactory().getProvider())
+          .isSameInstanceAs(globalConscrypt);
+      assertThat(autoMetadataAfter.getKeyManagerFactory().getAlgorithm()).isEqualTo("PKIX");
+      assertThat(autoMetadataAfter.isSslContextSupportsPqc()).isTrue();
+      assertThat(hasConscryptWorkaroundTrustManager(autoMetadataAfter)).isTrue();
+    } finally {
+      Security.removeProvider(globalConscrypt.getName());
+    }
+  }
+
+  private static boolean hasConscryptWorkaroundTrustManager(ConnectionMetadata metadata)
+      throws Exception {
+    TrustManager[] tms = metadata.getTrustManagerFactory().getTrustManagers();
+    assertThat(tms).isNotEmpty();
+    assertThat(tms[0]).isInstanceOf(InstanceCheckingTrustManger.class);
+    Field tmField = InstanceCheckingTrustManger.class.getDeclaredField("tm");
+    tmField.setAccessible(true);
+    X509ExtendedTrustManager delegate = (X509ExtendedTrustManager) tmField.get(tms[0]);
+    return delegate instanceof ConscryptWorkaroundDelegatingTrustManger;
   }
 
   @Test

@@ -150,8 +150,132 @@ public class SecurityProviderFactoryTest {
     assertThat(ex)
         .hasMessageThat()
         .contains("org.conscrypt:conscrypt-openjdk-uber dependency is not on the classpath");
-    assertThat(ex).hasMessageThat().contains("Gradle / non-Maven build tools");
-    assertThat(ex).hasMessageThat().contains("--release");
+    assertThat(ex)
+        .hasMessageThat()
+        .contains("included as a transitive dependency unless excluded by the application");
+  }
+
+  @Test
+  public void conscrypt_terminalExceptionCarriesTheReasonConscryptDidNotLoad() {
+    // Simulates CONSCRYPT where Conscrypt's native library cannot be extracted (read-only temp
+    // directory): Conscrypt.checkAvailability() throws this UnsatisfiedLinkError.
+    UnsatisfiedLinkError loadFailure = new UnsatisfiedLinkError("Failed creating temp file (null)");
+    loadFailure.initCause(new IOException("Permission denied"));
+
+    TerminalException ex =
+        assertThrows(
+            TerminalException.class,
+            () ->
+                SecurityProviderFactory.resolve(
+                    SecurityProviderLibrary.CONSCRYPT,
+                    UNAVAILABLE,
+                    () -> loadFailure,
+                    () -> false,
+                    () -> false,
+                    null,
+                    capturingLogger(new ArrayList<>(), new ArrayList<>())));
+
+    assertThat(ex).hasCauseThat().isSameInstanceAs(loadFailure);
+    assertThat(ex).hasMessageThat().contains("cloudSqlTlsProvider is set to CONSCRYPT");
+    assertThat(ex).hasMessageThat().contains("Failed creating temp file");
+    assertThat(ex).hasMessageThat().contains("java.io.IOException: Permission denied");
+  }
+
+  @Test
+  public void conscrypt_throwsTerminalExceptionWithCauseWhenConscryptCannotCreateEngine() {
+    // Simulates CONSCRYPT with -Djdk.tls.namedGroups=ffdhe2048: Conscrypt loads, but
+    // org.conscrypt.NativeSsl fails to initialize, so every engine or socket creation throws.
+    LinkageError failure =
+        new NoClassDefFoundError("Could not initialize class org.conscrypt.NativeSsl");
+    failure.initCause(
+        new ExceptionInInitializerError(
+            new IllegalArgumentException("No valid known group found in: [ffdhe2048]")));
+    CountingBooleanSupplier conscryptProbe = new CountingBooleanSupplier(false);
+
+    TerminalException ex =
+        assertThrows(
+            TerminalException.class,
+            () ->
+                SecurityProviderFactory.resolve(
+                    SecurityProviderLibrary.CONSCRYPT,
+                    () -> FAKE_CONSCRYPT,
+                    () -> failure,
+                    conscryptProbe,
+                    () -> false,
+                    "ffdhe2048",
+                    capturingLogger(new ArrayList<>(), new ArrayList<>())));
+
+    assertThat(ex).hasCauseThat().isSameInstanceAs(failure);
+    assertThat(ex).hasMessageThat().contains("cloudSqlTlsProvider is set to CONSCRYPT");
+    assertThat(ex).hasMessageThat().contains("No valid known group found in: [ffdhe2048]");
+    assertThat(ex).hasMessageThat().contains("jdk.tls.namedGroups system property");
+    assertThat(conscryptProbe.calls.get()).isEqualTo(0);
+  }
+
+  @Test
+  public void auto_fallsBackToDefaultProviderWhenConscryptCannotCreateEngine() throws Exception {
+    LinkageError failure =
+        new ExceptionInInitializerError(
+            new IllegalArgumentException("No valid known group found in: [x25519mlkem768]"));
+    List<String> infoMessages = new ArrayList<>();
+    List<String> warnMessages = new ArrayList<>();
+    AtomicBoolean announced = getFlag("AUTO_CONSCRYPT_UNUSABLE_ANNOUNCED");
+    boolean prev = announced.getAndSet(false);
+    try {
+      for (int i = 0; i < 2; i++) {
+        assertThat(
+                SecurityProviderFactory.resolve(
+                    SecurityProviderLibrary.AUTO,
+                    () -> FAKE_CONSCRYPT,
+                    () -> failure,
+                    () -> false,
+                    () -> false,
+                    "x25519mlkem768",
+                    capturingLogger(infoMessages, warnMessages)))
+            .isNull();
+      }
+      assertThat(warnMessages).isEmpty();
+      assertThat(infoMessages).hasSize(1);
+      assertThat(infoMessages.get(0)).contains("Conscrypt cannot create a TLS engine");
+      assertThat(infoMessages.get(0)).contains("No valid known group found in: [x25519mlkem768]");
+    } finally {
+      announced.set(prev);
+    }
+  }
+
+  @Test
+  public void engineCreationFailure_reportsLinkageErrorsOnly() throws Exception {
+    assertThat(SecurityProviderFactory.engineCreationFailure(null)).isNull();
+    assertThat(
+            SecurityProviderFactory.engineCreationFailure(
+                new FakeTlsProvider("NoTls13", false, true)))
+        .isNull();
+
+    byte[] clientHello = buildClientHelloRecord(new int[] {0x11ec, 0x001d});
+    assertThat(
+            SecurityProviderFactory.engineCreationFailure(
+                syntheticClientHelloProvider("Conscrypt", clientHello)))
+        .isNull();
+
+    LinkageError linkageError =
+        new NoClassDefFoundError("Could not initialize class org.conscrypt.NativeSsl");
+    assertThat(
+            SecurityProviderFactory.engineCreationFailure(
+                syntheticClientHelloProvider("Conscrypt", clientHello, linkageError)))
+        .isSameInstanceAs(linkageError);
+
+    // Other failures are left to the X25519MLKEM768 probe, which reports false for them.
+    Provider runtimeFailure =
+        syntheticClientHelloProvider(
+            "Conscrypt", clientHello, new IllegalStateException("simulated engine failure"));
+    assertThat(SecurityProviderFactory.engineCreationFailure(runtimeFailure)).isNull();
+    assertThat(SecurityProviderFactory.probeProviderSupportsX25519MlKem768(runtimeFailure))
+        .isFalse();
+
+    if (Conscrypt.isAvailable()) {
+      assertThat(SecurityProviderFactory.engineCreationFailure(Conscrypt.newProvider())).isNull();
+      assertThat(SecurityProviderFactory.conscryptFailure()).isNull();
+    }
   }
 
   @Test
@@ -329,7 +453,8 @@ public class SecurityProviderFactoryTest {
           .contains("default TLSv1.3 JSSE provider already advertises X25519MLKEM768");
       assertThat(infoMessages.get(1))
           .contains("Using the default JSSE provider, so Cloud SQL connections will not use");
-      assertThat(infoMessages.get(1)).contains("Gradle / non-Maven builds");
+      assertThat(infoMessages.get(1))
+          .contains("included as a transitive dependency unless excluded by the application");
       assertThat(infoMessages.get(2)).contains("Conscrypt will serve the Cloud SQL connections");
       assertThat(warnMessages).isEmpty();
     } finally {
@@ -590,8 +715,6 @@ public class SecurityProviderFactoryTest {
             ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(
                 new FakeTlsProvider("SunJSSE", true, true)))
         .isFalse();
-    // No connector-scoped provider: the legacy global check applies, and Conscrypt is not
-    // installed globally in this test JVM.
     assertThat(ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(null)).isFalse();
   }
 
@@ -804,9 +927,15 @@ public class SecurityProviderFactoryTest {
     return new SSLContext(spi, provider, "TLSv1.3") {};
   }
 
-  @SuppressWarnings("deprecation") // Provider(String, double, String) for Java 8 compatibility.
   private static Provider syntheticClientHelloProvider(String name, byte[] clientHelloBytes)
       throws Exception {
+    return syntheticClientHelloProvider(name, clientHelloBytes, null);
+  }
+
+  /** When engineFailure is non-null, every engine creation throws it. */
+  @SuppressWarnings("deprecation") // Provider(String, double, String) for Java 8 compatibility.
+  private static Provider syntheticClientHelloProvider(
+      String name, byte[] clientHelloBytes, Throwable engineFailure) throws Exception {
     SSLSession defaultSession = SSLContext.getDefault().createSSLEngine().getSession();
     return new Provider(name, 1.0, "synthetic TLSv1.3 provider") {
       private static final long serialVersionUID = 1L;
@@ -833,6 +962,12 @@ public class SecurityProviderFactoryTest {
 
                   @Override
                   protected SSLEngine engineCreateSSLEngine() {
+                    if (engineFailure instanceof Error) {
+                      throw (Error) engineFailure;
+                    }
+                    if (engineFailure instanceof RuntimeException) {
+                      throw (RuntimeException) engineFailure;
+                    }
                     return new SyntheticClientHelloEngine(
                         clientHelloBytes, Status.OK, defaultSession, null);
                   }

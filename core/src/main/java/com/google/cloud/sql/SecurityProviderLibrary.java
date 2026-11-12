@@ -61,23 +61,21 @@ public enum SecurityProviderLibrary {
    * the JVM's default provider directly without loading bundled Conscrypt.
    *
    * <p>Otherwise, the connector uses a connector-scoped Conscrypt provider when Conscrypt 2.6.0+ is
-   * on the classpath and its native library loads (Maven includes {@code
-   * org.conscrypt:conscrypt-openjdk-uber} automatically when building with JDK 8 through 26; add it
-   * explicitly in Gradle / non-Maven builds, JDK 27+ builds, or cross-JDK {@code --release} builds
-   * conducted with JDK 27+). Where Conscrypt is absent, older than 2.6.0, or cannot load on the
-   * current platform (for example musl libc, an unsupported CPU architecture, or a GraalVM native
-   * image), or when {@code jdk.tls.namedGroups} excludes {@code X25519MLKEM768}, the connector
-   * silently falls back to the JVM's default provider with a classical handshake and logs that once
-   * at {@code INFO}.
+   * on the classpath and its native library loads ({@code org.conscrypt:conscrypt-openjdk-uber} is
+   * included as a transitive dependency of the connector). Where Conscrypt was excluded by the
+   * application, is older than 2.6.0, or cannot load on the current platform (for example musl
+   * libc, an unsupported CPU architecture, or a GraalVM native image), or when {@code
+   * jdk.tls.namedGroups} excludes {@code X25519MLKEM768}, the connector silently falls back to the
+   * JVM's default provider with a classical handshake and logs that once at {@code INFO}.
    */
   AUTO,
 
   /**
    * Require connector-scoped Conscrypt on every runtime. Connections fail with a non-retryable
    * error rather than falling back to the JVM default when {@code
-   * org.conscrypt:conscrypt-openjdk-uber} is not on the classpath (add it explicitly in Gradle /
-   * non-Maven builds, JDK 27+ builds, or cross-JDK {@code --release} builds conducted with JDK 27+)
-   * or Conscrypt's native library cannot be loaded on this platform.
+   * org.conscrypt:conscrypt-openjdk-uber} is not on the classpath (it is included as a transitive
+   * dependency of the connector unless excluded by the application) or Conscrypt's native library
+   * cannot be loaded on this platform.
    */
   CONSCRYPT;
 

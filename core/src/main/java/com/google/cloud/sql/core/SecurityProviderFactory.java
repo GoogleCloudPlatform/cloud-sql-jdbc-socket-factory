@@ -18,6 +18,7 @@ package com.google.cloud.sql.core;
 
 import com.google.cloud.sql.SecurityProviderLibrary;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.Provider;
@@ -106,6 +107,7 @@ final class SecurityProviderFactory {
   private static final AtomicBoolean AUTO_FALLBACK_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean AUTO_NAMED_GROUPS_EXCLUDED_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean AUTO_CONSCRYPT_NO_PQC_ANNOUNCED = new AtomicBoolean();
+  private static final AtomicBoolean AUTO_CONSCRYPT_UNUSABLE_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean DEFAULT_PQC_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean CONSCRYPT_ANNOUNCED = new AtomicBoolean();
   private static final AtomicBoolean CONSCRYPT_NO_PQC_WARN_ANNOUNCED = new AtomicBoolean();
@@ -119,13 +121,15 @@ final class SecurityProviderFactory {
    * the JVM's default JSSE provider ({@code SSLContext.getInstance("TLSv1.3")}).
    *
    * @throws TerminalException when {@code securityProviderLibrary} is {@link
-   *     SecurityProviderLibrary#CONSCRYPT} and Conscrypt cannot be loaded on this platform. This
-   *     fails identically on every attempt, so it is not retried.
+   *     SecurityProviderLibrary#CONSCRYPT} and Conscrypt cannot be loaded on this platform, or it
+   *     loads but cannot create a TLS engine in this JVM. This fails identically on every attempt,
+   *     so it is not retried.
    */
   static Provider resolve(SecurityProviderLibrary securityProviderLibrary) {
     return resolve(
         securityProviderLibrary,
         SecurityProviderFactory::conscryptProvider,
+        SecurityProviderFactory::conscryptFailure,
         SecurityProviderFactory::conscryptSupportsX25519MlKem768,
         SecurityProviderFactory::defaultTls13SupportsX25519MlKem768,
         System.getProperty(NAMED_GROUPS_SYSTEM_PROPERTY),
@@ -160,6 +164,31 @@ final class SecurityProviderFactory {
   static Provider resolve(
       SecurityProviderLibrary securityProviderLibrary,
       Supplier<Provider> conscryptSupplier,
+      BooleanSupplier conscryptSupportsPqc,
+      BooleanSupplier defaultSupportsPqc,
+      String namedGroupsProperty,
+      Logger log) {
+    return resolve(
+        securityProviderLibrary,
+        conscryptSupplier,
+        () -> null,
+        conscryptSupportsPqc,
+        defaultSupportsPqc,
+        namedGroupsProperty,
+        log);
+  }
+
+  /**
+   * Resolves the provider decision. {@code conscryptFailure} supplies the reason Conscrypt cannot
+   * serve TLS in this JVM: why it failed to load when {@code conscryptSupplier} returned {@code
+   * null}, or why the loaded provider cannot create a TLS engine. It supplies {@code null} when
+   * there is no failure. It is evaluated only after {@code conscryptSupplier}.
+   */
+  @VisibleForTesting
+  static Provider resolve(
+      SecurityProviderLibrary securityProviderLibrary,
+      Supplier<Provider> conscryptSupplier,
+      Supplier<Throwable> conscryptFailure,
       BooleanSupplier conscryptSupportsPqc,
       BooleanSupplier defaultSupportsPqc,
       String namedGroupsProperty,
@@ -202,31 +231,76 @@ final class SecurityProviderFactory {
         || conscrypt.getService("SSLContext", TLS_1_3) == null
         || conscrypt.getService("KeyManagerFactory", "PKIX") == null) {
       if (securityProviderLibrary == SecurityProviderLibrary.CONSCRYPT) {
+        // Say why Conscrypt did not load (for example a read-only temp directory), and keep the
+        // original error as the cause.
+        Throwable loadFailure = conscrypt == null ? conscryptFailure.get() : null;
         throw new TerminalException(
             String.format(
                 "%s is set to %s, but Conscrypt is unavailable on this platform or the"
                     + " org.conscrypt:conscrypt-openjdk-uber dependency is not on the classpath"
-                    + " (it is optional on JDK 27+ and omitted by Gradle / non-Maven build tools"
-                    + " and cross-JDK --release builds conducted with JDK 27+; add it explicitly)."
+                    + " (it is included as a transitive dependency unless excluded by the"
+                    + " application)."
                     + " Conscrypt publishes native libraries for glibc Linux and macOS on x86-64"
                     + " and ARM64, and for 64-bit Windows. Set %s to %s or %s to use the default"
-                    + " JSSE provider.",
+                    + " JSSE provider.%s",
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
                 SecurityProviderLibrary.CONSCRYPT,
                 ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
                 SecurityProviderLibrary.AUTO,
-                SecurityProviderLibrary.JDK));
+                SecurityProviderLibrary.JDK,
+                describeLoadFailure(loadFailure)),
+            loadFailure);
       }
       if (AUTO_FALLBACK_ANNOUNCED.compareAndSet(false, true)) {
         log.info(
             "{} is set to {}, but the default TLSv1.3 provider does not advertise"
                 + " X25519MLKEM768 and Conscrypt is unavailable on this platform or"
-                + " org.conscrypt:conscrypt-openjdk-uber is not on the classpath (add it"
-                + " explicitly in Gradle / non-Maven builds, JDK 27+ builds, or cross-JDK"
-                + " --release builds conducted with JDK 27+). Using the default JSSE provider,"
-                + " so Cloud SQL connections will not use post-quantum key exchange.",
+                + " org.conscrypt:conscrypt-openjdk-uber is not on the classpath (it is"
+                + " included as a transitive dependency unless excluded by the application)."
+                + " Using the default JSSE provider, so Cloud SQL connections will not use"
+                + " post-quantum key exchange.",
             ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
             SecurityProviderLibrary.AUTO);
+      }
+      return null;
+    }
+
+    // Conscrypt loaded, but it cannot create a TLS engine. Never hand out such a provider: every
+    // socket or engine created from it would throw the same LinkageError at the caller.
+    Throwable failure = conscryptFailure.get();
+    if (failure != null) {
+      String reason = Throwables.getRootCause(failure).toString();
+      if (securityProviderLibrary == SecurityProviderLibrary.CONSCRYPT) {
+        String namedGroupsHint =
+            namedGroupsProperty == null || namedGroupsProperty.trim().isEmpty()
+                ? ""
+                : String.format(
+                    " Conscrypt fails this way when the %s system property (currently \"%s\")"
+                        + " lists no key exchange group that it recognizes; it matches group"
+                        + " names case-sensitively and has no ffdhe or x448 groups. Correct or"
+                        + " remove that property.",
+                    NAMED_GROUPS_SYSTEM_PROPERTY, namedGroupsProperty);
+        throw new TerminalException(
+            String.format(
+                "%s is set to %s, but Conscrypt cannot create a TLS engine in this JVM (%s).%s"
+                    + " Set %s to %s or %s to use the default JSSE provider.",
+                ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+                SecurityProviderLibrary.CONSCRYPT,
+                reason,
+                namedGroupsHint,
+                ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+                SecurityProviderLibrary.AUTO,
+                SecurityProviderLibrary.JDK),
+            failure);
+      }
+      if (AUTO_CONSCRYPT_UNUSABLE_ANNOUNCED.compareAndSet(false, true)) {
+        log.info(
+            "{} is set to {}, but Conscrypt cannot create a TLS engine in this JVM ({}). Using the"
+                + " default JSSE provider, so Cloud SQL connections will not use post-quantum key"
+                + " exchange.",
+            ConnectionConfig.CLOUD_SQL_TLS_PROVIDER_PROPERTY,
+            SecurityProviderLibrary.AUTO,
+            reason);
       }
       return null;
     }
@@ -308,6 +382,38 @@ final class SecurityProviderFactory {
       logger.debug("Could not probe default TLSv1.3 provider for X25519MLKEM768: {}", e.toString());
       return false;
     }
+  }
+
+  /**
+   * Returns {@code true} if the connector's {@code sslContext} advertises {@code X25519MLKEM768},
+   * without generating a {@code ClientHello} on every certificate refresh. The answer only depends
+   * on the provider instance that serves the context, and the two providers the connector can end
+   * up with are probed once and cached: the JVM's default {@code TLSv1.3} provider (cached per
+   * provider instance, so a provider inserted at runtime is probed again) and the connector-scoped
+   * Conscrypt provider (once per JVM).
+   *
+   * @param connectorProvider the provider returned by {@link #resolve(SecurityProviderLibrary)}, or
+   *     {@code null} when the JVM's default provider serves {@code sslContext}
+   */
+  static boolean connectorContextSupportsX25519MlKem768(
+      SSLContext sslContext, Provider connectorProvider) {
+    if (sslContext == null || !TLS_1_3.equals(sslContext.getProtocol())) {
+      return supportsX25519MlKem768(sslContext);
+    }
+    if (connectorProvider == null) {
+      Provider contextProvider = sslContext.getProvider();
+      CachedProbeResult cached = cachedDefaultProbe;
+      if (cached != null && cached.provider == contextProvider) {
+        return cached.supportsPqc;
+      }
+      boolean supports = supportsX25519MlKem768(sslContext);
+      cachedDefaultProbe = new CachedProbeResult(contextProvider, supports);
+      return supports;
+    }
+    if (connectorProvider == ConscryptHolder.PROVIDER) {
+      return ConscryptHolder.SUPPORTS_X25519_MLKEM768;
+    }
+    return supportsX25519MlKem768(sslContext);
   }
 
   /**
@@ -457,6 +563,46 @@ final class SecurityProviderFactory {
   }
 
   /**
+   * Returns why Conscrypt cannot serve TLS in this JVM (it failed to load, or it loaded but cannot
+   * create a TLS engine), or {@code null} when it can. Evaluated once per JVM alongside {@link
+   * ConscryptHolder#PROVIDER}.
+   */
+  @VisibleForTesting
+  static Throwable conscryptFailure() {
+    return ConscryptHolder.FAILURE;
+  }
+
+  /**
+   * Returns the {@link LinkageError} that {@code provider} throws when it creates a {@code TLSv1.3}
+   * {@link SSLEngine}, or {@code null} when it can create one.
+   *
+   * <p>Conscrypt 2.6.0+ parses {@code jdk.tls.namedGroups} in the static initializer of {@code
+   * org.conscrypt.NativeSsl}, which runs when the first engine or socket is created. When the
+   * property lists no group name that Conscrypt recognizes, that initializer throws, and the JVM
+   * then fails every later engine or socket creation with {@link NoClassDefFoundError}. The
+   * provider is unusable for the life of the JVM even though {@code Conscrypt.newProvider()}
+   * succeeded.
+   */
+  @VisibleForTesting
+  static LinkageError engineCreationFailure(Provider provider) {
+    if (provider == null || provider.getService("SSLContext", TLS_1_3) == null) {
+      return null;
+    }
+    try {
+      SSLContext context = SSLContext.getInstance(TLS_1_3, provider);
+      context.init(null, PROBE_TRUST_MANAGERS, null);
+      context.createSSLEngine().closeOutbound();
+      return null;
+    } catch (LinkageError e) {
+      return e;
+    } catch (Exception e) {
+      // Not a linkage failure: leave it to the X25519MLKEM768 probe, which then reports false.
+      logger.debug("Could not create a TLSv1.3 SSLEngine with {}: {}", provider.getName(), e);
+      return null;
+    }
+  }
+
+  /**
    * Returns {@code true} if the loaded Conscrypt provider advertises {@code X25519MLKEM768} ({@code
    * 0x11ec}) in its {@code TLSv1.3} {@code ClientHello}. Evaluated once per JVM alongside {@link
    * ConscryptHolder#PROVIDER}; assumes {@code jdk.tls.namedGroups} is static after JVM startup.
@@ -493,31 +639,58 @@ final class SecurityProviderFactory {
   }
 
   /**
-   * Holds the connector's Conscrypt provider and its {@code X25519MLKEM768} capability result,
-   * resolved once per JVM on first use. Class initialization gives exactly-once resolution and safe
-   * publication without locking.
+   * Holds the connector's Conscrypt provider, the reason it cannot serve TLS (if any) and its
+   * {@code X25519MLKEM768} capability result, resolved once per JVM on first use. Class
+   * initialization gives exactly-once resolution and safe publication without locking.
    */
   private static final class ConscryptHolder {
-    static final Provider PROVIDER = newConscryptProvider();
-    static final boolean SUPPORTS_X25519_MLKEM768 = probeProviderSupportsX25519MlKem768(PROVIDER);
+    static final Throwable LOAD_FAILURE = conscryptLoadFailure();
+    static final Provider PROVIDER = LOAD_FAILURE == null ? newConscryptProvider() : null;
+    static final Throwable FAILURE =
+        LOAD_FAILURE != null ? LOAD_FAILURE : engineCreationFailure(PROVIDER);
+    static final boolean SUPPORTS_X25519_MLKEM768 =
+        FAILURE == null && probeProviderSupportsX25519MlKem768(PROVIDER);
 
     private ConscryptHolder() {}
   }
 
+  /**
+   * Returns why Conscrypt cannot be loaded in this JVM, or {@code null} when it can.
+   *
+   * <p>{@code Conscrypt.isAvailable()} only answers {@code false}. {@code
+   * Conscrypt.checkAvailability()} rethrows the {@link UnsatisfiedLinkError} that Conscrypt
+   * recorded when it tried to load its native library, which says why: the library is not published
+   * for this platform (e.g. musl, 32-bit, s390x, ppc64le), or it cannot be extracted and loaded
+   * (e.g. a read-only or noexec temp directory, a GraalVM native image).
+   */
+  private static Throwable conscryptLoadFailure() {
+    try {
+      Conscrypt.checkAvailability();
+      return null;
+    } catch (Throwable t) {
+      // Conscrypt is referenced directly rather than via Class.forName, so when the Conscrypt jar
+      // is excluded from the classpath the JVM throws NoClassDefFoundError here. Like
+      // Conscrypt.isAvailable(), treat any Throwable as "not available".
+      logger.debug("Conscrypt could not be loaded: {}", t.toString());
+      return t;
+    }
+  }
+
+  private static String describeLoadFailure(Throwable loadFailure) {
+    if (loadFailure == null) {
+      return "";
+    }
+    Throwable root = Throwables.getRootCause(loadFailure);
+    return " Conscrypt reported: "
+        + loadFailure
+        + (root == loadFailure ? "" : " (root cause: " + root + ")")
+        + ".";
+  }
+
   private static Provider newConscryptProvider() {
     try {
-      if (!Conscrypt.isAvailable()) {
-        // Conscrypt's native library is not published for this platform (e.g. musl, 32-bit,
-        // s390x, ppc64le) or cannot load (e.g. GraalVM native image).
-        logger.debug("Conscrypt's native library is not available on this platform.");
-        return null;
-      }
       return Conscrypt.newProvider();
     } catch (LinkageError e) {
-      // Conscrypt is referenced directly rather than via Class.forName, so when the optional/
-      // excluded Conscrypt jar is absent from the classpath (e.g. on JDK 27+) the JVM throws
-      // NoClassDefFoundError (a LinkageError, not checked ClassNotFoundException). LinkageError
-      // also covers UnsatisfiedLinkError, while Conscrypt.isAvailable() catches Throwable itself.
       logger.debug("Conscrypt could not be loaded: {}", e.toString());
       return null;
     }

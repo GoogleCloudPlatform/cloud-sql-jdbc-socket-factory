@@ -491,18 +491,6 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
       KeyStore.PrivateKeyEntry privateKey =
           new PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {ephemeralCertificate});
       authKeyStore.setEntry("ephemeral", privateKey, new PasswordProtection(new char[0]));
-      // With a connector-scoped Conscrypt provider, take the KeyManagerFactory from Conscrypt too.
-      // The JRE's key manager checks the client certificate chain against algorithm constraints
-      // derived from the handshake session. With a Conscrypt socket that check can wrongly reject
-      // the ephemeral certificate (e.g. a SHA256withRSA chain against a TLS 1.3 server that lists
-      // rsa_pkcs1_sha256 only in signature_algorithms_cert), and the client would then send no
-      // certificate.
-      KeyManagerFactory kmf =
-          provider == null
-              ? KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-              : KeyManagerFactory.getInstance("PKIX", provider);
-      kmf.init(authKeyStore, new char[0]);
-
       SSLContext sslContext;
 
       try {
@@ -522,18 +510,36 @@ class DefaultConnectionInfoRepository implements ConnectionInfoRepository {
         }
       }
 
+      // When Conscrypt serves the SSLContext, take the KeyManagerFactory from Conscrypt too. That
+      // covers a connector-scoped Conscrypt provider and Conscrypt installed as the JVM's default
+      // TLS provider (in which case `provider` above is null). The JRE's key manager checks the
+      // client certificate chain against algorithm constraints derived from the handshake session.
+      // With a Conscrypt socket that check can wrongly reject the ephemeral certificate (e.g. a
+      // SHA256withRSA chain against a TLS 1.3 server that lists rsa_pkcs1_sha256 only in
+      // signature_algorithms_cert), and the client would then send no certificate.
+      Provider sslContextProvider = sslContext.getProvider();
+      KeyManagerFactory kmf =
+          SecurityProviderFactory.isConscrypt(sslContextProvider)
+                  && sslContextProvider.getService("KeyManagerFactory", "PKIX") != null
+              ? KeyManagerFactory.getInstance("PKIX", sslContextProvider)
+              : KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      kmf.init(authKeyStore, new char[0]);
+
       // The InstanceCheckingTrustManagerFactory implements the custom certificate validation
       // logic. After using the standard TLS CA chain of trust, it will implement a custom
       // hostname verification to gracefully handle the hostnames in Cloud SQL server certificates.
       // When the SSLContext is served by Conscrypt, the trust managers are wrapped to work around
-      // Conscrypt's "GENERIC" auth type.
+      // Conscrypt's "GENERIC" auth type. This looks at the provider of the SSLContext that was
+      // just created, not at a value cached per JVM: the JVM's default TLS provider can change
+      // at runtime (Security.insertProviderAt) between two certificate refreshes.
       TrustManagerFactory tmf =
           InstanceCheckingTrustManagerFactory.newInstance(
               instanceMetadata,
-              ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(provider));
+              ConscryptWorkaroundDelegatingTrustManger.isWorkaroundNeeded(sslContextProvider));
 
       sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-      boolean sslContextSupportsPqc = SecurityProviderFactory.supportsX25519MlKem768(sslContext);
+      boolean sslContextSupportsPqc =
+          SecurityProviderFactory.connectorContextSupportsX25519MlKem768(sslContext, provider);
 
       logger.debug(
           String.format(
