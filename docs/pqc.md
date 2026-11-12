@@ -50,16 +50,17 @@ bundled Conscrypt.
 > On every Java version, set `TLS_PROVIDER` to `AUTO` (or `CONSCRYPT`) to enable
 > TLS 1.3 and post-quantum key exchange. When the JVM's default TLS 1.3 provider
 > already advertises `X25519MLKEM768`, `AUTO` uses that provider via Netty's
-> `SslProvider.JDK` (preventing drivers such as `r2dbc-mysql` from diverting
-> onto `netty-tcnative` (bypassing the connector's JSSE provider)) without
-> loading bundled Conscrypt.
+> `SslProvider.JDK` without loading bundled Conscrypt. This keeps drivers such
+> as `r2dbc-mysql` from diverting onto `netty-tcnative`, which would bypass the
+> connector's JSSE provider.
 
-On JDK 27 and later, Maven marks `org.conscrypt:conscrypt-openjdk-uber` as an
-optional dependency (`jdk-27-plus` profile, `[27,)`), so Conscrypt is **not**
-pulled into downstream Maven builds automatically. If a JDK 27+ application
-explicitly sets `cloudSqlTlsProvider` / `TLS_PROVIDER` to `CONSCRYPT` (instead
-of `JDK` or `AUTO`), add `org.conscrypt:conscrypt-openjdk-uber` directly to
-your application's dependencies.
+The connector includes `org.conscrypt:conscrypt-openjdk-uber` (`2.6.2`)
+automatically as a standard transitive dependency in both Maven and Gradle
+builds across all JDK versions. Applications running exclusively on JDK 27+ with
+`JDK` or `AUTO` (where `AUTO` uses native `SunJSSE` without loading Conscrypt)
+can optionally exclude `org.conscrypt:conscrypt-openjdk-uber` in their own Maven
+`<exclusions>` or Gradle `exclude` configuration if they want to omit the native
+library JAR.
 
 To customize which groups are offered by `SunJSSE` or Conscrypt, use the
 `jdk.tls.namedGroups` system property:
@@ -81,17 +82,13 @@ its connections from [Conscrypt][conscrypt], a JSSE provider backed by
 BoringSSL, which offers `X25519MLKEM768` on every Java version this connector
 supports.
 
-**For Maven builds on Java 8 through JDK 26, there is nothing to add to your
-`pom.xml`.** The connector's `jdk-pre-27` Maven profile (`[1.8,27)`) includes
-`org.conscrypt:conscrypt-openjdk-uber` (`2.6.2`) automatically (whereas on
-JDK 27+ it is optional). Build tools that do not activate Maven POM JDK
-profiles (such as Gradle) should add
-`runtimeOnly("org.conscrypt:conscrypt-openjdk-uber:2.6.2")` when opting into
-bundled Conscrypt via `AUTO` or `CONSCRYPT`. No global provider registration is
-needed: set `cloudSqlTlsProvider` (JDBC) or `TLS_PROVIDER` (R2DBC) to `AUTO` or
-`CONSCRYPT`.
+**There is nothing to add to your `pom.xml` or `build.gradle`.** The connector
+includes `org.conscrypt:conscrypt-openjdk-uber` (`2.6.2`) automatically as a
+standard transitive dependency across all JDK versions and build tools. No
+global provider registration is needed: set `cloudSqlTlsProvider` (JDBC) or
+`TLS_PROVIDER` (R2DBC) to `AUTO` or `CONSCRYPT`.
 
-JDBC:
+JDBC (MySQL, MariaDB and Postgres):
 
 ```java
 config.addDataSourceProperty("cloudSqlTlsProvider", "AUTO");
@@ -99,6 +96,16 @@ config.addDataSourceProperty("cloudSqlTlsProvider", "AUTO");
 
 ```
 jdbc:postgresql:///<DATABASE_NAME>?cloudSqlInstance=<CLOUD_SQL_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlTlsProvider=AUTO
+```
+
+JDBC (SQL Server): the SQL Server driver passes only
+`socketFactoryConstructorArg` to the connector, so append the property to it
+using query syntax. A separate `cloudSqlTlsProvider` connection property or URL
+parameter has no effect. See
+[Connecting to Cloud SQL using JDBC](jdbc.md#post-quantum-cryptography-pqc).
+
+```
+jdbc:sqlserver://localhost;databaseName=<DATABASE_NAME>;socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;socketFactoryConstructorArg=<CLOUD_SQL_CONNECTION_NAME>?cloudSqlTlsProvider=AUTO
 ```
 
 R2DBC:
@@ -204,6 +211,14 @@ from loading:
   extracted from the jar at startup. Point it elsewhere with
   `-Dorg.conscrypt.native.workdir=/some/writable/path` if `java.io.tmpdir` is
   not usable.
+
+On JDK 24 and later ([JEP 472](https://openjdk.org/jeps/472)), the JVM prints
+`WARNING: A restricted method in java.lang.System has been called` the first
+time Conscrypt's native library is loaded. This happens with `CONSCRYPT`, and
+with `AUTO` when it selects bundled Conscrypt. Start the JVM with
+`--enable-native-access=ALL-UNNAMED` to avoid the warning. `JDK`, and `AUTO` on
+a runtime whose default TLS 1.3 provider already advertises `X25519MLKEM768`,
+never load Conscrypt and print no warning.
 
 ### Cost
 

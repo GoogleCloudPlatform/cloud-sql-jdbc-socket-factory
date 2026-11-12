@@ -471,9 +471,8 @@ provider already advertises `X25519MLKEM768` (such as JDK 27+ via
 [JEP 527](https://openjdk.org/jeps/527), JDK 25.0.5+ and other LTS backports,
 or a user-registered `BCJSSE >= 1.81` provider), `AUTO` uses that provider
 directly without loading Conscrypt; otherwise it uses connector-scoped
-Conscrypt (included automatically by Maven on Java 8 through JDK 26 and
-optional on JDK 27+; Gradle users should add
-`org.conscrypt:conscrypt-openjdk-uber:2.6.2` — see the
+Conscrypt (included automatically as a standard transitive dependency in both
+Maven and Gradle builds across all JDK versions — see the
 [Post-Quantum Cryptography Guide](pqc.md)). No provider registration is needed.
 
 ```java
@@ -521,4 +520,4 @@ integration tests in this repository.
 * [MariaDB usage example](../r2dbc/mariadb/src/test/java/com/google/cloud/sql/core/R2dbcMariadbIntegrationTests.java)
 * [MySQL usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
 * [Postgres usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
-* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
+* [SQL Server usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
