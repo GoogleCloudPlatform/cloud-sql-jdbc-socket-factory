@@ -17,6 +17,7 @@
 package com.google.cloud.sql.core;
 
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -71,11 +72,16 @@ public class TestKeys {
   }
 
   public static String createEphemeralCert(String cn, Duration certDuration) {
+    return createEphemeralCert(cn, certs.getClientKey().getPublic(), certDuration);
+  }
+
+  public static String createEphemeralCert(
+      String cn, PublicKey clientPublicKey, Duration certDuration) {
     ZonedDateTime notBefore = ZonedDateTime.now(ZoneId.of("UTC")).minus(certDuration);
     ZonedDateTime notAfter = notBefore.plus(Duration.ofHours(1));
 
     return certs.getPemForCert(
-        certs.getEphemeralCertificate(cn, certs.getClientKey().getPublic(), notAfter.toInstant()));
+        certs.getEphemeralCertificate(cn, clientPublicKey, notAfter.toInstant()));
   }
 
   public static KeyPair getDomainServerKeyPair() {
