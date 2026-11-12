@@ -489,6 +489,36 @@ public class ConnectorConfigTest {
                 ConnectorConfig.DEFAULT_FAILOVER_PERIOD,
                 "sqladmin.googleapis.com",
                 Duration.ofHours(2),
-                ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD));
+                ConnectorConfig.DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD,
+                ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY));
+  }
+
+  @Test
+  public void testSecurityProviderLibrary() {
+    ConnectorConfig defaults = new ConnectorConfig.Builder().build();
+    assertThat(defaults.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
+    assertThat(ConnectorConfig.DEFAULT_SECURITY_PROVIDER_LIBRARY)
+        .isEqualTo(SecurityProviderLibrary.JDK);
+
+    ConnectorConfig conscrypt =
+        new ConnectorConfig.Builder()
+            .withSecurityProviderLibrary(SecurityProviderLibrary.CONSCRYPT)
+            .build();
+    assertThat(conscrypt.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.CONSCRYPT);
+
+    ConnectorConfig resetToDefault =
+        new ConnectorConfig.Builder().withSecurityProviderLibrary(null).build();
+    assertThat(resetToDefault.getSecurityProviderLibrary()).isEqualTo(SecurityProviderLibrary.JDK);
+
+    // The security provider library is connector-scoped: connectors that differ only by provider
+    // are distinct.
+    assertThat(conscrypt).isNotEqualTo(defaults);
+    assertThat(resetToDefault).isEqualTo(defaults);
+    assertThat(resetToDefault.hashCode()).isEqualTo(defaults.hashCode());
+    assertThat(
+            new ConnectorConfig.Builder()
+                .withSecurityProviderLibrary(SecurityProviderLibrary.CONSCRYPT)
+                .build())
+        .isEqualTo(conscrypt);
   }
 }

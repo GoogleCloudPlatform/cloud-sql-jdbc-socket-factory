@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 public class ConnectorConfig {
   public static final Duration DEFAULT_FAILOVER_PERIOD = Duration.ofSeconds(30);
   public static final Duration DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD = Duration.ofSeconds(5);
+  public static final SecurityProviderLibrary DEFAULT_SECURITY_PROVIDER_LIBRARY =
+      SecurityProviderLibrary.JDK;
 
   // go into ConnectorConfig
   private final String targetPrincipal;
@@ -54,6 +56,7 @@ public class ConnectorConfig {
   private final String sqlDataEndpoint;
   private final Duration sqlDataStreamTimeout;
   private final Duration resourceExhaustedCooldownPeriod;
+  private final SecurityProviderLibrary securityProviderLibrary;
 
   private ConnectorConfig(
       String targetPrincipal,
@@ -70,7 +73,8 @@ public class ConnectorConfig {
       Duration failoverPeriod,
       String sqlDataEndpoint,
       Duration sqlDataStreamTimeout,
-      Duration resourceExhaustedCooldownPeriod) {
+      Duration resourceExhaustedCooldownPeriod,
+      SecurityProviderLibrary securityProviderLibrary) {
     this.targetPrincipal = targetPrincipal;
     this.delegates = delegates;
     this.adminRootUrl = adminRootUrl;
@@ -86,6 +90,7 @@ public class ConnectorConfig {
     this.sqlDataEndpoint = sqlDataEndpoint;
     this.sqlDataStreamTimeout = sqlDataStreamTimeout;
     this.resourceExhaustedCooldownPeriod = resourceExhaustedCooldownPeriod;
+    this.securityProviderLibrary = securityProviderLibrary;
   }
 
   @Override
@@ -111,7 +116,8 @@ public class ConnectorConfig {
         && Objects.equal(failoverPeriod, that.failoverPeriod)
         && Objects.equal(sqlDataEndpoint, that.sqlDataEndpoint)
         && Objects.equal(sqlDataStreamTimeout, that.sqlDataStreamTimeout)
-        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod);
+        && Objects.equal(resourceExhaustedCooldownPeriod, that.resourceExhaustedCooldownPeriod)
+        && Objects.equal(securityProviderLibrary, that.securityProviderLibrary);
   }
 
   @Override
@@ -131,7 +137,8 @@ public class ConnectorConfig {
         failoverPeriod,
         sqlDataEndpoint,
         sqlDataStreamTimeout,
-        resourceExhaustedCooldownPeriod);
+        resourceExhaustedCooldownPeriod,
+        securityProviderLibrary);
   }
 
   public String getTargetPrincipal() {
@@ -194,6 +201,14 @@ public class ConnectorConfig {
     return resourceExhaustedCooldownPeriod;
   }
 
+  /**
+   * Returns the JSSE provider library selection the connector uses for TLS connections to Cloud SQL
+   * instances. Defaults to {@link SecurityProviderLibrary#JDK}.
+   */
+  public SecurityProviderLibrary getSecurityProviderLibrary() {
+    return securityProviderLibrary;
+  }
+
   /** The builder for the ConnectionConfig. */
   public static class Builder {
 
@@ -213,6 +228,7 @@ public class ConnectorConfig {
     private String sqlDataEndpoint = "sqladmin.googleapis.com";
     private Duration sqlDataStreamTimeout = Duration.ofHours(2);
     private Duration resourceExhaustedCooldownPeriod = DEFAULT_RESOURCE_EXHAUSTED_COOLDOWN_PERIOD;
+    private SecurityProviderLibrary securityProviderLibrary = DEFAULT_SECURITY_PROVIDER_LIBRARY;
 
     /** Chained setter for TargetPrinciple field. */
     public Builder withTargetPrincipal(String targetPrincipal) {
@@ -311,6 +327,18 @@ public class ConnectorConfig {
       return this;
     }
 
+    /**
+     * Sets the JSSE provider library used for TLS connections to Cloud SQL instances. A null value
+     * resets it to the default, {@link SecurityProviderLibrary#JDK}.
+     */
+    public Builder withSecurityProviderLibrary(SecurityProviderLibrary securityProviderLibrary) {
+      this.securityProviderLibrary =
+          securityProviderLibrary == null
+              ? DEFAULT_SECURITY_PROVIDER_LIBRARY
+              : securityProviderLibrary;
+      return this;
+    }
+
     /** Builds a new instance of {@code ConnectionConfig}. */
     public ConnectorConfig build() {
       // validate only one GoogleCredentials configuration field set
@@ -350,7 +378,8 @@ public class ConnectorConfig {
           failoverPeriod,
           sqlDataEndpoint,
           sqlDataStreamTimeout,
-          resourceExhaustedCooldownPeriod);
+          resourceExhaustedCooldownPeriod,
+          securityProviderLibrary);
     }
   }
 }

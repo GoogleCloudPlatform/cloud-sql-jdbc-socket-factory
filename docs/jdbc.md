@@ -268,7 +268,7 @@ Properties connProps = new Properties();
 connProps.setProperty("user","<USER_NAME>");
 connProps.setProperty("password","<PASSWORD>");
 connProps.setProperty("encrypt","false");
-connProps.setProperty("socketFactory","com.google.cloud.sql.sqlserver.SocketFactory");
+connProps.setProperty("socketFactoryClass","com.google.cloud.sql.sqlserver.SocketFactory");
 
 connProps.setProperty("socketFactoryConstructorArg",
 "<INSTANCE_CONNECTION_NAME>?ipTypes=PRIVATE");
@@ -690,6 +690,74 @@ effect on the connection process. The SocketFactory will get your instances IP
 address based on the provided `socketFactoryConstructorArg` arg.
 
 
+
+### Post-Quantum Cryptography (PQC)
+
+The Java Connector supports the hybrid post-quantum key exchange group
+`X25519MLKEM768` for its TLS 1.3 connections. Negotiation is automatic whenever
+the JVM's default TLS 1.3 provider advertises `X25519MLKEM768` (including JDK
+27+ via [JEP 527](https://openjdk.org/jeps/527), JDK 25.0.5+ and other LTS
+backports, or a user-registered `BCJSSE >= 1.81` provider). On other Java 8–26
+runtimes, set the `cloudSqlTlsProvider` connection property to `AUTO` or
+`CONSCRYPT` to use bundled Conscrypt. The connector includes
+`org.conscrypt:conscrypt-openjdk-uber` (`2.6.2`) automatically as a standard
+transitive dependency in both Maven and Gradle builds across all JDK versions
+(see the [Post-Quantum Cryptography Guide](pqc.md)), and no provider
+registration is needed.
+
+```java
+config.addDataSourceProperty("cloudSqlTlsProvider", "AUTO");
+```
+
+This line works for MySQL, MariaDB and Postgres pools that are configured with
+`setJdbcUrl()`, because those drivers pass their connection properties to the
+connector. The property can also be set in the JDBC URL
+(`...&cloudSqlTlsProvider=AUTO`).
+
+**SQL Server:** the SQL Server driver passes only `socketFactoryConstructorArg`
+to the connector. Append `cloudSqlTlsProvider` to it using query syntax, in the
+same way as [`ipTypes`](#specifying-ip-types):
+
+```java
+String jdbcUrl = "jdbc:sqlserver://localhost;"
+    + "databaseName=<DATABASE_NAME>;"
+    + "socketFactoryClass=com.google.cloud.sql.sqlserver.SocketFactory;"
+    + "socketFactoryConstructorArg=<INSTANCE_CONNECTION_NAME>?cloudSqlTlsProvider=AUTO;"
+    + "user=<USER_NAME>;"
+    + "password=<PASSWORD>";
+```
+
+Or, for a pool that uses `SQLServerDataSource`:
+
+```java
+config.addDataSourceProperty("socketFactoryConstructorArg",
+    "<INSTANCE_CONNECTION_NAME>?cloudSqlTlsProvider=AUTO");
+```
+
+For SQL Server, `cloudSqlTlsProvider` has no effect as a separate connection
+property or as a top-level JDBC URL parameter, and
+`config.addDataSourceProperty("cloudSqlTlsProvider", ...)` fails with
+`SQLServerDataSource` (`Property cloudSqlTlsProvider does not exist`).
+
+The property accepts:
+
+| Value | Behavior |
+| --- | --- |
+| `JDK` (default) | Use the JVM's configured `Security.getProviders()` priority chain as-is without loading bundled Conscrypt. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JVM's default TLS 1.3 provider if its `ClientHello` already advertises `X25519MLKEM768`, else connector-scoped Conscrypt where it loads, else silently fall back to the JVM's default provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require connector-scoped Conscrypt, failing the connection rather than falling back. |
+
+The setting is connector-scoped: it is part of the connector configuration, so
+connections that use different values get separate connectors (and refresh
+caches). [Named connectors](configuration.md#named-connectors) set it with
+`ConnectorConfig.Builder.withSecurityProviderLibrary()` instead of the `cloudSqlTlsProvider` property.
+
+Conscrypt is a native library: it supports Linux with glibc only (not Alpine
+or other musl-based images), macOS and Windows, on x86-64 and ARM64 (Windows:
+x86-64 only). Under GraalVM native-image, `AUTO` falls back to the JDK provider
+(classical key exchange). For the full platform list, caveats, and how to
+confirm that a post-quantum group was actually negotiated, see the
+[Post-Quantum Cryptography Guide](pqc.md).
 
 ## Configuration Reference
 

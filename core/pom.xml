@@ -119,6 +119,13 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-sql</artifactId>
     </dependency>
+    <!-- Conscrypt backs cloudSqlTlsProvider=AUTO|CONSCRYPT. Declared as a plain dependency (not
+         in a JDK-activated profile) so that every consumer gets it: Gradle and other tools that
+         ignore POM profiles, and builds made with JDK 27+. -->
+    <dependency>
+      <groupId>org.conscrypt</groupId>
+      <artifactId>conscrypt-openjdk-uber</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-sql-v1beta4</artifactId>
@@ -290,7 +297,7 @@
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>2.5.2</version>
+          <version>${conscrypt.version}</version>
         </dependency>
         <dependency>
           <groupId>org.bouncycastle</groupId>
