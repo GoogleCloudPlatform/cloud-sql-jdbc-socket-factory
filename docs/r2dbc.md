@@ -459,6 +459,55 @@ ConnectionPool connectionPool = new ConnectionPool(configuration);
 
 
 
+### Post-Quantum Cryptography (PQC)
+
+The Java Connector supports the hybrid post-quantum key exchange group
+`X25519MLKEM768` for its TLS 1.3 connections. It is opt-in for R2DBC on every
+Java version: without the `TLS_PROVIDER` option, R2DBC connections keep their
+TLS 1.2-only configuration, which has no post-quantum key exchange. Set
+`TLS_PROVIDER` to `AUTO` or `CONSCRYPT` to use TLS 1.3 (with a TLS 1.2
+fallback) and post-quantum key exchange. When the JVM's default TLS 1.3
+provider already advertises `X25519MLKEM768` (such as JDK 27+ via
+[JEP 527](https://openjdk.org/jeps/527), JDK 25.0.5+ and other LTS backports,
+or a user-registered `BCJSSE >= 1.81` provider), `AUTO` uses that provider
+directly without loading Conscrypt; otherwise it uses connector-scoped
+Conscrypt (included automatically as a standard transitive dependency in both
+Maven and Gradle builds across all JDK versions — see the
+[Post-Quantum Cryptography Guide](pqc.md)). No provider registration is needed.
+
+```java
+ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+    .option(TLS_PROVIDER, "AUTO")
+    // ...more connection options
+    .build();
+```
+
+Or in the R2DBC URL:
+
+```
+r2dbc:gcp:postgres://<DB_USER>:<DB_PASS>@<CLOUD_SQL_CONNECTION_NAME>/<DATABASE_NAME>?TLS_PROVIDER=AUTO
+```
+
+The option accepts:
+
+| Value | Behavior |
+| --- | --- |
+| `JDK` (default) | Unchanged R2DBC TLS configuration: TLS 1.2 only, Netty's default provider. No post-quantum key exchange. |
+| `AUTO` | Use post-quantum key exchange wherever available: the JVM's default TLS 1.3 provider if its `ClientHello` already advertises `X25519MLKEM768`, else connector-scoped Conscrypt where it loads, else silently fall back to the JVM's default provider (classical key exchange, logged once at INFO). |
+| `CONSCRYPT` | Require connector-scoped Conscrypt, failing the connection rather than falling back. |
+
+The setting is connector-scoped: it is part of the connector configuration, so
+connections that use different values get separate connectors (and refresh
+caches). [Named connectors](configuration.md#named-connectors) set it with
+`ConnectorConfig.Builder.withSecurityProviderLibrary()` instead of the `TLS_PROVIDER` property.
+
+Conscrypt is a native library: it supports Linux with glibc only (not Alpine
+or other musl-based images), macOS and Windows, on x86-64 and ARM64 (Windows:
+x86-64 only). Under GraalVM native-image, `AUTO` falls back to the JDK provider
+(classical key exchange). For the full platform list, caveats, and how to
+confirm that a post-quantum group was actually negotiated, see the
+[Post-Quantum Cryptography Guide](pqc.md).
+
 ## Configuration Reference
 
 - See [Configuration Reference](configuration.md)
@@ -471,4 +520,4 @@ integration tests in this repository.
 * [MariaDB usage example](../r2dbc/mariadb/src/test/java/com/google/cloud/sql/core/R2dbcMariadbIntegrationTests.java)
 * [MySQL usage example](../r2dbc/mysql/src/test/java/com/google/cloud/sql/core/R2dbcMysqlIntegrationTests.java)
 * [Postgres usage example](../r2dbc/postgres/src/test/java/com/google/cloud/sql/core/R2dbcPostgresIntegrationTests.java)
-* [SQL Sql usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
+* [SQL Server usage example](../r2dbc/sqlserver/src/test/java/com/google/cloud/sql/core/R2dbcSqlserverIntegrationTests.java)
