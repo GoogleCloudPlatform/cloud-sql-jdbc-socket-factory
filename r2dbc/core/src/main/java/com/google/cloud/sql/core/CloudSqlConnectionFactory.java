@@ -19,6 +19,7 @@ package com.google.cloud.sql.core;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
@@ -27,6 +28,7 @@ import io.r2dbc.spi.ConnectionFactoryProvider;
 import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /** {@link ConnectionFactory} for accessing Cloud SQL instances via R2DBC protocol. */
 public class CloudSqlConnectionFactory implements ConnectionFactory {
@@ -49,23 +51,33 @@ public class CloudSqlConnectionFactory implements ConnectionFactory {
   @Override
   public Publisher<? extends Connection> create() {
     String hostIp =
-        InternalConnectorRegistry.getInstance()
-            .getConnectionMetadata(config)
-            .getPreferredIpAddresses()
-            .get(0);
+        getConnectorRegistry().getConnectionMetadata(config).getPreferredIpAddresses().get(0);
     builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
     return Mono.from(supplier.get().create(builder.build()).create())
+        .onErrorResume(
+            e ->
+                // Force refresh the connection info when the connection fails, for example
+                // because the server CA was rotated, so that the next attempt uses fresh data.
+                // The JDBC connector does the same when a socket connection fails.
+                Mono.fromRunnable(() -> getConnectorRegistry().forceRefresh(config))
+                    // Execute in a default scheduler to prevent blocking.
+                    .subscribeOn(Schedulers.boundedElastic())
+                    // Report the connection error, not a refresh error.
+                    .onErrorResume(refreshError -> Mono.empty())
+                    .then(Mono.error(e)))
         .map(c -> new CloudSqlConnection(config, c));
   }
 
   @Override
   public ConnectionFactoryMetadata getMetadata() {
     String hostIp =
-        InternalConnectorRegistry.getInstance()
-            .getConnectionMetadata(config)
-            .getPreferredIpAddresses()
-            .get(0);
+        getConnectorRegistry().getConnectionMetadata(config).getPreferredIpAddresses().get(0);
     builder.option(HOST, hostIp).option(PORT, SERVER_PROXY_PORT);
     return supplier.get().create(builder.build()).getMetadata();
+  }
+
+  @VisibleForTesting
+  InternalConnectorRegistry getConnectorRegistry() {
+    return InternalConnectorRegistry.getInstance();
   }
 }
