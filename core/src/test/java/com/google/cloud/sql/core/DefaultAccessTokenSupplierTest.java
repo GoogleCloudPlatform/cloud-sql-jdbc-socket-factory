@@ -264,7 +264,7 @@ public class DefaultAccessTokenSupplierTest {
 
   @Test
   public void throwsErrorForWrongCredentialType() {
-    OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("abc", null));
+    OAuth2Credentials creds = OAuth2Credentials.create(new AccessToken("SECRET_TOKEN_LEAK", null));
     DefaultAccessTokenSupplier supplier =
         new DefaultAccessTokenSupplier(new Oauth2BadCredentialFactory(creds));
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
@@ -272,6 +272,8 @@ public class DefaultAccessTokenSupplierTest {
     assertThat(ex)
         .hasMessageThat()
         .contains("HttpCredentialsAdapter did not create valid credentials");
+    assertThat(ex).hasMessageThat().contains(creds.getClass().getName());
+    assertThat(ex).hasMessageThat().doesNotContain("SECRET_TOKEN_LEAK");
   }
 
   @Test
@@ -314,6 +316,67 @@ public class DefaultAccessTokenSupplierTest {
     RuntimeException ex = assertThrows(RuntimeException.class, supplier::get);
 
     assertThat(ex).hasMessageThat().contains("Access Token expiration time is in the past");
+  }
+
+  @Test
+  public void testRefreshErrorDoesNotLeakCredentialsToString() {
+    GoogleCredentials unrefreshableCredentials =
+        new GoogleCredentials(
+            GoogleCredentials.newBuilder()
+                .setAccessToken(new AccessToken("my-expired-token", Date.from(past)))) {
+          @Override
+          public AccessToken refreshAccessToken() throws IOException {
+            throw new IllegalStateException("Refresh not supported");
+          }
+
+          @Override
+          public String toString() {
+            return "FakeCredentials{secret=SECRET_REFRESH_TOKEN_LEAK}";
+          }
+        };
+
+    DefaultAccessTokenSupplier supplier =
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(unrefreshableCredentials));
+    IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
+    assertThat(ex)
+        .hasMessageThat()
+        .isEqualTo("Error refreshing credentials " + unrefreshableCredentials.getClass().getName());
+    assertThat(ex).hasMessageThat().doesNotContain("SECRET_REFRESH_TOKEN_LEAK");
+  }
+
+  @Test
+  public void testDownscopedRefreshErrorDoesNotLeakCredentialsToString() {
+    GoogleCredentials unrefreshableDownscoped =
+        new GoogleCredentials(GoogleCredentials.newBuilder().setAccessToken(null)) {
+          @Override
+          public AccessToken refreshAccessToken() throws IOException {
+            throw new IOException("Downscoped refresh failed");
+          }
+        };
+
+    GoogleCredentials validCredentials =
+        new GoogleCredentials(
+            GoogleCredentials.newBuilder()
+                .setAccessToken(new AccessToken("my-valid-token", Date.from(future)))) {
+          @Override
+          public GoogleCredentials createScoped(String... scopes) {
+            return unrefreshableDownscoped;
+          }
+
+          @Override
+          public String toString() {
+            return "FakeCredentials{secret=SECRET_DOWNSCOPED_TOKEN_LEAK}";
+          }
+        };
+
+    DefaultAccessTokenSupplier supplier =
+        new DefaultAccessTokenSupplier(new GoogleCredentialsFactory(validCredentials));
+    IllegalStateException ex = assertThrows(IllegalStateException.class, supplier::get);
+    assertThat(ex)
+        .hasMessageThat()
+        .isEqualTo(
+            "Error refreshing downscoped credentials " + validCredentials.getClass().getName());
+    assertThat(ex).hasMessageThat().doesNotContain("SECRET_DOWNSCOPED_TOKEN_LEAK");
   }
 
   @Test

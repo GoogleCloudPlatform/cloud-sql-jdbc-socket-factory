@@ -80,7 +80,8 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
               try {
                 refreshIfRequired(credentials);
               } catch (IllegalStateException e) {
-                throw new IllegalStateException("Error refreshing credentials " + credentials, e);
+                throw new IllegalStateException(
+                    "Error refreshing credentials " + credentials.getClass().getName(), e);
               }
 
               if (isAccessTokenEmpty(credentials)) {
@@ -104,7 +105,8 @@ class DefaultAccessTokenSupplier implements AccessTokenSupplier {
                   downscoped.refresh();
                 } catch (Exception e) {
                   throw new IllegalStateException(
-                      "Error refreshing downscoped credentials " + credentials, e);
+                      "Error refreshing downscoped credentials " + credentials.getClass().getName(),
+                      e);
                 }
 
                 // After attempting to refresh once, if the downscoped credentials do not have
