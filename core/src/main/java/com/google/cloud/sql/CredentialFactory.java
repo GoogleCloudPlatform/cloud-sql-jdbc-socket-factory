@@ -53,7 +53,8 @@ public interface CredentialFactory {
           String.format(
               "Unable to determine GoogleCredential from HttpRequestInitializer: "
                   + "HttpCredentialsAdapter did not create valid credentials. %s, %s",
-              requestInitializer.getClass().getName(), c));
+              requestInitializer.getClass().getName(),
+              c != null ? c.getClass().getName() : "null"));
     }
 
     if (requestInitializer instanceof Credential) {
