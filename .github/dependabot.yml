@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     https://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,81 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    # Disable version updates for Maven dependencies
-    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      non-major-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "com.coveo:fmt-maven-plugin"
+      - dependency-name: "com.zaxxer:HikariCP"
+      - dependency-name: "com.google.googlejavaformat:google-java-format"
+      - dependency-name: "com.google.errorprone:error_prone_core"
+      # Dependabot cannot track v1beta4-revYYYYMMDD; update manually, never v1-*.
+      - dependency-name: "com.google.apis:google-api-services-sqladmin"
+      # Logback 1.3.x supports JDK 8; ignore 1.4+ (matching pom.xml).
+      - dependency-name: "ch.qos.logback:logback-classic"
+        versions: [">= 1.4.0"]
+      # Keep Netty on 4.2.x (matching pom.xml versions-maven-plugin rule).
+      - dependency-name: "io.netty:*"
+        versions: [">= 4.3.0"]
+
+  - package-ecosystem: "maven"
+    directories:
+      - "/examples/cloudrun/mariadb"
+      - "/examples/cloudrun/mysql"
+      - "/examples/cloudrun/postgres"
+      - "/examples/cloudrun/sqlserver"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      example-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "daily"
-    # Disable version updates for pip dependencies
+    cooldown:
+      default-days: 7
+    # Keep pip version updates disabled (security alerts only).
     open-pull-requests-limit: 0
