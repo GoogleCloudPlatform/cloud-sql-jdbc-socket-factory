@@ -19,7 +19,7 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7
+      default-days: 0 # zizmor: ignore[dependabot-cooldown]
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore"
@@ -55,7 +55,7 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7
+      default-days: 0 # zizmor: ignore[dependabot-cooldown]
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore"
@@ -74,7 +74,7 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7
+      default-days: 0 # zizmor: ignore[dependabot-cooldown]
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore"
@@ -93,6 +93,6 @@ updates:
     schedule:
       interval: "daily"
     cooldown:
-      default-days: 7
+      default-days: 0 # zizmor: ignore[dependabot-cooldown]
     # Keep pip version updates disabled (security alerts only).
     open-pull-requests-limit: 0
