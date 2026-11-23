@@ -61,13 +61,13 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-enxio</artifactId>
-      <version>0.33.4</version>
+      <version>0.33.6</version>
     </dependency>
 
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
-      <version>0.39.6</version>
+      <version>0.39.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
