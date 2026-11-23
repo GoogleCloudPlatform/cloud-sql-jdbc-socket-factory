@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.1](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.31.0...v1.31.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* avoid Credentials.toString() in exception messages ([#2338](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/issues/2338)) ([ee7527e](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/commit/ee7527e5b5e15d03e40d346cbf8d9324044779db))
+
 ## [1.31.0](https://github.com/GoogleCloudPlatform/cloud-sql-jdbc-socket-factory/compare/v1.30.2...v1.31.0) (2026-11-12)
 
 
