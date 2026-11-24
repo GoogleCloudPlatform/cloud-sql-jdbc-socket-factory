@@ -139,15 +139,16 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
   }
 
   private void checkSan(String dns, X509Certificate[] chain) throws CertificateException {
-
-    if (Strings.isNullOrEmpty(dns)) {
+    String normalizedDns = stripTrailingDot(dns);
+    if (Strings.isNullOrEmpty(normalizedDns)) {
       throw new CertificateException(
           "Instance metadata for " + instanceMetadata.getInstanceName() + " has an empty dnsName");
     }
 
     List<String> sans = getSans(chain[0]);
     for (String san : sans) {
-      if (san.equalsIgnoreCase(dns)) {
+      String normalizedSan = stripTrailingDot(san);
+      if (!normalizedSan.isEmpty() && normalizedSan.equalsIgnoreCase(normalizedDns)) {
         return;
       }
     }
@@ -160,6 +161,13 @@ class InstanceCheckingTrustManger extends X509ExtendedTrustManager {
               + "' for Cloud SQL instance "
               + instanceMetadata.getInstanceName());
     }
+  }
+
+  private static String stripTrailingDot(String name) {
+    if (name != null && name.endsWith(".")) {
+      return name.substring(0, name.length() - 1);
+    }
+    return name;
   }
 
   private List<String> getSans(X509Certificate cert) throws CertificateException {
