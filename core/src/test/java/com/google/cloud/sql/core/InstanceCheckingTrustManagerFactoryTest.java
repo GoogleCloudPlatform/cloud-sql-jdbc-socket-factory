@@ -66,7 +66,7 @@ public class InstanceCheckingTrustManagerFactoryTest {
             Collections.emptyMap(),
             caCerts,
             false,
-            null,
+            tc.metadataDnsName,
             false,
             null);
 
@@ -153,6 +153,61 @@ public class InstanceCheckingTrustManagerFactoryTest {
                 "myProject:myRegion:badInstance",
                 "other.example.com",
                 "myProject:myInstance",
+                false),
+            new TestCase(
+                "dotless config domain matches trailing-dot san without cn fallback",
+                "abc123.us-central1.sql.goog",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "abc123.us-central1.sql.goog.",
+                true),
+            new TestCase(
+                "trailing-dot config domain matches dotless san without cn fallback",
+                "abc123.us-central1.sql.goog.",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "abc123.us-central1.sql.goog",
+                true),
+            new TestCase(
+                "case-insensitive dotless config domain matches trailing-dot san",
+                "abc123.us-central1.sql.goog",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "ABC123.US-CENTRAL1.SQL.GOOG.",
+                true),
+            new TestCase(
+                "dotless metadata dnsName matches trailing-dot san without cn fallback",
+                null,
+                "abc123.us-central1.sql.goog",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "abc123.us-central1.sql.goog.",
+                true,
+                false),
+            new TestCase(
+                "trailing-dot metadata dnsName matches dotless san without cn fallback",
+                null,
+                "abc123.us-central1.sql.goog.",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "abc123.us-central1.sql.goog",
+                true,
+                false),
+            new TestCase(
+                "double trailing-dot san does not match dotless config domain",
+                "abc123.us-central1.sql.goog",
+                "myProject:myRegion:myInstance",
+                "wrongProject:wrongInstance",
+                "abc123.us-central1.sql.goog..",
+                false),
+            new TestCase(
+                "single-dot metadata dnsName fails closed without cn fallback",
+                null,
+                ".",
+                "myProject:myRegion:myInstance",
+                "myProject:myInstance",
+                ".",
+                false,
                 false));
     List<TestCase> casesWithCas = new ArrayList<>(cases);
     for (TestCase tc : cases) {
@@ -164,14 +219,22 @@ public class InstanceCheckingTrustManagerFactoryTest {
   private static class TestCase {
     /** Testcase description. */
     private final String desc;
+
     /** connector configuration domain name. */
     private final String serverName;
+
+    /** instance metadata dnsName. */
+    private final String metadataDnsName;
+
     /** connector configuration instance name. */
     private final String icn;
+
     /** server cert CN field value. */
     private final String cn;
+
     /** server cert SAN field value. */
     private final String san;
+
     /** wants validation to succeed. */
     private final boolean valid;
 
@@ -179,12 +242,13 @@ public class InstanceCheckingTrustManagerFactoryTest {
 
     private TestCase(
         String desc, String serverName, String icn, String cn, String san, boolean valid) {
-      this(desc, serverName, icn, cn, san, valid, false);
+      this(desc, serverName, null, icn, cn, san, valid, false);
     }
 
     private TestCase(
         String desc,
         String serverName,
+        String metadataDnsName,
         String icn,
         String cn,
         String san,
@@ -192,6 +256,7 @@ public class InstanceCheckingTrustManagerFactoryTest {
         boolean cas) {
       this.desc = desc;
       this.serverName = serverName;
+      this.metadataDnsName = metadataDnsName;
       this.icn = icn;
       this.cn = cn;
       this.san = san;
@@ -205,7 +270,15 @@ public class InstanceCheckingTrustManagerFactoryTest {
     }
 
     private TestCase withCas(boolean cas) {
-      return new TestCase(this.desc, this.serverName, this.icn, this.cn, this.san, this.valid, cas);
+      return new TestCase(
+          this.desc,
+          this.serverName,
+          this.metadataDnsName,
+          this.icn,
+          this.cn,
+          this.san,
+          this.valid,
+          cas);
     }
   }
 }
